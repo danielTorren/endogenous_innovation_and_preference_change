@@ -7,13 +7,14 @@ between neighbours. The simulation evolves over time saving data at set interval
 Created: 10/10/2022
 """
 
-####test
+####testhjghujghjghj
 # imports
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
 from package.model.individuals import Individual
 from operator import attrgetter
+
 
 # modules
 class Network:
