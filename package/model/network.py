@@ -7,6 +7,7 @@ between neighbours. The simulation evolves over time saving data at set interval
 Created: 10/10/2022
 """
 
+####test
 # imports
 import numpy as np
 import networkx as nx
