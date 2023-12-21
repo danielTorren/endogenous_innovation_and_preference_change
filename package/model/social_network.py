@@ -12,60 +12,60 @@ Created: 10/10/2022
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
-from package.model.individuals import Individual
+from package.model.individual import Individual
 from operator import attrgetter
 
 
 # modules
-class Network:
+class Social_Network:
 
-    def __init__(self, parameters: list):
+    def __init__(self, parameters_social_network: list):
         """
         Constructs all the necessary attributes for the Network object.
 
-        Parameters
+        parameters_social_network
         ----------
-        parameters : dict
-            Dictionary of parameters used to generate attributes, dict used for readability instead of super long list of input parameters
+        parameters_social_network : dict
+            Dictionary of parameters_social_network used to generate attributes, dict used for readability instead of super long list of input parameters_social_network
 
         """
 
         #INITAL STATE OF THE SYSTEMS, WHAT ARE THE RUN CONDITIONS
-        self.heterogenous_intrasector_preferences_state = parameters["heterogenous_intrasector_preferences_state"]
-        self.heterogenous_carbon_price_state = parameters["heterogenous_carbon_price_state"]
-        self.heterogenous_sector_substitutabilities_state = parameters["heterogenous_sector_substitutabilities_state"]
-        self.heterogenous_phi_state = parameters["heterogenous_phi_state"]
-        self.imperfect_learning_state = parameters["imperfect_learning_state"]
-        self.ratio_preference_or_consumption_state = parameters["ratio_preference_or_consumption_state"]
-        self.alpha_change_state = parameters["alpha_change_state"]
-        self.save_timeseries_data_state = parameters["save_timeseries_data_state"]
-        self.compression_factor_state = parameters["compression_factor_state"]
-        self.vary_seed_imperfect_learning_state_or_initial_preferences_state = parameters["vary_seed_imperfect_learning_state_or_initial_preferences_state"]
+        self.heterogenous_intrasector_preferences_state = parameters_social_network["heterogenous_intrasector_preferences_state"]
+        self.heterogenous_carbon_price_state = parameters_social_network["heterogenous_carbon_price_state"]
+        self.heterogenous_sector_substitutabilities_state = parameters_social_network["heterogenous_sector_substitutabilities_state"]
+        self.heterogenous_phi_state = parameters_social_network["heterogenous_phi_state"]
+        self.imperfect_learning_state = parameters_social_network["imperfect_learning_state"]
+        self.ratio_preference_or_consumption_state = parameters_social_network["ratio_preference_or_consumption_state"]
+        self.alpha_change_state = parameters_social_network["alpha_change_state"]
+        self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
+        self.compression_factor_state = parameters_social_network["compression_factor_state"]
+        self.vary_seed_imperfect_learning_state_or_initial_preferences_state = parameters_social_network["vary_seed_imperfect_learning_state_or_initial_preferences_state"]
 
         #seeds
         if self.vary_seed_imperfect_learning_state_or_initial_preferences_state:
             #if its 1 then very seed imperfect_learning_state
-            self.init_vals_seed = parameters["init_vals_seed"] 
-            self.set_seed = int(round(parameters["set_seed"]))
+            self.init_vals_seed = parameters_social_network["init_vals_seed"] 
+            self.set_seed = int(round(parameters_social_network["set_seed"]))
         else:
             #if not 1 then do vary seed initial preferences
-            self.init_vals_seed = int(round(parameters["set_seed"]))
-            self.set_seed = parameters["init_vals_seed"] 
-        self.network_structure_seed = parameters["network_structure_seed"]
+            self.init_vals_seed = int(round(parameters_social_network["set_seed"]))
+            self.set_seed = parameters_social_network["init_vals_seed"] 
+        self.network_structure_seed = parameters_social_network["network_structure_seed"]
         np.random.seed(self.init_vals_seed)#For inital construction set a seed, this is the same for all runs, then later change it to set_seed
         
         # network
-        self.network_density_input = parameters["network_density"]
-        self.N = int(round(parameters["N"]))
+        self.network_density_input = parameters_social_network["network_density"]
+        self.N = int(round(parameters_social_network["N"]))
         self.K = int(round((self.N - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
         #print("self.K",self.K)
-        self.prob_rewire = parameters["prob_rewire"]
-        self.M = int(round(parameters["M"]))
+        self.prob_rewire = parameters_social_network["prob_rewire"]
+        self.M = int(round(parameters_social_network["M"]))
 
         # time
         self.t = 0
-        self.burn_in_duration = parameters["burn_in_duration"]
-        self.carbon_price_duration = parameters["carbon_price_duration"]
+        self.burn_in_duration = parameters_social_network["burn_in_duration"]
+        self.carbon_price_duration = parameters_social_network["carbon_price_duration"]
 
         #price
         self.prices_low_carbon = np.asarray([1]*self.M)
@@ -73,27 +73,27 @@ class Network:
         self.carbon_price_m = np.asarray([0]*self.M)
         if self.heterogenous_carbon_price_state:
             #RIGHTWAY 
-            self.carbon_price_increased_m = np.linspace(parameters["carbon_price_increased_lower"], parameters["carbon_price_increased_upper"], num=self.M)
+            self.carbon_price_increased_m = np.linspace(parameters_social_network["carbon_price_increased_lower"], parameters_social_network["carbon_price_increased_upper"], num=self.M)
         else:
-            self.carbon_price_increased_m = np.linspace(parameters["carbon_price_increased_lower"], parameters["carbon_price_increased_lower"], num=self.M)
+            self.carbon_price_increased_m = np.linspace(parameters_social_network["carbon_price_increased_lower"], parameters_social_network["carbon_price_increased_lower"], num=self.M)
 
         # social learning and bias
-        self.confirmation_bias = parameters["confirmation_bias"]
+        self.confirmation_bias = parameters_social_network["confirmation_bias"]
         if self.imperfect_learning_state:
-            self.std_learning_error = parameters["std_learning_error"]
-            self.clipping_epsilon = parameters["clipping_epsilon"]
+            self.std_learning_error = parameters_social_network["std_learning_error"]
+            self.clipping_epsilon = parameters_social_network["clipping_epsilon"]
         else:
             self.std_learning_error = 0
             self.clipping_epsilon = 0        
-        self.clipping_epsilon_init_preference = parameters["clipping_epsilon_init_preference"]
+        self.clipping_epsilon_init_preference = parameters_social_network["clipping_epsilon_init_preference"]
         
         if self.heterogenous_phi_state:
-            self.phi_array = np.linspace(parameters["phi_lower"], parameters["phi_upper"], num=self.M)
+            self.phi_array = np.linspace(parameters_social_network["phi_lower"], parameters_social_network["phi_upper"], num=self.M)
         else:
-            self.phi_array = np.linspace(parameters["phi_lower"], parameters["phi_lower"], num=self.M)
+            self.phi_array = np.linspace(parameters_social_network["phi_lower"], parameters_social_network["phi_lower"], num=self.M)
 
         # network homophily
-        self.homophily = parameters["homophily"]  # 0-1
+        self.homophily = parameters_social_network["homophily"]  # 0-1
         self.shuffle_reps = int(
             round(self.N*(1 - self.homophily))
         )
@@ -108,9 +108,9 @@ class Network:
         self.network_density = nx.density(self.network)
 
         if self.heterogenous_intrasector_preferences_state == 1:
-            self.a_identity = parameters["a_identity"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
-            self.b_identity = parameters["b_identity"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
-            self.std_low_carbon_preference = parameters["std_low_carbon_preference"]
+            self.a_identity = parameters_social_network["a_identity"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
+            self.b_identity = parameters_social_network["b_identity"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
+            self.std_low_carbon_preference = parameters_social_network["std_low_carbon_preference"]
             (
                 self.low_carbon_preference_matrix_init
             ) = self.generate_init_data_preferences()
@@ -118,16 +118,16 @@ class Network:
             #this is if you want same preferences for everbody
             self.low_carbon_preference_matrix_init = np.asarray([np.random.uniform(size=self.M)]*self.N)
         
-        self.individual_expenditure_array =  np.asarray([parameters["expenditure"]]*self.N)#sums to 1
+        self.individual_expenditure_array =  np.asarray([parameters_social_network["expenditure"]]*self.N)#sums to 1
         
         if self.heterogenous_sector_substitutabilities_state:
             ## LOW CARBON SUBSTITUTABLILITY - this is what defines the behaviours
-            self.low_carbon_substitutability_array = np.linspace(parameters["low_carbon_substitutability_lower"], parameters["low_carbon_substitutability_upper"], num=self.M)
+            self.low_carbon_substitutability_array = np.linspace(parameters_social_network["low_carbon_substitutability_lower"], parameters_social_network["low_carbon_substitutability_upper"], num=self.M)
         else:
-            self.low_carbon_substitutability_array = np.linspace(parameters["low_carbon_substitutability_lower"], parameters["low_carbon_substitutability_lower"], num=self.M)
-            #self.low_carbon_substitutability_array = np.linspace(parameters["low_carbon_substitutability_upper"], parameters["low_carbon_substitutability_upper"], num=self.M)
+            self.low_carbon_substitutability_array = np.linspace(parameters_social_network["low_carbon_substitutability_lower"], parameters_social_network["low_carbon_substitutability_lower"], num=self.M)
+            #self.low_carbon_substitutability_array = np.linspace(parameters_social_network["low_carbon_substitutability_upper"], parameters_social_network["low_carbon_substitutability_upper"], num=self.M)
         
-        self.sector_substitutability = parameters["sector_substitutability"]
+        self.sector_substitutability = parameters_social_network["sector_substitutability"]
             
         self.sector_preferences = np.asarray([1/self.M]*self.M)
         
@@ -185,7 +185,7 @@ class Network:
         """
         Row normalize an array
 
-        Parameters
+        parameters_social_network
         ----------
         matrix: npt.NDArrayf
             array to be row normalized
@@ -204,7 +204,7 @@ class Network:
         """
         Create watts-strogatz small world graph using Networkx library
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -235,7 +235,7 @@ class Network:
         """
         Makes an ordered list circular so that the start and end values are matched in value and value distribution is symmetric
 
-        Parameters
+        parameters_social_network
         ----------
         list: list
             an ordered list e.g [1,2,3,4,5]
@@ -274,7 +274,7 @@ class Network:
         """
         Create list of Individual objects that each have behaviours
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -374,7 +374,7 @@ class Network:
         """
         Combine neighbour influence and social learning error to updated individual behavioural attitudes
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -421,7 +421,7 @@ class Network:
         """
         Update the link strength array according to the new agent identities
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -462,7 +462,7 @@ class Network:
         """
         Calculate total carbon emissions of N*M behaviours
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -480,7 +480,7 @@ class Network:
         """
         Return various identity properties, such as mean, variance, min and max
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -538,7 +538,7 @@ class Network:
         """
         Save time series data
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -567,7 +567,7 @@ class Network:
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
 
-        Parameters
+        parameters_social_network
         ----------
         None
 
@@ -585,7 +585,7 @@ class Network:
         # execute step
         self.update_individuals()
 
-        # update network parameters for next step
+        # update network parameters_social_network for next step
         if self.alpha_change_state != "fixed_preferences":
             if self.alpha_change_state == "dynamic_culturally_determined_weights":
                 #print("updating culturally list",self.alpha_change_state)

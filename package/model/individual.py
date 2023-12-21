@@ -20,7 +20,7 @@ class Individual:
 
     def __init__(
         self,
-        individual_params,
+        parameters_individuals,
         low_carbon_preferences,
         expenditure,
         id_n,
@@ -31,24 +31,24 @@ class Individual:
         self.init_expenditure = expenditure
         self.instant_expenditure = self.init_expenditure
 
-        self.M = individual_params["M"]
-        self.t = individual_params["t"]
-        self.save_timeseries_data_state = individual_params["save_timeseries_data_state"]
-        self.compression_factor_state = individual_params["compression_factor_state"]
-        self.phi_array = individual_params["phi_array"]
-        self.sector_preferences = individual_params["sector_preferences"]
-        self.low_carbon_substitutability_array = individual_params["low_carbon_substitutability"]
-        self.prices_low_carbon_m = individual_params["prices_low_carbon_m"]
-        self.prices_high_carbon_m = individual_params["prices_high_carbon_m"]
-        self.clipping_epsilon = individual_params["clipping_epsilon"]
-        self.ratio_preference_or_consumption_state = individual_params["ratio_preference_or_consumption_state"]
-        self.burn_in_duration = individual_params["burn_in_duration"]
-        self.alpha_change_state = individual_params["alpha_change_state"]
+        self.M = parameters_individuals["M"]
+        self.t = parameters_individuals["t"]
+        self.save_timeseries_data_state = parameters_individuals["save_timeseries_data_state"]
+        self.compression_factor_state = parameters_individuals["compression_factor_state"]
+        self.phi_array = parameters_individuals["phi_array"]
+        self.sector_preferences = parameters_individuals["sector_preferences"]
+        self.low_carbon_substitutability_array = parameters_individuals["low_carbon_substitutability"]
+        self.prices_low_carbon_m = parameters_individuals["prices_low_carbon_m"]
+        self.prices_high_carbon_m = parameters_individuals["prices_high_carbon_m"]
+        self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
+        self.ratio_preference_or_consumption_state = parameters_individuals["ratio_preference_or_consumption_state"]
+        self.burn_in_duration = parameters_individuals["burn_in_duration"]
+        self.alpha_change_state = parameters_individuals["alpha_change_state"]
 
-        self.sector_substitutability = individual_params["sector_substitutability"]
+        self.sector_substitutability = parameters_individuals["sector_substitutability"]
 
-        self.update_prices(individual_params["init_carbon_price_m"])
-        #self.prices_high_carbon_instant = self.prices_high_carbon_m + individual_params["init_carbon_price_m"]
+        self.update_prices(parameters_individuals["init_carbon_price_m"])
+        #self.prices_high_carbon_instant = self.prices_high_carbon_m + parameters_individuals["init_carbon_price_m"]
 
         self.id = id_n
 
