@@ -21,34 +21,34 @@ class Individual:
     def __init__(
         self,
         parameters_individuals,
-        low_carbon_preferences,
+        low_carbon_preference,
         expenditure,
         id_n,
     ):
 
-        self.low_carbon_preferences_init = low_carbon_preferences   
-        self.low_carbon_preferences = self.low_carbon_preferences_init       
+        self.low_carbon_preference_init = low_carbon_preference
+        self.low_carbon_preference = low_carbon_preference
         self.init_expenditure = expenditure
-        self.instant_expenditure = self.init_expenditure
+        self.expenditure_instant = self.init_expenditure
 
-        self.M = parameters_individuals["M"]
+        self.num_firms = parameters_individuals["num_firms"]
         self.t = parameters_individuals["t"]
         self.save_timeseries_data_state = parameters_individuals["save_timeseries_data_state"]
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
-        self.phi_array = parameters_individuals["phi_array"]
-        self.sector_preferences = parameters_individuals["sector_preferences"]
-        self.low_carbon_substitutability_array = parameters_individuals["low_carbon_substitutability"]
-        self.prices_low_carbon_m = parameters_individuals["prices_low_carbon_m"]
-        self.prices_high_carbon_m = parameters_individuals["prices_high_carbon_m"]
+        self.phi = parameters_individuals["phi"]
+        self.substitutability = parameters_individuals["substitutability"]
+        self.prices = parameters_individuals["prices"]
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
-        self.ratio_preference_or_consumption_state = parameters_individuals["ratio_preference_or_consumption_state"]
+        self.emissions_intensities = parameters_individuals["emissions_intensities"]
+        self.nu_change_state = ["nu_change_state"]
         self.burn_in_duration = parameters_individuals["burn_in_duration"]
-        self.alpha_change_state = parameters_individuals["alpha_change_state"]
+        self.quantity_state = parameters_individuals["quantity_state"]
+        self.chi_ms = parameters_individuals["chi_ms"]
 
-        self.sector_substitutability = parameters_individuals["sector_substitutability"]
+        if self.quantity_state == "replicator":
+            self.market_share_individual = 1/self.num_firms
 
-        self.update_prices(parameters_individuals["init_carbon_price_m"])
-        #self.prices_high_carbon_instant = self.prices_high_carbon_m + parameters_individuals["init_carbon_price_m"]
+        self.update_prices(parameters_individuals["init_carbon_price"])
 
         self.id = id_n
 
@@ -59,99 +59,60 @@ class Individual:
 
         self.initial_carbon_emissions = self.calc_total_emissions()
         self.flow_carbon_emissions = self.initial_carbon_emissions
-        self.utility,self.pseudo_utility = self.calc_utility_nested_CES()
-
-        #print("self.t",self.t, self.burn_in_duration)
-        #if self.t == self.burn_in_duration and self.save_timeseries_data_state:
-        #    self.set_up_time_series()
-    
-    def set_up_time_series(self):
-        self.history_low_carbon_preferences = [self.low_carbon_preferences]
-        self.history_omega_m = [self.Omega_m]
-        self.history_chi_m = [self.chi_m]
-        self.history_identity = [self.identity]
-        self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
-        self.history_utility = [self.utility]
-        self.history_pseudo_utility = [self.pseudo_utility]
-        self.history_H_m = [self.H_m]
-        self.history_L_m = [self.L_m]
-        self.history_Z = [self.Z]
-    
-    #####################################################################################
-    #NESTED CES
-
-    def calc_Omega_m(self):
-        term_1 = (self.prices_high_carbon_instant*self.low_carbon_preferences)
-        term_2 = (self.prices_low_carbon_m*(1- self.low_carbon_preferences))
-        omega_vector = (term_1/term_2)**(self.low_carbon_substitutability_array)
-        return omega_vector
-    
-    def calc_n_tilde_m(self):
-        n_tilde_m = (self.low_carbon_preferences*(self.Omega_m**((self.low_carbon_substitutability_array-1)/self.low_carbon_substitutability_array))+(1-self.low_carbon_preferences))**(self.low_carbon_substitutability_array/(self.low_carbon_substitutability_array-1))
-        return n_tilde_m
-        
-    
-    def calc_chi_m_nested_CES(self):
-        chi_m = (self.sector_preferences*(self.n_tilde_m**((self.sector_substitutability-1)/self.sector_substitutability)))/self.prices_high_carbon_instant
-        return chi_m
-    
-    def calc_Z(self):
-        common_vector_denominator = self.Omega_m*self.prices_low_carbon_m + self.prices_high_carbon_instant
-        chi_pow = self.chi_m**self.sector_substitutability
-        
-        Z = np.matmul(chi_pow, common_vector_denominator)#is this correct[new]        
-        return Z
-    
-    def calc_consumption_quantities_nested_CES(self):
-        H_m = (self.instant_expenditure*(self.chi_m**self.sector_substitutability))/self.Z
-        L_m = H_m*self.Omega_m
-        return H_m, L_m
-    
-    def calc_consumption_ratio(self):
-        #correct
-        ratio = self.L_m/(self.L_m + self.H_m)
-        #C =  (self.low_carbon_preferences**self.low_carbon_substitutability_array)/( (self.low_carbon_preferences)**self.low_carbon_substitutability_array + (self.Q*(1- self.low_carbon_preferences))**self.low_carbon_substitutability_array)
-        return ratio
+        self.utility = self.calc_utility_CES()    
     
     def calc_outward_social_influence(self):
-        return self.ratio_preference_or_consumption_state*self.low_carbon_preferences + (1 - self.ratio_preference_or_consumption_state)*self.consumption_ratio
+
+        #THIS IS THE NEW BIT THAT I CALCULATE THE PREFERENCES GIVEN THE CONSUMPTION
+        n = 0#pick these two firms
+        m = 1
+
+        numerator = np.log(self.prices_instant[m]/ self.prices_instant[n]) +  (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n])
+        denominator = self.emissions_intensities[m] - self.emissions_intensities[n]
+
+        self.low_carbon_preference = numerator / denominator
+        return self.low_carbon_preference
+
+    def calc_market_share_replicator(self):
+        fitness = 1/(self.prices_instant + self.emissions_intensities*self.low_carbon_preference)
+        mean_fitness = np.mean(fitness)
+        term_1 = 1 + self.chi_ms*((fitness-mean_fitness)/mean_fitness)
+
+        ms_new = self.market_share_individual*term_1
+        return ms_new
 
     def update_consumption(self):
         #calculate consumption
-        self.Omega_m = self.calc_Omega_m()
-        self.n_tilde_m = self.calc_n_tilde_m()
-        self.chi_m = self.calc_chi_m_nested_CES()
-        self.Z = self.calc_Z()
-        self.H_m, self.L_m = self.calc_consumption_quantities_nested_CES()
+        if self.quantity_state == "optimal":
+            self.quantities = (self.expenditure_instant*(self.firm_preferences/self.prices_instant)**self.substitutability)/sum(((self.firm_preferences/self.prices_instant)**self.substitutability)*self.prices_instant)
+        elif self.quantity_state == "replicator":
+            self.market_share_individual = self.calc_market_share_replicator()
+            self.quantities = self.expenditure_instant*self.market_share_individual
 
-        self.consumption_ratio = self.calc_consumption_ratio()
         self.outward_social_influence = self.calc_outward_social_influence()
+    
+    def update_firm_preferences(self):
+        self.firm_preferences = np.exp(-self.low_carbon_preference*self.emissions_intensities)/sum(np.exp(-self.low_carbon_preference*self.emissions_intensities))
 
     def update_preferences(self, social_component):
-        low_carbon_preferences = (1 - self.phi_array)*self.low_carbon_preferences + self.phi_array*social_component
-        self.low_carbon_preferences  = np.clip(low_carbon_preferences, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
+        low_carbon_preference = (1 - self.phi)*self.low_carbon_preference + self.phi*social_component
+        self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
 
-    def calc_utility_nested_CES(self):
-        psuedo_utility = (self.low_carbon_preferences*(self.L_m**((self.low_carbon_substitutability_array-1)/self.low_carbon_substitutability_array)) + (1 - self.low_carbon_preferences)*(self.H_m**((self.low_carbon_substitutability_array-1)/self.low_carbon_substitutability_array)))**(self.low_carbon_substitutability_array/(self.low_carbon_substitutability_array-1))
-
-        if self.M == 1:
-            U = psuedo_utility
-        else:
-            interal_components_utility = self.sector_preferences*(psuedo_utility**((self.sector_substitutability -1)/self.sector_preferences))
-            sum_utility = sum(interal_components_utility)
-            U = sum_utility**(self.sector_substitutability/(self.sector_substitutability-1))
-        return U,psuedo_utility
-    
-    def calc_identity(self) -> float:
-        identity = np.mean(self.low_carbon_preferences)
-        return identity
+    def calc_utility_CES(self):
+        U = (sum(self.firm_preferences*self.quantities**((self.substitutability-1)/self.substitutability)))**(self.substitutability/(self.substitutability-1))
+        return U
 
     def calc_total_emissions(self):      
-        return sum(self.H_m)
+        return sum(self.quantities)
 
-    def update_prices(self,carbon_price_m):
-        self.prices_high_carbon_instant = self.prices_high_carbon_m + carbon_price_m
-        self.Q = self.prices_low_carbon_m/self.prices_high_carbon_instant
+    def update_prices(self,carbon_price):
+        self.prices_instant = self.prices + self.emissions_intensities*carbon_price
+    
+    def set_up_time_series(self):
+        self.history_low_carbon_preference = [self.low_carbon_preference]
+        self.history_identity = [self.identity]
+        self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
+        self.history_utility = [self.utility]
 
     def save_timeseries_data_state_individual(self):
         """
@@ -165,42 +126,37 @@ class Individual:
         -------
         None
         """
-        self.history_low_carbon_preferences.append(self.low_carbon_preferences)
-        self.history_omega_m.append(self.Omega_m)
-        self.history_chi_m.append(self.chi_m)
+        self.history_low_carbon_preference.append(self.low_carbon_preference)
         self.history_identity.append(self.identity)
         self.history_flow_carbon_emissions.append(self.flow_carbon_emissions)
         self.history_utility.append(self.utility)
-        self.history_pseudo_utility.append(self.pseudo_utility)
-        self.history_H_m.append(self.H_m)
-        self.history_L_m.append(self.L_m)
-        self.history_Z.append(self.Z)
 
 
-    def next_step(self, t: int, social_component: npt.NDArray, carbon_price_m):
+    def next_step(self, t: int, social_component: npt.NDArray, carbon_price, emissions_intensities):
 
         self.t = t
 
         #update prices
-        self.update_prices(carbon_price_m)
+        self.update_prices(carbon_price)
 
-        #update preferences 
-        if self.alpha_change_state != "fixed_preferences":
+        #update emissions intensities
+        self.emissions_intensities = emissions_intensities
+
+        #update preferences, willingess to pay and firm prefereces
+        if self.nu_change_state != "fixed_preferences":
             self.update_preferences(social_component)
+        self.update_firm_preferences()
 
         #update_consumption
         self.update_consumption()
-
-        #calc_identity
-        self.identity = self.calc_identity()
 
         #calc_emissions
         self.flow_carbon_emissions = self.calc_total_emissions()
 
         if self.save_timeseries_data_state:
             if self.t == self.burn_in_duration + 1:
-                self.utility,self.pseudo_utility = self.calc_utility_nested_CES()
+                self.utility = self.calc_utility_CES()
                 self.set_up_time_series()
             elif (self.t % self.compression_factor_state == 0) and (self.t > self.burn_in_duration):
-                self.utility,self.pseudo_utility = self.calc_utility_nested_CES()
+                self.utility = self.calc_utility_CES()
                 self.save_timeseries_data_state_individual()

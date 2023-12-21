@@ -107,7 +107,7 @@ class Firm:
     def __init__(self, id, N, M, c_RD, gamma_e, chi_mu):
         self.id = id
         self.N = N
-        self.M = M
+        self.num_firms = M
         self.c_RD = c_RD
         self.gamma_e = gamma_e
         self.chi_mu = chi_mu
@@ -138,7 +138,7 @@ class Firm:
         # Update memory based on Equation (\ref{eq_memory_update})
         if self.search_range == 0:
             self.memory = self.memory
-        elif len(self.memory) < self.M:
+        elif len(self.memory) < self.num_firms:
             self.memory.add(m_prime)
         else:
             self.memory = (self.memory | {m_prime}) - {prev_tech}

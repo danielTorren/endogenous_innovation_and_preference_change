@@ -11,7 +11,7 @@ class Firm:
     def __init__(self, id, N, M, c_RD, gamma_e, chi_mu):
         self.id = id
         self.N = N
-        self.M = M
+        self.num_firms = M
         self.c_RD = c_RD
         self.gamma_e = gamma_e
         self.chi_mu = chi_mu
