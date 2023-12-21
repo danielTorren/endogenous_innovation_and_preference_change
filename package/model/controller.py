@@ -15,9 +15,7 @@ class Controller:
         #create firm manager
         #create social network
 
-    def run_simulation(self):
-        #Run the timesteps
-        for t in range(self.T):
+    def next_step(self):
             # Update firms based on the social network and market conditions
 
             # Update social network based on firm preferences

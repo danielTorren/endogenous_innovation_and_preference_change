@@ -54,8 +54,6 @@ class Individual:
 
         #update_consumption
         self.update_consumption()
-        
-        self.identity = self.calc_identity()
 
         self.initial_carbon_emissions = self.calc_total_emissions()
         self.flow_carbon_emissions = self.initial_carbon_emissions
@@ -127,20 +125,20 @@ class Individual:
         None
         """
         self.history_low_carbon_preference.append(self.low_carbon_preference)
-        self.history_identity.append(self.identity)
         self.history_flow_carbon_emissions.append(self.flow_carbon_emissions)
         self.history_utility.append(self.utility)
 
 
-    def next_step(self, t: int, social_component: npt.NDArray, carbon_price, emissions_intensities):
+    def next_step(self, t: int, social_component: npt.NDArray, carbon_price, emissions_intensities, prices):
 
         self.t = t
+        
+        #update emissions intensities and prices
+        self.emissions_intensities = emissions_intensities
+        self.prices = prices
 
         #update prices
         self.update_prices(carbon_price)
-
-        #update emissions intensities
-        self.emissions_intensities = emissions_intensities
 
         #update preferences, willingess to pay and firm prefereces
         if self.nu_change_state != "fixed_preferences":
