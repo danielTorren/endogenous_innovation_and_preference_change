@@ -20,6 +20,8 @@ class Firm_Manager:
         firms_list = [Firm()]
         return firms_list
 
-    def update_firms(self, new_info):
-        for i, firm in enumerate(self.firms_list):
-            firm.update(new_info)
+    def update_firms(self, MS, p, c):
+        # Update information for all firms
+
+    def update_market_share(self):
+        # Update market share for all firms

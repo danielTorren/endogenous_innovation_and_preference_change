@@ -10,19 +10,22 @@ import numpy as np
 from package.model.social_network import Social_Network
 from package.model.firm_manager import Firm_Manager
 
-# modules
 class Controller:
+    def __init__(self, parameters):
+        #create firm manager
+        #create social network
 
-    def __init__(self, parameters_social_network: dict,parameters_firm_manager: dict):
+    def run_simulation(self):
+        #Run the timesteps
+        for t in range(self.T):
+            # Update firms based on the social network and market conditions
 
-        self.social_network = Social_Network(parameters_social_network)
-        self.firm_manager = Firm_Manager(parameters_firm_manager)
-    
-    def update_firm_manager(self):
+            # Update social network based on firm preferences
 
-    def update_social_network(self):
+            # Update market share based on firm quantities
 
+    def calculate_unit_retail_price(self, MS):
+        # Calculate unit retail price based on Equation (\ref{eq_unit_retail_price})
 
-    def time_step(self):
-        self.update_firm_manager()
-        self.update_social_network()
+    def calculate_cost_function(self, MS):
+        # Calculate cost function based on Equation (\ref{eq_cost_function})
