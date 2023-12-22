@@ -10,10 +10,8 @@ from package.resources.utility import (
     save_data_csv_firm_manager,
     produce_name_datetime
 )
-from package.plotting_data import single_experiment_plot
+#from package.plotting_data import single_experiment_plot
 import pyperclip
-
-from symbol import parameters
 
 def main(
     base_params
@@ -39,12 +37,24 @@ def main(
 if __name__ == '__main__':
 
     base_params = {
+        "burn_in_duration": 0,
+        "policy_duration": 5,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 10,
         "parameters_firm_manager": {
-            "parameters_firm": {
-
-            }
+            "J": 3,
+            "N": 5,
+            "K": 0,
+            "alpha":1,
+            "rho": 1,
+        },
+        "parameters_firm": {
+                "research_cost": 1,
+                "expected_carbon_premium": 0,
+                "markup_adjustment": 0.1,
+                "firm_phi": 0.01,
+                "markup_init": 0,
+                "firm_budget": 100
         },
         "parameters_social_network":{        
             'save_timeseries_data_state': 1,
@@ -54,18 +64,13 @@ if __name__ == '__main__':
             "nu_change_state": "dynamic_culturally_determined_weights",
             'network_structure_seed': 8, 
             'init_vals_seed': 14, 
-            'set_seed': 4, 
-            'carbon_price_duration': 3000, 
-            'burn_in_duration': 0, 
-            'N': 200, 
-            'M': 2, 
-            'phi': 0.005, 
+            'imperfect_learning_seed': 4, 
+            'num_individuals': 10, 
+            'individual_phi': 0.005, 
             'network_density': 0.1, 
             'prob_rewire': 0.1, 
             'homophily': 0.0, 
-            'sector_substitutability': 5, 
-            'low_carbon_substitutability_lower': 5, 
-            'low_carbon_substitutability_upper': 5, 
+            'substitutability': 1.5, 
             'a_identity': 2, 
             'b_identity': 2, 
             'clipping_epsilon': 1e-3, 
@@ -73,12 +78,8 @@ if __name__ == '__main__':
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             'confirmation_bias': 5, 
-            'expenditure': 10,
-            'init_carbon_price': 0, 
-            "carbon_price_increased_lower": 0.0,
-            "carbon_price_increased_upper": 0.0,
-            "sector_preferences_lower" : 0.25,
-            "sector_preferences_upper": 0.75,
+            'expenditure': 1,
+            'carbon_price': 0, 
         }
         }
     
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
 
-    if RUN_PLOT:
-        single_experiment_plot.main(fileName = fileName)
+    #if RUN_PLOT:
+    #    single_experiment_plot.main(fileName = fileName)

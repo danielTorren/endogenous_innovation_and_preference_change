@@ -23,11 +23,11 @@ class Firm:
         self.value_matrix_emissions_intensity = parameters_firm["value_matrix_emissions_intensity"]
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
-        self.burn_in_duration_firm_manager = parameters_firm["burn_in_duration_firm_manager"]
+
 
         self.markup = parameters_firm["markup_init"]#variable
         self.current_technology = parameters_firm["technology_init"]#variable
-        self.firm_budget = parameters_firm["firm_budget"]#variable
+        self.firm_budget = parameters_firm["firm_budget"]#variablees
         self.N = parameters_firm["N"]
         self.K = parameters_firm["K"]
 
@@ -35,6 +35,9 @@ class Firm:
 
         self.list_technology_memory = [self.current_technology]
         self.list_technology_memory_strings = [self.current_technology.component_string]
+
+        if self.save_timeseries_data_state:
+            self.set_up_time_series_firm()
     
     ##############################################################################################################
     #DO PREVIOUS TIME STEP STUFF
@@ -221,9 +224,7 @@ class Firm:
         self.history_budget.append(self.firm_budget)
         self.history_cost.append(self.firm_cost)
 
-    def next_step(self, t_firm,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec) -> None:
-
-        self.t_firm = t_firm 
+    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec) -> None:
         
         #consumed_quantities_vec: is the vector for each firm how much of their product was consumed
         self.previous_market_share = self.current_market_share
@@ -237,7 +238,4 @@ class Firm:
         self.set_price()
 
         if self.save_timeseries_data_state:
-            if self.t_firm == self.burn_in_duration_firm_manager + 1:
-                self.set_up_time_series_firm()
-            elif (self.t_firm % self.compression_factor_state == 0) and (self.t_firm > self.burn_in_duration_firm_manager):
-                self.save_timeseries_data_firm()
+            self.save_timeseries_data_firm()

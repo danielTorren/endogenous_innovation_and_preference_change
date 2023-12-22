@@ -32,23 +32,21 @@ class Individual:
         self.expenditure_instant = self.init_expenditure
 
         self.num_firms = parameters_individuals["num_firms"]
-        self.t_individual = parameters_individuals["t"]
         self.save_timeseries_data_state = parameters_individuals["save_timeseries_data_state"]
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
-        self.phi = parameters_individuals["phi"]
+        self.individual_phi = parameters_individuals["individual_phi"]
         self.substitutability = parameters_individuals["substitutability"]
         self.prices = parameters_individuals["prices"]
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities = parameters_individuals["emissions_intensities"]
         self.nu_change_state = ["nu_change_state"]
-        self.burn_in_duration_social_network = parameters_individuals["burn_in_duration"]
         self.quantity_state = parameters_individuals["quantity_state"]
         self.chi_ms = parameters_individuals["chi_ms"]
 
         if self.quantity_state == "replicator":
             self.market_share_individual = 1/self.num_firms
 
-        self.update_prices(parameters_individuals["init_carbon_price"])
+        self.update_prices(parameters_individuals["carbon_price"])
 
         self.id = id_n
 
@@ -93,7 +91,7 @@ class Individual:
         self.firm_preferences = np.exp(-self.low_carbon_preference*self.emissions_intensities)/sum(np.exp(-self.low_carbon_preference*self.emissions_intensities))
 
     def update_preferences(self, social_component):
-        low_carbon_preference = (1 - self.phi)*self.low_carbon_preference + self.phi*social_component
+        low_carbon_preference = (1 - self.individual_phi)*self.low_carbon_preference + self.individual_phi*social_component
         self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
 
     def calc_utility_CES(self):

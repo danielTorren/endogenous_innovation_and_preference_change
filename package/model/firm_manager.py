@@ -8,35 +8,64 @@ Created: 22/12/2023
 
 from package.model.firm import Firm
 import numpy as np
+import random
+from package.model.technology import Technology
 
 # modules
 class Firm_Manager:
 
     def __init__(self, parameters_firm_manager: dict, parameters_firm):
-        #do stufff
+        
 
+        self.J = parameters_firm_manager["J"]
         self.N = parameters_firm_manager["N"]
         self.K = parameters_firm_manager["K"]
         self.alpha = parameters_firm_manager["alpha"]
         self.rho = parameters_firm_manager["rho"]
         self.save_timeseries_data_state = parameters_firm_manager["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm_manager["compression_factor_state"]
-        self.burn_in_duration_firm_manager = parameters_firm_manager["burn_in_duration_firm_manager"]
         self.parameters_firm = parameters_firm
 
-        self.value_matrix_cost, self.value_matrix_emissions_intensity = self.create_NK_model(self.N,self.K, self.alpha, self.rho)
+        self.value_matrix_cost, self.value_matrix_emissions_intensity = self.create_NK_model()
         self.parameters_firm["value_matrix_cost"] = self.value_matrix_cost
         self.parameters_firm["value_matrix_emissions_intensity"] = self.value_matrix_emissions_intensity
         self.parameters_firm["N"] = self.N
         self.parameters_firm["K"] = self.K
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
-        self.parameters_firm["burn_in_duration_firm_manager"] = self.burn_in_duration_firm_manager
 
-        # time
-        self.t_firm_manager = 0
+        self.init_tech_component_string = f'{random.getrandbits(self.N):=0{self.N}b}'#GENERATE A RANDOM STRING OF LENGTH N
+        self.init_tech_emissions, self.inti_tech_cost = self.calc_tech_emission_cost(self.init_tech_component_string)
+        self.technology_init = Technology(self.init_tech_component_string, self.init_tech_emissions, self.inti_tech_cost, choosen_tech_bool = 1)
+        self.parameters_firm["technology_init"] = self.technology_init
 
         self.firms_list = self.create_firms()
+        
+        if self.save_timeseries_data_state:
+            self.set_up_time_series_firm_manager()
+
+    def calc_tech_emission_cost(self, random_technology_string):
+        """JUST FOR CALCULATING INITIAL CONDITIONS"""
+
+        fitness_vector_cost = np.zeros((self.N))
+        fitness_vector_emissions_intensity = np.zeros((self.N))
+
+        for n in range(self.N):#Look through substrings
+            # Create the binary substring
+            substring = random_technology_string[n:n+self.K]
+            # If the substring is shorter than K, wrap around (toroidal)
+            if len(substring) < self.K:
+                substring += random_technology_string[:self.K-len(substring)]
+            # Convert the binary substring to decimal
+            decimal = int(substring, 2)
+            # Retrieve the value from the value matrix
+            fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
+            fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
+
+        emissions = np.mean(fitness_vector_emissions_intensity)
+        cost = np.mean(fitness_vector_cost)
+        return emissions, cost
+
 
     def create_firms(self):
 
@@ -83,7 +112,7 @@ class Firm_Manager:
         return np.asarray(emissions_intensities_vec), np.asarray(prices_vec)
 
     def set_up_time_series_firm_manager(self):
-        self.history_time_firm_manager = [self.t_firm_manager]
+
         self.history_emissions_intensities_vec = [self.emissions_intensities_vec]
         self.history_prices_vec = [self.prices_vec]
         self.history_market_share_vec = [self.market_share_vec]#this may be off by 1 time step??
@@ -100,19 +129,16 @@ class Firm_Manager:
         -------
         None
         """
-        self.history_time_firm_manager.append(self.t_firm_manager)
+
         self.history_emissions_intensities_vec.append(self.emissions_intensities_vec)
         self.history_prices_vec.append(self.prices_vec)
         self.history_market_share_vec.append(self.market_share_vec)#this may be off by 1 time step??
 
     def update_firms(self):
         for j,firm in enumerate(self.firms_list):
-            firm.next_step(self, self.t_firm_manager, self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.price_vec)
+            firm.next_step(self, self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.prices_vec)
 
     def next_step(self, consumed_quantities_vec):
-
-        # advance a time step
-        self.t_firm_manager += 1
 
         self.market_share_vec = self.calc_market_share(consumed_quantities_vec)
         self.consumed_quantities_vec = consumed_quantities_vec
@@ -123,10 +149,7 @@ class Firm_Manager:
         self.emissions_intensities_vec, self.prices_vec = self.get_firm_prices_and_intensities()
 
         if self.save_timeseries_data_state:
-            if self.t_firm_manager == self.burn_in_duration_firm_manager + 1:
-                self.set_up_time_series_firm_manager()
-            elif (self.t_firm_manager % self.compression_factor_state == 0) and (self.t_firm_manager > self.burn_in_duration_firm_manager):
-                self.save_timeseries_data_firm_manager()
+            self.save_timeseries_data_firm_manager()
 
         return self.emissions_intensities_vec, self.prices_vec
 

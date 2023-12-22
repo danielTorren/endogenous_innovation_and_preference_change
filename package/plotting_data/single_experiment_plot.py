@@ -12,7 +12,6 @@ from package.resources.utility import (
     load_object,
 )
 import pandas as pd
-import seaborn as sns
 from package.resources.plot import (
     plot_identity_timeseries,
     plot_value_timeseries,
