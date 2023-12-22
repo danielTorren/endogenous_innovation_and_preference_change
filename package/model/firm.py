@@ -17,6 +17,8 @@ class Firm:
         self.expected_carbon_premium =  parameters_firm["expected_carbon_premium"]#variable
         self.markup_adjustment = parameters_firm["markup_adjustment"]
         self.firm_phi = parameters_firm["firm_phi"]
+        self.value_matrix_cost = parameters_firm["value_matrix_cost"]
+        self.value_matrix_emissions_intensity = parameters_firm["value_matrix_emissions_intensity"]
 
         self.markup = parameters_firm["markup_init"]#variable
         self.current_technology = parameters_firm["technology_init"]#variable
@@ -35,18 +37,18 @@ class Firm:
         budget = self.firm_budget + self.profit + ((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
         self.firm_budget = budget
 
-    def update_carbon_premium(self, market_share_vec, emissions_intensities_vec, cost_vec):
+    def update_carbon_premium(self, market_share_vec, emissions_intensities_vec, price_vec):
         #calculate this sub list of firms where higher market share and that use a technology that is not prefered given THIS firms preference
         
 
         indices_higher = [i for i,v in enumerate(market_share_vec) if v > self.current_market_share]
 
         market_shares_higher = np.asarray([v for i,v in enumerate(market_share_vec) if v > self.current_market_share])#DO THIS BETTER
-        cost_higher = np.asarray([cost_vec[i] for i in indices_higher])
+        price_higher = np.asarray([price_vec[i] for i in indices_higher])
         emissions_intensities_higher = [emissions_intensities_vec[i] for i in indices_higher]
 
         #calculate_expected_carbon_premium of competitors
-        expected_carbon_premium_competitors = (self.firm_cost - cost_higher)/(emissions_intensities_higher - self.firm_emissions_intensities)
+        expected_carbon_premium_competitors = (self.firm_price - price_higher)/(emissions_intensities_higher - self.firm_emissions_intensities)
         
         #calculate_weighting_vector
         weighting_vector_firms = (market_shares_higher-self.current_market_share)/sum(market_shares_higher-self.current_market_share)
@@ -56,10 +58,10 @@ class Firm:
 
         self.expected_carbon_premium = new_premium
     
-    def process_previous_info(self,market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec):
+    def process_previous_info(self,market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec):
         self.calculate_profits(consumed_quantities_vec)
         self.update_budget()
-        self.update_carbon_premium(market_share_vec, emissions_intensities_vec, cost_vec)
+        self.update_carbon_premium(market_share_vec, emissions_intensities_vec, price_vec)
 
     ##############################################################################################################
     #SCIENCE!
@@ -80,7 +82,7 @@ class Firm:
             self.search_range = 2  
 
     def update_neighbouring_technologies(self):
-        #make a list of all the neighbouring technologies based on search range
+        #make a list of all the neighbouring technologies based on NEW search range
 
     def explore_technology(self):
         # Explore a new technology based on the search range
@@ -142,15 +144,14 @@ class Firm:
         
     ##############################################################################################################
     #FORWARD
-    def next_step(self, market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec) -> None:
+    def next_step(self, market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec) -> None:
 
         #consumed_quantities_vec: is the vector for each firm how much of their product was consumed
         self.previous_market_share = self.current_market_share
         self.current_market_share = market_share_vec[self.firm_id]
         self.current_consumed_quantity = consumed_quantities_vec[self.firm_id]
-        
 
-        self.process_previous_info(market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec)#assume all are arrays
+        self.process_previous_info(market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec)#assume all are arrays
 
         self.firm_emissions_intensities, self.firm_cost = self.research_technology()
 
