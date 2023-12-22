@@ -7,7 +7,7 @@ between neighbours. The simulation evolves over time saving data at set interval
 Created: 10/10/2022
 """
 
-####testhjghujghjghj
+
 # imports
 import numpy as np
 import networkx as nx
@@ -19,7 +19,7 @@ from operator import attrgetter
 # modules
 class Social_Network:
 
-    def __init__(self, parameters_social_network: list):
+    def __init__(self, parameters_social_network: list):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
         """
         Constructs all the necessary attributes for the Network object.
 
@@ -58,7 +58,7 @@ class Social_Network:
         self.num_firms = int(round(parameters_social_network["num_firms"]))
 
         # time
-        self.t = 0
+        self.t_social_network = 0
         self.burn_in_duration = parameters_social_network["burn_in_duration"]
         self.carbon_price_duration = parameters_social_network["carbon_price_duration"]
 
@@ -124,7 +124,7 @@ class Social_Network:
                 self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
 
-        self.total_carbon_emissions_stock = 0#this are for post tax
+        self.t_social_networkotal_carbon_emissions_stock = 0#this are for post tax
    
     def normalize_vector_sum(self, vec):
         return vec/sum(vec)
@@ -231,7 +231,7 @@ class Social_Network:
         """
 
         individual_params = {
-            "t": self.t,
+            "t": self.t_social_network,
             "num_firms": self.num_firms,
             "save_timeseries_data_state": self.save_timeseries_data_state,
             "phi": self.phi,
@@ -366,6 +366,13 @@ class Social_Network:
         total_network_emissions = sum(map(attrgetter('flow_carbon_emissions'), self.agent_list))
         return total_network_emissions
     
+    def calc_consumption_vec(self):
+        consumption_matrix = np.asarray([map(attrgetter('quantities'), self.agent_list)])
+        print("consumption_matrix shape", consumption_matrix.shape)
+        consumption_vec = np.sum(consumption_matrix, axis=1)
+        print("cosnumption_vec shape",consumption_vec.shape)
+
+        return consumption_vec
 
     def update_individuals(self):
         """
@@ -374,23 +381,21 @@ class Social_Network:
 
         # Assuming you have self.agent_list as the list of objects
         ____ = list(map(
-            lambda agent, scm: agent.next_step(self.t, scm, self.carbon_price_m, self.emissions_intensities),
+            lambda agent, scm: agent.next_step(self.t_social_network, scm, self.carbon_price_m, self.emissions_intensities),
             self.agent_list,
             self.social_component_matrix
         ))
     
-    def set_up_time_series(self):
+    def set_up_time_series_social_network(self):
+        self.history_time_social_network = [self.t_social_network]
         self.history_preference_list = [self.preference_list]
         self.history_weighting_matrix = [self.weighting_matrix]
-        self.history_time = [self.t]
         self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
-        self.history_weighting_matrix_convergence = [
-            self.weighting_matrix_convergence
-        ]
-        self.history_flow_carbon_emissions = [self.total_carbon_emissions_flow]
-        self.history_stock_carbon_emissions = [self.total_carbon_emissions_stock]
+        self.history_weighting_matrix_convergence = [self.weighting_matrix_convergence]
+        self.history_flow_carbon_emissions = [self.t_social_networkotal_carbon_emissions_flow]
+        self.history_stock_carbon_emissions = [self.t_social_networkotal_carbon_emissions_stock]
 
-    def save_timeseries_data_state_network(self):
+    def save_timeseries_data_social_network(self):
         """
         Save time series data
 
@@ -402,16 +407,16 @@ class Social_Network:
         -------
         None
         """
-        self.history_time.append(self.t)
+        self.history_time_social_network.append(self.t_social_network)
         self.history_weighting_matrix.append(self.weighting_matrix)
         self.history_weighting_matrix_convergence.append(
             self.weighting_matrix_convergence
         )
-        self.history_stock_carbon_emissions.append(self.total_carbon_emissions_stock)
-        self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
+        self.history_stock_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_stock)
+        self.history_flow_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_flow)
         self.history_preference_list.append(self.preference_list)
 
-    def next_step(self, emissions_intensities, prices):
+    def next_step(self, emissions_intensities_vec, prices_vec):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -426,17 +431,20 @@ class Social_Network:
         """
 
         # advance a time step
-        self.t += 1
+        self.t_social_network += 1
 
-        if self.t == (self.burn_in_duration + 1):
+        if self.t_social_network == (self.burn_in_duration + 1):
             self.carbon_price_m = self.carbon_price_increased#turn on carbon price
 
         #update new tech and prices
-        self.emissions_intensities = emissions_intensities
-        self.prices = prices
+        self.emissions_intensities = emissions_intensities_vec
+        self.prices = prices_vec
 
         # execute step
         self.update_individuals()
+
+        #calc consumption quantities
+        self.consumption_vec = self.calc_consumption_vec()
 
         # update network parameters_social_network for next step
         if self.nu_change_state != "fixed_preferences":
@@ -449,12 +457,14 @@ class Social_Network:
             self.social_component_matrix = self.calc_social_component_matrix()
 
         #check the exact timings on these
-        if self.t > self.burn_in_duration:#what to do it on the end so that its ready for the next round with the tax already there
-            self.total_carbon_emissions_flow = self.calc_total_emissions()
-            self.total_carbon_emissions_stock = self.total_carbon_emissions_stock + self.total_carbon_emissions_flow
+        if self.t_social_network > self.burn_in_duration:#what to do it on the end so that its ready for the next round with the tax already there
+            self.t_social_networkotal_carbon_emissions_flow = self.calc_total_emissions()
+            self.t_social_networkotal_carbon_emissions_stock = self.t_social_networkotal_carbon_emissions_stock + self.t_social_networkotal_carbon_emissions_flow
             
         if self.save_timeseries_data_state:
-            if self.t == self.burn_in_duration + 1:#want to create it the step after burn in is finished
-                self.set_up_time_series()
-            elif (self.t % self.compression_factor_state == 0) and (self.t > self.burn_in_duration):
-                self.save_timeseries_data_state_network()
+            if self.t_social_network == self.burn_in_duration + 1:#want to create it the step after burn in is finished
+                self.set_up_time_series_social_network()
+            elif (self.t_social_network % self.compression_factor_state == 0) and (self.t_social_network > self.burn_in_duration):
+                self.save_timeseries_data_social_network()
+
+        return self.consumption_vec

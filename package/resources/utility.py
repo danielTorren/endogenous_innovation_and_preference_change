@@ -89,6 +89,12 @@ def save_object(data, fileName, objectName):
     with open(fileName + "/" + objectName + ".pkl", "wb") as f:
         pickle.dump(data, f)
 
+def save_data_csv_firm_manager(firm_manager,save_data_csv_list_firm_manager, fileName):
+    for title in save_data_csv_list_firm_manager:
+        list_history = getattr(firm_manager, title)
+        array_history = np.asarray(list_history)
+        np.savetxt(fileName + "/" + title + ".csv", array_history, delimiter=',')
+
 def load_object(fileName, objectName) -> dict:
     """load single pickle file
 

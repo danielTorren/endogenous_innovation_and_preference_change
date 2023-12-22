@@ -32,7 +32,7 @@ class Individual:
         self.expenditure_instant = self.init_expenditure
 
         self.num_firms = parameters_individuals["num_firms"]
-        self.t = parameters_individuals["t"]
+        self.t_individual = parameters_individuals["t"]
         self.save_timeseries_data_state = parameters_individuals["save_timeseries_data_state"]
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
         self.phi = parameters_individuals["phi"]
@@ -41,7 +41,7 @@ class Individual:
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities = parameters_individuals["emissions_intensities"]
         self.nu_change_state = ["nu_change_state"]
-        self.burn_in_duration = parameters_individuals["burn_in_duration"]
+        self.burn_in_duration_social_network = parameters_individuals["burn_in_duration"]
         self.quantity_state = parameters_individuals["quantity_state"]
         self.chi_ms = parameters_individuals["chi_ms"]
 
@@ -129,9 +129,9 @@ class Individual:
         self.history_utility.append(self.utility)
 
 
-    def next_step(self, t: int, social_component: npt.NDArray, carbon_price, emissions_intensities, prices):
+    def next_step(self, t_individual: int, social_component: npt.NDArray, carbon_price, emissions_intensities, prices):
 
-        self.t = t
+        self.t_individual = t_individual
         
         #update emissions intensities and prices
         self.emissions_intensities = emissions_intensities
@@ -152,9 +152,9 @@ class Individual:
         self.flow_carbon_emissions = self.calc_total_emissions()
 
         if self.save_timeseries_data_state:
-            if self.t == self.burn_in_duration + 1:
+            if self.t_individual == self.burn_in_duration_social_network + 1:
                 self.utility = self.calc_utility_CES()
                 self.set_up_time_series()
-            elif (self.t % self.compression_factor_state == 0) and (self.t > self.burn_in_duration):
+            elif (self.t_individual % self.compression_factor_state == 0) and (self.t_individual > self.burn_in_duration_social_network):
                 self.utility = self.calc_utility_CES()
                 self.save_timeseries_data_state_individual()
