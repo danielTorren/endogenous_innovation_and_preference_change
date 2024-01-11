@@ -36,21 +36,23 @@ class Individual:
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
         self.individual_phi = parameters_individuals["individual_phi"]
         self.substitutability = parameters_individuals["substitutability"]
-        self.prices = parameters_individuals["prices"]
+        self.prices_vec = parameters_individuals["prices_vec"]
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
-        self.emissions_intensities = parameters_individuals["emissions_intensities"]
+        self.emissions_intensities_vec = parameters_individuals["emissions_intensities_vec"]
         self.nu_change_state = ["nu_change_state"]
         self.quantity_state = parameters_individuals["quantity_state"]
-        self.chi_ms = parameters_individuals["chi_ms"]
+        
 
         if self.quantity_state == "replicator":
             self.market_share_individual = 1/self.num_firms
+            self.chi_ms = parameters_individuals["chi_ms"]
 
         self.update_prices(parameters_individuals["carbon_price"])
 
         self.id = id_n
 
         #update_consumption
+        self.update_firm_preferences()
         self.update_consumption()
 
         self.initial_carbon_emissions = self.calc_total_emissions()
@@ -63,14 +65,14 @@ class Individual:
         n = 0#pick these two firms
         m = 1
 
-        numerator = np.log(self.prices_instant[m]/ self.prices_instant[n]) +  (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n])
-        denominator = self.emissions_intensities[m] - self.emissions_intensities[n]
+        numerator = np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) +  (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n])
+        denominator = self.emissions_intensities_vec[m] - self.emissions_intensities_vec[n]
 
         self.low_carbon_preference = numerator / denominator
         return self.low_carbon_preference
 
     def calc_market_share_replicator(self):
-        fitness = 1/(self.prices_instant + self.emissions_intensities*self.low_carbon_preference)
+        fitness = 1/(self.prices_vec_instant + self.emissions_intensities_vec*self.low_carbon_preference)
         mean_fitness = np.mean(fitness)
         term_1 = 1 + self.chi_ms*((fitness-mean_fitness)/mean_fitness)
 
@@ -80,7 +82,7 @@ class Individual:
     def update_consumption(self):
         #calculate consumption
         if self.quantity_state == "optimal":
-            self.quantities = (self.expenditure_instant*(self.firm_preferences/self.prices_instant)**self.substitutability)/sum(((self.firm_preferences/self.prices_instant)**self.substitutability)*self.prices_instant)
+            self.quantities = (self.expenditure_instant*(self.firm_preferences/self.prices_vec_instant)**self.substitutability)/sum(((self.firm_preferences/self.prices_vec_instant)**self.substitutability)*self.prices_vec_instant)
         elif self.quantity_state == "replicator":
             self.market_share_individual = self.calc_market_share_replicator()
             self.quantities = self.expenditure_instant*self.market_share_individual
@@ -88,7 +90,7 @@ class Individual:
         self.outward_social_influence = self.calc_outward_social_influence()
     
     def update_firm_preferences(self):
-        self.firm_preferences = np.exp(-self.low_carbon_preference*self.emissions_intensities)/sum(np.exp(-self.low_carbon_preference*self.emissions_intensities))
+        self.firm_preferences = np.exp(-self.low_carbon_preference*self.emissions_intensities_vec)/sum(np.exp(-self.low_carbon_preference*self.emissions_intensities_vec))
 
     def update_preferences(self, social_component):
         low_carbon_preference = (1 - self.individual_phi)*self.low_carbon_preference + self.individual_phi*social_component
@@ -102,7 +104,7 @@ class Individual:
         return sum(self.quantities)
 
     def update_prices(self,carbon_price):
-        self.prices_instant = self.prices + self.emissions_intensities*carbon_price
+        self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*carbon_price
     
     def set_up_time_series(self):
         self.history_low_carbon_preference = [self.low_carbon_preference]
@@ -132,8 +134,8 @@ class Individual:
         self.t_individual = t_individual
         
         #update emissions intensities and prices
-        self.emissions_intensities = emissions_intensities
-        self.prices = prices
+        self.emissions_intensities_vec = emissions_intensities
+        self.prices_vec = prices
 
         #update prices
         self.update_prices(carbon_price)

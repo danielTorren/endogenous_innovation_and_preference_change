@@ -37,6 +37,7 @@ class Social_Network:
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
 
         #seeds
+        self.network_structure_seed = parameters_social_network["network_structure_seed"] 
         self.init_vals_seed = parameters_social_network["init_vals_seed"] 
         self.imperfect_learning_seed = int(round(parameters_social_network["imperfect_learning_seed"]))
 
@@ -44,13 +45,16 @@ class Social_Network:
         
         # network
         self.network_density_input = parameters_social_network["network_density"]
-        self.num_individuals = int(round(parameters_social_network["N"]))
+        self.num_individuals = int(round(parameters_social_network["num_individuals"]))
         self.K = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
         #print("self.K",self.K)
         self.prob_rewire = parameters_social_network["prob_rewire"]
 
+        #firms stuff
+        self.num_firms = parameters_social_network["J"]
+        self.emissions_intensities_vec = parameters_social_network["emissions_intensities_vec"]
         #price
-        self.prices =  parameters_social_network["prices"]
+        self.prices_vec =  parameters_social_network["prices_vec"]#THIS NEEDS TO BE SET AFTER THE STUFF IS RUN.
         self.carbon_price = parameters_social_network["carbon_price"]
 
         # social learning and bias
@@ -64,7 +68,7 @@ class Social_Network:
 
         self.clipping_epsilon_init_preference = parameters_social_network["clipping_epsilon_init_preference"]
 
-        self.individual_phi = parameters_social_network["phi"]
+        self.individual_phi = parameters_social_network["individual_phi"]
 
         # network homophily
         self.homophily = parameters_social_network["homophily"]  # 0-1
@@ -74,7 +78,8 @@ class Social_Network:
 
 
         self.quantity_state = parameters_social_network["quantity_state"]
-        self.chi_ms = parameters_social_network["chi_ms"]
+        if self.quantity_state == "replicator":
+            self.chi_ms = parameters_social_network["chi_ms"]
         
         # create network
         (
@@ -224,13 +229,18 @@ class Social_Network:
             "individual_phi": self.individual_phi,
             "compression_factor_state": self.compression_factor_state,
             "carbon_price": self.carbon_price,
-            "prices": self.prices,
+            "prices_vec": self.prices_vec,
+            "emissions_intensities_vec": self.emissions_intensities_vec,
             "clipping_epsilon" :self.clipping_epsilon,
             "nu_change_state": self.nu_change_state,
             "substitutability": self.substitutability,
             "quantity_state": self.quantity_state,
-            "chi_ms": self.chi_ms,
+            "num_firms" : self.num_firms
+            #"chi_ms": self.chi_ms,
         }
+
+        if self.quantity_state == "replicator":
+            individual_params["self.chi_ms"] = self.chi_ms
 
         agent_list = [
             Individual(
@@ -402,7 +412,7 @@ class Social_Network:
 
         #update new tech and prices
         self.emissions_intensities = emissions_intensities_vec
-        self.prices = prices_vec
+        self.prices_vec = prices_vec
 
         # execute step
         self.update_individuals()

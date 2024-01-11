@@ -24,17 +24,23 @@ class Firm:
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
 
-
         self.markup = parameters_firm["markup_init"]#variable
         self.current_technology = parameters_firm["technology_init"]#variable
         self.firm_budget = parameters_firm["firm_budget"]#variablees
         self.N = parameters_firm["N"]
         self.K = parameters_firm["K"]
+        self.current_market_share = parameters_firm["init_market_share"]
 
         self.previous_market_share = self.current_market_share#DEFINE THIS
 
         self.list_technology_memory = [self.current_technology]
         self.list_technology_memory_strings = [self.current_technology.component_string]
+
+        #set up inital stuff relating to emissions prices, costs, and intensities
+        self.firm_cost = self.current_technology.cost
+        self.firm_emissions_intensities = self.current_technology.emission_intensity
+        #self.set_price()
+        self.firm_price = self.firm_cost*(1+self.markup)
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()

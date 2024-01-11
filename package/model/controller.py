@@ -29,7 +29,13 @@ class Controller:
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
+        self.parameters_social_network["J"] = self.parameters_firm_manager["J"]
+        #GET FIRM PRICES
+        self.parameters_social_network["prices_vec"] = self.firm_manager.prices_vec
+        self.parameters_social_network["emissions_intensities_vec"] = self.firm_manager.emissions_intensities_vec
         self.social_network = Social_Network(self.parameters_social_network)
+
+
 
     def next_step(self):
         self.t_controller+=1

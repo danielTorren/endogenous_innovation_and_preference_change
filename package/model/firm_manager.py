@@ -33,6 +33,7 @@ class Firm_Manager:
         self.parameters_firm["K"] = self.K
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
+        self.parameters_firm["init_market_share"] = 1/self.J
 
         self.init_tech_component_string = f'{random.getrandbits(self.N):=0{self.N}b}'#GENERATE A RANDOM STRING OF LENGTH N
         self.init_tech_emissions, self.inti_tech_cost = self.calc_tech_emission_cost(self.init_tech_component_string)
@@ -40,6 +41,10 @@ class Firm_Manager:
         self.parameters_firm["technology_init"] = self.technology_init
 
         self.firms_list = self.create_firms()
+
+        #set up init stuff
+        self.emissions_intensities_vec, self.prices_vec = self.get_firm_prices_and_intensities()
+        self.market_share_vec = [firm.current_market_share for firm in self.firms_list]
         
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm_manager()
@@ -53,12 +58,21 @@ class Firm_Manager:
         for n in range(self.N):#Look through substrings
             # Create the binary substring
             substring = random_technology_string[n:n+self.K]
+            #print("substring",substring)
+            
             # If the substring is shorter than K, wrap around (toroidal)
             if len(substring) < self.K:
                 substring += random_technology_string[:self.K-len(substring)]
+                #print("wrap around",substring)
             # Convert the binary substring to decimal
             decimal = int(substring, 2)
+            #print("decimal", decimal)
             # Retrieve the value from the value matrix
+            #print("self.value_matrix_cost",self.value_matrix_cost.shape)
+            #print("decimal, n",decimal, n)
+            #quit()
+            #ISSUE, i think value matrix shoudl be at least (14,10) but its acctually 33,0? 0 makes sense, but not the 33
+            #THE decimal conversion thing is wrong its giving values that are much larger than the size of the table
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
@@ -83,7 +97,11 @@ class Firm_Manager:
             We make a landscape for cost of technologies
         """
         # Step 1: Create the value matrix
-        value_matrix_cost = np.random.uniform(0, 1, (2*(self.K+1), self.N)) * self.alpha#THIS IS THE COST
+        #i think the size is wrong, the max value should be 2**k, so maybe there is an asterix missing? WHY IS IT K+1?
+        #value_matrix_cost = np.random.uniform(0, 1, (2*(self.K+1), self.N)) * self.alpha#THIS IS THE COST
+        value_matrix_cost = np.random.uniform(0, 1, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
+        #print("init, value_matrix_cost",value_matrix_cost,value_matrix_cost.shape)
+        #quit()
         value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(value_matrix_cost)
     
         return value_matrix_cost, value_matrix_emissions_intensity
