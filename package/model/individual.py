@@ -36,7 +36,7 @@ class Individual:
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
         self.individual_phi = parameters_individuals["individual_phi"]
         self.substitutability = parameters_individuals["substitutability"]
-        self.prices_vec = parameters_individuals["prices_vec"]
+        self.prices_vec_instant = parameters_individuals["prices_vec"]#NOT SURE IF THIS IS RIGHT? IS IT UPDATED WITH THE CARBON PRICE TO START
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities_vec = parameters_individuals["emissions_intensities_vec"]
         self.nu_change_state = ["nu_change_state"]
@@ -47,7 +47,7 @@ class Individual:
             self.market_share_individual = 1/self.num_firms
             self.chi_ms = parameters_individuals["chi_ms"]
 
-        self.update_prices(parameters_individuals["carbon_price"])
+        #self.update_prices(parameters_individuals["carbon_price"])
 
         self.id = id_n
 
@@ -57,7 +57,10 @@ class Individual:
 
         self.initial_carbon_emissions = self.calc_total_emissions()
         self.flow_carbon_emissions = self.initial_carbon_emissions
-        self.utility = self.calc_utility_CES()    
+        self.utility = self.calc_utility_CES()  
+
+        if self.save_timeseries_data_state:
+            self.set_up_time_series()  
     
     def calc_outward_social_influence(self):
 
@@ -103,8 +106,7 @@ class Individual:
     def calc_total_emissions(self):      
         return sum(self.quantities)
 
-    def update_prices(self,carbon_price):
-        self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*carbon_price
+
     
     def set_up_time_series(self):
         self.history_low_carbon_preference = [self.low_carbon_preference]
@@ -129,16 +131,13 @@ class Individual:
         self.history_utility.append(self.utility)
 
 
-    def next_step(self, t_individual: int, social_component: npt.NDArray, carbon_price, emissions_intensities, prices):
+    def next_step(self, t_individual: int, social_component: npt.NDArray, emissions_intensities, prices):
 
         self.t_individual = t_individual
         
         #update emissions intensities and prices
         self.emissions_intensities_vec = emissions_intensities
-        self.prices_vec = prices
-
-        #update prices
-        self.update_prices(carbon_price)
+        self.prices_vec_instant = prices
 
         #update preferences, willingess to pay and firm prefereces
         if self.nu_change_state != "fixed_preferences":
@@ -151,10 +150,6 @@ class Individual:
         #calc_emissions
         self.flow_carbon_emissions = self.calc_total_emissions()
 
-        if self.save_timeseries_data_state:
-            if self.t_individual == self.burn_in_duration_social_network + 1:
-                self.utility = self.calc_utility_CES()
-                self.set_up_time_series()
-            elif (self.t_individual % self.compression_factor_state == 0) and (self.t_individual > self.burn_in_duration_social_network):
-                self.utility = self.calc_utility_CES()
-                self.save_timeseries_data_state_individual()
+        if self.save_timeseries_data_state and (self.t_individual % self.compression_factor_state == 0):
+            self.utility = self.calc_utility_CES()
+            self.save_timeseries_data_state_individual()

@@ -210,11 +210,13 @@ class Firm:
     #FORWARD
         
     def set_up_time_series_firm(self):
-        self.history_emissions_intensity = [self.firm_emissions_intensities]
-        self.history_price = [self.firm_price]
+        #self.history_emissions_intensity = [self.firm_emissions_intensities]
+        #self.history_price = [self.firm_price]
         self.history_budget = [self.firm_budget]
         self.history_cost = [self.firm_cost]
-
+        self.history_expected_carbon_premium = [self.expected_carbon_premium]
+        self.history_length_memory_list = [len(self.list_technology_memory)]
+        
     def save_timeseries_data_firm(self):
         """
         Save time series data
@@ -225,10 +227,12 @@ class Firm:
         -------
         None
         """
-        self.history_emissions_intensity.append(self.firm_emissions_intensities)
-        self.history_price.append(self.firm_price)
+        #self.history_emissions_intensity.append(self.firm_emissions_intensities)
+        #self.history_price.append(self.firm_price)
         self.history_budget.append(self.firm_budget)
         self.history_cost.append(self.firm_cost)
+        self.history_expected_carbon_premium.append(self.expected_carbon_premium)
+        self.history_length_memory_list.append(len(self.list_technology_memory))
 
     def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec) -> None:
         

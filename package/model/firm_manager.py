@@ -97,11 +97,7 @@ class Firm_Manager:
             We make a landscape for cost of technologies
         """
         # Step 1: Create the value matrix
-        #i think the size is wrong, the max value should be 2**k, so maybe there is an asterix missing? WHY IS IT K+1?
-        #value_matrix_cost = np.random.uniform(0, 1, (2*(self.K+1), self.N)) * self.alpha#THIS IS THE COST
         value_matrix_cost = np.random.uniform(0, 1, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
-        #print("init, value_matrix_cost",value_matrix_cost,value_matrix_cost.shape)
-        #quit()
         value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(value_matrix_cost)
     
         return value_matrix_cost, value_matrix_emissions_intensity

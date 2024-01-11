@@ -114,8 +114,11 @@ class Social_Network:
             if self.nu_change_state in ("uniform_network_weighting","static_culturally_determined_weights","dynamic_culturally_determined_weights"):
                 self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
-
+        #FIX
         self.t_social_networkotal_carbon_emissions_stock = 0#this are for post tax
+
+        #calc consumption quantities
+        self.consumption_vec = self.calc_consumption_vec()
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_social_network()
@@ -298,7 +301,7 @@ class Social_Network:
 
         non_diagonal_weighting_matrix = (
             self.adjacency_matrix*alpha_numerator
-        )  # We want onlythose values that have network connections
+        )  # We want only those values that have network connections 
 
         norm_weighting_matrix = self.normlize_matrix(
             non_diagonal_weighting_matrix
@@ -363,10 +366,14 @@ class Social_Network:
 
         # Assuming you have self.agent_list as the list of objects
         ____ = list(map(
-            lambda agent, scm: agent.next_step(scm, self.carbon_price, self.emissions_intensities),
+            lambda agent, scm: agent.next_step(scm, self.carbon_price, self.emissions_intensities, self.prices_vec),
             self.agent_list,
             self.social_component_matrix
         ))
+    
+    def update_prices(self,carbon_price):
+        self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*carbon_price
+        #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
     
     def set_up_time_series_social_network(self):
         self.history_preference_list = [self.preference_list]
@@ -374,7 +381,8 @@ class Social_Network:
         self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
         self.history_weighting_matrix_convergence = [self.weighting_matrix_convergence]
         self.history_flow_carbon_emissions = [self.t_social_networkotal_carbon_emissions_flow]
-        self.history_stock_carbon_emissions = [self.t_social_networkotal_carbon_emissions_stock]
+        self.history_stock_carbon_emissions = [self.t_social_networkotal_carbon_emissions_stock]#FIX
+        self.history_consumed_quantities_vec = [self.consumption_vec]#consumtion associated with each firm quantity
 
     def save_timeseries_data_social_network(self):
         """
@@ -392,9 +400,10 @@ class Social_Network:
         self.history_weighting_matrix_convergence.append(
             self.weighting_matrix_convergence
         )
-        self.history_stock_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_stock)
+        self.history_stock_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_stock)#THIS IS FUCKED
         self.history_flow_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_flow)
         self.history_preference_list.append(self.preference_list)
+        self.history_consumed_quantities_vec.append(self.consumption_vec)
 
     def next_step(self, emissions_intensities_vec, prices_vec):
         """
@@ -413,6 +422,8 @@ class Social_Network:
         #update new tech and prices
         self.emissions_intensities = emissions_intensities_vec
         self.prices_vec = prices_vec
+
+        self.update_prices(self,self.carbon_price)
 
         # execute step
         self.update_individuals()
@@ -433,7 +444,7 @@ class Social_Network:
         self.t_social_networkotal_carbon_emissions_flow = self.calc_total_emissions()
         self.t_social_networkotal_carbon_emissions_stock = self.t_social_networkotal_carbon_emissions_stock + self.t_social_networkotal_carbon_emissions_flow
             
-        if self.save_timeseries_data_state:
+        if self.save_timeseries_data_state and (self.t_individual % self.compression_factor_state == 0):
             self.save_timeseries_data_social_network()
 
         return self.consumption_vec
