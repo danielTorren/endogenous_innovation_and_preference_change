@@ -41,7 +41,7 @@ if __name__ == '__main__':
     base_params = {
         "burn_in_duration": 0,
         "policy_duration": 200,
-        "save_timeseries_data_state": 0,
+        "save_timeseries_data_state": 1,
         "compression_factor_state": 2,
         "parameters_firm_manager": {
             "J": 30,
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName)

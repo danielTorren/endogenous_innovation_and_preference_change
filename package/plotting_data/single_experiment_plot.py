@@ -122,6 +122,18 @@ def plot_firm_cost(fileName: str, Data, dpi_save: int):
     property = "history_cost_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
+def plot_firm_budget(fileName: str, Data, dpi_save: int):
+
+    y_title = "Budget"
+    property = "history_budget_vec"
+    plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
+
+def plot_firm_expected_carbon_premium_vec(fileName: str, Data, dpi_save: int):
+
+    y_title = "Expected carbon premium vec"
+    property = "history_expected_carbon_premium_vec"
+    plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
+
 def plot_demand_firm(fileName: str, Data, dpi_save: int):
 
     y_title = "Demand firms"
@@ -152,7 +164,7 @@ def plot_flow_emissions_firm(fileName: str, data_social_network, data_firm_manag
     fig.tight_layout()
 
     plotName = fileName + "/Plots"
-    f = plotName + "/" + property + "_timeseries"
+    f = plotName + "/" + "emissions_firm_flow_timeseries"
     fig.savefig(f + ".eps", dpi=600, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
@@ -166,7 +178,10 @@ def plot_cumulative_emissions_firm(fileName: str, data_social_network, data_firm
     data_emisisons_intensity = np.asarray(data_firm_manager.history_emissions_intensities_vec)
 
     flow_data = data_demand*data_emisisons_intensity
-    data = np.cumsum(flow_data)
+    #print(flow_data.shape)
+    data = np.cumsum(flow_data, axis=0)#sum along time axis
+    #print(data,data.shape)
+    #quit()
 
     # bodge
     ax.plot(data_social_network.history_time_social_network, data)
@@ -176,7 +191,7 @@ def plot_cumulative_emissions_firm(fileName: str, data_social_network, data_firm
     fig.tight_layout()
 
     plotName = fileName + "/Plots"
-    f = plotName + "/" + property + "_timeseries"
+    f = plotName + "/" + "emissions_cumsum_timeseries"
     fig.savefig(f + ".eps", dpi=600, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
@@ -186,14 +201,6 @@ def main(
     dpi_save = 600,
     ) -> None: 
 
-    cmap_multi = get_cmap("plasma")
-    cmap_weighting = get_cmap("Reds")
-
-    norm_zero_one = Normalize(vmin=0, vmax=1)
-    cmap = LinearSegmentedColormap.from_list(
-        "BrownGreen", ["sienna", "whitesmoke", "olivedrab"], gamma=1
-    )
-
     data_social_network = load_object(fileName + "/Data", "social_network")
     data_firm_manager = load_object(fileName + "/Data", "firm_manager")
 
@@ -202,23 +209,24 @@ def main(
     plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
     plot_emissions_individuals(fileName, data_social_network, dpi_save)
     plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-    plot_demand_firm(fileName, data_social_network, dpi_save)
     plot_demand_individuals(fileName, data_social_network, dpi_save)
 
     ##FIRM PLOTS
     plot_firm_market_share(fileName, data_firm_manager, dpi_save)
     plot_frim_price(fileName, data_firm_manager, dpi_save)
     plot_firm_cost(fileName, data_firm_manager, dpi_save)
+    plot_firm_budget(fileName, data_firm_manager, dpi_save)
+    plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
+    plot_demand_firm(fileName, data_social_network, dpi_save)
     plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
-
-    plot_flow_emissions_firm(fileName, data_firm_manager,data_social_network, dpi_save)
-    plot_cumulative_emissions_firm(fileName, data_firm_manager, dpi_save)
+    plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
+    plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
 
     plt.show()
 
 if __name__ == '__main__':
     plots = main(
-        fileName = "results/single_experiment_18_57_34__11_01_2024",
+        fileName = "results/single_experiment_23_10_58__11_01_2024",
     )
 
 
