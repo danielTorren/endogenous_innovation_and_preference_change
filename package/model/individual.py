@@ -14,7 +14,7 @@ import numpy.typing as npt
 class Individual:
 
     """
-    Class to represent individuals with identities, preferences and consumption
+    Class to represent individuals with  preferences and consumption
 
     """
 
@@ -25,6 +25,8 @@ class Individual:
         expenditure,
         id_n,
     ):
+
+        self.t_individual = 0
 
         self.low_carbon_preference_init = low_carbon_preference
         self.low_carbon_preference = low_carbon_preference
@@ -68,11 +70,16 @@ class Individual:
         n = 0#pick these two firms
         m = 1
 
-        numerator = np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) +  (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n])
         denominator = self.emissions_intensities_vec[m] - self.emissions_intensities_vec[n]
 
-        self.low_carbon_preference = numerator / denominator
-        return self.low_carbon_preference
+        if denominator == 0:#SAME TECHNOLOGIES FOR BOTH THEN DEFAULT TO WHAT?
+            low_carbon_preference = self.low_carbon_preference#BODGE JUST GIVE IT TO THEM DIRECTLY?
+        else:
+            numerator = np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) +  (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n])
+            #THIS DOESNT SEEM TO WORK, BECAUSE ALL OF THE INITIAL TECHNOLOGIES ARE THE SAME?, SO YOU DIVDE BY ZERO SHIT
+            low_carbon_preference = numerator / denominator
+
+        return low_carbon_preference
 
     def calc_market_share_replicator(self):
         fitness = 1/(self.prices_vec_instant + self.emissions_intensities_vec*self.low_carbon_preference)
@@ -110,7 +117,7 @@ class Individual:
     
     def set_up_time_series(self):
         self.history_low_carbon_preference = [self.low_carbon_preference]
-        self.history_identity = [self.identity]
+        #self.history_identity = [self.identity]
         self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
         self.history_utility = [self.utility]
 
@@ -133,7 +140,7 @@ class Individual:
 
     def next_step(self, t_individual: int, social_component: npt.NDArray, emissions_intensities, prices):
 
-        self.t_individual = t_individual
+        self.t_individual += 1
         
         #update emissions intensities and prices
         self.emissions_intensities_vec = emissions_intensities

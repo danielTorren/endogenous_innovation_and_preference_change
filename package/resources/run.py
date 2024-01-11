@@ -39,9 +39,9 @@ def generate_data(parameters: dict,print_simu = 0):
     controller = Controller(parameters)
 
     #### RUN TIME STEPS
-    while controller.t < parameters["time_steps_max"]:
+    while controller.t_controller < parameters["time_steps_max"]:
         controller.next_step()
-        #print("step", social_network.t)
+        print("step: ", round((controller.t_controller/parameters["time_steps_max"]),3)*100)
 
     if print_simu:
         print(

@@ -16,6 +16,7 @@ class Firm_Manager:
 
     def __init__(self, parameters_firm_manager: dict, parameters_firm):
         
+        self.t_firm_manager = 0
 
         self.J = parameters_firm_manager["J"]
         self.N = parameters_firm_manager["N"]
@@ -43,7 +44,7 @@ class Firm_Manager:
         self.firms_list = self.create_firms()
 
         #set up init stuff
-        self.emissions_intensities_vec, self.prices_vec = self.get_firm_prices_and_intensities()
+        self.emissions_intensities_vec, self.prices_vec, self.cost_vec = self.get_firm_properties()
         self.market_share_vec = [firm.current_market_share for firm in self.firms_list]
         
         if self.save_timeseries_data_state:
@@ -111,25 +112,29 @@ class Firm_Manager:
         return emissions_intensity
     
     def calc_market_share(self, consumed_quantities_vec):
-        market_share_vec = (consumed_quantities_vec*self.prices_vec)/np.matmul(consumed_quantities_vec*self.prices_vec) #price is the previous time step, so is the consumed quantity!!
+        market_share_vec = (consumed_quantities_vec*self.prices_vec)/np.matmul(consumed_quantities_vec,self.prices_vec) #price is the previous time step, so is the consumed quantity!!
+
         return market_share_vec
     
-    def get_firm_prices_and_intensities(self):
+    def get_firm_properties(self):
         #emiussions_intes
         emissions_intensities_vec = []
         prices_vec = []
+        cost_vec = []
 
         for j,firm in enumerate(self.firms_list):
-            emissions_intensities_vec.append(firm.firm_emissions_intensities)
+            emissions_intensities_vec.append(firm.firm_emissions_intensity)
             prices_vec.append(firm.firm_price)
-        
-        return np.asarray(emissions_intensities_vec), np.asarray(prices_vec)
+            cost_vec.append(cost_vec)
+
+        return np.asarray(emissions_intensities_vec), np.asarray(prices_vec), np.asarray(cost_vec)
 
     def set_up_time_series_firm_manager(self):
 
         self.history_emissions_intensities_vec = [self.emissions_intensities_vec]
         self.history_prices_vec = [self.prices_vec]
         self.history_market_share_vec = [self.market_share_vec]#this may be off by 1 time step??
+        self.history_cost_vec = [self.cost_vec]
 
     def save_timeseries_data_firm_manager(self):
         """
@@ -150,9 +155,11 @@ class Firm_Manager:
 
     def update_firms(self):
         for j,firm in enumerate(self.firms_list):
-            firm.next_step(self, self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.prices_vec)
+            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.prices_vec)
 
     def next_step(self, consumed_quantities_vec):
+
+        self.t_firm_manager  +=1
 
         self.market_share_vec = self.calc_market_share(consumed_quantities_vec)
         self.consumed_quantities_vec = consumed_quantities_vec
@@ -160,9 +167,9 @@ class Firm_Manager:
         self.update_firms()
 
         #calc stuff for next step to pass on to consumersm, get the new prices and emissiosn internsities for consumers
-        self.emissions_intensities_vec, self.prices_vec = self.get_firm_prices_and_intensities()
+        self.emissions_intensities_vec, self.prices_vec,self.cost_vec = self.get_firm_properties()
 
-        if self.save_timeseries_data_state:
+        if self.save_timeseries_data_state and (self.t_firm_manager % self.compression_factor_state == 0):
             self.save_timeseries_data_firm_manager()
 
         return self.emissions_intensities_vec, self.prices_vec

@@ -10,6 +10,7 @@ from package.resources.utility import (
     save_data_csv_firm_manager,
     produce_name_datetime
 )
+from package.plotting_data.single_experiment_plot import main as plotting_main
 #from package.plotting_data import single_experiment_plot
 import pyperclip
 
@@ -28,8 +29,9 @@ def main(
     #save_object(controller, fileName + "/Data", "controller")
     save_object(controller.social_network, fileName + "/Data", "social_network")
     save_object(controller.firm_manager, fileName + "/Data", "firm_manager")
-    save_data_csv_list_firm_manager = ["history_time_firm_manager","history_emissions_intensities_vec","history_prices_vec", "history_market_share_vec"]
-    save_data_csv_firm_manager(controller.firm_manager,save_data_csv_list_firm_manager, fileName + "/Data")
+    #SAVE AS CSV SO THAT MIQUEL CAN USE THEM
+    #save_data_csv_list_firm_manager = ["history_time_firm_manager","history_emissions_intensities_vec","history_prices_vec", "history_market_share_vec"]
+    #save_data_csv_firm_manager(controller.firm_manager,save_data_csv_list_firm_manager, fileName + "/Data")
     save_object(base_params, fileName + "/Data", "base_params")
 
     return fileName
@@ -38,9 +40,9 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 5,
-        "save_timeseries_data_state": 1,
-        "compression_factor_state": 10,
+        "policy_duration": 200,
+        "save_timeseries_data_state": 0,
+        "compression_factor_state": 2,
         "parameters_firm_manager": {
             "J": 30,
             "N": 10,
@@ -66,9 +68,9 @@ if __name__ == '__main__':
             'network_structure_seed': 8, 
             'init_vals_seed': 14, 
             'imperfect_learning_seed': 4, 
-            'num_individuals': 10, 
-            'individual_phi': 0.005, 
+            'num_individuals': 100, 
             'network_density': 0.1, 
+            'individual_phi': 0.005,
             'prob_rewire': 0.1, 
             'homophily': 0.0, 
             'substitutability': 1.5, 
@@ -92,5 +94,5 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 0
 
-    #if RUN_PLOT:
-    #    single_experiment_plot.main(fileName = fileName)
+    if RUN_PLOT:
+        plotting_main(fileName = fileName)

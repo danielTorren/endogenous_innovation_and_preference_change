@@ -1,6 +1,6 @@
 """Create social network with individuals
 A module that use input data to generate a social network containing individuals who each have multiple 
-behaviours. The weighting of individuals within the social network is determined by the identity distance 
+behaviours. The weighting of individuals within the social network is determined by the preference distance 
 between neighbours. The simulation evolves over time saving data at set intervals to reduce data output.
 
 
@@ -29,6 +29,7 @@ class Social_Network:
             Dictionary of parameters_social_network used to generate attributes, dict used for readability instead of super long list of input parameters_social_network
 
         """
+        self.t_social_network = 0
 
         #INITAL STATE OF THE SYSTEMS, WHAT ARE THE RUN CONDITIONS
         self.imperfect_learning_state = parameters_social_network["imperfect_learning_state"]
@@ -46,7 +47,7 @@ class Social_Network:
         # network
         self.network_density_input = parameters_social_network["network_density"]
         self.num_individuals = int(round(parameters_social_network["num_individuals"]))
-        self.K = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
+        self.K_social_network = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
         #print("self.K",self.K)
         self.prob_rewire = parameters_social_network["prob_rewire"]
 
@@ -103,7 +104,7 @@ class Social_Network:
         
         self.agent_list = self.create_agent_list()
 
-        self.shuffle_agent_list()#partial shuffle of the list based on identity
+        self.shuffle_agent_list()#partial shuffle of the list based on prefernece
 
         #NOW SET SEED FOR THE IMPERFECT LEARNING
         np.random.seed(self.imperfect_learning_seed)
@@ -115,10 +116,13 @@ class Social_Network:
                 self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
         #FIX
-        self.t_social_networkotal_carbon_emissions_stock = 0#this are for post tax
+        self.total_carbon_emissions_cumulative = 0#this are for post tax
 
         #calc consumption quantities
-        self.consumption_vec = self.calc_consumption_vec()
+        self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
+
+        self.total_carbon_emissions_flow = self.calc_total_emissions()
+        self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_social_network()
@@ -164,9 +168,12 @@ class Social_Network:
             a networkx watts strogatz small world graph
         """
 
-        G = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
+        G = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
         weighting_matrix = nx.to_numpy_array(G)
+
+        #print("weighting_matrix", weighting_matrix)
+        #quit()
 
         norm_weighting_matrix = self.normlize_matrix(weighting_matrix)
 
@@ -260,8 +267,8 @@ class Social_Network:
         
     def shuffle_agent_list(self): 
         #make list cirucalr then partial shuffle it
-        self.agent_list.sort(key=lambda x: x.low_carbon_preference)#sorted by identity
-        self.circular_agent_list()#agent list is now circular in terms of identity
+        self.agent_list.sort(key=lambda x: x.low_carbon_preference)#sorted by preference
+        self.circular_agent_list()#agent list is now circular in terms of preference
         self.partial_shuffle_agent_list()#partial shuffle of the list
 
     
@@ -298,7 +305,8 @@ class Social_Network:
         difference_matrix = np.subtract.outer(attribute_array, attribute_array) #euclidean_distances(attribute_array,attribute_array)# i think this actually not doing anything? just squared at the moment
 
         alpha_numerator = np.exp(-np.multiply(self.confirmation_bias, np.abs(difference_matrix)))
-
+        #print(self.adjacency_matrix, self.adjacency_matrix.shape)
+        #quit()
         non_diagonal_weighting_matrix = (
             self.adjacency_matrix*alpha_numerator
         )  # We want only those values that have network connections 
@@ -311,7 +319,7 @@ class Social_Network:
 
     def update_weightings(self) -> tuple[npt.NDArray, float]:
         """
-        Update the link strength array according to the new agent identities
+        Update the link strength array according to the new agent preferences
 
         parameters_social_network
         ----------
@@ -320,10 +328,7 @@ class Social_Network:
         Returns
         -------
         norm_weighting_matrix: npt.NDArray
-            Row normalized weighting array giving the strength of inter-Individual connections due to similarity in identity
-        total_identity_differences
-        total_difference: float
-            total element wise difference between the previous weighting arrays
+            Row normalized weighting array giving the strength of inter-Individual connections due to similarity in preference
         """
 
         ##THE WEIGHTING FOR THE IDENTITY IS DONE IN INDIVIDUALS
@@ -352,12 +357,11 @@ class Social_Network:
         return total_network_emissions
     
     def calc_consumption_vec(self):
-        consumption_matrix = np.asarray([map(attrgetter('quantities'), self.agent_list)])
-        print("consumption_matrix shape", consumption_matrix.shape)
+        consumption_matrix = np.asarray([x.quantities for x in self.agent_list])        
         consumption_vec = np.sum(consumption_matrix, axis=1)
-        print("cosnumption_vec shape",consumption_vec.shape)
+        consumption_vec_firms = np.sum(consumption_matrix, axis=0)
 
-        return consumption_vec
+        return consumption_vec,consumption_vec_firms
 
     def update_individuals(self):
         """
@@ -371,18 +375,20 @@ class Social_Network:
             self.social_component_matrix
         ))
     
-    def update_prices(self,carbon_price):
-        self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*carbon_price
+    def update_prices(self):
+        self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*self.carbon_price
         #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
     
     def set_up_time_series_social_network(self):
         self.history_preference_list = [self.preference_list]
-        self.history_weighting_matrix = [self.weighting_matrix]
-        self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
-        self.history_weighting_matrix_convergence = [self.weighting_matrix_convergence]
-        self.history_flow_carbon_emissions = [self.t_social_networkotal_carbon_emissions_flow]
-        self.history_stock_carbon_emissions = [self.t_social_networkotal_carbon_emissions_stock]#FIX
-        self.history_consumed_quantities_vec = [self.consumption_vec]#consumtion associated with each firm quantity
+        #self.history_weighting_matrix = [self.weighting_matrix]
+        #self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
+        #self.history_weighting_matrix_convergence = [self.weighting_matrix_convergence]
+        self.history_flow_carbon_emissions = [self.total_carbon_emissions_flow]
+        self.history_cumulative_carbon_emissions = [self.total_carbon_emissions_cumulative]#FIX
+        self.history_consumed_quantities_vec = [self.consumed_quantities_vec]#consumtion associated with each firm quantity
+        self.history_consumed_quantities_vec_firms = [self.consumed_quantities_vec_firms]#consumtion associated with each firm quantity
+        self.history_time_social_network = [self.t_social_network]
 
     def save_timeseries_data_social_network(self):
         """
@@ -396,14 +402,14 @@ class Social_Network:
         -------
         None
         """
-        self.history_weighting_matrix.append(self.weighting_matrix)
-        self.history_weighting_matrix_convergence.append(
-            self.weighting_matrix_convergence
-        )
-        self.history_stock_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_stock)#THIS IS FUCKED
-        self.history_flow_carbon_emissions.append(self.t_social_networkotal_carbon_emissions_flow)
+        #self.history_weighting_matrix.append(self.weighting_matrix)
+        #self.history_weighting_matrix_convergence.append(self.weighting_matrix_convergence)
+        self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED
+        self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
         self.history_preference_list.append(self.preference_list)
-        self.history_consumed_quantities_vec.append(self.consumption_vec)
+        self.history_consumed_quantities_vec.append(self.consumed_quantities_vec)
+        self.history_consumed_quantities_vec_firms.append(self.consumed_quantities_vec_firms)
+        self.history_time_social_network.append(self.t_social_network)
 
     def next_step(self, emissions_intensities_vec, prices_vec):
         """
@@ -419,17 +425,19 @@ class Social_Network:
         None
         """
 
+        self.t_social_network +=1
+         
         #update new tech and prices
         self.emissions_intensities = emissions_intensities_vec
         self.prices_vec = prices_vec
 
-        self.update_prices(self,self.carbon_price)
+        self.update_prices()
 
         # execute step
         self.update_individuals()
 
         #calc consumption quantities
-        self.consumption_vec = self.calc_consumption_vec()
+        self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
         # update network parameters_social_network for next step
         if self.nu_change_state != "fixed_preferences":
@@ -441,10 +449,10 @@ class Social_Network:
             self.social_component_matrix = self.calc_social_component_matrix()
 
 
-        self.t_social_networkotal_carbon_emissions_flow = self.calc_total_emissions()
-        self.t_social_networkotal_carbon_emissions_stock = self.t_social_networkotal_carbon_emissions_stock + self.t_social_networkotal_carbon_emissions_flow
+        self.total_carbon_emissions_flow = self.calc_total_emissions()
+        self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
             
-        if self.save_timeseries_data_state and (self.t_individual % self.compression_factor_state == 0):
+        if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.save_timeseries_data_social_network()
 
-        return self.consumption_vec
+        return self.consumed_quantities_vec_firms

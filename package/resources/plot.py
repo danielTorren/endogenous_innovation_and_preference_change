@@ -12,10 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.colors import Normalize, LinearSegmentedColormap, SymLogNorm, BoundaryNorm
-from matplotlib.cm import get_cmap,rainbow
+from matplotlib.cm import get_cmap
 from matplotlib.collections import LineCollection
 from typing import Union
-from package.model.social_network import Network
+from package.model.social_network import Social_Network
 import numpy.typing as npt
 
 
@@ -123,7 +123,7 @@ def live_print_identity_timeseries(
     for i, ax in enumerate(axes.flat):
         for v in Data_list[i].agent_list:
             ax.plot(
-                np.asarray(Data_list[i].history_time), np.asarray(v.history_identity)
+                np.asarray(Data_list[i].history_time_social_network), np.asarray(v.history_identity)
             )
             #print("v.history_identity",v.history_identity)
         
@@ -277,7 +277,7 @@ def live_print_identity_timeseries_with_weighting(
     for i in range(3):
         for v in Data_list[i].agent_list:
             axes[0][i].plot(
-                np.asarray(Data_list[i].history_time), np.asarray(v.history_identity)
+                np.asarray(Data_list[i].history_time_social_network), np.asarray(v.history_identity)
             )
 
         axes[0][i].set_xlabel(r"Time")
@@ -311,7 +311,7 @@ def live_print_identity_timeseries_with_weighting(
 
 def print_live_initial_identity_networks_and_identity_timeseries(
     fileName: str,
-    Data_list: list[Network],
+    Data_list: list[Social_Network],
     dpi_save: int,
     property_list: list,
     property,
@@ -355,7 +355,7 @@ def print_live_initial_identity_networks_and_identity_timeseries(
         #####CULTURE TIME SERIES
         for v in Data_list[i].agent_list:
             axes[0][i].plot(
-                np.asarray(Data_list[i].history_time), np.asarray(v.history_identity)
+                np.asarray(Data_list[i].history_time_social_network), np.asarray(v.history_identity)
             )
 
         axes[0][i].set_xlabel(r"Time")
@@ -547,7 +547,7 @@ def plot_joint_cluster_micro(fileName, Data, clusters_index_lists,cluster_exampl
             colours_dict["%s" % (j)] = ani_step_colours[i]
         
     for v in range(len(Data.agent_list)):
-        axes[0].plot(np.asarray(Data.history_time), np.asarray(Data.agent_list[v].history_identity), color = colours_dict["%s" % (v)])
+        axes[0].plot(np.asarray(Data.history_time_social_network), np.asarray(Data.agent_list[v].history_identity), color = colours_dict["%s" % (v)])
 
     axes[0].set_ylabel(r"Identity, $I_{t,n}$")
     axes[0].set_ylim(0, 1)
@@ -561,7 +561,7 @@ def plot_joint_cluster_micro(fileName, Data, clusters_index_lists,cluster_exampl
     #ani_step_colours = cmap(colour_adjust)
 
     for i in range(len(clusters_index_lists)): 
-        axes[1].plot(Data.history_time, vals_time_data[i], color = ani_step_colours[i])#, label = "Cluster %s" % (i + 1)
+        axes[1].plot(Data.history_time_social_network, vals_time_data[i], color = ani_step_colours[i])#, label = "Cluster %s" % (i + 1)
         axes[1].axhline(y= inverse_N_g_list[i], color = ani_step_colours[i], linestyle = "--")
 
     #ax.set_title(title_list[z])
@@ -590,7 +590,7 @@ def plot_identity_timeseries(fileName, Data, dpi_save,latex_bool = False):
     y_title = r"Identity, $I_{t,n}$"
 
     for v in Data.agent_list:
-        ax.plot(np.asarray(Data.history_time), np.asarray(v.history_identity))
+        ax.plot(np.asarray(Data.history_time_social_network), np.asarray(v.history_identity))
         ax.set_xlabel(r"Time")
         ax.set_ylabel(r"%s" % y_title)
         ax.set_ylim(0, 1)
@@ -604,7 +604,7 @@ def plot_identity_timeseries(fileName, Data, dpi_save,latex_bool = False):
 
 def plot_individual_timeseries(
     fileName: str,
-    Data: Network,
+    Data: Social_Network,
     y_title: str,
     property: str,
     dpi_save: int,
@@ -618,7 +618,7 @@ def plot_individual_timeseries(
     for i, ax in enumerate(axes.flat):
         for v in range(len(Data.agent_list)):
             data_ind = np.asarray(eval("Data.agent_list[%s].%s" % (str(v), property)))
-            ax.plot(np.asarray(Data.history_time), data_ind[:, i])
+            ax.plot(np.asarray(Data.history_time_social_network), data_ind[:, i])
 
         ax.set_title(r"$\phi_{%s} = %s$" % ((i + 1),  Data.phi_array[i]))
         ax.set_xlabel(r"Time")
@@ -694,7 +694,7 @@ def print_live_initial_identity_network(
     fig.savefig(f + ".png", dpi=600, format="png")
 
 def plot_network_timeseries(
-    fileName: str, Data: Network, y_title: str, property: str, dpi_save: int,latex_bool = False
+    fileName: str, Data: Social_Network, y_title: str, property: str, dpi_save: int,latex_bool = False
 ):
     if latex_bool:
         set_latex()
@@ -702,7 +702,7 @@ def plot_network_timeseries(
     data = eval("Data.%s" % property)
 
     # bodge
-    ax.plot(Data.history_time, data)
+    ax.plot(Data.history_time_social_network, data)
     ax.set_xlabel(r"Time")
     ax.set_ylabel(r"%s" % y_title)
 
@@ -735,7 +735,7 @@ def plot_total_carbon_emissions_timeseries(
     if latex_bool:
         set_latex()
     y_title = "Carbon Emissions Stock"
-    property = "history_stock_carbon_emissions"
+    property = "history_cumulative_carbon_emissions"
     plot_network_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def plot_total_flow_carbon_emissions_timeseries(
@@ -806,7 +806,7 @@ def live_animate_identity_network_weighting_matrix(
         axes[1].set_ylabel("Individual $n$")
 
         title.set_text(
-            "Time= {}".format(Data.history_time[i])
+            "Time= {}".format(Data.history_time_social_network[i])
         )
 
     fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True)# figsize=(5,6)
@@ -829,7 +829,7 @@ def live_animate_identity_network_weighting_matrix(
     ani = animation.FuncAnimation(
         fig,
         update,
-        frames=int(len(Data.history_time)),
+        frames=int(len(Data.history_time_social_network)),
         fargs=(Data, axes, cmap_identity,cmap_weighting, layout, title),
         repeat_delay=500,
         interval=interval,
@@ -885,7 +885,7 @@ def multi_identity_timeseries_carbon_price(
 
                     axes[k][i].plot(time, data_n_t[n], c= ani_step_colours[j])
                 #ax.fill_between(time, min_emissions, max_emissions, facecolor=ani_step_colours[j], alpha=0.5)
-                #ax.plot(Data.history_time, Data, color = ani_step_colours[j])
+                #ax.plot(Data.history_time_social_network, Data, color = ani_step_colours[j])
 
         
     cbar = fig.colorbar(
@@ -923,7 +923,7 @@ def multi_emissions_timeseries_carbon_price(
 
             ax.plot(time, mu_emissions, c= ani_step_colours[j])
             ax.fill_between(time, min_emissions, max_emissions, facecolor=ani_step_colours[j], alpha=0.5)
-            #ax.plot(Data.history_time, Data, color = ani_step_colours[j])
+            #ax.plot(Data.history_time_social_network, Data, color = ani_step_colours[j])
         ax.set_xlabel(r"Time")
         
         ax.set_title(r"Carbon price = %s" % (carbon_prices[i]))
@@ -935,7 +935,7 @@ def multi_emissions_timeseries_carbon_price(
 
     #print("what worong")
     plotName = fileName + "/Plots"
-    f = plotName + "/multi_emissions_stock_timeseries_%s" % (type_em)
+    f = plotName + "/multi_emissions_cumulative_timeseries_%s" % (type_em)
     fig.savefig(f+ ".png", dpi=600, format="png")
 
 def multi_emissions_timeseries_carbon_price(
@@ -963,7 +963,7 @@ def multi_emissions_timeseries_carbon_price(
 
             ax.plot(time, mu_emissions, c= ani_step_colours[j])
             ax.fill_between(time, min_emissions, max_emissions, facecolor=ani_step_colours[j], alpha=0.5)
-            #ax.plot(Data.history_time, Data, color = ani_step_colours[j])
+            #ax.plot(Data.history_time_social_network, Data, color = ani_step_colours[j])
         ax.set_xlabel(r"Time")
         
         ax.set_title(r"Carbon price = %s" % (carbon_prices[i]))
@@ -975,7 +975,7 @@ def multi_emissions_timeseries_carbon_price(
 
     #print("what worong")
     plotName = fileName + "/Plots"
-    f = plotName + "/multi_emissions_stock_timeseries_%s" % (type_em)
+    f = plotName + "/multi_emissions_cumulative_timeseries_%s" % (type_em)
     fig.savefig(f+ ".png", dpi=600, format="png")
 
 def multi_emissions_timeseries_carbon_price_quantile(
@@ -1003,7 +1003,7 @@ def multi_emissions_timeseries_carbon_price_quantile(
 
             ax.plot(time, mu_emissions, c= ani_step_colours[j])
             ax.fill_between(time, min_emissions, max_emissions, facecolor=ani_step_colours[j], alpha=0.5)
-            #ax.plot(Data.history_time, Data, color = ani_step_colours[j])
+            #ax.plot(Data.history_time_social_network, Data, color = ani_step_colours[j])
         ax.set_xlabel(r"Time")
         
         ax.set_title(r"Carbon price = %s" % (carbon_prices[i]))
@@ -1015,7 +1015,7 @@ def multi_emissions_timeseries_carbon_price_quantile(
 
     #print("what worong")
     plotName = fileName + "/Plots"
-    f = plotName + "/multi_emissions_stock_timeseries_quantile_%s" % (type_em)
+    f = plotName + "/multi_emissions_cumulative_timeseries_quantile_%s" % (type_em)
     fig.savefig(f+ ".png", dpi=600, format="png")
 
 def plot_total_carbon_emissions_timeseries_sweep(
@@ -1039,7 +1039,7 @@ def plot_total_carbon_emissions_timeseries_sweep(
 
     for i, Data in enumerate(Data_list):
         #print("YO", Data.history_total_carbon_emissions)
-        ax.plot(Data.history_time, Data.history_total_carbon_emissions, color = ani_step_colours[i])
+        ax.plot(Data.history_time_social_network, Data.history_total_carbon_emissions, color = ani_step_colours[i])
         ax.set_xlabel(r"Time")
         ax.set_ylabel(r"%s" % y_title)
 
@@ -1205,7 +1205,7 @@ def plot_emissions_timeseries(
     axcb = fig.colorbar(lc)
 
     axcb.set_label("Seed")
-    ax.set_ylabel("Carbon emissions stock")
+    ax.set_ylabel("Carbon emissions cumulative")
     ax.set_xlabel("Time")
 
     #print("what worong")
@@ -1541,24 +1541,22 @@ def plot_low_carbon_preferences_timeseries(
 
     y_title = r"Low carbon preference"
 
-    fig, axes = plt.subplots(nrows=1,ncols=data.M, sharey=True)
+    fig, axes = plt.subplots(nrows=1,ncols=data.num_firms, sharey=True)
     data_list = []
-    for v in range(data.N):
-        data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preferences)
+    for v in range(data.num_individuals):
+        data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preference)
         data_list.append(data_indivdiual)
-        if data.M == 1:
-            #print("data_indivdiual",data_indivdiual)
-            #quit()
+        if data.num_firms == 1:
             axes.plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     data_indivdiual
                 )
         else:
-            for j in range(data.M):
-                #print("HI", len(data.history_time), len(data_indivdiual[:,j]))
+            for j in range(data.num_firms):
+                #print("HI", len(data.history_time_social_network), len(data_indivdiual[:,j]))
                 #quit()
                 axes[j].plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     data_indivdiual[:,j]
                 )
 
@@ -1574,32 +1572,32 @@ def plot_low_carbon_preferences_timeseries(
 
     #print(" mean_data ", mean_data )
 
-    if data.M == 1:
+    if data.num_firms == 1:
         #print("data_indivdiual",data_indivdiual)
         #quit()
         axes.plot(
-                np.asarray(data.history_time),
+                np.asarray(data.history_time_social_network),
                 mean_data[0],
                 label= "mean",
                 linestyle="dotted"
             )
         axes.plot(
-                np.asarray(data.history_time),
+                np.asarray(data.history_time_social_network),
                 median_data[0],
                 label= "median",
                 linestyle="dashed"
             )
         axes.legend()
     else:
-        for j in range(data.M):
+        for j in range(data.num_firms):
             axes[j].plot(
-                np.asarray(data.history_time),
+                np.asarray(data.history_time_social_network),
                 mean_data[j],
                 label= "mean",
                 linestyle="dotted"
             )
             axes[j].plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     median_data[j],
                     label= "median",
                     linestyle="dashed"
@@ -1631,11 +1629,11 @@ def plot_low_carbon_preferences_timeseries_compare_culture(
 
     for i, data in enumerate(data_list):
         axes[i].set_title(culture_list[i])
-        for v in range(data.N):
-            data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preferences)
-            for j in range(data.M):
+        for v in range(data.num_individuals):
+            data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preference)
+            for j in range(data.num_firms):
                 axes[j].plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     data_indivdiual[:,j]
                 )
 
@@ -1662,10 +1660,10 @@ def plot_identity_timeseries_compare_culture(
 
     for i, data in enumerate(data_list):
         axes[i].set_title(culture_list[i])
-        for v in range(data.N):
+        for v in range(data.num_individuals):
             data_indivdiual = np.asarray(data.agent_list[v].history_identity)
             axes[i].plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     data_indivdiual
                 )
 
@@ -1691,10 +1689,10 @@ def plot_emissions_timeseries_compare_culture(
 
     for i, data in enumerate(data_list):
         axes[i].set_title(culture_list[i])
-        for v in range(data.N):
+        for v in range(data.num_individuals):
             data_indivdiual = np.asarray(data.agent_list[v].history_flow_carbon_emissions)
             axes[i].plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     data_indivdiual
                 )
 
@@ -1707,7 +1705,7 @@ def plot_emissions_timeseries_compare_culture(
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
-def plot_stock_emissions_timeseries_compare_culture(
+def plot_cumulative_emissions_timeseries_compare_culture(
     fileName, 
     data_list, 
     dpi_save,
@@ -1720,8 +1718,8 @@ def plot_stock_emissions_timeseries_compare_culture(
 
     for i, data in enumerate(data_list):
             ax.plot(
-                    np.asarray(data.history_time),
-                    np.asarray(data.history_stock_carbon_emissions), 
+                    np.asarray(data.history_time_social_network),
+                    np.asarray(data.history_cumulative_carbon_emissions), 
                     label = culture_list[i]
                 )
     #ax.vlines(x = data_list[0].carbon_price_duration, linestyles="-", ymax=10000, ymin=0)
@@ -1731,7 +1729,7 @@ def plot_stock_emissions_timeseries_compare_culture(
 
     plotName = fileName + "/Prints"
 
-    f = plotName + "/timeseries_history_stock_carbon_emissions"
+    f = plotName + "/timeseries_history_cumulative_carbon_emissions"
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
@@ -1748,7 +1746,7 @@ def plot_flow_emissions_timeseries_compare_culture(
 
     for i, data in enumerate(data_list):
             ax.plot(
-                    np.asarray(data.history_time),
+                    np.asarray(data.history_time_social_network),
                     np.asarray(data.history_flow_carbon_emissions), 
                     label = culture_list[i]
                 )
