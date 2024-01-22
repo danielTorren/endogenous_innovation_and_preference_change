@@ -18,6 +18,10 @@ class Firm_Manager:
         
         self.t_firm_manager = 0
 
+        self.landscape_seed = parameters_firm_manager["landscape_seed"]
+        np.random.seed(self.landscape_seed)#set seed for numpy
+        random.seed(self.landscape_seed)#set seed for random
+
         self.J = parameters_firm_manager["J"]
         self.N = parameters_firm_manager["N"]
         self.K = parameters_firm_manager["K"]

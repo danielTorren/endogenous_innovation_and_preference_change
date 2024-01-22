@@ -40,15 +40,16 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 200,
+        "policy_duration": 10,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 2,
         "parameters_firm_manager": {
             "J": 30,
-            "N": 10,
+            "N": 15,
             "K": 6,
             "alpha":1,
             "rho": 0.75,
+            "landscape_seed": 5
         },
         "parameters_firm": {
                 "research_cost": 0.05,
@@ -74,7 +75,7 @@ if __name__ == '__main__':
             'prob_rewire': 0.1, 
             'homophily': 0.0, 
             'substitutability': 1.5, 
-            'a_preferences': 2, 
+            'a_preferences': 4, 
             'b_preferences': 2, 
             'clipping_epsilon': 1e-3, 
             'clipping_epsilon_init_preference': 1e-3,
@@ -82,7 +83,7 @@ if __name__ == '__main__':
             'std_learning_error': 0.02, 
             'confirmation_bias': 5, 
             'expenditure': 1,
-            'carbon_price': 0,
+            'carbon_price': 0.1,
             'quantity_state': 'optimal', 
         }
         }
