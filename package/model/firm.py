@@ -11,7 +11,7 @@ import random
 from package.model.technology import Technology
 
 class Firm:
-    def __init__(self, parameters_firm, firm_id):
+    def __init__(self, parameters_firm, init_tech, firm_id):
         
         self.t_firm = 0
 
@@ -25,10 +25,12 @@ class Firm:
         self.value_matrix_emissions_intensity = parameters_firm["value_matrix_emissions_intensity"]
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
-
+        self.static_tech_state = parameters_firm["static_tech_state"]
         self.markup = parameters_firm["markup_init"]#variable
 
-        self.current_technology = parameters_firm["technology_init"]#variable
+        #ALLOWS FOR VARIABEL INIT TECH
+        self.current_technology = init_tech#parameters_firm["technology_init"]#variable
+
         self.current_technology.fitness = self.calculate_technology_fitness(self.current_technology.emissions_intensity, self.current_technology.cost)#assign fitness to inti technology
 
         self.firm_budget = parameters_firm["firm_budget"]#variablees
@@ -246,7 +248,8 @@ class Firm:
             self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
             self.history_list_neighouring_technologies_strings = [self.list_neighouring_technologies_strings]
             self.history_filtered_list_strings = [self.filtered_list_strings]
-            self.history_random_technology_string = [self.random_technology_string]
+            if not self.static_tech_state:
+                self.history_random_technology_string = [self.random_technology_string]
         
     def save_timeseries_data_firm(self):
         """
@@ -269,7 +272,8 @@ class Firm:
             self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)
             self.history_list_neighouring_technologies_strings.append(self.list_neighouring_technologies_strings)#list of list
             self.history_filtered_list_strings.append(self.filtered_list_strings)#list of list
-            self.history_random_technology_string.append(self.random_technology_string)
+            if not self.static_tech_state:
+                self.history_random_technology_string.append(self.random_technology_string)
 
     def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec, cost_vec) -> None:
         
@@ -282,7 +286,8 @@ class Firm:
 
         self.process_previous_info(market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec,cost_vec)#assume all are arrays
 
-        self.research_technology()
+        if not self.static_tech_state:
+            self.research_technology()
 
         self.set_price()
 

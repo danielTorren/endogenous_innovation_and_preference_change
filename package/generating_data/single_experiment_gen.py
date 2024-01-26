@@ -29,12 +29,12 @@ def main(
     #save_object(controller, fileName + "/Data", "controller")
     save_object(controller.social_network, fileName + "/Data", "social_network")
     save_object(controller.firm_manager, fileName + "/Data", "firm_manager")
-
-    #SAVE AS CSV SO THAT MIQUEL CAN USE THEM
-
-    save_data_csv_list_firm_manager = ["history_decimal_value_current_tech","history_list_neighouring_technologies_strings","history_filtered_list_strings", "history_random_technology_string"]
-    save_data_csv_firms(controller.firm_manager.firms_list, save_data_csv_list_firm_manager, fileName + "/Data")
     save_object(base_params, fileName + "/Data", "base_params")
+    #SAVE AS CSV SO THAT MIQUEL CAN USE THEM
+    save_csv = 0
+    if save_csv:
+        save_data_csv_list_firm_manager = ["history_decimal_value_current_tech","history_list_neighouring_technologies_strings","history_filtered_list_strings", "history_random_technology_string"]
+        save_data_csv_firms(controller.firm_manager.firms_list, save_data_csv_list_firm_manager, fileName + "/Data")
 
     return fileName
 
@@ -51,15 +51,17 @@ if __name__ == '__main__':
             "K": 6,
             "alpha":1,
             "rho": 0.75,
-            "landscape_seed": 5
+            "landscape_seed": 8,
+            "init_tech_diversity_state": 0
         },
         "parameters_firm": {
-                "research_cost": 0.05,
-                "expected_carbon_premium": 0.05,
-                "markup_adjustment": 1,
-                "firm_phi": 0.01,
-                "markup_init": 0,
-                "firm_budget": 100
+            "research_cost": 0.05,
+            "expected_carbon_premium": 0.05,
+            "markup_adjustment": 1,
+            "firm_phi": 0.01,
+            "markup_init": 0,
+            "firm_budget": 100,
+            "static_tech_state": 0
         },
         "parameters_social_network":{        
             'save_timeseries_data_state': 1,
@@ -74,24 +76,24 @@ if __name__ == '__main__':
             'network_density': 0.1, 
             'individual_phi': 0.005,
             'prob_rewire': 0.1, 
-            'homophily': 0.0, 
+            'homophily': 1.0, 
             'substitutability': 1.5, 
-            'a_preferences': 4, 
+            'a_preferences': 2, 
             'b_preferences': 2, 
             'clipping_epsilon': 1e-3, 
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
-            'confirmation_bias': 5, 
+            'confirmation_bias': 1, 
             'expenditure': 1,
-            'carbon_price': 0.1,
+            'carbon_price': 0,
             'quantity_state': 'optimal', 
         }
         }
     
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
-    
+
     """
     Will also plot stuff at the same time for convieniency
     """
