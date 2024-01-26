@@ -11,14 +11,14 @@ import random
 from package.model.technology import Technology
 
 class Firm:
-    def __init__(self, parameters_firm, init_tech, firm_id):
+    def __init__(self, parameters_firm, init_tech, expected_carbon_premium, firm_id):
         
         self.t_firm = 0
 
         self.firm_id = firm_id#this is used when indexing firms stuff
 
         self.research_cost = parameters_firm["research_cost"]
-        self.expected_carbon_premium =  parameters_firm["expected_carbon_premium"]#variable
+        self.expected_carbon_premium =  expected_carbon_premium#parameters_firm["expected_carbon_premium"]#variable
         self.markup_adjustment = parameters_firm["markup_adjustment"]
         self.firm_phi = parameters_firm["firm_phi"]
         self.value_matrix_cost = parameters_firm["value_matrix_cost"]

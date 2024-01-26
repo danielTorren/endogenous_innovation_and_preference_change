@@ -370,7 +370,7 @@ class Social_Network:
 
         # Assuming you have self.agent_list as the list of objects
         ____ = list(map(
-            lambda agent, scm: agent.next_step(scm, self.carbon_price, self.emissions_intensities, self.prices_vec),
+            lambda agent, scm: agent.next_step(scm, self.emissions_intensities, self.prices_vec),
             self.agent_list,
             self.social_component_matrix
         ))

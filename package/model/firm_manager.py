@@ -29,6 +29,9 @@ class Firm_Manager:
         self.rho = parameters_firm_manager["rho"]
         self.save_timeseries_data_state = parameters_firm_manager["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm_manager["compression_factor_state"]
+        self.init_tech_heterogenous_state = parameters_firm_manager["init_tech_heterogenous_state"]
+        self.init_carbon_premium_heterogenous_state = parameters_firm_manager["init_carbon_premium_heterogenous_state"]
+
         self.parameters_firm = parameters_firm
 
         self.value_matrix_cost, self.value_matrix_emissions_intensity = self.create_NK_model()
@@ -40,18 +43,23 @@ class Firm_Manager:
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["init_market_share"] = 1/self.J
 
-        self.init_tech_diversity_state = parameters_firm_manager["init_tech_diversity_state"]
-        if self.init_tech_diversity_state:
+        
+        if self.init_tech_heterogenous_state:
             init_tech_component_string_list = [f'{random.getrandbits(self.N):=0{self.N}b}' for _ in range(self.J)]#GENERATE A RANDOM STRING OF LENGTH N
             init_tech_emissions_list, inti_tech_cost_list = zip(*[self.calc_tech_emission_cost(x) for x in init_tech_component_string_list])
             self.init_tech_list = [Technology(init_tech_component_string_list[x], init_tech_emissions_list[x], inti_tech_cost_list[x], choosen_tech_bool = 1) for x in range(self.J)]
-            
         else:
             self.init_tech_component_string = f'{random.getrandbits(self.N):=0{self.N}b}'#GENERATE A RANDOM STRING OF LENGTH N
             self.init_tech_emissions, self.inti_tech_cost = self.calc_tech_emission_cost(self.init_tech_component_string)
             self.technology_init = Technology(self.init_tech_component_string, self.init_tech_emissions, self.inti_tech_cost, choosen_tech_bool = 1)
             #self.parameters_firm["technology_init"] = self.technology_init
             self.init_tech_list = [self.technology_init]*self.J
+
+        if self.init_carbon_premium_heterogenous_state:
+            self.expected_carbon_premium_list = np.random.normal(parameters_firm_manager["expected_carbon_premium"], parameters_firm_manager["expected_carbon_premium_init_sigma"], self.J)
+        else:
+            self.expected_carbon_premium_list = [parameters_firm_manager["expected_carbon_premium"]]*self.J
+
         self.firms_list = self.create_firms()
 
         #set up init stuff
@@ -99,6 +107,7 @@ class Firm_Manager:
         firms_list = [Firm(
                 self.parameters_firm,
                 self.init_tech_list[j],
+                self.expected_carbon_premium_list[j],
                 j
             ) 
             for j in range(self.J) 

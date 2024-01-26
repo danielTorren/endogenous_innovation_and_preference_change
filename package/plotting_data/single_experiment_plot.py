@@ -199,28 +199,32 @@ def plot_cumulative_emissions_firm(fileName: str, data_social_network, data_firm
 def main(
     fileName = "results/single_shot_11_52_34__05_01_2023",
     dpi_save = 600,
+    social_plots = 1,
+    firm_plots = 0
     ) -> None: 
 
     data_social_network = load_object(fileName + "/Data", "social_network")
     data_firm_manager = load_object(fileName + "/Data", "firm_manager")
 
-    ###SOCIAL NETWORK PLOTS
-    #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
-    plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
-    plot_emissions_individuals(fileName, data_social_network, dpi_save)
-    plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-    plot_demand_individuals(fileName, data_social_network, dpi_save)
+    if social_plots:
+        ###SOCIAL NETWORK PLOTS
+        #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
+        plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
+        plot_emissions_individuals(fileName, data_social_network, dpi_save)
+        plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
+        plot_demand_individuals(fileName, data_social_network, dpi_save)
 
-    ##FIRM PLOTS
-    plot_firm_market_share(fileName, data_firm_manager, dpi_save)
-    plot_frim_price(fileName, data_firm_manager, dpi_save)
-    plot_firm_cost(fileName, data_firm_manager, dpi_save)
-    plot_firm_budget(fileName, data_firm_manager, dpi_save)
-    plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
-    plot_demand_firm(fileName, data_social_network, dpi_save)
-    plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
-    plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
-    plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
+    if firm_plots:
+        ##FIRM PLOTS
+        plot_firm_market_share(fileName, data_firm_manager, dpi_save)
+        plot_frim_price(fileName, data_firm_manager, dpi_save)
+        plot_firm_cost(fileName, data_firm_manager, dpi_save)
+        plot_firm_budget(fileName, data_firm_manager, dpi_save)
+        plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
+        plot_demand_firm(fileName, data_social_network, dpi_save)
+        plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
+        plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
+        plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
 
     plt.show()
 

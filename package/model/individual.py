@@ -138,8 +138,9 @@ class Individual:
         self.history_utility.append(self.utility)
 
 
-    def next_step(self, t_individual: int, social_component: npt.NDArray, emissions_intensities, prices):
-
+    def next_step(self, social_component, emissions_intensities, prices):
+        #print(social_component, emissions_intensities, prices)
+        #quit()
         self.t_individual += 1
         
         #update emissions intensities and prices

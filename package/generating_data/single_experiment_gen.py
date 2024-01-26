@@ -52,16 +52,18 @@ if __name__ == '__main__':
             "alpha":1,
             "rho": 0.75,
             "landscape_seed": 8,
-            "init_tech_diversity_state": 0
+            "init_tech_heterogenous_state": 1,
+            "init_carbon_premium_heterogenous_state": 1,
+            "expected_carbon_premium": 0.05,
+            "expected_carbon_premium_init_sigma": 0.01
         },
         "parameters_firm": {
             "research_cost": 0.05,
-            "expected_carbon_premium": 0.05,
             "markup_adjustment": 1,
             "firm_phi": 0.01,
             "markup_init": 0,
             "firm_budget": 100,
-            "static_tech_state": 0
+            "static_tech_state": 1
         },
         "parameters_social_network":{        
             'save_timeseries_data_state': 1,
@@ -98,6 +100,8 @@ if __name__ == '__main__':
     Will also plot stuff at the same time for convieniency
     """
     RUN_PLOT = 1
+    social_plots = 1
+    firm_plots = 1
 
     if RUN_PLOT:
-        plotting_main(fileName = fileName)
+        plotting_main(fileName = fileName, social_plots = social_plots,firm_plots = firm_plots)
