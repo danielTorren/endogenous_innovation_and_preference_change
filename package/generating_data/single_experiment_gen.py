@@ -68,6 +68,8 @@ if __name__ == '__main__':
         "parameters_social_network":{        
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
+            'quantity_state': 'optimal', 
+            "social_influence_state": "common_knowledge",
             'heterogenous_intrasector_preferences_state': 1.0,
             'ratio_preference_or_consumption_state': 0.0, 
             "nu_change_state": "dynamic_culturally_determined_weights",
@@ -86,10 +88,9 @@ if __name__ == '__main__':
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
-            'confirmation_bias': 1, 
+            'confirmation_bias': 0, 
             'expenditure': 1,
             'carbon_price': 0,
-            'quantity_state': 'optimal', 
         }
         }
     
@@ -101,7 +102,7 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 1
     social_plots = 1
-    firm_plots = 1
+    firm_plots = 0
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots,firm_plots = firm_plots)

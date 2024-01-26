@@ -210,9 +210,9 @@ def main(
         ###SOCIAL NETWORK PLOTS
         #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
         plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
-        plot_emissions_individuals(fileName, data_social_network, dpi_save)
-        plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        plot_demand_individuals(fileName, data_social_network, dpi_save)
+        #plot_emissions_individuals(fileName, data_social_network, dpi_save)
+        #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
+        #plot_demand_individuals(fileName, data_social_network, dpi_save)
 
     if firm_plots:
         ##FIRM PLOTS

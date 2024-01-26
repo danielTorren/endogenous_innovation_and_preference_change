@@ -77,7 +77,7 @@ class Social_Network:
             round(self.num_individuals*(1 - self.homophily))
         )
 
-
+        self.social_influence_state = parameters_social_network["social_influence_state"]
         self.quantity_state = parameters_social_network["quantity_state"]
         if self.quantity_state == "replicator":
             self.chi_ms = parameters_social_network["chi_ms"]
@@ -245,7 +245,8 @@ class Social_Network:
             "nu_change_state": self.nu_change_state,
             "substitutability": self.substitutability,
             "quantity_state": self.quantity_state,
-            "num_firms" : self.num_firms
+            "num_firms" : self.num_firms,
+            "social_influence_state": self.social_influence_state
             #"chi_ms": self.chi_ms,
         }
 
@@ -274,7 +275,7 @@ class Social_Network:
     
     def calc_ego_influence_degroot(self) -> npt.NDArray:
 
-        attribute_matrix =np.asarray(list(map(attrgetter('outward_social_influence'), self.agent_list))) 
+        attribute_matrix = np.asarray(list(map(attrgetter('outward_social_influence'), self.agent_list))) 
 
         neighbour_influence = np.matmul(self.weighting_matrix, attribute_matrix)    
         

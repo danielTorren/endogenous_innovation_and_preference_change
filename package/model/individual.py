@@ -42,6 +42,7 @@ class Individual:
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities_vec = parameters_individuals["emissions_intensities_vec"]
         self.nu_change_state = ["nu_change_state"]
+        self.social_influence_state = parameters_individuals["social_influence_state"]
         self.quantity_state = parameters_individuals["quantity_state"]
         
 
@@ -65,20 +66,28 @@ class Individual:
             self.set_up_time_series()  
     
     def calc_outward_social_influence(self):
+        if self.social_influence_state == "common_knowledge":
+            #THIS IS THE NEW BIT THAT I CALCULATE THE PREFERENCES GIVEN THE CONSUMPTION
+            
+            n = 0#pick these two firms
+            m = 1
 
-        #THIS IS THE NEW BIT THAT I CALCULATE THE PREFERENCES GIVEN THE CONSUMPTION
-        n = 0#pick these two firms
-        m = 1
+            denominator = self.emissions_intensities_vec[n] - self.emissions_intensities_vec[m]
 
-        denominator = self.emissions_intensities_vec[m] - self.emissions_intensities_vec[n]
+            if denominator == 0:#SAME TECHNOLOGIES FOR BOTH THEN DEFAULT TO WHAT?
+                low_carbon_preference = self.low_carbon_preference#BODGE JUST GIVE IT TO THEM DIRECTLY?
+            else:
+                numerator = (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n]) + np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) 
+                #THIS DOESNT SEEM TO WORK, BECAUSE ALL OF THE INITIAL TECHNOLOGIES ARE THE SAME?, SO YOU DIVDE BY ZERO SHIT
+                low_carbon_preference = numerator/denominator
 
-        if denominator == 0:#SAME TECHNOLOGIES FOR BOTH THEN DEFAULT TO WHAT?
-            low_carbon_preference = self.low_carbon_preference#BODGE JUST GIVE IT TO THEM DIRECTLY?
+        elif self.social_influence_state == "preferences_observable":
+                low_carbon_preference = self.low_carbon_preference
         else:
-            numerator = np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) +  (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n])
-            #THIS DOESNT SEEM TO WORK, BECAUSE ALL OF THE INITIAL TECHNOLOGIES ARE THE SAME?, SO YOU DIVDE BY ZERO SHIT
-            low_carbon_preference = numerator / denominator
-
+            pass
+        #STAITC
+            #CONSUMPTION IMITATION?
+            
         return low_carbon_preference
 
     def calc_market_share_replicator(self):
