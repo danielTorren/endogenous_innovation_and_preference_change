@@ -27,7 +27,10 @@ class Firm:
         self.compression_factor_state = parameters_firm["compression_factor_state"]
 
         self.markup = parameters_firm["markup_init"]#variable
+
         self.current_technology = parameters_firm["technology_init"]#variable
+        self.current_technology.fitness = self.calculate_technology_fitness(self.current_technology.emissions_intensity, self.current_technology.cost)#assign fitness to inti technology
+
         self.firm_budget = parameters_firm["firm_budget"]#variablees
         self.N = parameters_firm["N"]
         self.K = parameters_firm["K"]
@@ -52,9 +55,6 @@ class Firm:
 
         #CALCULATE NEIGHBOURING TECH BASED ON INITIAL TECHNOLOGY
         self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies()
-
-        if self.save_timeseries_data_state:
-            self.set_up_time_series_firm()
     
     ##############################################################################################################
     #DO PREVIOUS TIME STEP STUFF
@@ -65,46 +65,38 @@ class Firm:
         budget = self.firm_budget + self.profit + ((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
         self.firm_budget = budget
 
-    def update_carbon_premium(self, market_share_vec, emissions_intensities_vec, price_vec):
+    def update_carbon_premium(self, market_share_vec, emissions_intensities_vec, price_vec, cost_vec):
         #calculate this sub list of firms where higher market share and that use a technology that is not prefered given THIS firms preference
+        percieved_fitness_vec = self.calculate_technology_fitness(emissions_intensities_vec, cost_vec)
 
-        indices_higher = [i for i,v in enumerate(market_share_vec) if v > self.current_market_share]
+        bool_percieved_fitness_vec = percieved_fitness_vec < self.current_technology.fitness#VECTOR OF TRUE OR FALSE IF MY TECH I CONSIDER TO BE BETTER THAN THEIRS
+
+        indices_higher = [i for i,v in enumerate(market_share_vec) if ((v > self.current_market_share) and (bool_percieved_fitness_vec[i]) and not((self.firm_cost < cost_vec[i]) and (self.firm_emissions_intensity < emissions_intensities_vec[i]) ))]
         
         if not indices_higher:#CHECK IF LIST EMPTY, IF SO THEN YOU ARE DOMINATING AND MOVE ON?
             pass
         else:
             market_shares_higher = np.asarray([v for i,v in enumerate(market_share_vec) if v > self.current_market_share])#DO THIS BETTER
-            price_higher = np.asarray([price_vec[i] for i in indices_higher])#WHAT ARE PRICES OF THOSE COMPANIES
+            #price_higher = np.asarray([price_vec[i] for i in indices_higher])#WHAT ARE PRICES OF THOSE COMPANIES
+            cost_higher = np.asarray([cost_vec[i] for i in indices_higher])#WHAT ARE PRICES OF THOSE COMPANIES
             emissions_intensities_higher = [emissions_intensities_vec[i] for i in indices_higher]#WHAT ARE THE EMISISONS INTENSITIES OF THOSE HIGH COMPANIES
+            expected_carbon_premium_competitors = (self.firm_cost - cost_higher)/(emissions_intensities_higher - self.firm_emissions_intensity)
 
-            #ISSUE IS THERE IS A COMPANY THAT HAS SAME TECH AND PRICE BUT HIGHER MARKET SHARE I ASSUME DUE TO THE MOMENTUM
-            numerator = self.firm_price - price_higher
-            denominator = emissions_intensities_higher - self.firm_emissions_intensity
-            mask = denominator == 0
-            #print(mask)
-            if np.any(mask):
-                #BODGE FOR NOW WOULD BE TO ASSIGN IT THE SAME EXPECTATION
-                # Replace the entries in result with the constant value where the original array is zero
-                expected_carbon_premium_competitors = np.repeat(self.expected_carbon_premium, len(emissions_intensities_higher))#THIS IS THE VECTOR TO EDIT
-                mask_non_zero = denominator != 0
-                result_reduc = numerator[mask_non_zero]/denominator[mask_non_zero]
-                expected_carbon_premium_competitors[mask_non_zero] = result_reduc
-
-            else:
-                expected_carbon_premium_competitors = numerator/denominator
-                
-            #calculate_weighting_vector
             weighting_vector_firms = (market_shares_higher-self.current_market_share)/sum(market_shares_higher-self.current_market_share)
 
+            #WHY DOES THE MATMUL NOT WORK??????
+            #sum_stuff = np.matmul(weighting_vector_firms,expected_carbon_premium_competitors)
+            outside_information_carbon_premium = np.sum(weighting_vector_firms*expected_carbon_premium_competitors)
+
             #calc_new_expectation
-            new_premium = (1-self.firm_phi)*self.expected_carbon_premium + self.firm_phi*np.matmul(weighting_vector_firms,expected_carbon_premium_competitors)
+            new_premium = (1-self.firm_phi)*self.expected_carbon_premium + self.firm_phi*outside_information_carbon_premium
 
             self.expected_carbon_premium = new_premium
     
-    def process_previous_info(self,market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec):
+    def process_previous_info(self,market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec,cost_vec):
         self.calculate_profits(consumed_quantities_vec)
         self.update_budget()
-        self.update_carbon_premium(market_share_vec, emissions_intensities_vec, price_vec)
+        self.update_carbon_premium(market_share_vec, emissions_intensities_vec, price_vec, cost_vec)
 
     ##############################################################################################################
     #SCIENCE!
@@ -147,10 +139,16 @@ class Firm:
     def calc_neighbouring_technologies(self):
         #search with distance 1 from current peak, filter out the ones that arent in memory
 
+        #SAVE
         decimal_value_current_tech = int(self.current_technology.component_string, 2) 
-        list_neighouring_technologies_strings = self.invert_bits_one_at_a_time(decimal_value_current_tech, len(self.current_technology.component_string))
+        self.decimal_value_current_tech = decimal_value_current_tech
 
+        #SAVE
+        list_neighouring_technologies_strings = self.invert_bits_one_at_a_time(decimal_value_current_tech, len(self.current_technology.component_string))
+        self.list_neighouring_technologies_strings = list_neighouring_technologies_strings
+        #save
         filtered_list_strings = [i for i in list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
+        self.filtered_list_strings = filtered_list_strings
 
         return filtered_list_strings 
 
@@ -177,7 +175,9 @@ class Firm:
 
     def explore_technology(self):
         #grab a random one
+        #SAVE
         random_technology_string = random.choice(self.list_neighouring_technologies_strings)
+        self.random_technology_string = random_technology_string
 
         tech_emissions_intensity, tech_cost = self.calc_tech_emission_cost(random_technology_string)
 
@@ -241,6 +241,12 @@ class Firm:
         #self.history_cost = [self.firm_cost]
         #self.history_expected_carbon_premium = [self.expected_carbon_premium]
         self.history_length_memory_list = [len(self.list_technology_memory)]
+
+        if self.firm_id in [1,2,3]:
+            self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
+            self.history_list_neighouring_technologies_strings = [self.list_neighouring_technologies_strings]
+            self.history_filtered_list_strings = [self.filtered_list_strings]
+            self.history_random_technology_string = [self.random_technology_string]
         
     def save_timeseries_data_firm(self):
         """
@@ -259,7 +265,13 @@ class Firm:
         #self.history_expected_carbon_premium.append(self.expected_carbon_premium)
         self.history_length_memory_list.append(len(self.list_technology_memory))
 
-    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec) -> None:
+        if self.firm_id in [1,2,3]:
+            self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)
+            self.history_list_neighouring_technologies_strings.append(self.list_neighouring_technologies_strings)#list of list
+            self.history_filtered_list_strings.append(self.filtered_list_strings)#list of list
+            self.history_random_technology_string.append(self.random_technology_string)
+
+    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec, cost_vec) -> None:
         
         self.t_firm +=1
         
@@ -268,11 +280,13 @@ class Firm:
         self.current_market_share = market_share_vec[self.firm_id]
         self.current_consumed_quantity = consumed_quantities_vec[self.firm_id]
 
-        self.process_previous_info(market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec)#assume all are arrays
+        self.process_previous_info(market_share_vec, consumed_quantities_vec, emissions_intensities_vec, price_vec,cost_vec)#assume all are arrays
 
         self.research_technology()
 
         self.set_price()
 
-        if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
+        if self.save_timeseries_data_state and self.t_firm == 1:
+            self.set_up_time_series_firm()
+        elif self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()

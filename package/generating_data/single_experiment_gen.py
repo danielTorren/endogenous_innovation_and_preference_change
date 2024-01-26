@@ -7,7 +7,7 @@ from package.resources.run import generate_data
 from package.resources.utility import (
     createFolder, 
     save_object, 
-    save_data_csv_firm_manager,
+    save_data_csv_firms,
     produce_name_datetime
 )
 from package.plotting_data.single_experiment_plot import main as plotting_main
@@ -29,9 +29,11 @@ def main(
     #save_object(controller, fileName + "/Data", "controller")
     save_object(controller.social_network, fileName + "/Data", "social_network")
     save_object(controller.firm_manager, fileName + "/Data", "firm_manager")
+
     #SAVE AS CSV SO THAT MIQUEL CAN USE THEM
-    #save_data_csv_list_firm_manager = ["history_time_firm_manager","history_emissions_intensities_vec","history_prices_vec", "history_market_share_vec"]
-    #save_data_csv_firm_manager(controller.firm_manager,save_data_csv_list_firm_manager, fileName + "/Data")
+
+    save_data_csv_list_firm_manager = ["history_decimal_value_current_tech","history_list_neighouring_technologies_strings","history_filtered_list_strings", "history_random_technology_string"]
+    save_data_csv_firms(controller.firm_manager.firms_list, save_data_csv_list_firm_manager, fileName + "/Data")
     save_object(base_params, fileName + "/Data", "base_params")
 
     return fileName
@@ -40,9 +42,9 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 10,
+        "policy_duration": 1000,
         "save_timeseries_data_state": 1,
-        "compression_factor_state": 2,
+        "compression_factor_state": 1,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,
@@ -63,7 +65,6 @@ if __name__ == '__main__':
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
             'heterogenous_intrasector_preferences_state': 1.0,
-            'compression_factor_state': 10, 
             'ratio_preference_or_consumption_state': 0.0, 
             "nu_change_state": "dynamic_culturally_determined_weights",
             'network_structure_seed': 8, 
@@ -89,7 +90,8 @@ if __name__ == '__main__':
         }
     
     fileName = main(base_params=base_params)
-
+    print("SIMULATION FINISHED")
+    
     """
     Will also plot stuff at the same time for convieniency
     """

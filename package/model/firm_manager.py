@@ -171,7 +171,7 @@ class Firm_Manager:
 
     def update_firms(self):
         for j,firm in enumerate(self.firms_list):
-            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.prices_vec)
+            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.prices_vec, self.cost_vec)
 
     def next_step(self, consumed_quantities_vec):
 

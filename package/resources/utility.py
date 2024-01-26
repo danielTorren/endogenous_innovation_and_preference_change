@@ -10,6 +10,7 @@ import os
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
+import csv
 
 # modules
 def produce_name_datetime(root):
@@ -89,11 +90,48 @@ def save_object(data, fileName, objectName):
     with open(fileName + "/" + objectName + ".pkl", "wb") as f:
         pickle.dump(data, f)
 
-def save_data_csv_firm_manager(firm_manager,save_data_csv_list_firm_manager, fileName):
+def is_2d_list(lst):
+    # Check if the list is not empty
+    if not lst:
+        return False
+
+    # Check if all elements are of type list
+    return all(isinstance(sublist, list) for sublist in lst)
+
+def save_data_csv_firms(firm_manager_firms_list,save_data_csv_list_firm_manager, fileName):
+
     for title in save_data_csv_list_firm_manager:
-        list_history = getattr(firm_manager, title)
-        array_history = np.asarray(list_history)
-        np.savetxt(fileName + "/" + title + ".csv", array_history, delimiter=',')
+        for firm_id in [1,2,3]: 
+            list_history = getattr(firm_manager_firms_list[firm_id], title)
+            csv_file_path = fileName + "/" + title + "_firm_id_" + str(firm_id) + ".csv"
+            #print("csv_file_path", csv_file_path)
+            if is_2d_list(list_history):
+                # Use 'newline='' to ensure that newline characters are handled properly across different platforms
+                
+                with open(csv_file_path, 'w', newline='') as csv_file:
+                    csv_writer = csv.writer(csv_file)
+
+                    # Iterate through each list in your data and write it to the CSV file
+                    for row in list_history:
+                        csv_writer.writerow(row)
+            else:
+                with open(csv_file_path, 'w', newline='') as csv_file:
+                    csv_writer = csv.writer(csv_file)
+                    csv_writer.writerow(list_history)
+                """
+                list_history = getattr(firm_manager_firms_list[firm_id], title)
+                #print("LIST",title +"_firm_id_" + str(firm_id),list_history)
+                array_history = np.asarray(list_history)
+                #print("ARRAY",title +"_firm_id_" + str(firm_id),array_history)
+                file_label = fileName + "/" + title +"_firm_id_" + str(firm_id) + ".csv"
+                print("file_label",file_label)
+                np.savetxt(file_label, array_history, delimiter=',')
+                """
+            
+
+
+
+
 
 def load_object(fileName, objectName) -> dict:
     """load single pickle file
