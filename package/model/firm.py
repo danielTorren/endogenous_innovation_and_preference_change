@@ -71,51 +71,46 @@ class Firm:
 
     def update_carbon_premium(self, emissions_intensities_vec, cost_vec):
         #calculate this sub list of firms where higher market share and that use a technology that is not prefered given THIS firms preference
-        #percieved_fitness_vec = self.calculate_technology_fitness(emissions_intensities_vec, cost_vec)
+        percieved_fitness_vec = self.calculate_technology_fitness(emissions_intensities_vec, cost_vec)
+        bool_percieved_fitness_vec = percieved_fitness_vec < self.current_technology.fitness#VECTOR OF TRUE OR FALSE IF MY TECH I CONSIDER TO BE BETTER THAN THEIRS
+        
+        bool_cost = (self.firm_cost < cost_vec)
+        bool_ei = (self.firm_emissions_intensity < emissions_intensities_vec)
+        bool_ei_not_same = emissions_intensities_vec != self.firm_emissions_intensity #avoid divide by 0
+   
+        indices_higher = [i for i,v in enumerate(self.market_share_growth_vec) if ((v > self.current_market_share_growth) and (bool_percieved_fitness_vec[i]) and (bool_ei_not_same[i]) and not (bool_cost[i] and bool_ei[i]))]
 
-        #bool_percieved_fitness_vec = percieved_fitness_vec < self.current_technology.fitness#VECTOR OF TRUE OR FALSE IF MY TECH I CONSIDER TO BE BETTER THAN THEIRS
-        
-        #bool_cost = (self.firm_cost < cost_vec)
-        #bool_ei = (self.firm_emissions_intensity < emissions_intensities_vec)
-        
-        #bool_avoid_momenentum = [(bool_cost[i] and bool_ei[i]) for i,v in enumerate(market_share_vec)]
-        #print(" bool_cost ",  bool_cost )
-        #print(" bool_ei ",  bool_ei )
-        #print(" bool_avoid_momenentum ",  bool_avoid_momenentum )
-        #print("emissions_intensities_vec", emissions_intensities_vec)
-        #print("cost_vec", cost_vec)
-        
-        
-        #indices_higher = [i for i,v in enumerate(market_share_vec) if ((v > self.current_market_share) and (bool_percieved_fitness_vec[i]) and not (bool_cost[i] and bool_ei[i]))]
-        indices_higher = [i for i,v in enumerate(self.market_share_growth_vec) if (v > self.current_market_share_growth)]
-        #print("indices_higher", indices_higher)
-        #quit()
         self.indices_higher = indices_higher
-        #test_other = [i for i,v in enumerate(market_share_vec) if not((self.firm_cost < cost_vec[i]) and (self.firm_emissions_intensity < emissions_intensities_vec[i]))]
-        #indices_higher = [i for i,v in enumerate(market_share_vec) if ((v > self.current_market_share) and (bool_percieved_fitness_vec[i]) and not((self.firm_cost < cost_vec[i]) and (self.firm_emissions_intensity < emissions_intensities_vec[i]) ) )]
-
-        """
-        if test_other:
-            print("test_other", test_other)
-            print("indices_higher", indices_higher)
-            quit()
-        """
 
         if not indices_higher:#CHECK IF LIST EMPTY, IF SO THEN YOU ARE DOMINATING AND MOVE ON?
             pass
         else:
-            market_shares_growth_higher = np.asarray([v for i,v in enumerate(self.market_share_growth_vec) if v > self.current_market_share_growth])#DO THIS BETTER
+            market_shares_growth_higher = self.market_share_growth_vec[indices_higher]# np.asarray([v for i,v in enumerate(self.market_share_growth_vec) if v > self.current_market_share_growth])#DO THIS BETTER
+            #print(self.market_share_growth_vec)
+            #print(market_shares_growth_higher)
+            #quit()
+            
             #price_higher = np.asarray([price_vec[i] for i in indices_higher])#WHAT ARE PRICES OF THOSE COMPANIES
-            cost_higher = np.asarray([cost_vec[i] for i in indices_higher])#WHAT ARE PRICES OF THOSE COMPANIES
-            emissions_intensities_higher = [emissions_intensities_vec[i] for i in indices_higher]#WHAT ARE THE EMISISONS INTENSITIES OF THOSE HIGH COMPANIES
-            expected_carbon_premium_competitors = (self.firm_cost - cost_higher)/(emissions_intensities_higher - self.firm_emissions_intensity)
+            cost_higher_vec = cost_vec[indices_higher]#np.asarray([cost_vec[i] for i in indices_higher])#WHAT ARE PRICES OF THOSE COMPANIES
+            emissions_intensities_higher_vec = emissions_intensities_vec[indices_higher]#[][emissions_intensities_vec[i] for i in indices_higher]#WHAT ARE THE EMISISONS INTENSITIES OF THOSE HIGH COMPANIES
+
+            #print("cost_higher_vec",cost_higher_vec)
+            #print("emissions_intensities_higher_vec", emissions_intensities_higher_vec)
+
+            expected_carbon_premium_competitors = (self.firm_cost - cost_higher_vec)/(emissions_intensities_higher_vec - self.firm_emissions_intensity)
+            #print("expected_carbon_premium_competitors", expected_carbon_premium_competitors, len(expected_carbon_premium_competitors))
+            #print("self.firm_cost - cost_higher_vec", self.firm_cost - cost_higher_vec,cost_higher_vec.shape )
+            #print(emissions_intensities_higher_vec - self.firm_emissions_intensity, len(emissions_intensities_higher_vec))
+            
 
             weighting_vector_firms = (market_shares_growth_higher-self.current_market_share_growth)/sum(market_shares_growth_higher-self.current_market_share_growth)
+            #print("weighting_vector_firms", weighting_vector_firms.shape)
+
 
             #WHY DOES THE MATMUL NOT WORK??????
             #sum_stuff = np.matmul(weighting_vector_firms,expected_carbon_premium_competitors)
             outside_information_carbon_premium = np.sum(weighting_vector_firms*expected_carbon_premium_competitors)
-
+            #quit()
             #calc_new_expectation
             new_premium = (1-self.firm_phi)*self.expected_carbon_premium + self.firm_phi*outside_information_carbon_premium
 

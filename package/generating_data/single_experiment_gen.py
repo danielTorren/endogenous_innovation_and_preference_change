@@ -53,7 +53,7 @@ if __name__ == '__main__':
             "rho": 0.75,
             "landscape_seed": 8,
             "init_tech_heterogenous_state": 1,
-            "init_carbon_premium_heterogenous_state": 0,
+            "init_carbon_premium_heterogenous_state": 1,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01
         },

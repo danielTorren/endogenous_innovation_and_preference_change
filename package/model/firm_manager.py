@@ -127,11 +127,11 @@ class Firm_Manager:
         return value_matrix_cost, value_matrix_emissions_intensity
         
     def convert_technology_cost_to_emissions_intensities(self, cost):
+
         if self.rho >= 0:
-            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1))**(self.alpha))*(1-self.rho**2)**(0.5))/(self.rho + (1-self.rho**2)**(0.5))
+            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5))/(self.rho + (1-self.rho**2)**(0.5))
         else:
-            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1))**(self.alpha))*(1-self.rho**2)**(0.5) - self.rho)/(-self.rho + (1-self.rho**2)**(0.5))
-            
+            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5) - self.rho)/(-self.rho + (1-self.rho**2)**(0.5))
         return emissions_intensity
     
     def calc_market_share(self, consumed_quantities_vec):
