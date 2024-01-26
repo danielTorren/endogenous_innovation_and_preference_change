@@ -42,6 +42,7 @@ class Firm_Manager:
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["init_market_share"] = 1/self.J
+        self.parameters_firm["J"] = self.J
 
         
         if self.init_tech_heterogenous_state:
@@ -188,7 +189,7 @@ class Firm_Manager:
 
     def update_firms(self):
         for j,firm in enumerate(self.firms_list):
-            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.prices_vec, self.cost_vec)
+            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.cost_vec)
 
     def next_step(self, consumed_quantities_vec):
 

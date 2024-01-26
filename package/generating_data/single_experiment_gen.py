@@ -47,13 +47,13 @@ if __name__ == '__main__':
         "compression_factor_state": 1,
         "parameters_firm_manager": {
             "J": 30,
-            "N": 15,
-            "K": 6,
+            "N": 15,#15,
+            "K": 6,#6,
             "alpha":1,
             "rho": 0.75,
             "landscape_seed": 8,
             "init_tech_heterogenous_state": 1,
-            "init_carbon_premium_heterogenous_state": 1,
+            "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01
         },
@@ -63,7 +63,7 @@ if __name__ == '__main__':
             "firm_phi": 0.01,
             "markup_init": 0,
             "firm_budget": 100,
-            "static_tech_state": 1
+            "static_tech_state": 0
         },
         "parameters_social_network":{        
             'save_timeseries_data_state': 1,
@@ -78,7 +78,7 @@ if __name__ == '__main__':
             'imperfect_learning_seed': 4, 
             'num_individuals': 100, 
             'network_density': 0.1, 
-            'individual_phi': 0.005,
+            'individual_phi': 0.05,
             'prob_rewire': 0.1, 
             'homophily': 1.0, 
             'substitutability': 1.5, 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
-            'confirmation_bias': 0, 
+            'confirmation_bias': 30, 
             'expenditure': 1,
             'carbon_price': 0,
         }
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 1
     social_plots = 1
-    firm_plots = 0
+    firm_plots = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots,firm_plots = firm_plots)

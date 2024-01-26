@@ -195,12 +195,36 @@ def plot_cumulative_emissions_firm(fileName: str, data_social_network, data_firm
     fig.savefig(f + ".eps", dpi=600, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
+def plot_len_indices_higher(
+    fileName, 
+    data, 
+    dpi_save,
+    ):
+
+    y_title = r"len indices higher"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    data_list = []
+    for v in range(data.J):
+        data_indivdiual = np.asarray(data.firms_list[v].history_indices_higher)
+        data_list.append(data_indivdiual)
+        #print(data.history_time_social_network,data_indivdiual)
+        ax.plot(data.history_time_firm_manager[:-1],data_indivdiual)
+      
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"%s" % y_title)
+
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/timeseries_len_indices_higher"
+    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
 def main(
     fileName = "results/single_shot_11_52_34__05_01_2023",
     dpi_save = 600,
     social_plots = 1,
-    firm_plots = 0
+    firm_plots = 1
     ) -> None: 
 
     data_social_network = load_object(fileName + "/Data", "social_network")
@@ -209,28 +233,32 @@ def main(
     if social_plots:
         ###SOCIAL NETWORK PLOTS
         #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
-        plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
+        #plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
         #plot_demand_individuals(fileName, data_social_network, dpi_save)
+        pass
+
 
     if firm_plots:
         ##FIRM PLOTS
-        plot_firm_market_share(fileName, data_firm_manager, dpi_save)
-        plot_frim_price(fileName, data_firm_manager, dpi_save)
-        plot_firm_cost(fileName, data_firm_manager, dpi_save)
-        plot_firm_budget(fileName, data_firm_manager, dpi_save)
+        plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
+        #plot_firm_market_share(fileName, data_firm_manager, dpi_save)
+        #plot_frim_price(fileName, data_firm_manager, dpi_save)
+        #plot_firm_cost(fileName, data_firm_manager, dpi_save)
+        #plot_firm_budget(fileName, data_firm_manager, dpi_save)
         plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
-        plot_demand_firm(fileName, data_social_network, dpi_save)
-        plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
-        plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
-        plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
+        #plot_demand_firm(fileName, data_social_network, dpi_save)
+        #plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
+        #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
+        #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
+        pass
 
     plt.show()
 
 if __name__ == '__main__':
     plots = main(
-        fileName = "results/single_experiment_12_41_12__26_01_2024",
+        fileName = "results/single_experiment_16_13_33__26_01_2024",
     )
 
 
