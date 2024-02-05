@@ -30,6 +30,7 @@ class Firm_Manager:
         self.save_timeseries_data_state = parameters_firm_manager["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm_manager["compression_factor_state"]
         self.init_tech_heterogenous_state = parameters_firm_manager["init_tech_heterogenous_state"]
+        #print("self.init_tech_heterogenous_state",self.init_tech_heterogenous_state)
         self.init_carbon_premium_heterogenous_state = parameters_firm_manager["init_carbon_premium_heterogenous_state"]
 
         self.parameters_firm = parameters_firm
@@ -65,8 +66,9 @@ class Firm_Manager:
 
         #set up init stuff
         self.emissions_intensities_vec, self.prices_vec, self.cost_vec, self.budget_vec, self.expected_carbon_premium_vec = self.get_firm_properties()
-
         self.market_share_vec = [firm.current_market_share for firm in self.firms_list]
+        self.weighted_emissions_intensities_vec = self.emissions_intensities_vec*self.market_share_vec
+        self.weighted_emissions_intensity = sum(self.weighted_emissions_intensities_vec) 
         
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm_manager()
@@ -159,6 +161,7 @@ class Firm_Manager:
     def set_up_time_series_firm_manager(self):
 
         self.history_emissions_intensities_vec = [self.emissions_intensities_vec]
+        self.history_weighted_emissions_intensities_vec = [self.weighted_emissions_intensities_vec]
         self.history_prices_vec = [self.prices_vec]
         self.history_market_share_vec = [self.market_share_vec]#this may be off by 1 time step??
         self.history_cost_vec = [self.cost_vec]
@@ -180,6 +183,7 @@ class Firm_Manager:
         """
 
         self.history_emissions_intensities_vec.append(self.emissions_intensities_vec)
+        self.history_weighted_emissions_intensities_vec.append(self.weighted_emissions_intensities_vec)
         self.history_prices_vec.append(self.prices_vec)
         self.history_market_share_vec.append(self.market_share_vec)#this may be off by 1 time step??
         self.history_cost_vec.append(self.cost_vec)
@@ -202,6 +206,8 @@ class Firm_Manager:
 
         #calc stuff for next step to pass on to consumersm, get the new prices and emissiosn internsities for consumers
         self.emissions_intensities_vec, self.prices_vec, self.cost_vec, self.budget_vec, self.expected_carbon_premium_vec = self.get_firm_properties()
+        self.weighted_emissions_intensities_vec = self.emissions_intensities_vec*self.market_share_vec
+        self.weighted_emissions_intensity = sum(self.weighted_emissions_intensities_vec) 
 
         if self.save_timeseries_data_state and (self.t_firm_manager % self.compression_factor_state == 0):
             self.save_timeseries_data_firm_manager()

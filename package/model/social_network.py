@@ -57,6 +57,7 @@ class Social_Network:
         #price
         self.prices_vec =  parameters_social_network["prices_vec"]#THIS NEEDS TO BE SET AFTER THE STUFF IS RUN.
         self.carbon_price = parameters_social_network["carbon_price"]
+        #print("carbon_price",self.carbon_price)
 
         # social learning and bias
         self.confirmation_bias = parameters_social_network["confirmation_bias"]
@@ -112,7 +113,7 @@ class Social_Network:
         if self.nu_change_state == "fixed_preferences":
             self.social_component_matrix = np.asarray([n.low_carbon_preference for n in self.agent_list])#DUMBY FEED IT ITSELF? DO I EVEN NEED TO DEFINE IT
         else:
-            if self.nu_change_state in ("uniform_network_weighting","static_culturally_determined_weights","dynamic_culturally_determined_weights"):
+            if self.nu_change_state in ("uniform_network_weighting","static_culturally_determined_weights","dynamic_multi_sector_weights"):
                 self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
         #FIX
@@ -371,12 +372,13 @@ class Social_Network:
 
         # Assuming you have self.agent_list as the list of objects
         ____ = list(map(
-            lambda agent, scm: agent.next_step(scm, self.emissions_intensities, self.prices_vec),
+            lambda agent, scm: agent.next_step(scm, self.emissions_intensities_vec, self.prices_vec_instant),
             self.agent_list,
             self.social_component_matrix
         ))
     
     def update_prices(self):
+        #print("self.prices_vec + self.emissions_intensities_vec*self.carbon_price",self.prices_vec,self.emissions_intensities_vec,self.carbon_price)
         self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*self.carbon_price
         #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
     
@@ -429,7 +431,7 @@ class Social_Network:
         self.t_social_network +=1
          
         #update new tech and prices
-        self.emissions_intensities = emissions_intensities_vec
+        self.emissions_intensities_vec = emissions_intensities_vec
         self.prices_vec = prices_vec
 
         self.update_prices()
@@ -442,7 +444,7 @@ class Social_Network:
 
         # update network parameters_social_network for next step
         if self.nu_change_state != "fixed_preferences":
-            if self.nu_change_state == "dynamic_culturally_determined_weights":
+            if self.nu_change_state == "dynamic_multi_sector_weights":
                 self.weighting_matrix = self.update_weightings()
             else:
                 pass #this is for "uniform_network_weighting", "static_socially_determined_weights","static_culturally_determined_weights"

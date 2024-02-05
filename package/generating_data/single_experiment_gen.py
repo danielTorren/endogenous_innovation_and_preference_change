@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 1000,
+        "policy_duration": 10,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "parameters_firm_manager": {
@@ -52,7 +52,7 @@ if __name__ == '__main__':
             "alpha":1,
             "rho": 0.75,
             "landscape_seed": 8,
-            "init_tech_heterogenous_state": 1,
+            "init_tech_heterogenous_state": 0,
             "init_carbon_premium_heterogenous_state": 1,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         "parameters_firm": {
             "research_cost": 0.05,
             "markup_adjustment": 1,
-            "firm_phi": 0.01,
+            "firm_phi": 0.005,
             "markup_init": 0,
             "firm_budget": 100,
             "static_tech_state": 0
@@ -70,9 +70,8 @@ if __name__ == '__main__':
             'imperfect_learning_state': 0,
             'quantity_state': 'optimal', 
             "social_influence_state": "common_knowledge",
-            'heterogenous_intrasector_preferences_state': 1.0,
             'ratio_preference_or_consumption_state': 0.0, 
-            "nu_change_state": "dynamic_culturally_determined_weights",
+            "nu_change_state": "dynamic_multi_sector_weights",
             'network_structure_seed': 8, 
             'init_vals_seed': 14, 
             'imperfect_learning_seed': 4, 
@@ -90,9 +89,9 @@ if __name__ == '__main__':
             'std_learning_error': 0.02, 
             'confirmation_bias': 30, 
             'expenditure': 1,
-            'carbon_price': 0,
+            'carbon_price': 1,
         }
-        }
+    }
     
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
@@ -101,7 +100,7 @@ if __name__ == '__main__':
     Will also plot stuff at the same time for convieniency
     """
     RUN_PLOT = 1
-    social_plots = 1
+    social_plots = 0
     firm_plots = 1
 
     if RUN_PLOT:

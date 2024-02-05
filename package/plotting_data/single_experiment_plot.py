@@ -242,7 +242,7 @@ def main(
 
     if firm_plots:
         ##FIRM PLOTS
-        plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
+        #plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
         plot_firm_market_share(fileName, data_firm_manager, dpi_save)
         plot_frim_price(fileName, data_firm_manager, dpi_save)
         plot_firm_cost(fileName, data_firm_manager, dpi_save)
@@ -251,7 +251,7 @@ def main(
         plot_demand_firm(fileName, data_social_network, dpi_save)
         plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
         plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
-        plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
+        #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
         pass
 
     plt.show()

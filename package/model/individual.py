@@ -80,7 +80,6 @@ class Individual:
                 numerator = (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n]) + np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) 
                 #THIS DOESNT SEEM TO WORK, BECAUSE ALL OF THE INITIAL TECHNOLOGIES ARE THE SAME?, SO YOU DIVDE BY ZERO SHIT
                 low_carbon_preference = numerator/denominator
-
         elif self.social_influence_state == "preferences_observable":
                 low_carbon_preference = self.low_carbon_preference
         else:
