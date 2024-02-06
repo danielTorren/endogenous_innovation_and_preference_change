@@ -23,6 +23,8 @@
         "firm_budget": 100
     },
     "parameters_social_network":{ 
+        "heterogenous_emissions_intensity_penalty_state": 0,
+        "heterogenous_substitutability_state": 0,
         "redistribution_state": 1,       
         "save_timeseries_data_state": 1,
         "imperfect_learning_state": 0,
@@ -37,12 +39,15 @@
         "prob_rewire": 0.1, 
         "homophily": 0.9, 
         "substitutability": 1.5, 
+        "std_substitutability":0.5,
         "a_preferences": 2, 
         "b_preferences": 2, 
         "clipping_epsilon": 1e-3, 
         "clipping_epsilon_init_preference": 1e-3,
         "std_low_carbon_preference": 0.01, 
         "std_learning_error": 0.02, 
+        "std_emissions_intensity_penalty": 3,
+        "mean_emissions_intensity_penalty": 10,
         "confirmation_bias": 10, 
         "expenditure": 1
     }

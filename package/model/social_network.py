@@ -99,10 +99,38 @@ class Social_Network:
             self.low_carbon_preference_matrix_init
         ) = self.generate_init_data_preferences()
         
-        self.individual_expenditure_array =  np.asarray([parameters_social_network["expenditure"]]*self.num_individuals)#sums to 1
+        self.heterogenous_expenditure_state = parameters_social_network["heterogenous_expenditure_state"]
+        self.total_expenditure = parameters_social_network["total_expenditure"]
+        if self.heterogenous_expenditure_state:
+            self.expenditure_inequality_const = parameters_social_network["expenditure_inequality_const"]
+            u = np.linspace(0.01,1,self.num_individuals)
+            no_norm_individual_expenditure_array = u**(-1/self.expenditure_inequality_const)       
+            self.individual_expenditure_array =  self.total_expenditure*self.normalize_vector_sum(no_norm_individual_expenditure_array)
+        else:   
+            self.individual_expenditure_array =  np.asarray([self.total_expenditure/(self.num_individuals)]*self.num_individuals)#sums to 1
         
         self.substitutability = parameters_social_network["substitutability"]
-        
+        self.heterogenous_substitutability_state = parameters_social_network["heterogenous_substitutability_state"]
+        if self.heterogenous_substitutability_state:
+            self.std_substitutability = parameters_social_network["std_substitutability"]
+            self.substitutability_vec = np.clip(np.random.normal(loc = self.substitutability , scale = self.std_substitutability, size = self.num_individuals), 1.05, None)#limit between 0.01
+        else:
+            self.substitutability_vec = np.asarray([self.substitutability]*self.num_individuals)
+        #print("self.substitutability_vec",self.substitutability_vec)
+        #quit()
+        #heterogenous_emissions_intensity_penalty_state
+        self.heterogenous_emissions_intensity_penalty_state = parameters_social_network["heterogenous_emissions_intensity_penalty_state"]
+        if self.heterogenous_emissions_intensity_penalty_state:
+            self.mean_emissions_intensity_penalty = parameters_social_network["mean_emissions_intensity_penalty"]
+            self.std_emissions_intensity_penalty = parameters_social_network["std_emissions_intensity_penalty"]
+            
+            self.emissions_intensity_penalty_vec = np.clip(np.random.normal(loc = self.mean_emissions_intensity_penalty , scale = self.std_emissions_intensity_penalty, size = self.num_individuals), 0.01, None)#limit between 0.01
+        else:
+            self.emissions_intensity_penalty_vec = np.asarray([1]*self.num_individuals)
+
+        #print("self.emissions_intensity_penalty_vec", self.emissions_intensity_penalty_vec)
+        #quit()
+
         self.agent_list = self.create_agent_list()
 
         self.shuffle_agent_list()#partial shuffle of the list based on prefernece
@@ -120,7 +148,7 @@ class Social_Network:
         self.total_carbon_emissions_cumulative = 0#this are for post tax
 
         #calc consumption quantities
-        self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
+        self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
         self.redistribution_state = parameters_social_network["redistribution_state"]
         #redistribute, for next turn
@@ -128,6 +156,7 @@ class Social_Network:
             self.carbon_dividend_array = self.calc_carbon_dividend_array()
         else:
             self.carbon_dividend_array = np.asarray([0]*self.num_individuals)
+        #print("self.carbon_dividend_array",self.carbon_dividend_array)
 
 
         self.total_carbon_emissions_flow = self.calc_total_emissions()
@@ -252,11 +281,11 @@ class Social_Network:
             "emissions_intensities_vec": self.emissions_intensities_vec,
             "clipping_epsilon" :self.clipping_epsilon,
             "nu_change_state": self.nu_change_state,
-            "substitutability": self.substitutability,
+            #"substitutability": self.substitutability,
             "quantity_state": self.quantity_state,
             "num_firms" : self.num_firms,
-            "social_influence_state": self.social_influence_state
-            #"chi_ms": self.chi_ms,
+            "social_influence_state": self.social_influence_state,
+            "heterogenous_emissions_intensity_penalty_state": self.heterogenous_emissions_intensity_penalty_state
         }
 
         if self.quantity_state == "replicator":
@@ -268,10 +297,15 @@ class Social_Network:
                 self.low_carbon_preference_matrix_init[n],
                 #self.sector_preference_matrix_init,
                 self.individual_expenditure_array[n],
+                self.emissions_intensity_penalty_vec[n],
+                self.substitutability_vec[n],
                 n
             )
             for n in range(self.num_individuals)
         ]
+
+
+
 
         return agent_list
         
@@ -371,14 +405,14 @@ class Social_Network:
         consumption_vec = np.sum(consumption_matrix, axis=1)
         consumption_vec_firms = np.sum(consumption_matrix, axis=0)
 
-        return consumption_vec,consumption_vec_firms
+        return consumption_matrix, consumption_vec,consumption_vec_firms
     
     def calc_carbon_dividend_array(self):
 
-        consumed_quantities_matrix = np.asarray([x.quantities for x in self.agent_list])#self.quantities*self.emissions_intensities_vec
+        #consumed_quantities_matrix = np.asarray([x.quantities for x in self.agent_list])#self.quantities*self.emissions_intensities_vec
         #print(consumed_quantities_matrix.shape,self.emissions_intensities_vec.shape)
         
-        emissions_generated_vec = np.dot(consumed_quantities_matrix,self.emissions_intensities_vec)
+        emissions_generated_vec = np.dot(self.consumption_matrix,self.emissions_intensities_vec)
         #print(emissions_generated_vec.shape)
         #quit()
         #print("emissions_generated_vec",emissions_generated_vec)
@@ -463,7 +497,7 @@ class Social_Network:
         self.update_individuals()
 
         #calc consumption quantities
-        self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
+        self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
         # update network parameters_social_network for next step
         if self.nu_change_state != "fixed_preferences":
@@ -476,6 +510,8 @@ class Social_Network:
 
         if self.redistribution_state:
             self.carbon_dividend_array = self.calc_carbon_dividend_array()
+        #print("self.carbon_dividend_array",self.carbon_dividend_array)
+        #quit()
 
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow

@@ -45,7 +45,7 @@ if __name__ == '__main__':
         "policy_duration": 10,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 1,
+        'carbon_price': 10,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
@@ -54,7 +54,7 @@ if __name__ == '__main__':
             "rho": 0.75,
             "landscape_seed": 8,
             "init_tech_heterogenous_state": 0,
-            "init_carbon_premium_heterogenous_state": 1,
+            "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01
         },
@@ -67,12 +67,14 @@ if __name__ == '__main__':
             "static_tech_state": 0
         },
         "parameters_social_network":{  
-            "redistribution_state": 0,      
+            "heterogenous_emissions_intensity_penalty_state": 0,
+            "heterogenous_substitutability_state": 0,
+            "heterogenous_expenditure_state":1,
+            "redistribution_state": 1,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
             'quantity_state': 'optimal', 
             "social_influence_state": "common_knowledge",
-            'ratio_preference_or_consumption_state': 0.0, 
             "nu_change_state": "dynamic_multi_sector_weights",
             'network_structure_seed': 8, 
             'init_vals_seed': 14, 
@@ -81,16 +83,20 @@ if __name__ == '__main__':
             'network_density': 0.1, 
             'individual_phi': 0.05,
             'prob_rewire': 0.1, 
-            'homophily': 1.0, 
+            'homophily': 0.9, 
             'substitutability': 1.5, 
+            "std_substitutability":0.5,
             'a_preferences': 2, 
             'b_preferences': 2, 
             'clipping_epsilon': 1e-3, 
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
-            'confirmation_bias': 30, 
-            'expenditure': 1
+            "std_emissions_intensity_penalty": 3,
+            "mean_emissions_intensity_penalty": 10,
+            'confirmation_bias': 5, 
+            'total_expenditure': 1,
+            "expenditure_inequality_const":1
         }
     }
     
@@ -101,8 +107,8 @@ if __name__ == '__main__':
     Will also plot stuff at the same time for convieniency
     """
     RUN_PLOT = 1
-    social_plots = 0
-    firm_plots = 1
+    social_plots = 1
+    firm_plots = 0
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots,firm_plots = firm_plots)

@@ -23,6 +23,8 @@ class Individual:
         parameters_individuals,
         low_carbon_preference,
         expenditure,
+        emissions_intensity_penalty,
+        substitutability,
         id_n,
     ):
 
@@ -37,13 +39,15 @@ class Individual:
         self.save_timeseries_data_state = parameters_individuals["save_timeseries_data_state"]
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
         self.individual_phi = parameters_individuals["individual_phi"]
-        self.substitutability = parameters_individuals["substitutability"]
+        self.substitutability = substitutability#parameters_individuals["substitutability"]
         self.prices_vec_instant = parameters_individuals["prices_vec"]#NOT SURE IF THIS IS RIGHT? IS IT UPDATED WITH THE CARBON PRICE TO START
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities_vec = parameters_individuals["emissions_intensities_vec"]
         self.nu_change_state = ["nu_change_state"]
         self.social_influence_state = parameters_individuals["social_influence_state"]
         self.quantity_state = parameters_individuals["quantity_state"]
+        self.heterogenous_emissions_intensity_penalty_state = parameters_individuals["heterogenous_emissions_intensity_penalty_state"]
+        self.emissions_intensity_penalty = emissions_intensity_penalty
         
 
         if self.quantity_state == "replicator":
@@ -72,12 +76,12 @@ class Individual:
             n = 0#pick these two firms
             m = 1
 
-            denominator = self.emissions_intensities_vec[n] - self.emissions_intensities_vec[m]
+            denominator = self.emissions_intensity_penalty*(self.emissions_intensities_vec[n] - self.emissions_intensities_vec[m])#THIS MAY BE THE WRONG WAY AROUND??
 
             if denominator == 0:#SAME TECHNOLOGIES FOR BOTH THEN DEFAULT TO WHAT?
                 low_carbon_preference = self.low_carbon_preference#BODGE JUST GIVE IT TO THEM DIRECTLY?
             else:
-                numerator = (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n]) + np.log(self.prices_vec_instant[m]/ self.prices_vec_instant[n]) 
+                numerator = (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n]) + np.log(self.prices_vec_instant[m]/self.prices_vec_instant[n]) 
                 #THIS DOESNT SEEM TO WORK, BECAUSE ALL OF THE INITIAL TECHNOLOGIES ARE THE SAME?, SO YOU DIVDE BY ZERO SHIT
                 low_carbon_preference = numerator/denominator
         elif self.social_influence_state == "preferences_observable":
@@ -108,7 +112,7 @@ class Individual:
         self.outward_social_influence = self.calc_outward_social_influence()
     
     def update_firm_preferences(self):
-        self.firm_preferences = np.exp(-self.low_carbon_preference*self.emissions_intensities_vec)/sum(np.exp(-self.low_carbon_preference*self.emissions_intensities_vec))
+        self.firm_preferences = np.exp(-self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec)/sum(np.exp(-self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec))
 
     def update_preferences(self, social_component):
         low_carbon_preference = (1 - self.individual_phi)*self.low_carbon_preference + self.individual_phi*social_component
@@ -129,6 +133,7 @@ class Individual:
         self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
         self.history_utility = [self.utility]
         self.history_expenditure = [self.expenditure_instant]
+        self.history_carbon_dividend = [np.nan]
 
     def save_timeseries_data_state_individual(self):
         """
@@ -146,6 +151,7 @@ class Individual:
         self.history_flow_carbon_emissions.append(self.flow_carbon_emissions)
         self.history_utility.append(self.utility)
         self.history_expenditure.append(self.expenditure_instant)
+        self.history_carbon_dividend.append(self.carbon_dividend)
 
 
     def next_step(self, social_component, emissions_intensities, prices, carbon_dividend):
@@ -156,7 +162,9 @@ class Individual:
         #update emissions intensities and prices
         self.emissions_intensities_vec = emissions_intensities
         self.prices_vec_instant = prices
-        self.instant_expenditure = self.init_expenditure + carbon_dividend
+        #print("carbon_div",self.init_expenditure, carbon_dividend)
+        self.carbon_dividend = carbon_dividend
+        self.instant_expenditure = self.init_expenditure + self.carbon_dividend
 
         #update preferences, willingess to pay and firm prefereces
         if self.nu_change_state != "fixed_preferences":

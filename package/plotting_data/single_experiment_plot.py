@@ -146,6 +146,42 @@ def plot_demand_individuals(fileName: str, Data, dpi_save: int):
     property = "history_consumed_quantities_vec"
     plot_network_timeseries(fileName, Data, y_title, property, dpi_save)
 
+def plot_expenditure_individuals(fileName, data, dpi_save):
+
+    y_title = r"Expenditure individuals"
+
+    fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
+
+    for v in range(data.num_individuals):
+        data_indivdiual = data.agent_list[v]
+        ax.plot(data.history_time_social_network,data_indivdiual.history_expenditure)
+
+    ax.set_ylabel(y_title)
+    ax.set_xlabel("Time")
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/indi_expenditure"
+    fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
+
+def plot_carbon_dividend_individuals(fileName, data, dpi_save):
+
+    y_title = r"Carbon dividend individuals"
+
+    fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
+
+    for v in range(data.num_individuals):
+        data_indivdiual = data.agent_list[v]
+        ax.plot(data.history_time_social_network,data_indivdiual.history_carbon_dividend)
+
+    ax.set_ylabel(y_title)
+    ax.set_xlabel("Time")
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/indi_carbon_dividend"
+    fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
+
 def plot_flow_emissions_firm(fileName: str, data_social_network, data_firm_manager):
 
     y_title = r"Firm Emissions flow"
@@ -237,6 +273,8 @@ def main(
         plot_emissions_individuals(fileName, data_social_network, dpi_save)
         plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
         plot_demand_individuals(fileName, data_social_network, dpi_save)
+        plot_expenditure_individuals(fileName, data_social_network, dpi_save)
+        plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
 
     if firm_plots:
         ##FIRM PLOTS
