@@ -45,6 +45,7 @@ if __name__ == '__main__':
         "policy_duration": 10,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
+        'carbon_price': 1,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
@@ -65,7 +66,8 @@ if __name__ == '__main__':
             "firm_budget": 100,
             "static_tech_state": 0
         },
-        "parameters_social_network":{        
+        "parameters_social_network":{  
+            "redistribution_state": 0,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
             'quantity_state': 'optimal', 
@@ -88,8 +90,7 @@ if __name__ == '__main__':
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             'confirmation_bias': 30, 
-            'expenditure': 1,
-            'carbon_price': 1,
+            'expenditure': 1
         }
     }
     

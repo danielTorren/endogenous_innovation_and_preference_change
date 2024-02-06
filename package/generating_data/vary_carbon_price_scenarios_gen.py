@@ -18,7 +18,8 @@ def produce_param_list_scenarios(params: dict, property_list: list, property: st
     params_list = []
 
     for i in property_list:
-        params[property_section][property] = i
+        #params[property_section][property] = i#, ive changed where i set the carbon price
+        params[property] = i
         for v in range(params["seed_reps"]):
             params["parameters_firm_manager"]["landscape_seed"] = int(v+1)#change landscape seed
             #params_list.append(params.copy())

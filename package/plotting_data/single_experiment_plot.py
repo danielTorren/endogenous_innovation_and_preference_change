@@ -100,37 +100,37 @@ def plot_firm_manager_timeseries(
 
 def plot_firm_market_share(fileName: str, Data, dpi_save: int):
 
-    y_title = "Market share"
+    y_title = "Firm market share"
     property = "history_market_share_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def plot_emissions_intensity_firm(fileName: str, Data, dpi_save: int):
 
-    y_title = "Emissions intensities"
+    y_title = "Firm emissions intensities"
     property = "history_emissions_intensities_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def  plot_frim_price(fileName: str, Data, dpi_save: int):
 
-    y_title = "Prices (No carbon price)"
+    y_title = "Frim prices (No carbon price)"
     property = "history_prices_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def plot_firm_cost(fileName: str, Data, dpi_save: int):
 
-    y_title = "Cost"
+    y_title = "Firm cost"
     property = "history_cost_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def plot_firm_budget(fileName: str, Data, dpi_save: int):
 
-    y_title = "Budget"
+    y_title = "Firm budget"
     property = "history_budget_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def plot_firm_expected_carbon_premium_vec(fileName: str, Data, dpi_save: int):
 
-    y_title = "Expected carbon premium vec"
+    y_title = "Firm expected carbon premium vec"
     property = "history_expected_carbon_premium_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
@@ -237,8 +237,6 @@ def main(
         plot_emissions_individuals(fileName, data_social_network, dpi_save)
         plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
         plot_demand_individuals(fileName, data_social_network, dpi_save)
-        pass
-
 
     if firm_plots:
         ##FIRM PLOTS
@@ -252,7 +250,6 @@ def main(
         plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
         plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
-        pass
 
     plt.show()
 

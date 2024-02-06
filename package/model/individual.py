@@ -128,6 +128,7 @@ class Individual:
         #self.history_identity = [self.identity]
         self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
         self.history_utility = [self.utility]
+        self.history_expenditure = [self.expenditure_instant]
 
     def save_timeseries_data_state_individual(self):
         """
@@ -144,9 +145,10 @@ class Individual:
         self.history_low_carbon_preference.append(self.low_carbon_preference)
         self.history_flow_carbon_emissions.append(self.flow_carbon_emissions)
         self.history_utility.append(self.utility)
+        self.history_expenditure.append(self.expenditure_instant)
 
 
-    def next_step(self, social_component, emissions_intensities, prices):
+    def next_step(self, social_component, emissions_intensities, prices, carbon_dividend):
         #print(social_component, emissions_intensities, prices)
         #quit()
         self.t_individual += 1
@@ -154,6 +156,7 @@ class Individual:
         #update emissions intensities and prices
         self.emissions_intensities_vec = emissions_intensities
         self.prices_vec_instant = prices
+        self.instant_expenditure = self.init_expenditure + carbon_dividend
 
         #update preferences, willingess to pay and firm prefereces
         if self.nu_change_state != "fixed_preferences":

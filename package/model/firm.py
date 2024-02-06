@@ -28,6 +28,7 @@ class Firm:
         self.static_tech_state = parameters_firm["static_tech_state"]
         self.markup = parameters_firm["markup_init"]#variable
         self.J = parameters_firm["J"]
+        self.carbon_price = parameters_firm["carbon_price"]
 
         #ALLOWS FOR VARIABEL INIT TECH
         self.current_technology = init_tech#parameters_firm["technology_init"]#variable
@@ -125,7 +126,7 @@ class Firm:
     ##############################################################################################################
     #SCIENCE!
     def calculate_technology_fitness(self, emissions_intensity, cost):
-        f = 1/(self.expected_carbon_premium*emissions_intensity + cost)
+        f = 1/(self.expected_carbon_premium*emissions_intensity*self.carbon_price + cost)
         return f
 
     def update_search_range(self):
@@ -303,10 +304,11 @@ class Firm:
             if not self.static_tech_state:
                 self.history_random_technology_string.append(self.random_technology_string)
 
-    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec) -> None:
+    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec, carbon_price) -> None:
         
         self.t_firm +=1
         
+        self.carbon_price = carbon_price
         #consumed_quantities_vec: is the vector for each firm how much of their product was consumed
         self.previous_market_share = self.current_market_share
         self.current_market_share = market_share_vec[self.firm_id]

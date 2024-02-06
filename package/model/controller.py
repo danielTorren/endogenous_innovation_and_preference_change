@@ -15,11 +15,13 @@ class Controller:
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
+        self.carbon_price = parameters_controller["carbon_price"]
 
         #create firm manager
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
         self.parameters_firm_manager["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm_manager["compression_factor_state"] = self.compression_factor_state
+        self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
@@ -31,6 +33,7 @@ class Controller:
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
         self.parameters_social_network["J"] = self.parameters_firm_manager["J"]
+        self.parameters_social_network["carbon_price"] = self.carbon_price
         #print("self.parameters_social_network",self.parameters_social_network)
         #quit()
         #GET FIRM PRICES
@@ -52,14 +55,15 @@ class Controller:
         #NOTE HERE THAT FIRMS REACT FIRST TO THE 
 
         # Update firms based on the social network and market conditions
-        emissions_intensities_vec, prices_vec = self.firm_manager.next_step(self.consumed_quantities_vec_firms)
+        emissions_intensities_vec, prices_vec = self.firm_manager.next_step(self.consumed_quantities_vec_firms, self.carbon_price)
 
         # Update social network based on firm preferences
-        consumed_quantities_vec_firms = self.social_network.next_step(self.emissions_intensities_vec, self.prices_vec)
+        consumed_quantities_vec_firms, carbon_price = self.social_network.next_step(self.emissions_intensities_vec, self.prices_vec)
         
         #update values for the next step
         self.emissions_intensities_vec = emissions_intensities_vec
         self.prices_vec = prices_vec
         self.consumed_quantities_vec_firms = consumed_quantities_vec_firms
+        self.carbon_price = carbon_price
 
 

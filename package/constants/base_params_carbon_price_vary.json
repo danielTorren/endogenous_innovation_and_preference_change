@@ -3,7 +3,7 @@
     "policy_duration": 1000,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
-    "seed_reps": 20,
+    "seed_reps": 3,
     "parameters_firm_manager": {
         "J": 30,
         "N": 15,
@@ -22,7 +22,8 @@
         "markup_init": 0,
         "firm_budget": 100
     },
-    "parameters_social_network":{        
+    "parameters_social_network":{ 
+        "redistribution_state": 1,       
         "save_timeseries_data_state": 1,
         "imperfect_learning_state": 0,
         "quantity_state": "optimal", 

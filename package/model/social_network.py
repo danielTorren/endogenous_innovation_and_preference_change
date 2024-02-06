@@ -122,6 +122,14 @@ class Social_Network:
         #calc consumption quantities
         self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
+        self.redistribution_state = parameters_social_network["redistribution_state"]
+        #redistribute, for next turn
+        if self.redistribution_state:
+            self.carbon_dividend_array = self.calc_carbon_dividend_array()
+        else:
+            self.carbon_dividend_array = np.asarray([0]*self.num_individuals)
+
+
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
 
@@ -364,6 +372,20 @@ class Social_Network:
         consumption_vec_firms = np.sum(consumption_matrix, axis=0)
 
         return consumption_vec,consumption_vec_firms
+    
+    def calc_carbon_dividend_array(self):
+
+        consumed_quantities_matrix = np.asarray([x.quantities for x in self.agent_list])#self.quantities*self.emissions_intensities_vec
+        #print(consumed_quantities_matrix.shape,self.emissions_intensities_vec.shape)
+        
+        emissions_generated_vec = np.dot(consumed_quantities_matrix,self.emissions_intensities_vec)
+        #print(emissions_generated_vec.shape)
+        #quit()
+        #print("emissions_generated_vec",emissions_generated_vec)
+        tax_income_R =  sum(self.carbon_price*emissions_generated_vec)        
+        carbon_dividend_array =  np.asarray([tax_income_R/self.num_individuals]*self.num_individuals)
+
+        return carbon_dividend_array
 
     def update_individuals(self):
         """
@@ -372,9 +394,10 @@ class Social_Network:
 
         # Assuming you have self.agent_list as the list of objects
         ____ = list(map(
-            lambda agent, scm: agent.next_step(scm, self.emissions_intensities_vec, self.prices_vec_instant),
+            lambda agent, scm, carbon_div: agent.next_step(scm, self.emissions_intensities_vec, self.prices_vec_instant, carbon_div),
             self.agent_list,
-            self.social_component_matrix
+            self.social_component_matrix,
+            self.carbon_dividend_array
         ))
     
     def update_prices(self):
@@ -451,6 +474,8 @@ class Social_Network:
 
             self.social_component_matrix = self.calc_social_component_matrix()
 
+        if self.redistribution_state:
+            self.carbon_dividend_array = self.calc_carbon_dividend_array()
 
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
@@ -458,4 +483,4 @@ class Social_Network:
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.save_timeseries_data_social_network()
 
-        return self.consumed_quantities_vec_firms
+        return self.consumed_quantities_vec_firms, self.carbon_price

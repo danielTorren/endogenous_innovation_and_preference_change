@@ -32,6 +32,7 @@ class Firm_Manager:
         self.init_tech_heterogenous_state = parameters_firm_manager["init_tech_heterogenous_state"]
         #print("self.init_tech_heterogenous_state",self.init_tech_heterogenous_state)
         self.init_carbon_premium_heterogenous_state = parameters_firm_manager["init_carbon_premium_heterogenous_state"]
+        self.carbon_price = parameters_firm_manager["carbon_price"]
 
         self.parameters_firm = parameters_firm
 
@@ -44,6 +45,7 @@ class Firm_Manager:
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["init_market_share"] = 1/self.J
         self.parameters_firm["J"] = self.J
+        self.parameters_firm["carbon_price"] = self.carbon_price
 
         
         if self.init_tech_heterogenous_state:
@@ -100,8 +102,8 @@ class Firm_Manager:
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        emissions = np.mean(fitness_vector_emissions_intensity)
-        cost = np.mean(fitness_vector_cost)
+        emissions = np.mean(fitness_vector_emissions_intensity) +1#NORMALIZE IT? we've added 1 
+        cost = np.mean(fitness_vector_cost) +1#NORMALIZE IT
         return emissions, cost
 
 
@@ -124,9 +126,10 @@ class Firm_Manager:
         """
         # Step 1: Create the value matrix
         value_matrix_cost = np.random.uniform(0, 1, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
-        value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(value_matrix_cost)
+        normalized_value_matrix_cost = value_matrix_cost + 1
+        value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(normalized_value_matrix_cost)
     
-        return value_matrix_cost, value_matrix_emissions_intensity
+        return normalized_value_matrix_cost, value_matrix_emissions_intensity
         
     def convert_technology_cost_to_emissions_intensities(self, cost):
 
@@ -134,7 +137,9 @@ class Firm_Manager:
             emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5))/(self.rho + (1-self.rho**2)**(0.5))
         else:
             emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5) - self.rho)/(-self.rho + (1-self.rho**2)**(0.5))
-        return emissions_intensity
+        
+        normalized_EI = emissions_intensity + 1
+        return normalized_EI
     
     def calc_market_share(self, consumed_quantities_vec):
         market_share_vec = (consumed_quantities_vec*self.prices_vec)/np.matmul(consumed_quantities_vec,self.prices_vec) #price is the previous time step, so is the consumed quantity!!
@@ -193,12 +198,12 @@ class Firm_Manager:
 
     def update_firms(self):
         for j,firm in enumerate(self.firms_list):
-            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.cost_vec)
+            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.cost_vec, self.carbon_price)
 
-    def next_step(self, consumed_quantities_vec):
+    def next_step(self, consumed_quantities_vec, carbon_price):
 
         self.t_firm_manager  +=1
-
+        self.carbon_price = carbon_price
         self.market_share_vec = self.calc_market_share(consumed_quantities_vec)
         self.consumed_quantities_vec = consumed_quantities_vec
 
