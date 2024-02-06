@@ -12,7 +12,7 @@ import json
 from package.resources.utility import createFolder, produce_name_datetime, save_object
 from package.resources.run import emissions_intensities_parallel_run
 from copy import deepcopy
-from package.resources.utility import generate_vals
+from package.resources.utility import generate_vals,save_data_csv_2D
 
 def produce_param_list_scenarios(params: dict, property_list: list, property: str, property_section:str) -> list[dict]:
     params_list = []
@@ -140,6 +140,11 @@ def main(
     save_object(property_varied_title, fileName + "/Data", "property_varied_title")
     save_object(property_values_list, fileName + "/Data", "property_values_list")
     save_object(scenarios, fileName + "/Data", "scenarios")
+
+    #############################
+    #SAVE AS CSV for miquel
+    save_data_csv_2D(emissions_cumulative, fileName + "/Data", "emissions_cumulative")
+    save_data_csv_2D(weighted_emissions_intensities, fileName + "/Data", "weighted_emissions_intensities")
 
     return fileName
 

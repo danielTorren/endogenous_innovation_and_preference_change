@@ -128,6 +128,14 @@ def save_data_csv_firms(firm_manager_firms_list,save_data_csv_list_firm_manager,
                 np.savetxt(file_label, array_history, delimiter=',')
                 """
             
+def save_data_csv_2D(data,fileName,title):
+
+    csv_file_path = fileName + "/" + title + ".csv"
+    with open(csv_file_path, 'w', newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        # Iterate through each list in your data and write it to the CSV file
+        for row in data:
+            csv_writer.writerow(row)
 
 def generate_vals(variable_parameters_dict):
     if variable_parameters_dict["property_divisions"] == "linear":
