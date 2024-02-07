@@ -59,7 +59,7 @@ class Firm:
             self.search_range = 1
 
         #CALCULATE NEIGHBOURING TECH BASED ON INITIAL TECHNOLOGY
-        self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies()
+        self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies_long(1)
     
     ##############################################################################################################
     #DO PREVIOUS TIME STEP STUFF
@@ -67,7 +67,7 @@ class Firm:
         self.profit = consumed_quantities_vec[self.firm_id]*(self.firm_price - self.firm_cost)
 
     def update_budget(self):
-        budget = self.firm_budget + self.profit + ((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
+        budget = self.firm_budget + self.profit - self.research_cost*self.search_range#((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
         self.firm_budget = budget
 
     def update_carbon_premium(self, emissions_intensities_vec, cost_vec):
@@ -131,11 +131,13 @@ class Firm:
 
     def update_search_range(self):
         # Update search range based on Equation (\ref{eq_searchrange})
-
+        #a = [i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings]
         neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings) #check if all neighbouring technologies are in the memory list
 
-        if (self.firm_budget < self.research_cost) or (neighbour_bool):
+        if (self.firm_budget < self.research_cost):
             self.search_range = 0
+        elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
+            self.search_range = 2
         else:
             self.search_range = 1
 
@@ -160,7 +162,65 @@ class Firm:
             inverted_binary_values.append(inverted_binary_value)
 
         return inverted_binary_values
+    
+    def invert_bits_two_at_a_time(self,decimal_value, length):
+        # Convert decimal value to binary with leading zeros to achieve length N
+        # binary_value = format(decimal_value, f'0{length}b')
 
+        # Initialize an empty list to store inverted binary values
+        inverted_binary_values = []
+
+        # Iterate through each bit position
+        for bit_position in range(length):
+            """
+            NEED TO UNDERSTAND BETTER HOW THIS WORKS!!
+            """
+            inverted_value = decimal_value^(1 << bit_position)
+
+            # Convert the inverted decimal value to binary
+            inverted_binary_value = format(inverted_value, f'0{length}b')
+
+            # Append the inverted binary value to the list
+            inverted_binary_values.append(inverted_binary_value)
+
+        return inverted_binary_values
+    
+    def invert_bits_n_at_a_time(self,decimal_value, length, n):
+
+        # Initialize an empty list to store inverted binary values
+        inverted_binary_values = []
+
+        # Iterate through each bit position, incrementing by n
+        for start_bit_position in range(0, length, n):
+            inverted_value = decimal_value
+            # Iterate through the bits in the current chunk to invert them
+            for bit_position in range(start_bit_position, min(start_bit_position + n, length)):
+                inverted_value ^= (1 << bit_position)
+            
+            # Convert the inverted decimal value to binary
+            inverted_binary_value = format(inverted_value, f'0{length}b')
+
+            # Append the inverted binary value to the list
+            inverted_binary_values.append(inverted_binary_value)
+
+        return inverted_binary_values
+    
+    def generate_strings_with_hamming_distance_2(binary_string):
+        """
+        Generate all binary strings at a Hamming distance of 2 from the given binary string.
+        """
+        length = len(binary_string)
+        result = []
+        for i in range(length):
+            for j in range(i + 1, length):
+                # Create a new binary string with bits flipped at positions i and j
+                temp = list(binary_string)
+                temp[i] = '1' if temp[i] == '0' else '0'
+                temp[j] = '1' if temp[j] == '0' else '0'
+                result.append(''.join(temp))
+
+        return result
+    """
     def calc_neighbouring_technologies(self):
         #search with distance 1 from current peak, filter out the ones that arent in memory
 
@@ -177,6 +237,28 @@ class Firm:
         self.filtered_list_strings = filtered_list_strings
 
         return filtered_list_strings 
+    """
+    
+    def calc_neighbouring_technologies_long(self,n):
+        #SAVE
+        decimal_value_current_tech = int(self.current_technology.component_string, 2) 
+        self.decimal_value_current_tech = decimal_value_current_tech
+
+        #SAVE
+        #list_neighouring_technologies_strings = self.invert_bits_one_at_a_time(decimal_value_current_tech, len(self.current_technology.component_string))
+        list_neighouring_technologies_strings = self.invert_bits_n_at_a_time(decimal_value_current_tech, len(self.current_technology.component_string), n)
+        #print("hey",list_neighouring_technologies_strings, n)
+        #if n == 2: 
+        #    print("list_neighouring_technologies_strings",list_neighouring_technologies_strings)
+        #    print("current", self.current_technology.component_string)
+        #    quit()
+
+        self.list_neighouring_technologies_strings = list_neighouring_technologies_strings
+
+        #save
+        self.filtered_list_strings = [i for i in self.list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
+
+        return self.filtered_list_strings 
 
     def calc_tech_emission_cost(self, random_technology_string):
 
@@ -248,14 +330,16 @@ class Firm:
         #research new technology to get emissions intensities and cost
         
         self.update_search_range()
-
+        
         if self.search_range > 0:
 
-            self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies()
+            self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies_long(self.search_range)
+            #print("BROOO",self.list_neighouring_technologies_strings, self.search_range)
 
             random_technology = self.explore_technology()
 
             self.add_new_tech_memory(random_technology)
+
 
         self.choose_technology()#can change technology if preferences change!
 
@@ -279,6 +363,7 @@ class Firm:
         #self.history_expected_carbon_premium = [self.expected_carbon_premium]
         self.history_length_memory_list = [len(self.list_technology_memory)]
         self.history_indices_higher = [len(self.indices_higher)]
+        self.history_search_range = [self.search_range]
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
@@ -304,6 +389,7 @@ class Firm:
         #self.history_expected_carbon_premium.append(self.expected_carbon_premium)
         self.history_length_memory_list.append(len(self.list_technology_memory))
         self.history_indices_higher.append(len(self.indices_higher))
+        self.history_search_range.append(self.search_range)
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)

@@ -182,6 +182,25 @@ def plot_carbon_dividend_individuals(fileName, data, dpi_save):
     fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
+
+def plot_search_range(fileName, data, dpi_save):
+
+    y_title = r"search_range"
+
+    fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
+
+    for v in range(data.J):
+        data_indivdiual = data.firms_list[v]
+        ax.plot(data.history_time_firm_manager[:-1],data_indivdiual.history_search_range)
+
+    ax.set_ylabel(y_title)
+    ax.set_xlabel("Time")
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/indi_search_range"
+    fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
+
 def plot_flow_emissions_firm(fileName: str, data_social_network, data_firm_manager):
 
     y_title = r"Firm Emissions flow"
@@ -272,20 +291,22 @@ def main(
         plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        plot_demand_individuals(fileName, data_social_network, dpi_save)
-        plot_expenditure_individuals(fileName, data_social_network, dpi_save)
-        plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
+        #plot_demand_individuals(fileName, data_social_network, dpi_save)
+        #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
+        #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
+        
 
     if firm_plots:
         ##FIRM PLOTS
         #plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
-        plot_firm_market_share(fileName, data_firm_manager, dpi_save)
+        #plot_firm_market_share(fileName, data_firm_manager, dpi_save)
         #plot_frim_price(fileName, data_firm_manager, dpi_save)
-        plot_firm_cost(fileName, data_firm_manager, dpi_save)
-        #plot_firm_budget(fileName, data_firm_manager, dpi_save)
-        plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
+        #plot_firm_cost(fileName, data_firm_manager, dpi_save)
+        plot_search_range(fileName, data_firm_manager, dpi_save)
+        plot_firm_budget(fileName, data_firm_manager, dpi_save)
+        #plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
         #plot_demand_firm(fileName, data_social_network, dpi_save)
-        plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
+        #plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
 
@@ -293,7 +314,7 @@ def main(
 
 if __name__ == '__main__':
     plots = main(
-        fileName = "results/single_experiment_15_46_55__07_02_2024",
+        fileName = "results/single_experiment_17_15_52__07_02_2024",
     )
 
 
