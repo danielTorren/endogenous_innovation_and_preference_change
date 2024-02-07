@@ -288,7 +288,8 @@ class Social_Network:
             "quantity_state": self.quantity_state,
             "num_firms" : self.num_firms,
             "social_influence_state": self.social_influence_state,
-            "heterogenous_emissions_intensity_penalty_state": self.heterogenous_emissions_intensity_penalty_state
+            "heterogenous_emissions_intensity_penalty_state": self.heterogenous_emissions_intensity_penalty_state,
+            "chi_ms": self.chi_ms
         }
 
         if self.quantity_state == "replicator":

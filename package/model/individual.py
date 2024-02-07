@@ -8,6 +8,7 @@ Created: 10/10/2022
 """
 
 # imports
+from logging import raiseExceptions
 import numpy as np
 import numpy.typing as npt
 # modules
@@ -71,34 +72,20 @@ class Individual:
     
     def calc_outward_social_influence(self):
         if self.social_influence_state == "common_knowledge":
-            #THIS IS THE NEW BIT THAT I CALCULATE THE PREFERENCES GIVEN THE CONSUMPTION
-            
-            n = 0#pick these two firms
-            m = 1
+            low_carbon_preference = self.low_carbon_preference
+        else:#NEED TO HAVE A THING ABOUT IMPERFECT IMITAITON
+            raiseExceptions("INVALID SOCIAL INFLUENCE STATE")
 
-            denominator = self.emissions_intensity_penalty*(self.emissions_intensities_vec[n] - self.emissions_intensities_vec[m])#THIS MAY BE THE WRONG WAY AROUND??
-
-            if denominator == 0:#SAME TECHNOLOGIES FOR BOTH THEN DEFAULT TO WHAT?
-                low_carbon_preference = self.low_carbon_preference#BODGE JUST GIVE IT TO THEM DIRECTLY?
-            else:
-                numerator = (1 / self.substitutability)*np.log(self.quantities[m]/self.quantities[n]) + np.log(self.prices_vec_instant[m]/self.prices_vec_instant[n]) 
-                #THIS DOESNT SEEM TO WORK, BECAUSE ALL OF THE INITIAL TECHNOLOGIES ARE THE SAME?, SO YOU DIVDE BY ZERO SHIT
-                low_carbon_preference = numerator/denominator
-        elif self.social_influence_state == "preferences_observable":
-                low_carbon_preference = self.low_carbon_preference
-        else:
-            pass
-        #STAITC
-            #CONSUMPTION IMITATION?
-            
         return low_carbon_preference
 
     def calc_market_share_replicator(self):
-        fitness = 1/(self.prices_vec_instant + self.emissions_intensities_vec*self.low_carbon_preference)
-        mean_fitness = np.mean(fitness)
-        term_1 = 1 + self.chi_ms*((fitness-mean_fitness)/mean_fitness)
+        fitness = 1/(self.low_carbon_preference*self.emissions_intensities_vec + self.prices_vec_instant)
+                    #1/(self.expected_carbon_premium*emissions_intensity*self.carbon_price + cost)
+        
+        mean_fitness = np.sum(self.market_share_individual*fitness)
+        growth_market_share_individual = self.chi_ms*((fitness - mean_fitness)/mean_fitness)
+        ms_new = self.market_share_individual*(1 + growth_market_share_individual)
 
-        ms_new = self.market_share_individual*term_1
         return ms_new
 
     def update_consumption(self):

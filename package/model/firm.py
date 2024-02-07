@@ -222,9 +222,9 @@ class Firm:
         
         #choose best  tech
         self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
-        a = [x.fitness for x in self.list_technology_memory]
-        b = [x.cost for x in self.list_technology_memory]
-        c = [x.emissions_intensity for x in self.list_technology_memory]
+        #a = [x.fitness for x in self.list_technology_memory]
+        #b = [x.cost for x in self.list_technology_memory]
+        #c = [x.emissions_intensity for x in self.list_technology_memory]
         self.current_technology = max(self.list_technology_memory, key=lambda technology: technology.fitness)
         #print(self.expected_carbon_premium)
         #print(a,max(a), self.current_technology.fitness)
@@ -235,9 +235,9 @@ class Firm:
         self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
         self.firm_emissions_intensity = self.current_technology.emissions_intensity
         
-        if self.firm_id < 10:
-            self.firm_cost = (1/(self.firm_id+ 0.1))*10 
-            self.firm_emissions_intensity = (self.firm_id  + 0.1)/10
+        #if self.firm_id < 10:
+        #    self.firm_cost = (1/(self.firm_id+ 0.1))*10 
+        #    self.firm_emissions_intensity = (self.firm_id  + 0.1)/10
 
     def update_memory(self):
         #update_flags

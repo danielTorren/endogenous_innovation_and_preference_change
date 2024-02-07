@@ -272,15 +272,15 @@ def main(
         plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        #plot_demand_individuals(fileName, data_social_network, dpi_save)
-        #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
-        #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
+        plot_demand_individuals(fileName, data_social_network, dpi_save)
+        plot_expenditure_individuals(fileName, data_social_network, dpi_save)
+        plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
 
     if firm_plots:
         ##FIRM PLOTS
         #plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
         plot_firm_market_share(fileName, data_firm_manager, dpi_save)
-        plot_frim_price(fileName, data_firm_manager, dpi_save)
+        #plot_frim_price(fileName, data_firm_manager, dpi_save)
         plot_firm_cost(fileName, data_firm_manager, dpi_save)
         #plot_firm_budget(fileName, data_firm_manager, dpi_save)
         plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
@@ -293,7 +293,7 @@ def main(
 
 if __name__ == '__main__':
     plots = main(
-        fileName = "results/single_experiment_16_13_33__26_01_2024",
+        fileName = "results/single_experiment_15_46_55__07_02_2024",
     )
 
 
