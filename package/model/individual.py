@@ -116,7 +116,7 @@ class Individual:
 
     def update_preferences(self, social_component):
         low_carbon_preference = (1 - self.individual_phi)*self.low_carbon_preference + self.individual_phi*social_component
-        self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
+        self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, None)#this stops the guassian error from causing A to be too large or small thereby producing nans
 
     def calc_utility_CES(self):
         U = (sum(self.firm_preferences*self.quantities**((self.substitutability-1)/self.substitutability)))**(self.substitutability/(self.substitutability-1))

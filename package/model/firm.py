@@ -176,9 +176,6 @@ class Firm:
         filtered_list_strings = [i for i in list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
         self.filtered_list_strings = filtered_list_strings
 
-        #print("filtered_list_strings", filtered_list_strings)
-        #quit()
-
         return filtered_list_strings 
 
     def calc_tech_emission_cost(self, random_technology_string):
@@ -198,8 +195,8 @@ class Firm:
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        emissions = np.mean(fitness_vector_emissions_intensity)
-        cost = np.mean(fitness_vector_cost)
+        emissions = np.mean(fitness_vector_emissions_intensity) #+ 1
+        cost = np.mean(fitness_vector_cost) #+ 1
         return emissions, cost
 
     def explore_technology(self):
@@ -225,11 +222,22 @@ class Firm:
         
         #choose best  tech
         self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
-
+        a = [x.fitness for x in self.list_technology_memory]
+        b = [x.cost for x in self.list_technology_memory]
+        c = [x.emissions_intensity for x in self.list_technology_memory]
         self.current_technology = max(self.list_technology_memory, key=lambda technology: technology.fitness)
+        #print(self.expected_carbon_premium)
+        #print(a,max(a), self.current_technology.fitness)
+        #print(b,min(b), self.current_technology.cost)
+        #print(c,min(c), self.current_technology.emissions_intensity)
+        #quit()
 
         self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
         self.firm_emissions_intensity = self.current_technology.emissions_intensity
+        
+        if self.firm_id < 10:
+            self.firm_cost = (1/(self.firm_id+ 0.1))*10 
+            self.firm_emissions_intensity = (self.firm_id  + 0.1)/10
 
     def update_memory(self):
         #update_flags

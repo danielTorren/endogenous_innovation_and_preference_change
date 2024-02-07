@@ -33,6 +33,7 @@ class Firm_Manager:
         #print("self.init_tech_heterogenous_state",self.init_tech_heterogenous_state)
         self.init_carbon_premium_heterogenous_state = parameters_firm_manager["init_carbon_premium_heterogenous_state"]
         self.carbon_price = parameters_firm_manager["carbon_price"]
+        self.nk_multiplier = parameters_firm_manager["nk_multiplier"]
 
         self.parameters_firm = parameters_firm
 
@@ -102,8 +103,8 @@ class Firm_Manager:
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        emissions = np.mean(fitness_vector_emissions_intensity) +1#NORMALIZE IT? we've added 1 
-        cost = np.mean(fitness_vector_cost) +1#NORMALIZE IT
+        emissions = np.mean(fitness_vector_emissions_intensity) #+1#NORMALIZE IT? we've added 1 
+        cost = np.mean(fitness_vector_cost) #+1#NORMALIZE IT
         return emissions, cost
 
 
@@ -125,18 +126,20 @@ class Firm_Manager:
             We make a landscape for cost of technologies
         """
         # Step 1: Create the value matrix
-        value_matrix_cost = np.random.uniform(0, 1, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
+        value_matrix_cost = np.random.uniform(0, 1*self.nk_multiplier, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
         normalized_value_matrix_cost = value_matrix_cost + 1
+        #print("normalized_value_matrix_cost", np.min(normalized_value_matrix_cost), np.max(normalized_value_matrix_cost))
         value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(normalized_value_matrix_cost)
-    
+        #print("value_matrix_emissions_intensity", np.min(value_matrix_emissions_intensity), np.max(value_matrix_emissions_intensity))
+        #quit()
         return normalized_value_matrix_cost, value_matrix_emissions_intensity
         
     def convert_technology_cost_to_emissions_intensities(self, cost):
 
         if self.rho >= 0:
-            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5))/(self.rho + (1-self.rho**2)**(0.5))
+            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1*self.nk_multiplier, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5))/(self.rho + (1-self.rho**2)**(0.5))
         else:
-            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5) - self.rho)/(-self.rho + (1-self.rho**2)**(0.5))
+            emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1*self.nk_multiplier, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5) - self.rho)/(-self.rho + (1-self.rho**2)**(0.5))
         
         normalized_EI = emissions_intensity + 1
         return normalized_EI

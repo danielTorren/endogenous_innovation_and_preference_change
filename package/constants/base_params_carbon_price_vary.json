@@ -1,19 +1,20 @@
 {
     "burn_in_duration": 0,
-    "policy_duration": 1000,
+    "policy_duration": 100,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
-    "seed_reps": 3,
+    "seed_reps": 1,
     "parameters_firm_manager": {
         "J": 30,
         "N": 15,
         "K": 6,
         "alpha":1,
-        "rho": 0.75,
+        "rho": 0,
         "init_tech_heterogenous_state": 1,
         "init_carbon_premium_heterogenous_state": 0,
         "expected_carbon_premium": 0.05,
-        "expected_carbon_premium_init_sigma": 0.01
+        "expected_carbon_premium_init_sigma": 0.01,
+        "nk_multiplier": 10
     },
     "parameters_firm": {
         "research_cost": 0.05,
@@ -25,6 +26,7 @@
     "parameters_social_network":{ 
         "heterogenous_emissions_intensity_penalty_state": 0,
         "heterogenous_substitutability_state": 0,
+        "heterogenous_expenditure_state":0,
         "redistribution_state": 1,       
         "save_timeseries_data_state": 1,
         "imperfect_learning_state": 0,
@@ -33,7 +35,7 @@
         "network_structure_seed": 8, 
         "init_vals_seed": 14, 
         "imperfect_learning_seed": 4, 
-        "num_individuals": 200, 
+        "num_individuals": 100, 
         "network_density": 0.1, 
         "individual_phi": 0.05,
         "prob_rewire": 0.1, 
@@ -49,6 +51,8 @@
         "std_emissions_intensity_penalty": 3,
         "mean_emissions_intensity_penalty": 10,
         "confirmation_bias": 10, 
-        "expenditure": 1
+        "total_expenditure": 1,
+        "expenditure_inequality_const":1,
+        "preference_mul": 10
     }
 }

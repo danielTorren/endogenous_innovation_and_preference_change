@@ -42,21 +42,22 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 10,
+        "policy_duration": 1000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 10,
+        'carbon_price': 1,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
             "K": 6,#6,
             "alpha":1,
-            "rho": 0.75,
+            "rho":0,#0.75,
             "landscape_seed": 8,
             "init_tech_heterogenous_state": 0,
             "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
-            "expected_carbon_premium_init_sigma": 0.01
+            "expected_carbon_premium_init_sigma": 0.01,
+            "nk_multiplier": 10
         },
         "parameters_firm": {
             "research_cost": 0.05,
@@ -69,7 +70,7 @@ if __name__ == '__main__':
         "parameters_social_network":{  
             "heterogenous_emissions_intensity_penalty_state": 0,
             "heterogenous_substitutability_state": 0,
-            "heterogenous_expenditure_state":1,
+            "heterogenous_expenditure_state":0,
             "redistribution_state": 1,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
@@ -94,9 +95,10 @@ if __name__ == '__main__':
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 3,
             "mean_emissions_intensity_penalty": 10,
-            'confirmation_bias': 5, 
+            'confirmation_bias': 1, 
             'total_expenditure': 1,
-            "expenditure_inequality_const":1
+            "expenditure_inequality_const":1,
+            "preference_mul": 10
         }
     }
     
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 1
     social_plots = 1
-    firm_plots = 0
+    firm_plots = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots,firm_plots = firm_plots)

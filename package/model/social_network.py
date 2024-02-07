@@ -98,6 +98,9 @@ class Social_Network:
         (
             self.low_carbon_preference_matrix_init
         ) = self.generate_init_data_preferences()
+        self.preference_mul = parameters_social_network["preference_mul"]
+        self.low_carbon_preference_matrix_init = self.low_carbon_preference_matrix_init*self.preference_mul
+       
         
         self.heterogenous_expenditure_state = parameters_social_network["heterogenous_expenditure_state"]
         self.total_expenditure = parameters_social_network["total_expenditure"]
