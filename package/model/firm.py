@@ -129,18 +129,6 @@ class Firm:
         f = 1/(self.expected_carbon_premium*emissions_intensity*self.carbon_price + cost)
         return f
 
-    def update_search_range(self):
-        # Update search range based on Equation (\ref{eq_searchrange})
-        #a = [i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings]
-        neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings) #check if all neighbouring technologies are in the memory list
-
-        if (self.firm_budget < self.research_cost):
-            self.search_range = 0
-        elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
-            self.search_range = 2
-        else:
-            self.search_range = 1
-
     def invert_bits_one_at_a_time(self,decimal_value, length):
         # Convert decimal value to binary with leading zeros to achieve length N
         # binary_value = format(decimal_value, f'0{length}b')
@@ -241,23 +229,27 @@ class Firm:
     
     def calc_neighbouring_technologies_long(self,n):
         #SAVE
-        decimal_value_current_tech = int(self.current_technology.component_string, 2) 
-        self.decimal_value_current_tech = decimal_value_current_tech
+        
+        self.decimal_value_current_tech = int(self.current_technology.component_string, 2) 
+        print("current tech",self.decimal_value_current_tech)
+
+        print("calc_neighbouring_technologies_long, id", self.t_firm, self.firm_id)
+
+        print("BEFROE SEEARCH self.list_technology_memory_strings",self.list_technology_memory_strings, len(self.list_technology_memory_strings))
 
         #SAVE
         #list_neighouring_technologies_strings = self.invert_bits_one_at_a_time(decimal_value_current_tech, len(self.current_technology.component_string))
-        list_neighouring_technologies_strings = self.invert_bits_n_at_a_time(decimal_value_current_tech, len(self.current_technology.component_string), n)
-        #print("hey",list_neighouring_technologies_strings, n)
-        #if n == 2: 
-        #    print("list_neighouring_technologies_strings",list_neighouring_technologies_strings)
-        #    print("current", self.current_technology.component_string)
-        #    quit()
+        self.list_neighouring_technologies_strings = self.invert_bits_n_at_a_time(self.decimal_value_current_tech, len(self.current_technology.component_string), n)
+        print("hey list_neighouring_technologies_strings",self.list_neighouring_technologies_strings,len(self.list_neighouring_technologies_strings), n)
 
-        self.list_neighouring_technologies_strings = list_neighouring_technologies_strings
+        #= list_neighouring_technologies_strings
+        #print("self.list_neighouring_technologies_strings", self.list_neighouring_technologies_strings)
 
         #save
         self.filtered_list_strings = [i for i in self.list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
-
+        #print("self.list_technology_memory_strings", self.list_technology_memory_strings)
+        print("self.filtered_list_strings", self.filtered_list_strings,len(self.filtered_list_strings))
+        print("WHY IS n 1 and the research not going anywhere new. how is that possible?")
         return self.filtered_list_strings 
 
     def calc_tech_emission_cost(self, random_technology_string):
@@ -283,13 +275,12 @@ class Firm:
 
     def explore_technology(self):
         #grab a random one
-        #SAVE
-        random_technology_string = random.choice(self.list_neighouring_technologies_strings)
-        self.random_technology_string = random_technology_string
 
-        tech_emissions_intensity, tech_cost = self.calc_tech_emission_cost(random_technology_string)
+        self.random_technology_string = random.choice(self.list_neighouring_technologies_strings)#this is not empty
 
-        random_technology = Technology(random_technology_string,tech_emissions_intensity, tech_cost, choosen_tech_bool = 0) 
+        tech_emissions_intensity, tech_cost = self.calc_tech_emission_cost(self.random_technology_string)
+
+        random_technology = Technology(self.random_technology_string,tech_emissions_intensity, tech_cost, choosen_tech_bool = 0) 
 
         return random_technology
 
@@ -304,27 +295,37 @@ class Firm:
         
         #choose best  tech
         self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
-        #a = [x.fitness for x in self.list_technology_memory]
-        #b = [x.cost for x in self.list_technology_memory]
-        #c = [x.emissions_intensity for x in self.list_technology_memory]
+
         self.current_technology = max(self.list_technology_memory, key=lambda technology: technology.fitness)
-        #print(self.expected_carbon_premium)
-        #print(a,max(a), self.current_technology.fitness)
-        #print(b,min(b), self.current_technology.cost)
-        #print(c,min(c), self.current_technology.emissions_intensity)
-        #quit()
 
         self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
         self.firm_emissions_intensity = self.current_technology.emissions_intensity
-        
-        #if self.firm_id < 10:
-        #    self.firm_cost = (1/(self.firm_id+ 0.1))*10 
-        #    self.firm_emissions_intensity = (self.firm_id  + 0.1)/10
 
     def update_memory(self):
         #update_flags
         self.current_technology.choosen_tech_bool = 1
         list(map(lambda technology: technology.update_timer(), self.list_technology_memory))#update_timer on all tech
+
+    def update_search_range(self):
+        # Update search range based on Equation (\ref{eq_searchrange})
+        a = [i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings]
+        print("a",a)
+        c_filtered_list_strings = [i for i in self.list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
+        print("BRFOER c_filtered_list_strings",c_filtered_list_strings)
+        #neighbour bool is true only when all neighbours are in memory
+        #BUT THIS ISSUE IS THAT if previous step was jump 2 the neighbouring strings are now 2 away, and if you search 1 (which is what was required previously then
+        #its not gonna find anything and the ones 2 away may not be in memory)
+        neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings) #check if all neighbouring technologies are in the memory list
+        
+        print("BEFORE;",self.search_range)
+        print("neighbour_bool",neighbour_bool)
+        if (self.firm_budget < self.research_cost):
+            self.search_range = 0
+        elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
+            self.search_range = 2
+        else:
+            self.search_range = 1
+        print("AFTER;",self.search_range)
 
     def research_technology(self):
         #research new technology to get emissions intensities and cost
@@ -334,12 +335,10 @@ class Firm:
         if self.search_range > 0:
 
             self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies_long(self.search_range)
-            #print("BROOO",self.list_neighouring_technologies_strings, self.search_range)
-
+            
             random_technology = self.explore_technology()
 
             self.add_new_tech_memory(random_technology)
-
 
         self.choose_technology()#can change technology if preferences change!
 
