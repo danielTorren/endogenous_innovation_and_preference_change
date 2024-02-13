@@ -45,7 +45,7 @@ if __name__ == '__main__':
         "policy_duration": 3000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 0.1,
+        'carbon_price': 0,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
@@ -60,11 +60,11 @@ if __name__ == '__main__':
             "nk_multiplier": 1
         },
         "parameters_firm": {
-            "research_cost": 0.001,
+            "research_cost": 5,
             "markup_adjustment": 1,
             "firm_phi": 0.005,
-            "markup_init": 0.01,
-            "firm_budget": 100,
+            "markup_init": 0.25,
+            "firm_budget": 40,
             "static_tech_state": 0,
             "jump_lengths" : [1,2,3,4],
             "jump_weights" : [0.8,0.14,0.05,0.01]
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
             'quantity_state':"replicator", # "optimal"
-            "social_influence_state": "greenest_consumption",#"common_knowledge",
+            "social_influence_state": "common_knowledge",#"common_knowledge",
             "nu_change_state": "dynamic_multi_sector_weights",
             'network_structure_seed': 8, 
             'init_vals_seed': 14, 

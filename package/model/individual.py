@@ -73,7 +73,7 @@ class Individual:
     def calc_outward_social_influence(self):
         if self.social_influence_state == "common_knowledge":
             outward_preference = self.low_carbon_preference
-        elif self.social_influence_state == "greenest_consumption":
+        elif self.social_influence_state == "lowest_EI":
             #get index of lowest value of EI then use the ratio of that to total consumption
             #print("STEP")
             index_greenest = np.where(self.emissions_intensities_vec == self.emissions_intensities_vec.min())
@@ -83,6 +83,35 @@ class Individual:
             total_consumption = sum(self.quantities)
             #print("total_consumption",total_consumption)
             outward_preference = quantity_greenest/total_consumption
+            #print("outward pref",outward_preference)
+        elif self.social_influence_state == "relative_EI":
+            #get consumption that has lower than average EI
+            #print("STEP")
+            index_greener = np.where(self.emissions_intensities_vec < self.emissions_intensities_vec.mean())
+            #print("index_greener",index_greener)
+            quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
+            #print("quantity_greener",quantity_greener)
+            total_consumption = sum(self.quantities)
+            #print("total_consumption",total_consumption)
+            outward_preference = quantity_greener/total_consumption
+            #print("outward pref",outward_preference)
+        elif self.social_influence_state == "relative_price_EI":
+            #get consumption that has EI lower than cheapest
+            #index of lowest price
+            #print("STEP")
+            index_cheapest = np.where(self.prices_vec_instant == self.prices_vec_instant.min())
+            #print("index_cheapest",index_cheapest)
+            #get the average EI of these 
+            average_EI_cheapest = np.mean(self.emissions_intensities_vec[index_cheapest])
+            #print("average_EI_cheapest",average_EI_cheapest)
+            #get the index where EI is lower than the cheapest option
+            index_greener =  np.where(self.emissions_intensities_vec < average_EI_cheapest)
+            #print("index_greener",index_greener)
+            quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
+            #print("quantity_greener",quantity_greener)
+            total_consumption = sum(self.quantities)
+            #print("total_consumption",total_consumption)
+            outward_preference = quantity_greener/total_consumption
             #print("outward pref",outward_preference)
         else:#NEED TO HAVE A THING ABOUT IMPERFECT IMITAITON
             raiseExceptions("INVALID SOCIAL INFLUENCE STATE")
