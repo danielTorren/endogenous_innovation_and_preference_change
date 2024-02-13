@@ -72,11 +72,22 @@ class Individual:
     
     def calc_outward_social_influence(self):
         if self.social_influence_state == "common_knowledge":
-            low_carbon_preference = self.low_carbon_preference
+            outward_preference = self.low_carbon_preference
+        elif self.social_influence_state == "greenest_consumption":
+            #get index of lowest value of EI then use the ratio of that to total consumption
+            #print("STEP")
+            index_greenest = np.where(self.emissions_intensities_vec == self.emissions_intensities_vec.min())
+            #print("index_greenest",index_greenest)
+            quantity_greenest = sum(self.quantities[index_greenest])#sum as there may be multiple firms with the same EI
+            #print("quantity_greenest",quantity_greenest)
+            total_consumption = sum(self.quantities)
+            #print("total_consumption",total_consumption)
+            outward_preference = quantity_greenest/total_consumption
+            #print("outward pref",outward_preference)
         else:#NEED TO HAVE A THING ABOUT IMPERFECT IMITAITON
             raiseExceptions("INVALID SOCIAL INFLUENCE STATE")
 
-        return low_carbon_preference
+        return outward_preference
 
     def calc_market_share_replicator(self):
         fitness = 1/(self.low_carbon_preference*self.emissions_intensities_vec + self.prices_vec_instant)
@@ -103,6 +114,7 @@ class Individual:
 
     def update_preferences(self, social_component):
         low_carbon_preference = (1 - self.individual_phi)*self.low_carbon_preference + self.individual_phi*social_component
+        #self.low_carbon_preference = low_carbon_preference 
         self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, None)#this stops the guassian error from causing A to be too large or small thereby producing nans
 
     def calc_utility_CES(self):

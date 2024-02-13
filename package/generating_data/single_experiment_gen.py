@@ -42,10 +42,10 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 10000,
+        "policy_duration": 3000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 1,
+        'carbon_price': 0.1,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
@@ -60,14 +60,14 @@ if __name__ == '__main__':
             "nk_multiplier": 1
         },
         "parameters_firm": {
-            "research_cost": 0.05,
+            "research_cost": 0.001,
             "markup_adjustment": 1,
             "firm_phi": 0.005,
-            "markup_init": 0,
+            "markup_init": 0.01,
             "firm_budget": 100,
             "static_tech_state": 0,
-            "jump_lengths" : [1,2,3],
-            "jump_weights" : [0.8,0.15,0.05]
+            "jump_lengths" : [1,2,3,4],
+            "jump_weights" : [0.8,0.14,0.05,0.01]
         },
         "parameters_social_network":{  
             "heterogenous_emissions_intensity_penalty_state": 0,
@@ -77,30 +77,31 @@ if __name__ == '__main__':
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
             'quantity_state':"replicator", # "optimal"
-            "social_influence_state": "common_knowledge",
+            "social_influence_state": "greenest_consumption",#"common_knowledge",
             "nu_change_state": "dynamic_multi_sector_weights",
             'network_structure_seed': 8, 
             'init_vals_seed': 14, 
             'imperfect_learning_seed': 4, 
             'num_individuals': 100, 
             'network_density': 0.1, 
-            'individual_phi': 0.05,
+            'individual_phi': 0.005,
             'prob_rewire': 0.1, 
             'homophily': 0.9, 
             'substitutability': 1.5, 
             "std_substitutability":0.5,
             'a_preferences': 2, 
             'b_preferences': 2, 
+            #"shift_preferences": -1,
             'clipping_epsilon': 1e-3, 
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 3,
             "mean_emissions_intensity_penalty": 10,
-            'confirmation_bias': 1, 
+            'confirmation_bias': 30, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
-            "preference_mul": 10,
+            "preference_mul": 1,
             "chi_ms": 1
         }
     }

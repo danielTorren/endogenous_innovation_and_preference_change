@@ -69,6 +69,7 @@ class Firm:
     ##############################################################################################################
     #DO PREVIOUS TIME STEP STUFF
     def calculate_profits(self,consumed_quantities_vec):
+        #print(",consumed_quantities_vec[self.firm_id]self.firm_price - self.firm_cost",consumed_quantities_vec[self.firm_id],self.firm_price - self.firm_cost)
         self.profit = consumed_quantities_vec[self.firm_id]*(self.firm_price - self.firm_cost)
 
     def update_budget(self):
@@ -370,7 +371,9 @@ class Firm:
     ##############################################################################################################
     #MONEY
     def set_price(self):
+        #print("mark_up_multiplier on 1",(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share),(self.markup_adjustment,(self.current_market_share - self.previous_market_share)/self.previous_market_share))
         new_markup = self.markup*(1+(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share))
+        #print("new_markup",new_markup)#its always zero
         self.firm_price = self.firm_cost*(1+new_markup)
         self.markup = new_markup
         
@@ -386,6 +389,7 @@ class Firm:
         self.history_length_memory_list = [len(self.list_technology_memory)]
         self.history_indices_higher = [len(self.indices_higher)]
         self.history_search_range = [self.search_range]
+        self.history_profit = [self.profit]
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
@@ -412,6 +416,7 @@ class Firm:
         self.history_length_memory_list.append(len(self.list_technology_memory))
         self.history_indices_higher.append(len(self.indices_higher))
         self.history_search_range.append(self.search_range)
+        self.history_profit.append(self.profit)
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)

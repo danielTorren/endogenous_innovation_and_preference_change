@@ -94,6 +94,7 @@ class Social_Network:
 
         self.a_preferences = parameters_social_network["a_preferences"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
         self.b_preferences = parameters_social_network["b_preferences"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
+        #self.shift_preferences = parameters_social_network["shift_preferences"]
         self.std_low_carbon_preference = parameters_social_network["std_low_carbon_preference"]
         (
             self.low_carbon_preference_matrix_init
@@ -255,9 +256,10 @@ class Social_Network:
     
     def generate_init_data_preferences(self) -> tuple[npt.NDArray, npt.NDArray]:
 
-        preferences_uncapped = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
-
+        preferences_uncapped = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)# + self.shift_preferences
+       
         low_carbon_preference_matrix = np.clip(preferences_uncapped, 0 + self.clipping_epsilon_init_preference, 1- self.clipping_epsilon_init_preference)
+        #low_carbon_preference_matrix = preferences_uncapped
 
         return low_carbon_preference_matrix
 

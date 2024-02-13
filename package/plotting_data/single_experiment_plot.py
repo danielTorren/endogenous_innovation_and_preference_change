@@ -201,6 +201,24 @@ def plot_search_range(fileName, data, dpi_save):
     fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
+def plot_firm_proft(fileName, data, dpi_save):
+
+    y_title = r"firm profit"
+
+    fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
+
+    for v in range(data.J):
+        data_indivdiual = data.firms_list[v]
+        ax.plot(data.history_time_firm_manager[:-1],data_indivdiual.history_profit)
+
+    ax.set_ylabel(y_title)
+    ax.set_xlabel("Time")
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/indi_firm_profit"
+    fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
+
 def plot_flow_emissions_firm(fileName: str, data_social_network, data_firm_manager):
 
     y_title = r"Firm Emissions flow"
@@ -289,7 +307,7 @@ def main(
         ###SOCIAL NETWORK PLOTS
         #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
         plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
-        plot_emissions_individuals(fileName, data_social_network, dpi_save)
+        #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
         #plot_demand_individuals(fileName, data_social_network, dpi_save)
         #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
@@ -303,10 +321,11 @@ def main(
         #plot_frim_price(fileName, data_firm_manager, dpi_save)
         plot_firm_cost(fileName, data_firm_manager, dpi_save)
         #plot_search_range(fileName, data_firm_manager, dpi_save)
+        plot_firm_proft(fileName, data_firm_manager, dpi_save)
         plot_firm_budget(fileName, data_firm_manager, dpi_save)
-        plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
+        #plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
         #plot_demand_firm(fileName, data_social_network, dpi_save)
-        plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
+        #plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
 
