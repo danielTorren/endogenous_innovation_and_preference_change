@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 1000,
+        "policy_duration": 10000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         'carbon_price': 1,
@@ -65,7 +65,9 @@ if __name__ == '__main__':
             "firm_phi": 0.005,
             "markup_init": 0,
             "firm_budget": 100,
-            "static_tech_state": 0
+            "static_tech_state": 0,
+            "jump_lengths" : [1,2,3],
+            "jump_weights" : [0.8,0.15,0.05]
         },
         "parameters_social_network":{  
             "heterogenous_emissions_intensity_penalty_state": 0,
