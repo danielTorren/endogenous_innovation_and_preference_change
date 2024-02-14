@@ -68,7 +68,11 @@ if __name__ == '__main__':
             "firm_budget": 50,
             "static_tech_state": 0,
             "memory_cap": 30,
-            "jump_scale": 2
+            "jump_scale": 2,
+            "segment_number": 3,
+            "theta": 1,#COME BACK TO THIS AT SOMEPOINT
+            "num_individuals_surveyed": 30,#Add just this so its a PROPORTION OF POPULATION
+            "survey_cost": 1
         },
         "parameters_social_network":{  
             "fixed_preferences_state": 1,#"fixed_preferences",#"dynamic_multi_sector_weights",#"fixed_preferences",#"dynamic_multi_sector_weights",

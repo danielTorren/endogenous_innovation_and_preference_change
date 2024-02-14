@@ -32,6 +32,13 @@ class Firm:
         self.memory_cap = parameters_firm["memory_cap"]
         self.jump_scale = parameters_firm["jump_scale"]
         self.static_carbon_premium_heterogenous_state = parameters_firm["static_carbon_premium_heterogenous_state"]
+        self.theta = parameters_firm["theta"]
+        self.segment_number = parameters_firm["segment_number"]
+        self.segement_preference = np.arange(self.segment_number)/(2*self.segment_number)
+        print("self.segement_preference",self.segement_preference)
+        self.num_individuals_surveyed = parameters_firm["num_individuals_surveyed"]
+        self.survey_cost = parameters_firm["survey_bool"]
+        self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
 
         #ALLOWS FOR VARIABEL INIT TECH
         self.current_technology = init_tech#parameters_firm["technology_init"]#variable
@@ -74,7 +81,7 @@ class Firm:
         self.profit = consumed_quantities_vec[self.firm_id]*(self.firm_price - self.firm_cost)
 
     def update_budget(self):
-        self.firm_budget += self.profit - self.research_cost*self.search_range#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
+        self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
 
     def update_carbon_premium(self, emissions_intensities_vec, cost_vec):
         #calculate this sub list of firms where higher market share and that use a technology that is not prefered given THIS firms preference
@@ -123,6 +130,9 @@ class Firm:
 
             self.expected_carbon_premium = new_premium
     
+    #def update_emissions_intensity_preference(self):
+
+    
     def process_previous_info(self,consumed_quantities_vec, emissions_intensities_vec,cost_vec):
         
         self.calculate_profits(consumed_quantities_vec)
@@ -132,8 +142,8 @@ class Firm:
 
     ##############################################################################################################
     #SCIENCE!
-    def calculate_technology_fitness(self, emissions_intensity, cost):
-        f = 1/(self.expected_carbon_premium*emissions_intensity*self.carbon_price + cost)
+    def calculate_technology_fitnesses(self, emissions_intensity, cost):
+        f = 1/((1-self.segement_preference)*(cost + emissions_intensity*self.carbon_price) + self.segement_preference*self.theta*emissions_intensity)
         return f
 
     def invert_bits_one_at_a_time(self,decimal_value, length):
@@ -269,16 +279,37 @@ class Firm:
         self.list_technology_memory.append(random_technology)
         self.list_technology_memory_strings.append(random_technology.component_string)
 
-    def choose_technology(self):
+    def calc_expected_segment_share(self):
+        if self.firm_budget > self.survey_cost:
+            self.survey_bool = 1
+            survey_preferences = random.choices(self.consumer_preferences_vec, k = self.num_individuals_surveyed)
+            hist,__ = np.histogram(survey_preferences, bins=self.segement_preference)
+            self.expected_segment_share = hist/self.num_individuals_surveyed
+        else: 
+            self.survey_bool = 0
+        
+
+    
+    def choose_technology(self,competitors_emissions_intensities_vec, competitors_cost_vec):
         #update_fitness_values in tech
         for technology in self.list_technology_memory:
-            technology.fitness = self.calculate_technology_fitness(technology.emissions_intensity, technology.cost)
-        
+            technology.fitnesses = self.calculate_technology_fitnesses(technology.emissions_intensity, technology.cost)
+        percieved_fitnesses_vec = self.calculate_technology_fitnesses(competitors_emissions_intensities_vec, competitors_cost_vec)
         #choose best  tech
         self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
 
         self.before_select_tech_string = self.current_technology.component_string
-        self.current_technology = max(self.list_technology_memory, key=lambda technology: technology.fitness)
+
+        max_fitness_technologies = np.max(self.list_technology_memory, key=lambda technology: technology.fitness)
+        expected_relative_fitnesses = max_fitness_technologies/(max_fitness_technologies + np.sum(percieved_fitnesses_vec, axis = 1))
+        
+        self.calc_expected_segment_share()#update survey
+
+        expected_profits = (self.markup/(1+self.markup))*expected_relative_fitnesses*self.expected_segment_share#DO I NEED TO MULTIPLY BY B?
+        
+        segment_index_max_profit = np.where(expected_profits == expected_profits.max())
+        
+        self.current_technology = np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
 
         self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
         self.firm_emissions_intensity = self.current_technology.emissions_intensity
@@ -394,11 +425,13 @@ class Firm:
             if not self.static_tech_state:
                 self.history_random_technology_string.append(self.random_technology_string)
 
-    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec, carbon_price) -> None:
+    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec, carbon_price, consumer_preferences_vec) -> None:
         
         self.t_firm +=1
         
         self.carbon_price = carbon_price
+
+        self.consumer_preferences_vec = consumer_preferences_vec
         #consumed_quantities_vec: is the vector for each firm how much of their product was consumed
         self.previous_market_share = self.current_market_share
         self.current_market_share = market_share_vec[self.firm_id]
