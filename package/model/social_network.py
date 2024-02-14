@@ -33,7 +33,7 @@ class Social_Network:
 
         #INITAL STATE OF THE SYSTEMS, WHAT ARE THE RUN CONDITIONS
         self.imperfect_learning_state = parameters_social_network["imperfect_learning_state"]
-        self.nu_change_state = parameters_social_network["nu_change_state"]
+        self.fixed_preferences_state = parameters_social_network["fixed_preferences_state"]
         self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
 
@@ -142,10 +142,10 @@ class Social_Network:
         #NOW SET SEED FOR THE IMPERFECT LEARNING
         np.random.seed(self.imperfect_learning_seed)
 
-        if self.nu_change_state == "fixed_preferences":
+        if self.fixed_preferences_state == "fixed_preferences":
             self.social_component_matrix = np.asarray([n.low_carbon_preference for n in self.agent_list])#DUMBY FEED IT ITSELF? DO I EVEN NEED TO DEFINE IT
         else:
-            if self.nu_change_state in ("uniform_network_weighting","static_culturally_determined_weights","dynamic_multi_sector_weights"):
+            if self.fixed_preferences_state in ("uniform_network_weighting","static_culturally_determined_weights","dynamic_multi_sector_weights"):
                 self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
         #FIX
@@ -285,7 +285,7 @@ class Social_Network:
             "prices_vec": self.prices_vec,
             "emissions_intensities_vec": self.emissions_intensities_vec,
             "clipping_epsilon" :self.clipping_epsilon,
-            "nu_change_state": self.nu_change_state,
+            "fixed_preferences_state": self.fixed_preferences_state,
             #"substitutability": self.substitutability,
             "quantity_state": self.quantity_state,
             "num_firms" : self.num_firms,
@@ -446,7 +446,8 @@ class Social_Network:
         #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
     
     def set_up_time_series_social_network(self):
-        self.history_preference_list = [self.preference_list]
+        if self.fixed_preferences_state != "fixed_preferences":
+            self.history_preference_list = [self.preference_list]
         #self.history_weighting_matrix = [self.weighting_matrix]
         #self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
         #self.history_weighting_matrix_convergence = [self.weighting_matrix_convergence]
@@ -472,7 +473,8 @@ class Social_Network:
         #self.history_weighting_matrix_convergence.append(self.weighting_matrix_convergence)
         self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED
         self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
-        self.history_preference_list.append(self.preference_list)
+        if self.fixed_preferences_state != "fixed_preferences":
+            self.history_preference_list.append(self.preference_list)
         self.history_consumed_quantities_vec.append(self.consumed_quantities_vec)
         self.history_consumed_quantities_vec_firms.append(self.consumed_quantities_vec_firms)
         self.history_time_social_network.append(self.t_social_network)
@@ -506,8 +508,8 @@ class Social_Network:
         self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
         # update network parameters_social_network for next step
-        if self.nu_change_state != "fixed_preferences":
-            if self.nu_change_state == "dynamic_multi_sector_weights":
+        if self.fixed_preferences_state != "fixed_preferences":
+            if self.fixed_preferences_state == "dynamic_multi_sector_weights":
                 self.weighting_matrix = self.update_weightings()
             else:
                 pass #this is for "uniform_network_weighting", "static_socially_determined_weights","static_culturally_determined_weights"

@@ -29,8 +29,9 @@ class Firm:
         self.markup = parameters_firm["markup_init"]#variable
         self.J = parameters_firm["J"]
         self.carbon_price = parameters_firm["carbon_price"]
-        self.jump_lengths = parameters_firm["jump_lengths"]
-        self.jump_weights = parameters_firm["jump_weights"]
+        self.memory_cap = parameters_firm["memory_cap"]
+        self.jump_scale = parameters_firm["jump_scale"]
+        self.static_carbon_premium_heterogenous_state = parameters_firm["static_carbon_premium_heterogenous_state"]
 
         #ALLOWS FOR VARIABEL INIT TECH
         self.current_technology = init_tech#parameters_firm["technology_init"]#variable
@@ -126,7 +127,8 @@ class Firm:
         
         self.calculate_profits(consumed_quantities_vec)
         self.update_budget()
-        self.update_carbon_premium(emissions_intensities_vec, cost_vec)
+        if not self.static_carbon_premium_heterogenous_state:
+            self.update_carbon_premium(emissions_intensities_vec, cost_vec)
 
     ##############################################################################################################
     #SCIENCE!
@@ -223,6 +225,7 @@ class Firm:
 
         unfiltered_list_neighouring_technologies_strings = self.invert_bits_n_at_a_time(self.decimal_value_current_tech, len(self.current_technology.component_string), n)
         
+        self.list_neighouring_technologies_strings_1 = self.invert_bits_n_at_a_time(self.decimal_value_current_tech, len(self.current_technology.component_string), 1)
         self.list_neighouring_technologies_strings = [i for i in unfiltered_list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
 
     def calc_tech_emission_cost(self, random_technology_string):
@@ -284,65 +287,37 @@ class Firm:
         #update_flags
         self.current_technology.choosen_tech_bool = 1
         list(map(lambda technology: technology.update_timer(), self.list_technology_memory))#update_timer on all tech
+        #remove additional technologies
+        if len(self.list_technology_memory) > self.memory_cap:
+            timer_max = max(x.timer for x in self.list_technology_memory)
+            self.list_technology_memory = list( filter(lambda x: x.timer == timer_max, self.list_technology_memory) ) 
 
-    def update_search_range(self):
-        # Update search range based on Equation (\ref{eq_searchrange})
-        
-        #NEED TO MAKE SURE THAT IF IT GOES 2 but doesnt change then doenst go back to the 1
-        neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings) #check if all neighbouring technologies are in the memory list
-        #print()
-
-        #if self.firm_id == 5:
-        #    print("step stsars EHREE")
-
-        #NEED TO GET IT TO GO BACK DOWN TO 1 WHEN ITS MOVED SOMEWHERE WITH A JUMP and its look at all the stuff at that level?
-
-
-        if (self.before_select_tech_string == self.current_technology.component_string) and (self.search_range>1):
-            #IN the case that previous step was 2 then the memory will have stuff which is 2 away i think but searching 1 away will return a empty list
-            #so conditional on the research cost allow a second search, if not go to 1, i dont know if this will fix it
-            
-            #I WANT IT SO THAT AS LONG AS neighbour_bool IS NOT TRUE IT REPEATS THE ATTEMTPS
-            #if self.firm_id == 5:
-            #    print("self.list_neighouring_technologies_strings",self.list_neighouring_technologies_strings)
-            ##    print("INSDIE THE CONSITONS")          
-            #    print("not in memory", [i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings])
-            #    print("search time, id",self.t_firm, self.firm_id ,self.search_range)
-            #    print("neighbour bool",neighbour_bool , self.firm_budget < self.research_cost)
-
-            if (self.firm_budget >= self.search_range*self.research_cost):
-                if neighbour_bool and (self.firm_budget >= (1+self.search_range)*self.research_cost):
-                    #if self.firm_id == 5:
-                    #    print("increase search (before)", self.search_range)
-                    self.search_range += 1#increment it as its tried all the stuff at the distance
-                else:
-                    #if self.firm_id == 5:
-                    #    print("repeat", self.search_range)
-                    pass# keep going, dont change the range, it just happend to pick one that wasnt fit?
-            else:
-                #WONT THIS HAVE THE SAME ISSUE AS NEIGHBOURING WILL BE THE SAME, MAYEB RESET IT?
-                #if self.firm_id == 5:
-                #    print("0 range!")
-                #self.list_neighouring_technologies_strings = []
-                self.search_range = 0
-        else:
-            #simple scenario, to get you out of 1 research
-            if (self.firm_budget < self.research_cost):
-                self.search_range = 0
-            elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
-                self.search_range = 2
-            else:
-                self.search_range = 1
-
+    def calc_jump_weights(self,jumps):
+        denominator = sum((1/jumps)**self.jump_scale)
+        jump_weights = ((1/jumps)**self.jump_scale)/denominator
+        return jump_weights
+    
     def update_search_range_prob(self):
         # Update search range based on Equation (\ref{eq_searchrange})
+        
+        #Have i discovered everything within 1 jump (local search)
+        neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings_1)
 
         #simple scenario, to get you out of 1 research
         if (self.firm_budget < self.research_cost):#no money no research
             self.search_range = 0
+        elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
+            #Establish what the minimum jump length is - want this to be 2
+
+            minimum_jump = 2#FIX THIS TO BE DYNAMIC 
+
+            #Establish what the maximum jump length is
+            maximum_jump = np.clip(np.floor(self.firm_budget/self.research_cost), None, self.N)
+            jumps = np.arange(minimum_jump,maximum_jump)
+            jump_weights = self.calc_jump_weights(jumps)
+            self.search_range = random.choices(jumps, weights = jump_weights, k = 1)[0]
         else:
-            self.search_range = random.choices(self.jump_lengths, weights = self.jump_weights, k = 1)[0]
-            #print(self.search_range)
+            self.search_range = 1
 
     def research_technology(self):
         #research new technology to get emissions intensities and cost
@@ -352,13 +327,7 @@ class Firm:
         if self.search_range > 0:
             self.calc_neighbouring_technologies_long(self.search_range)#IN HERE self.list_neighouring_technologies_strings set
 
-            #print("time, id", self.t_firm, self.firm_id)
-            #print("self.list_technology_memory_strings",self.list_technology_memory_strings)
-            #print("self.list_neighouring_technologies_strings",self.list_neighouring_technologies_strings)
-            
             if self.list_technology_memory_strings and self.list_neighouring_technologies_strings:#Needs to be stuff in memory and neighbouring
-                #if self.firm_id == 5:
-                #    print("FINAL before selct time, id",self.t_firm, self.firm_id, self.search_range )
                 random_technology = self.explore_technology()
 
                 self.add_new_tech_memory(random_technology)
@@ -371,9 +340,7 @@ class Firm:
     ##############################################################################################################
     #MONEY
     def set_price(self):
-        #print("mark_up_multiplier on 1",(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share),(self.markup_adjustment,(self.current_market_share - self.previous_market_share)/self.previous_market_share))
         new_markup = self.markup*(1+(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share))
-        #print("new_markup",new_markup)#its always zero
         self.firm_price = self.firm_cost*(1+new_markup)
         self.markup = new_markup
         
@@ -387,7 +354,8 @@ class Firm:
         #self.history_cost = [self.firm_cost]
         #self.history_expected_carbon_premium = [self.expected_carbon_premium]
         self.history_length_memory_list = [len(self.list_technology_memory)]
-        self.history_indices_higher = [len(self.indices_higher)]
+        if not self.static_carbon_premium_heterogenous_state:
+            self.history_indices_higher = [len(self.indices_higher)]
         self.history_search_range = [self.search_range]
         self.history_profit = [self.profit]
 
@@ -414,7 +382,8 @@ class Firm:
         #self.history_cost.append(self.firm_cost)
         #self.history_expected_carbon_premium.append(self.expected_carbon_premium)
         self.history_length_memory_list.append(len(self.list_technology_memory))
-        self.history_indices_higher.append(len(self.indices_higher))
+        if not self.static_carbon_premium_heterogenous_state:
+            self.history_indices_higher.append(len(self.indices_higher))
         self.history_search_range.append(self.search_range)
         self.history_profit.append(self.profit)
 

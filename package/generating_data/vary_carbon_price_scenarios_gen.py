@@ -35,7 +35,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     # 1. Run with no preference change, no innovation
     if 1 in scenarios:
         base_params_copy_1 = deepcopy(base_params_copy)
-        base_params_copy_1["parameters_social_network"]["nu_change_state"] = "fixed_preferences"
+        base_params_copy_1["parameters_social_network"]["fixed_preferences_state"] = "fixed_preferences"
         base_params_copy_1["parameters_firm"]["static_tech_state"] = 1
         #print(" base_params_copy_1", base_params_copy_1)
         #quit()
@@ -45,7 +45,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     # 2. Run with preference change, no innovation
     if 2 in scenarios:
         base_params_copy_2 = deepcopy(base_params_copy)
-        base_params_copy_2["parameters_social_network"]["nu_change_state"] = "dynamic_multi_sector_weights"
+        base_params_copy_2["parameters_social_network"]["fixed_preferences_state"] = "dynamic_multi_sector_weights"
         base_params_copy_2["parameters_firm"]["static_tech_state"] = 1
         #print(" base_params_copy_2", base_params_copy_2)
         params_sub_list_2 = produce_param_list_scenarios(base_params_copy_2, carbon_tax_vals,property_varied,property_section)
@@ -54,7 +54,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     # 3. Run with no preference change, with innovation
     if 3 in scenarios:
         base_params_copy_3 = deepcopy(base_params_copy)
-        base_params_copy_3["parameters_social_network"]["nu_change_state"] =  "fixed_preferences"
+        base_params_copy_3["parameters_social_network"]["fixed_preferences_state"] =  "fixed_preferences"
         base_params_copy_3["parameters_firm"]["static_tech_state"] = 0
         #print(" base_params_copy_3", base_params_copy_3)
         params_sub_list_3 = produce_param_list_scenarios(base_params_copy_3, carbon_tax_vals,property_varied,property_section)
@@ -63,14 +63,14 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     # 4. Run with preference change, with innovation
     if 4 in scenarios:
         base_params_copy_4 = deepcopy(base_params_copy)
-        base_params_copy_4["parameters_social_network"]["nu_change_state"] = "dynamic_multi_sector_weights"
+        base_params_copy_4["parameters_social_network"]["fixed_preferences_state"] = "dynamic_multi_sector_weights"
         base_params_copy_4["parameters_firm"]["static_tech_state"] = 0
         #print(" base_params_copy_4", base_params_copy_4)
         params_sub_list_4 = produce_param_list_scenarios(base_params_copy_4, carbon_tax_vals,property_varied,property_section)
         params_list.extend(params_sub_list_4)
     #quit()
     #for i in params_list:
-    #    print(i["parameters_social_network"]["nu_change_state"],i["parameters_firm"]["static_tech_state"],i["parameters_social_network"]["carbon_price"], i["parameters_firm_manager"]["landscape_seed"])
+    #    print(i["parameters_social_network"]["fixed_preferences_state"],i["parameters_firm"]["static_tech_state"],i["parameters_social_network"]["carbon_price"], i["parameters_firm_manager"]["landscape_seed"])
     #quit()
     return params_list
 

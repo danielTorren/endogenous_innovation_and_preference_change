@@ -36,7 +36,7 @@
         "imperfect_learning_state": 0,
         "quantity_state":"replicator", 
         "social_influence_state": "lowest_EI",
-        "nu_change_state": "dynamic_multi_sector_weights",
+        "fixed_preferences_state": "dynamic_multi_sector_weights",
         "network_structure_seed": 8, 
         "init_vals_seed": 14, 
         "imperfect_learning_seed": 4, 

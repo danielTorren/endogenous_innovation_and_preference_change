@@ -44,7 +44,7 @@ class Individual:
         self.prices_vec_instant = parameters_individuals["prices_vec"]#NOT SURE IF THIS IS RIGHT? IS IT UPDATED WITH THE CARBON PRICE TO START
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities_vec = parameters_individuals["emissions_intensities_vec"]
-        self.nu_change_state = ["nu_change_state"]
+        self.fixed_preferences_state = ["fixed_preferences_state"]
         self.social_influence_state = parameters_individuals["social_influence_state"]
         self.quantity_state = parameters_individuals["quantity_state"]
         self.heterogenous_emissions_intensity_penalty_state = parameters_individuals["heterogenous_emissions_intensity_penalty_state"]
@@ -201,7 +201,7 @@ class Individual:
         self.instant_expenditure = self.init_expenditure + self.carbon_dividend
 
         #update preferences, willingess to pay and firm prefereces
-        if self.nu_change_state != "fixed_preferences":
+        if self.fixed_preferences_state != "fixed_preferences":
             self.update_preferences(social_component)
         self.update_firm_preferences()
 

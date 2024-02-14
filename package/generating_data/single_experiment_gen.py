@@ -42,34 +42,36 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_duration": 0,
-        "policy_duration": 1000,
+        "policy_duration": 3000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         'carbon_price': 0,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
-            "K": 6,#6,
+            "K": 1,#6,#6,
             "alpha":1,
-            "rho":-0.5,#0.75,
+            "rho":-1,#0.75,
             "landscape_seed": 3,
-            "init_tech_heterogenous_state": 1,
+            "init_tech_heterogenous_state": 0,
             "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01,
             "nk_multiplier": 1
         },
         "parameters_firm": {
-            "research_cost": 5,
+            "static_carbon_premium_heterogenous_state": 1,
+            "research_cost": 1,
             "markup_adjustment": 1,
             "firm_phi": 0.005,
             "markup_init": 0.25,
-            "firm_budget": 40,
-            "static_tech_state": 1,
-            "jump_lengths" : [1,2,3,4],
-            "jump_weights" : [0.8,0.14,0.05,0.01]
+            "firm_budget": 50,
+            "static_tech_state": 0,
+            "memory_cap": 30,
+            "jump_scale": 2
         },
         "parameters_social_network":{  
+            "fixed_preferences_state": 1,#"fixed_preferences",#"dynamic_multi_sector_weights",#"fixed_preferences",#"dynamic_multi_sector_weights",
             "heterogenous_emissions_intensity_penalty_state": 0,
             "heterogenous_substitutability_state": 0,
             "heterogenous_expenditure_state":0,
@@ -78,15 +80,14 @@ if __name__ == '__main__':
             'imperfect_learning_state': 0,
             'quantity_state':"replicator", # "optimal"
             "social_influence_state": "relative_EI",#common_knowledge,lowest_EI,relative_EI,relative_price_EI
-            "nu_change_state": "dynamic_multi_sector_weights",
             'network_structure_seed': 8, 
             'init_vals_seed': 5, 
             'imperfect_learning_seed': 4, 
             'num_individuals': 100, 
             'network_density': 0.1, 
             'individual_phi': 0.005,
-            'prob_rewire': 0.1, 
-            'homophily': 0.9, 
+            'prob_rewire': 0.1,
+            'homophily': 0.9,
             'substitutability': 1.5, 
             "std_substitutability":0.5,
             'a_preferences': 2, 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 1
     social_plots = 1
-    firm_plots = 0
+    firm_plots = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots,firm_plots = firm_plots)
