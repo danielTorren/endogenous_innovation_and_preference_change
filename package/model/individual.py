@@ -78,22 +78,27 @@ class Individual:
             #print("STEP")
             index_greenest = np.where(self.emissions_intensities_vec == self.emissions_intensities_vec.min())
             #print("index_greenest",index_greenest)
-            quantity_greenest = sum(self.quantities[index_greenest])#sum as there may be multiple firms with the same EI
+            #quantity_greenest = sum(self.quantities[index_greenest])#sum as there may be multiple firms with the same EI
+            expenditure_greenest = sum(self.quantities[index_greenest]*self.prices_vec_instant[index_greenest])
             #print("quantity_greenest",quantity_greenest)
-            total_consumption = sum(self.quantities)
+            #total_consumption = sum(self.quantities)
             #print("total_consumption",total_consumption)
-            outward_preference = quantity_greenest/total_consumption
+            #outward_preference = quantity_greenest/total_consumption
+            outward_preference = expenditure_greenest/self.expenditure_instant#total_consumption
             #print("outward pref",outward_preference)
         elif self.social_influence_state == "relative_EI":
             #get consumption that has lower than average EI
             #print("STEP")
             index_greener = np.where(self.emissions_intensities_vec < self.emissions_intensities_vec.mean())
             #print("index_greener",index_greener)
-            quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
+            #quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
+            expenditure_greener = sum(self.quantities[index_greener]*self.prices_vec_instant[index_greener])
             #print("quantity_greener",quantity_greener)
-            total_consumption = sum(self.quantities)
+            #total_consumption = sum(self.quantities)
             #print("total_consumption",total_consumption)
-            outward_preference = quantity_greener/total_consumption
+            #outward_preference = quantity_greener/total_consumption
+            outward_preference = expenditure_greener/self.expenditure_instant
+            #print("yo", expenditure_greener, self.expenditure_instant)
             #print("outward pref",outward_preference)
         elif self.social_influence_state == "relative_price_EI":
             #get consumption that has EI lower than cheapest
@@ -107,11 +112,14 @@ class Individual:
             #get the index where EI is lower than the cheapest option
             index_greener =  np.where(self.emissions_intensities_vec < average_EI_cheapest)
             #print("index_greener",index_greener)
-            quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
+            #quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
+            expenditure_greener = sum(self.quantities[index_greener]*self.prices_vec_instant[index_greener])
             #print("quantity_greener",quantity_greener)
-            total_consumption = sum(self.quantities)
+            #total_consumption = sum(self.quantities)
             #print("total_consumption",total_consumption)
-            outward_preference = quantity_greener/total_consumption
+            #outward_preference = quantity_greener/total_consumption
+            outward_preference = expenditure_greener/self.expenditure_instant
+            #print("yo", expenditure_greener, self.expenditure_instant)
             #print("outward pref",outward_preference)
         else:#NEED TO HAVE A THING ABOUT IMPERFECT IMITAITON
             raiseExceptions("INVALID SOCIAL INFLUENCE STATE")
@@ -144,17 +152,15 @@ class Individual:
     def update_preferences(self, social_component):
         low_carbon_preference = (1 - self.individual_phi)*self.low_carbon_preference + self.individual_phi*social_component
         #self.low_carbon_preference = low_carbon_preference 
-        self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, None)#this stops the guassian error from causing A to be too large or small thereby producing nans
+        self.low_carbon_preference  = np.clip(low_carbon_preference, 0 + self.clipping_epsilon, 1 - self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
 
     def calc_utility_CES(self):
         U = (sum(self.firm_preferences*self.quantities**((self.substitutability-1)/self.substitutability)))**(self.substitutability/(self.substitutability-1))
         return U
 
     def calc_total_emissions(self):      
-        return sum(self.quantities)
+        return sum(self.quantities*self.emissions_intensities_vec)
 
-
-    
     def set_up_time_series(self):
         self.history_low_carbon_preference = [self.low_carbon_preference]
         #self.history_identity = [self.identity]

@@ -309,7 +309,7 @@ def main(
         plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        plot_demand_individuals(fileName, data_social_network, dpi_save)
+        #plot_demand_individuals(fileName, data_social_network, dpi_save)
         #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
         #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
         
