@@ -48,6 +48,7 @@ class Controller:
         self.emissions_intensities_vec = self.firm_manager.emissions_intensities_vec
         self.prices_vec = self.firm_manager.prices_vec
         self.consumed_quantities_vec_firms = self.social_network.consumed_quantities_vec_firms
+        self.consumer_preferences_vec = self.social_network.preference_list
 
     def next_step(self):
         self.t_controller+=1
@@ -55,12 +56,13 @@ class Controller:
         #NOTE HERE THAT FIRMS REACT FIRST TO THE 
 
         # Update firms based on the social network and market conditions
-        emissions_intensities_vec, prices_vec = self.firm_manager.next_step(self.consumed_quantities_vec_firms, self.carbon_price)
+        emissions_intensities_vec, prices_vec = self.firm_manager.next_step(self.consumed_quantities_vec_firms, self.carbon_price, self.consumer_preferences_vec)
 
         # Update social network based on firm preferences
-        consumed_quantities_vec_firms, carbon_price = self.social_network.next_step(self.emissions_intensities_vec, self.prices_vec)
+        consumed_quantities_vec_firms, carbon_price, consumer_preferences_vec = self.social_network.next_step(self.emissions_intensities_vec, self.prices_vec)
         
         #update values for the next step
+        self.consumer_preferences_vec = consumer_preferences_vec
         self.emissions_intensities_vec = emissions_intensities_vec
         self.prices_vec = prices_vec
         self.consumed_quantities_vec_firms = consumed_quantities_vec_firms

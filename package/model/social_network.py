@@ -129,6 +129,7 @@ class Social_Network:
             self.std_emissions_intensity_penalty = parameters_social_network["std_emissions_intensity_penalty"]
             
             self.emissions_intensity_penalty_vec = np.clip(np.random.normal(loc = self.mean_emissions_intensity_penalty , scale = self.std_emissions_intensity_penalty, size = self.num_individuals), 0.01, None)#limit between 0.01
+            #print("self.emissions_intensity_penalty_vec",self.emissions_intensity_penalty_vec)
         else:
             self.emissions_intensity_penalty_vec = np.asarray([1]*self.num_individuals)
 
@@ -136,17 +137,17 @@ class Social_Network:
         #quit()
 
         self.agent_list = self.create_agent_list()
+        self.preference_list = list(map(attrgetter('low_carbon_preference'), self.agent_list))
 
         self.shuffle_agent_list()#partial shuffle of the list based on prefernece
 
         #NOW SET SEED FOR THE IMPERFECT LEARNING
         np.random.seed(self.imperfect_learning_seed)
 
-        if self.fixed_preferences_state == "fixed_preferences":
+        if self.fixed_preferences_state:
             self.social_component_matrix = np.asarray([n.low_carbon_preference for n in self.agent_list])#DUMBY FEED IT ITSELF? DO I EVEN NEED TO DEFINE IT
         else:
-            if self.fixed_preferences_state in ("uniform_network_weighting","static_culturally_determined_weights","dynamic_multi_sector_weights"):
-                self.weighting_matrix = self.update_weightings()
+            self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
         #FIX
         self.total_carbon_emissions_cumulative = 0#this are for post tax
@@ -291,11 +292,10 @@ class Social_Network:
             "num_firms" : self.num_firms,
             "social_influence_state": self.social_influence_state,
             "heterogenous_emissions_intensity_penalty_state": self.heterogenous_emissions_intensity_penalty_state,
-            "chi_ms": self.chi_ms
         }
 
         if self.quantity_state == "replicator":
-            individual_params["self.chi_ms"] = self.chi_ms
+            individual_params["chi_ms"] = self.chi_ms
 
         agent_list = [
             Individual(
@@ -353,9 +353,10 @@ class Social_Network:
     def calc_weighting_matrix_attribute(self,attribute_array):
 
         difference_matrix = np.subtract.outer(attribute_array, attribute_array) #euclidean_distances(attribute_array,attribute_array)# i think this actually not doing anything? just squared at the moment
-
+        #print("difference_matrix",difference_matrix)
+        #print("self.confirmation_bias",self.confirmation_bias)
         alpha_numerator = np.exp(-np.multiply(self.confirmation_bias, np.abs(difference_matrix)))
-        #print(self.adjacency_matrix, self.adjacency_matrix.shape)
+        #print("alpha_numerator",alpha_numerator,alpha_numerator)
         #quit()
         non_diagonal_weighting_matrix = (
             self.adjacency_matrix*alpha_numerator
@@ -415,13 +416,7 @@ class Social_Network:
     
     def calc_carbon_dividend_array(self):
 
-        #consumed_quantities_matrix = np.asarray([x.quantities for x in self.agent_list])#self.quantities*self.emissions_intensities_vec
-        #print(consumed_quantities_matrix.shape,self.emissions_intensities_vec.shape)
-        
         emissions_generated_vec = np.dot(self.consumption_matrix,self.emissions_intensities_vec)
-        #print(emissions_generated_vec.shape)
-        #quit()
-        #print("emissions_generated_vec",emissions_generated_vec)
         tax_income_R =  sum(self.carbon_price*emissions_generated_vec)        
         carbon_dividend_array =  np.asarray([tax_income_R/self.num_individuals]*self.num_individuals)
 
@@ -508,12 +503,8 @@ class Social_Network:
         self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
         # update network parameters_social_network for next step
-        if self.fixed_preferences_state != "fixed_preferences":
-            if self.fixed_preferences_state == "dynamic_multi_sector_weights":
-                self.weighting_matrix = self.update_weightings()
-            else:
-                pass #this is for "uniform_network_weighting", "static_socially_determined_weights","static_culturally_determined_weights"
-
+        if not self.fixed_preferences_state:#if not fixed preferences then update
+            self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
 
         if self.redistribution_state:
@@ -527,4 +518,4 @@ class Social_Network:
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.save_timeseries_data_social_network()
 
-        return self.consumed_quantities_vec_firms, self.carbon_price
+        return self.consumed_quantities_vec_firms, self.carbon_price, self.preference_list

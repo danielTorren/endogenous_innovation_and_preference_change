@@ -201,14 +201,16 @@ class Firm_Manager:
 
     def update_firms(self):
         for j,firm in enumerate(self.firms_list):
-            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.cost_vec, self.carbon_price)
+            #                    market_share_vec,     consumed_quantities_vec,       emissions_intensities_vec,     cost_vec, carbon_price, consumer_preferences_vec
+            firm.next_step(self.market_share_vec, self.consumed_quantities_vec, self.emissions_intensities_vec, self.cost_vec, self.carbon_price, self.consumer_preferences_vec)
 
-    def next_step(self, consumed_quantities_vec, carbon_price):
+    def next_step(self, consumed_quantities_vec, carbon_price, consumer_preferences_vec):
 
         self.t_firm_manager  +=1
         self.carbon_price = carbon_price
         self.market_share_vec = self.calc_market_share(consumed_quantities_vec)
         self.consumed_quantities_vec = consumed_quantities_vec
+        self.consumer_preferences_vec = consumer_preferences_vec
 
         self.update_firms()
 

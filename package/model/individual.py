@@ -87,19 +87,11 @@ class Individual:
             outward_preference = expenditure_greenest/self.expenditure_instant#total_consumption
             #print("outward pref",outward_preference)
         elif self.social_influence_state == "relative_EI":
-            #get consumption that has lower than average EI
-            #print("STEP")
+
             index_greener = np.where(self.emissions_intensities_vec < self.emissions_intensities_vec.mean())
-            #print("index_greener",index_greener)
-            #quantity_greener = sum(self.quantities[index_greener])#sum as there may be multiple firms with the same EI
             expenditure_greener = sum(self.quantities[index_greener]*self.prices_vec_instant[index_greener])
-            #print("quantity_greener",quantity_greener)
-            #total_consumption = sum(self.quantities)
-            #print("total_consumption",total_consumption)
-            #outward_preference = quantity_greener/total_consumption
             outward_preference = expenditure_greener/self.expenditure_instant
-            #print("yo", expenditure_greener, self.expenditure_instant)
-            #print("outward pref",outward_preference)
+
         elif self.social_influence_state == "relative_price_EI":
             #get consumption that has EI lower than cheapest
             #index of lowest price

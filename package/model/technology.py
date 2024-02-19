@@ -7,7 +7,7 @@ class Technology:
         self.cost = cost
         self.choosen_tech_bool = choosen_tech_bool#NEED TO FIND ANOTHER SOLUTION TO THIS CANT HAVE IT BE SHARE BY ALL THE FIRMS
         self.timer = 0
-        self.fitness = None
+        self.fitnesses = None
 
     def update_timer(self):
         if ~self.choosen_tech_bool:
