@@ -38,11 +38,12 @@ class Firm:
         self.segement_preference_bounds = np.linspace(0, 1, self.segment_number+1) 
         self.width_segment = self.segement_preference_bounds[1] - self.segement_preference_bounds[0]
         self.segement_preference = np.arange(self.width_segment/2, 1, self.width_segment)   #      np.linspace(0, 1, self.segment_number+1) #the plus 1 is so that theere are that number of divisions in the space
-
+        self.sunk_captial_cost = parameters_firm["sunk_captital_cost"]
         self.num_individuals_surveyed = parameters_firm["num_individuals_surveyed"]
         self.survey_cost = parameters_firm["survey_bool"]
         self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
         self.survey_stoch_prob = parameters_firm["survey_stoch_prob"]
+        self.total_changing_captial_cost = 0
 
         #ALLOWS FOR VARIABEL INIT TECH
         self.current_technology = init_tech#parameters_firm["technology_init"]#variable
@@ -85,7 +86,7 @@ class Firm:
         self.profit = consumed_quantities_vec[self.firm_id]*(self.firm_price - self.firm_cost)
 
     def update_budget(self):
-        self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
+        self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
 
     
     def process_previous_info(self,consumed_quantities_vec):
@@ -186,38 +187,43 @@ class Firm:
         else: 
             self.survey_bool = 0
         
+    def calc_expected_profit(self,current_tech_fitness, competitors_fitness):
 
+        expected_relative_fitnesses = current_tech_fitness/(current_tech_fitness + np.sum(competitors_fitness, axis = 0))
+        expected_profit = sum((self.markup/(1+self.markup))*expected_relative_fitnesses*self.expected_segment_share)
+
+        return expected_profit
     
-    def choose_technology(self,competitors_emissions_intensities_vec, competitors_cost_vec):
+    def choose_technology(self,competitors_emissions_intensities_vec, competitors_cost_vec, consumed_quantities_vec):
+
+        percieved_fitnesses_vec = self.calculate_technology_fitnesses(competitors_emissions_intensities_vec, competitors_cost_vec)
 
         #update_fitness_values in tech
+        expected_profits_technologies = []
         for technology in self.list_technology_memory:#REDO THIS SO ITS NOT FOR LOOP
             technology.fitnesses = self.calculate_technology_fitnesses_single(technology.emissions_intensity, technology.cost)
-        percieved_fitnesses_vec = self.calculate_technology_fitnesses(competitors_emissions_intensities_vec, competitors_cost_vec)
-        
+            expected_profits_technologies.append(self.calc_expected_profit(technology.fitnesses, percieved_fitnesses_vec))
+        #print("expected_profits_technologies", expected_profits_technologies)
+
         #choose best  tech
         self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
-
         self.before_select_tech_string = self.current_technology.component_string
 
-        max_fitness_technologies = [
-            max(self.list_technology_memory, key=lambda technology: technology.fitnesses[i])
-            for i in range(self.segment_number)
-        ]
 
-        max_fitness_technologies_fitnesses = np.asarray([max_fitness_technologies[x].fitnesses[x] for x in range(self.segment_number)])# THIS IS shape, SEGMENT BY SEGMENT; AS FOR EAACH SEGMENT WE HAVE A MAX FITNESS TECHNOLOGY, AND WE WANT TO LOOK AT THE FITNESSES ACROSS ALL 3 SEGMENTS
+        self.tech_index_max_profit = np.where(expected_profits_technologies == max(expected_profits_technologies))[0][0]#CHECK WHY DOUBLE
+        #print("self.tech_index_max_profit",self.tech_index_max_profit)
 
-        expected_relative_fitnesses = max_fitness_technologies_fitnesses/(max_fitness_technologies_fitnesses + np.sum(percieved_fitnesses_vec, axis = 0))
-        self.calc_expected_segment_share()#update survey
-        expected_profits = (self.markup/(1+self.markup))*expected_relative_fitnesses*self.expected_segment_share#DO I NEED TO MULTIPLY BY B?
-        self.segment_index_max_profit = np.where(expected_profits == max(expected_profits))[0][0]#CHECK WHY DOUBLE
-        #print("segment_index_max_profit",segment_index_max_profit)
-        #quit()
+        expected_profit_current_tech = self.calc_expected_profit(self.current_technology.fitnesses, percieved_fitnesses_vec)
+        #print("profit forcast", self.profit, expected_profit_current_tech)
 
-        self.current_technology = max_fitness_technologies[self.segment_index_max_profit]#np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
+        self.total_changing_captial_cost = self.sunk_captial_cost*consumed_quantities_vec[self.firm_id]#COST OF SWITCHING PER UNIT
 
-        self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
-        self.firm_emissions_intensity = self.current_technology.emissions_intensity
+        if expected_profits_technologies[self.tech_index_max_profit] - self.total_changing_captial_cost > expected_profit_current_tech:
+            self.current_technology = self.list_technology_memory[self.tech_index_max_profit]#np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
+            self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
+            self.firm_emissions_intensity = self.current_technology.emissions_intensity
+        else:
+            self.total_changing_captial_cost = 0
 
     def update_memory(self):
         #update_flags
@@ -261,7 +267,7 @@ class Firm:
         else:
             self.search_range = 1
 
-    def research_technology(self,emissions_intensities_vec,cost_vec):
+    def research_technology(self,emissions_intensities_vec,cost_vec, consumed_quantities_vec):
         #research new technology to get emissions intensities and cost
         
         self.update_search_range_prob()
@@ -275,7 +281,9 @@ class Firm:
                 self.add_new_tech_memory(random_technology)
             #ISSUE IS THAT AFTER a 2 step it goes back to 1 and it hasnt changed anything so it doesnt find anything
 
-        self.choose_technology(emissions_intensities_vec,cost_vec)#can change technology if preferences change!
+        self.calc_expected_segment_share()#update survey
+
+        self.choose_technology(emissions_intensities_vec,cost_vec, consumed_quantities_vec)#can change technology if preferences change!
 
         self.update_memory()
     
@@ -300,7 +308,7 @@ class Firm:
             self.history_indices_higher = [len(self.indices_higher)]
         self.history_search_range = [self.search_range]
         self.history_profit = [self.profit]
-        self.history_segment_index_max_profit = [self.segment_index_max_profit]
+        self.history_segment_index_max_profit = [self.tech_index_max_profit]
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
@@ -329,7 +337,7 @@ class Firm:
             self.history_indices_higher.append(len(self.indices_higher))
         self.history_search_range.append(self.search_range)
         self.history_profit.append(self.profit)
-        self.history_segment_index_max_profit.append(self.segment_index_max_profit)
+        self.history_segment_index_max_profit.append(self.tech_index_max_profit)
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)
@@ -359,7 +367,7 @@ class Firm:
         self.process_previous_info(consumed_quantities_vec)#assume all are arrays
 
         if not self.static_tech_state:
-            self.research_technology(emissions_intensities_vec,cost_vec)
+            self.research_technology(emissions_intensities_vec,cost_vec, consumed_quantities_vec)
 
         self.set_price()
 

@@ -45,15 +45,15 @@ if __name__ == '__main__':
         "policy_duration": 1000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 0.1,
+        'carbon_price': 1,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
             "K": 1,#6,#6,
             "alpha":1,
-            "rho":0.25,#0.75,
+            "rho":0.75,#0.75,
             "landscape_seed": 3,
-            "init_tech_heterogenous_state": 0,
+            "init_tech_heterogenous_state": 1,
             "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01,
@@ -74,7 +74,8 @@ if __name__ == '__main__':
             "num_individuals_surveyed": 30,#Add just this so its a PROPORTION OF POPULATION
             "survey_cost": 0.1,
             "survey_bool": 1,
-            "survey_stoch_prob":0.1
+            "survey_stoch_prob":0.1,
+            "sunk_captital_cost": 0.01
         },
         "parameters_social_network":{  
             "fixed_preferences_state": 0,
@@ -105,7 +106,7 @@ if __name__ == '__main__':
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 0.1,
             "mean_emissions_intensity_penalty": 10,
-            'confirmation_bias': 10, 
+            'confirmation_bias': 50, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
 
