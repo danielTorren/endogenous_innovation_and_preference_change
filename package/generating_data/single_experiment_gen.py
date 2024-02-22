@@ -45,13 +45,13 @@ if __name__ == '__main__':
         "policy_duration": 1000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 1,
+        'carbon_price': 0,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
-            "K": 1,#6,#6,
+            "K": 6,#6,#6,
             "alpha":1,
-            "rho":0.75,#0.75,
+            "rho":0,#0.75,
             "landscape_seed": 3,
             "init_tech_heterogenous_state": 1,
             "init_carbon_premium_heterogenous_state": 0,
@@ -61,12 +61,13 @@ if __name__ == '__main__':
         },
         "parameters_firm": {
             "static_carbon_premium_heterogenous_state": 1,
+            "endogenous_mark_up_state":0,
             "research_cost": 0.1,
             "markup_adjustment": 1,
             "firm_phi": 0.01,
             "markup_init": 0.25,
             "firm_budget": 500,
-            "static_tech_state": 0,
+            "static_tech_state": 1,
             "memory_cap": 30,
             "jump_scale": 2,
             "segment_number": 3,
@@ -82,11 +83,11 @@ if __name__ == '__main__':
             "heterogenous_emissions_intensity_penalty_state": 0,
             "heterogenous_substitutability_state": 0,
             "heterogenous_expenditure_state":0,
-            "redistribution_state": 0,      
+            "redistribution_state": 1,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
-            'quantity_state':"optimal",#"replicator", # "optimal"
-            "social_influence_state": "relative_EI",#common_knowledge,lowest_EI,relative_EI,relative_price_EI
+            'quantity_state':"alt_optimal",#"replicator", # "optimal"
+            "social_influence_state": "threshold_price",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
             'network_structure_seed': 8, 
             'init_vals_seed': 5, 
             'imperfect_learning_seed': 4, 
@@ -94,7 +95,7 @@ if __name__ == '__main__':
             'network_density': 0.1, 
             'individual_phi': 0.01,
             'prob_rewire': 0.1,
-            'homophily': 1,
+            'homophily': 0,
             'substitutability': 8, 
             "std_substitutability":0.5,
             'a_preferences': 2, 
@@ -106,11 +107,11 @@ if __name__ == '__main__':
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 0.1,
             "mean_emissions_intensity_penalty": 10,
-            'confirmation_bias': 50, 
+            'confirmation_bias': 1, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
-
-            "chi_ms": 1
+            "chi_ms": 1,
+            "omega": 1#THE LOWER, THE LESS STRINGENT IT IS SO THE GREENER IMITATION
         }
     }
     
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 1
     social_plots = 1
-    firm_plots = 1
+    firm_plots = 0
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots, firm_plots = firm_plots)

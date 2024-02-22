@@ -26,6 +26,7 @@ class Firm:
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.static_tech_state = parameters_firm["static_tech_state"]
+        self.endogenous_mark_up_state = parameters_firm["endogenous_mark_up_state"]
         self.markup = parameters_firm["markup_init"]#variable
         self.J = parameters_firm["J"]
         self.carbon_price = parameters_firm["carbon_price"]
@@ -290,10 +291,12 @@ class Firm:
     ##############################################################################################################
     #MONEY
     def set_price(self):
-        new_markup = self.markup*(1+(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share))
-        self.firm_price = self.firm_cost*(1+new_markup)
-        self.markup = new_markup
-        
+        if self.endogenous_mark_up_state:
+            new_markup = self.markup*(1+(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share))
+            self.firm_price = self.firm_cost*(1+new_markup)
+            self.markup = new_markup
+        else:
+            self.firm_price = self.firm_cost*(1+self.markup)
     ##############################################################################################################
     #FORWARD
         
@@ -308,7 +311,7 @@ class Firm:
             self.history_indices_higher = [len(self.indices_higher)]
         self.history_search_range = [self.search_range]
         self.history_profit = [self.profit]
-        self.history_segment_index_max_profit = [self.tech_index_max_profit]
+        #self.history_segment_index_max_profit = [self.tech_index_max_profit]
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
@@ -337,7 +340,7 @@ class Firm:
             self.history_indices_higher.append(len(self.indices_higher))
         self.history_search_range.append(self.search_range)
         self.history_profit.append(self.profit)
-        self.history_segment_index_max_profit.append(self.tech_index_max_profit)
+        #self.history_segment_index_max_profit.append(self.tech_index_max_profit)
 
         if self.firm_id in [1,2,3]:
             self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)

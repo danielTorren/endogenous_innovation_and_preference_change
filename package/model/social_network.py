@@ -79,6 +79,9 @@ class Social_Network:
         )
 
         self.social_influence_state = parameters_social_network["social_influence_state"]
+        if self.social_influence_state in ("threshold_EI", "threshold_price","threshold_average"):
+            self.omega = parameters_social_network["omega"]
+        
         self.quantity_state = parameters_social_network["quantity_state"]
         if self.quantity_state == "replicator":
             self.chi_ms = parameters_social_network["chi_ms"]
@@ -296,6 +299,9 @@ class Social_Network:
 
         if self.quantity_state == "replicator":
             individual_params["chi_ms"] = self.chi_ms
+        
+        if self.social_influence_state in ("threshold_EI", "threshold_price","threshold_average"):
+            individual_params["omega"] = self.omega
 
         agent_list = [
             Individual(
@@ -325,7 +331,11 @@ class Social_Network:
     def calc_ego_influence_degroot(self) -> npt.NDArray:
 
         attribute_matrix = np.asarray(list(map(attrgetter('outward_social_influence'), self.agent_list))) 
-
+        #prefences = np.asarray(list(map(attrgetter('low_carbon_preference'), self.agent_list))) 
+        #print("attribute_matrix",attribute_matrix)
+        #print("prefences", prefences)
+        #print("difference", prefences- attribute_matrix)
+        #quit()
         neighbour_influence = np.matmul(self.weighting_matrix, attribute_matrix)    
         
         return neighbour_influence
@@ -387,7 +397,8 @@ class Social_Network:
         self.preference_list = list(map(attrgetter('low_carbon_preference'), self.agent_list))
 
         norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.preference_list)
-
+        print("norm_weighting_matrix[0]", norm_weighting_matrix[0])
+        #quit()
         return norm_weighting_matrix
 
     def calc_total_emissions(self) -> int:
