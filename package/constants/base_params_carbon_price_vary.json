@@ -54,7 +54,7 @@
         "std_low_carbon_preference": 0.01, 
         "std_learning_error": 0.02, 
         "std_emissions_intensity_penalty": 3,
-        "mean_emissions_intensity_penalty": 10,
+        "emissions_intensity_penalty": 10,
         "confirmation_bias": 30, 
         "total_expenditure": 1,
         "expenditure_inequality_const":1,

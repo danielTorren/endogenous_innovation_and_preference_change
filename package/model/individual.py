@@ -138,9 +138,9 @@ class Individual:
             self.update_firm_preferences()
             self.quantities = (self.expenditure_instant*(self.firm_preferences/self.prices_vec_instant)**self.substitutability)/sum(((self.firm_preferences/self.prices_vec_instant)**self.substitutability)*self.prices_vec_instant)
         elif self.quantity_state == "alt_optimal":
-            component_1 = (np.exp(-self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec)/self.prices_vec_instant)**self.substitutability
-            Z = sum(self.prices_vec_instant*component_1)
-            self.quantities = (self.expenditure_instant*component_1)/Z
+            component_1 = np.exp(-self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec*self.substitutability)
+            Z = sum(self.prices_vec_instant**(1-self.substitutability)*component_1)
+            self.quantities = (self.expenditure_instant*component_1)/(Z*self.prices_vec_instant**self.substitutability)
         elif self.quantity_state == "replicator":
             self.market_share_individual = self.calc_market_share_replicator()
             self.quantities = self.expenditure_instant*self.market_share_individual

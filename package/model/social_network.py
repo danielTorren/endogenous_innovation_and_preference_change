@@ -127,14 +127,15 @@ class Social_Network:
         #quit()
         #heterogenous_emissions_intensity_penalty_state
         self.heterogenous_emissions_intensity_penalty_state = parameters_social_network["heterogenous_emissions_intensity_penalty_state"]
+        self.emissions_intensity_penalty = parameters_social_network["emissions_intensity_penalty"]
         if self.heterogenous_emissions_intensity_penalty_state:
-            self.mean_emissions_intensity_penalty = parameters_social_network["mean_emissions_intensity_penalty"]
             self.std_emissions_intensity_penalty = parameters_social_network["std_emissions_intensity_penalty"]
-            
-            self.emissions_intensity_penalty_vec = np.clip(np.random.normal(loc = self.mean_emissions_intensity_penalty , scale = self.std_emissions_intensity_penalty, size = self.num_individuals), 0.01, None)#limit between 0.01
-            #print("self.emissions_intensity_penalty_vec",self.emissions_intensity_penalty_vec)
+            self.emissions_intensity_penalty_vec = np.clip(np.random.normal(loc = self.emissions_intensity_penalty , scale = self.std_emissions_intensity_penalty, size = self.num_individuals), 0.01, None)#limit between 0.01
+
         else:
-            self.emissions_intensity_penalty_vec = np.asarray([1]*self.num_individuals)
+            self.emissions_intensity_penalty_vec = np.asarray([self.emissions_intensity_penalty]*self.num_individuals)
+            #print("self.emissions_intensity_penalty_vec",self.emissions_intensity_penalty_vec)
+            #quit()
 
         #print("self.emissions_intensity_penalty_vec", self.emissions_intensity_penalty_vec)
         #quit()
@@ -397,7 +398,7 @@ class Social_Network:
         self.preference_list = list(map(attrgetter('low_carbon_preference'), self.agent_list))
 
         norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.preference_list)
-        print("norm_weighting_matrix[0]", norm_weighting_matrix[0])
+        #print("norm_weighting_matrix[0]", norm_weighting_matrix[0])
         #quit()
         return norm_weighting_matrix
 

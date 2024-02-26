@@ -44,7 +44,7 @@ if __name__ == '__main__':
         "burn_in_duration": 0,
         "policy_duration": 1000,
         "save_timeseries_data_state": 1,
-        "compression_factor_state": 1,
+        "compression_factor_state": 10,
         'carbon_price': 0,
         "parameters_firm_manager": {
             "J": 30,
@@ -67,7 +67,7 @@ if __name__ == '__main__':
             "firm_phi": 0.01,
             "markup_init": 0.25,
             "firm_budget": 500,
-            "static_tech_state": 1,
+            "static_tech_state": 0,
             "memory_cap": 30,
             "jump_scale": 2,
             "segment_number": 3,
@@ -86,8 +86,8 @@ if __name__ == '__main__':
             "redistribution_state": 1,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
-            'quantity_state':"alt_optimal",#"replicator", # "optimal"
-            "social_influence_state": "threshold_price",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
+            'quantity_state':"optimal",#"replicator", # "optimal","alt_optimal"
+            "social_influence_state": "threshold_EI",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
             'network_structure_seed': 8, 
             'init_vals_seed': 5, 
             'imperfect_learning_seed': 4, 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
             'individual_phi': 0.01,
             'prob_rewire': 0.1,
             'homophily': 0,
-            'substitutability': 8, 
+            'substitutability': 1.01, 
             "std_substitutability":0.5,
             'a_preferences': 2, 
             'b_preferences': 2, 
@@ -106,8 +106,8 @@ if __name__ == '__main__':
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 0.1,
-            "mean_emissions_intensity_penalty": 10,
-            'confirmation_bias': 1, 
+            "emissions_intensity_penalty": 10,
+            'confirmation_bias': 100, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
             "chi_ms": 1,

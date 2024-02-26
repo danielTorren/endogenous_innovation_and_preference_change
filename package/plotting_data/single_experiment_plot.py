@@ -3,6 +3,7 @@
 Created: 10/10/2022
 """
 # imports
+import matplotlib.animation as animation 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.cm import get_cmap
@@ -311,12 +312,94 @@ def plot_len_indices_higher(
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
+def final_scatter_price_EI(
+    fileName, 
+    data, 
+    dpi_save,
+    ):
+
+    fig, ax = plt.subplots(figsize=(10,6)) 
+
+    # bodge
+    scatter = ax.scatter(data.history_prices_vec[-1], data.history_emissions_intensities_vec[-1],  c=data.history_market_share_vec[-1], cmap='viridis', alpha=0.9, edgecolors='black')
+
+    # Add colorbar to indicate market share
+    cbar = fig.colorbar(scatter)
+    cbar.set_label('Market Share')
+
+    ax.set_xlabel(r"Emissions intensities, ei")
+    ax.set_ylabel(r"Price, p")
+    ax.set_title("Price-Emissions intensity correlation $\\rho$ = %s" % (data.rho))
+
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/scatter_ei_price_market_share"
+    #fig.savefig(f + ".eps", dpi=600, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+
+def ani_scatter_price_EI(fileName, data, dpi_save):
+    fig, ax = plt.subplots(figsize=(10,6)) 
+        # Calculate the min and max of market share data
+    
+    min_price, max_price = np.min(data.history_prices_vec), np.max(data.history_prices_vec)
+    min_ei, max_ei = np.min(data.history_emissions_intensities_vec), np.max(data.history_emissions_intensities_vec)
+
+    #min_price, max_price = np.floor(np.min(data.history_market_share_vec)), np.ceil(np.min(data.history_market_share_vec))
+    #min_ei, max_ei = np.floor(np.min(data.history_market_share_vec)), np.ceil(np.min(data.history_market_share_vec))
+
+    min_market_share = round(0.95*np.min(data.history_market_share_vec), 3)
+    max_market_share = round(1.05*np.max(data.history_market_share_vec), 3)
+
+    cbar = fig.colorbar(
+        plt.cm.ScalarMappable(cmap=get_cmap("plasma"), norm=Normalize(vmin=min_market_share, vmax=max_market_share)), ax=ax
+        )
+    cbar.set_label('Market Share')
+
+    def update(frame):
+        ax.clear()
+        ax.set_xlim(min_price, max_price)
+        ax.set_ylim(min_ei, max_ei)
+        scatter = ax.scatter(data.history_prices_vec[frame], data.history_emissions_intensities_vec[frame],  c=data.history_market_share_vec[frame], cmap='viridis', alpha=0.9, edgecolors='black')
+        ax.set_xlabel(r"Price, p")
+        ax.set_ylabel(r"Emissions intensities, ei")
+        ax.set_title("Price-Emissions intensity correlation $\\rho$ = %s" % (data.rho))
+        
+        # Clear the color bar axis
+        #cbar = fig.colorbar(scatter, ax=ax)
+        #cbar.remove()
+        # Set colorbar limits
+        #scatter.set_clim(vmin=min_market_share, vmax=max_market_share)
+        #fig.colorbar(scatter, ax=ax).set_label('Market Share')
+
+        # Add step counter
+        ax.annotate('Step: %d/%s' % (data.history_time_firm_manager[frame], data.history_time_firm_manager[-1]), xy=(0.75, 0.95), xycoords='axes fraction', fontsize=12, color='black')
+
+    ani = animation.FuncAnimation(fig, update, frames=len(data.history_time_firm_manager), interval=1)
+    # saving to m4 using ffmpeg writer 
+    writervideo = animation.FFMpegWriter(fps=60) 
+    ani.save(fileName + '/Animations/scatter_price_EI.mp4', writer=writervideo) 
+    #ni.save(fileName + '/Animations/scatter_ei_price_market_share_animation.gif', dpi=dpi_save)
+    print("done")
+    #plt.close()
+    return ani
+    
+
+# Example usage:
+# final_scatter_price_EI('path_to_save', your_data_object, 100)
+
+
+
 def main(
-    fileName = "results/single_shot_11_52_34__05_01_2023",
+    fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
     social_plots = 1,
     firm_plots = 1
     ) -> None: 
+
+    social_plots = 0
+    firm_plots = 0
 
     data_social_network = load_object(fileName + "/Data", "social_network")
     data_firm_manager = load_object(fileName + "/Data", "firm_manager")
@@ -344,9 +427,12 @@ def main(
         #plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
         #plot_demand_firm(fileName, data_social_network, dpi_save)
         plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
-        plot_firm_segment_index_max_profit(fileName, data_firm_manager, dpi_save)
+        #plot_firm_segment_index_max_profit(fileName, data_firm_manager, dpi_save)
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
+
+    #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
+    ani_1 = ani_scatter_price_EI(fileName, data_firm_manager, dpi_save)
 
     plt.show()
 
