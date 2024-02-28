@@ -49,10 +49,10 @@ if __name__ == '__main__':
         'carbon_price': 0,
         "parameters_firm_manager": {
             "J": 30,
-            "N": 8,#15,
-            "K": 4,#6,#6,
+            "N": 8,
+            "K": 4,
             "alpha":1,
-            "rho":0,#0,#0.75,
+            "rho":0,
             "landscape_seed": 6,
             "init_tech_heterogenous_state": 1,
             "init_carbon_premium_heterogenous_state": 0,
@@ -67,7 +67,6 @@ if __name__ == '__main__':
         "parameters_firm": {
             "static_carbon_premium_heterogenous_state": 1,
             "endogenous_mark_up_state":0,
-            "research_cost": 0.1,
             "markup_adjustment": 1,
             "firm_phi": 0.01,
             "markup_init": 0.25,
@@ -76,11 +75,11 @@ if __name__ == '__main__':
             "memory_cap": 30,
             "jump_scale": 2,
             "segment_number": 3,
-            "theta": 1,#COME BACK TO THIS AT SOMEPOINT
-            "num_individuals_surveyed": 30,#Add just this so its a PROPORTION OF POPULATION
+            "theta": 1,
+            "num_individuals_surveyed": 30,
             "survey_bool": 1,
             "survey_stoch_prob":0.1,
-            "unit_changing_captial_cost": 1
+            "unit_changing_captial_cost": 0
         },
         "parameters_social_network":{  
             "fixed_preferences_state": 0,
@@ -97,27 +96,27 @@ if __name__ == '__main__':
             'network_density': 0.1, 
             'prob_rewire': 0.1,
             'homophily': 0,
-            'substitutability': 20,#20, #0.95 parameter
+            'substitutability': 20,
             "std_substitutability":0.5,
             'a_preferences': 1, 
-            'b_preferences': 4, #TRY TO APPROXIMATE THE SKEWNORM STUFF MIQUEL HAS
+            'b_preferences': 4,
             "preference_mul": 1,
             'clipping_epsilon': 1e-3, 
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 0.1,
-            "emissions_intensity_penalty": 10,
+            "emissions_intensity_penalty": 1,
             'confirmation_bias': 5, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
         },
         "parameters_individual":{
             'individual_phi': 0.05,
-            'quantity_state':"replicator_utility",#"replicator", # "optimal","alt_optimal","replicator_utility" 
-            "social_influence_state": "threshold_average",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
+            'quantity_state':"replicator_utility", 
+            "social_influence_state": "threshold_average",
             "chi_ms": 1,
-            "omega": 1#THE LOWER, THE LESS STRINGENT IT IS SO THE GREENER IMITATION
+            "omega": 2
         }
     }
     

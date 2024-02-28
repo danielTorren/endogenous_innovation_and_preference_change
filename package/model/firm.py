@@ -17,7 +17,7 @@ class Firm:
 
         self.firm_id = firm_id#this is used when indexing firms stuff
 
-        self.research_cost = parameters_firm["research_cost"]
+        
         self.expected_carbon_premium =  expected_carbon_premium#parameters_firm["expected_carbon_premium"]#variable
         self.markup_adjustment = parameters_firm["markup_adjustment"]
         self.firm_phi = parameters_firm["firm_phi"]
@@ -39,12 +39,15 @@ class Firm:
         self.segement_preference_bounds = np.linspace(0, 1, self.segment_number+1) 
         self.width_segment = self.segement_preference_bounds[1] - self.segement_preference_bounds[0]
         self.segement_preference = np.arange(self.width_segment/2, 1, self.width_segment)   #      np.linspace(0, 1, self.segment_number+1) #the plus 1 is so that theere are that number of divisions in the space
-        self.unit_changing_captial_cost = parameters_firm["unit_changing_captial_cost"]
+        
+        self.research_cost = 0.1#parameters_firm["research_cost"]
+        self.survey_cost = 0#parameters_firm["survey_bool"]
+        self.unit_changing_captial_cost = 0#parameters_firm["unit_changing_captial_cost"]
+        
         self.num_individuals_surveyed = parameters_firm["num_individuals_surveyed"]
-        self.survey_cost = parameters_firm["survey_bool"]
         self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
         self.survey_stoch_prob = parameters_firm["survey_stoch_prob"]
-        self.total_changing_captial_cost = 0
+        
         self.c_min = parameters_firm["c_min"]
         self.c_max = parameters_firm["c_max"]
         self.ei_min = parameters_firm["ei_min"]
@@ -52,6 +55,8 @@ class Firm:
 
         #ALLOWS FOR VARIABEL INIT TECH
         self.current_technology = init_tech#parameters_firm["technology_init"]#variable
+        
+        self.total_changing_captial_cost = 0
 
         self.current_technology.fitnesses = self.calculate_technology_fitnesses_single(self.current_technology.emissions_intensity, self.current_technology.cost)#assign fitness to inti technology
 
