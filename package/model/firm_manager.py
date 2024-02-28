@@ -39,7 +39,9 @@ class Firm_Manager:
         self.c_max = parameters_firm_manager["c_max"]
         self.ei_min = parameters_firm_manager["ei_min"]
         self.ei_max = parameters_firm_manager["ei_max"]
-
+        self.num_individuals = parameters_firm_manager["num_individuals"]
+        self.survey_cost = self.num_individuals/(2*self.J)
+        self.research_cost = self.num_individuals/(2*self.J)
 
         self.parameters_firm = parameters_firm
 
@@ -53,10 +55,12 @@ class Firm_Manager:
         self.parameters_firm["init_market_share"] = 1/self.J
         self.parameters_firm["J"] = self.J
         self.parameters_firm["carbon_price"] = self.carbon_price
-        parameters_firm["c_min"] = self.c_min 
-        parameters_firm["c_max"] = self.c_max 
-        parameters_firm["ei_min"] = self.ei_min 
-        parameters_firm["ei_max"] = self.ei_max 
+        self.parameters_firm["c_min"] = self.c_min 
+        self.parameters_firm["c_max"] = self.c_max 
+        self.parameters_firm["ei_min"] = self.ei_min 
+        self.parameters_firm["ei_max"] = self.ei_max 
+        self.parameters_firm["survey_cost"] = self.survey_cost
+        self.parameters_firm["research_cost"] = self.research_cost
 
         
         if self.init_tech_heterogenous_state:
@@ -173,6 +177,7 @@ class Firm_Manager:
         return emissions_intensity
     
     def calc_market_share(self, consumed_quantities_vec):
+        """EXPENDITURE MARKET SHARE"""
         market_share_vec = (consumed_quantities_vec*self.prices_vec)/np.matmul(consumed_quantities_vec,self.prices_vec) #price is the previous time step, so is the consumed quantity!!
 
         return market_share_vec

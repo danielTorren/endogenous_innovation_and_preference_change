@@ -386,14 +386,40 @@ def final_scatter_price_EI(
     cbar = fig.colorbar(scatter)
     cbar.set_label('Market Share')
 
-    ax.set_xlabel(r"Emissions intensities, ei")
-    ax.set_ylabel(r"Price, p")
+    ax.set_xlabel(r"Price, p")
+    ax.set_ylabel(r"Emissions intensities, ei")
     ax.set_title("Price-Emissions intensity correlation $\\rho$ = %s" % (data.rho))
 
     fig.tight_layout()
 
     plotName = fileName + "/Plots"
     f = plotName + "/scatter_ei_price_market_share"
+    #fig.savefig(f + ".eps", dpi=600, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def final_scatter_price_EI_alt(
+    fileName, 
+    data, 
+    dpi_save,
+    ):
+
+    fig, ax = plt.subplots(figsize=(10,6)) 
+
+    # bodge
+    scatter = ax.scatter(data.history_market_share_vec[-1], data.history_emissions_intensities_vec[-1],  c=data.history_prices_vec[-1], cmap='plasma', alpha=0.9, edgecolors='black')
+
+    # Add colorbar to indicate market share
+    cbar = fig.colorbar(scatter)
+    cbar.set_label(r"Price, p")
+
+    ax.set_xlabel('Market Share')
+    ax.set_ylabel(r"Emissions intensities, ei")
+    ax.set_title("Price-Emissions intensity correlation $\\rho$ = %s" % (data.rho))
+
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/scatter_ei_price_market_share_alt"
     #fig.savefig(f + ".eps", dpi=600, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
@@ -491,14 +517,15 @@ def main(
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
 
-    #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
+    final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
+    final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
     #ani_1 = ani_scatter_price_EI(fileName, data_firm_manager, dpi_save)
 
     plt.show()
 
 if __name__ == '__main__':
     plots = main(
-        fileName = "results/single_experiment_17_23_48__14_02_2024",
+        fileName = "results/single_experiment_16_47_36__28_02_2024",
     )
 
 

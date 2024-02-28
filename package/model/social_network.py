@@ -19,7 +19,7 @@ from operator import attrgetter
 # modules
 class Social_Network:
 
-    def __init__(self, parameters_social_network: list):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
+    def __init__(self, parameters_social_network: list, parameters_individual):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
         """
         Constructs all the necessary attributes for the Network object.
 
@@ -30,7 +30,8 @@ class Social_Network:
 
         """
         self.t_social_network = 0
-
+        
+        self.parameters_individual = parameters_individual
         #TIME 
         self.burn_in_no_OD = parameters_social_network["burn_in_no_OD"] 
         self.burn_in_duration_no_policy = parameters_social_network["burn_in_duration_no_policy"] 
@@ -89,21 +90,11 @@ class Social_Network:
 
         self.clipping_epsilon_init_preference = parameters_social_network["clipping_epsilon_init_preference"]
 
-        self.individual_phi = parameters_social_network["individual_phi"]
-
         # network homophily
         self.homophily = parameters_social_network["homophily"]  # 0-1
         self.shuffle_reps = int(
             round(self.num_individuals*(1 - self.homophily))
         )
-
-        self.social_influence_state = parameters_social_network["social_influence_state"]
-        if self.social_influence_state in ("threshold_EI", "threshold_price","threshold_average"):
-            self.omega = parameters_social_network["omega"]
-        
-        self.quantity_state = parameters_social_network["quantity_state"]
-        if self.quantity_state in ("replicator","replicator_utility"):
-            self.chi_ms = parameters_social_network["chi_ms"]
         
         # create network
         (
@@ -145,6 +136,7 @@ class Social_Network:
         #print("self.substitutability_vec",self.substitutability_vec)
         #quit()
         #heterogenous_emissions_intensity_penalty_state
+            
         self.heterogenous_emissions_intensity_penalty_state = parameters_social_network["heterogenous_emissions_intensity_penalty_state"]
         self.emissions_intensity_penalty = parameters_social_network["emissions_intensity_penalty"]
         if self.heterogenous_emissions_intensity_penalty_state:
@@ -301,32 +293,18 @@ class Social_Network:
         agent_list: list[Individual]
             List of Individual objects 
         """
-
-        individual_params = {
-            "save_timeseries_data_state": self.save_timeseries_data_state,
-            "individual_phi": self.individual_phi,
-            "compression_factor_state": self.compression_factor_state,
-            "carbon_price": self.carbon_price,
-            "prices_vec": self.prices_vec,
-            "emissions_intensities_vec": self.emissions_intensities_vec,
-            "clipping_epsilon" :self.clipping_epsilon,
-            "fixed_preferences_state": self.fixed_preferences_state,
-            #"substitutability": self.substitutability,
-            "quantity_state": self.quantity_state,
-            "num_firms" : self.num_firms,
-            "social_influence_state": self.social_influence_state,
-            "heterogenous_emissions_intensity_penalty_state": self.heterogenous_emissions_intensity_penalty_state,
-        }
-
-        if self.quantity_state in ("replicator","replicator_utility"):
-            individual_params["chi_ms"] = self.chi_ms
-        
-        if self.social_influence_state in ("threshold_EI", "threshold_price","threshold_average"):
-            individual_params["omega"] = self.omega
+        self.parameters_individual["save_timeseries_data_state"] = self.save_timeseries_data_state
+        self.parameters_individual["compression_factor_state"] = self.compression_factor_state
+        self.parameters_individual["carbon_price"] = self.carbon_price
+        self.parameters_individual["prices_vec"] = self.prices_vec
+        self.parameters_individual["emissions_intensities_vec"] = self.emissions_intensities_vec
+        self.parameters_individual["clipping_epsilon"] = self.clipping_epsilon
+        self.parameters_individual["fixed_preferences_state"] = self.fixed_preferences_state
+        self.parameters_individual["num_firms"] = self.num_firms
 
         agent_list = [
             Individual(
-                individual_params,
+                self.parameters_individual,
                 self.low_carbon_preference_matrix_init[n],
                 #self.sector_preference_matrix_init,
                 self.individual_expenditure_array[n],

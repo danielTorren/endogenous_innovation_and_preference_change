@@ -42,18 +42,18 @@ if __name__ == '__main__':
 
     base_params = {
         "burn_in_no_OD": 30,
-        "burn_in_duration_no_policy": 470,
-        "policy_duration": 500,
+        "burn_in_duration_no_policy": 220,
+        "policy_duration": 250,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 1,
+        'carbon_price': 0,
         "parameters_firm_manager": {
             "J": 30,
-            "N": 15,#15,
-            "K": 6,#6,#6,
+            "N": 8,#15,
+            "K": 4,#6,#6,
             "alpha":1,
-            "rho":0,#0.75,
-            "landscape_seed": 3,
+            "rho":0,#0,#0.75,
+            "landscape_seed": 6,
             "init_tech_heterogenous_state": 1,
             "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
@@ -72,36 +72,32 @@ if __name__ == '__main__':
             "firm_phi": 0.01,
             "markup_init": 0.25,
             "firm_budget": 500,
-            "static_tech_state": 1,
+            "static_tech_state": 0,
             "memory_cap": 30,
             "jump_scale": 2,
             "segment_number": 3,
             "theta": 1,#COME BACK TO THIS AT SOMEPOINT
             "num_individuals_surveyed": 30,#Add just this so its a PROPORTION OF POPULATION
-            "survey_cost": 0.1,
             "survey_bool": 1,
             "survey_stoch_prob":0.1,
-            "sunk_captital_cost": 0.01
+            "unit_changing_captial_cost": 1
         },
         "parameters_social_network":{  
             "fixed_preferences_state": 0,
-            "heterogenous_emissions_intensity_penalty_state": 0,
             "heterogenous_substitutability_state": 0,
             "heterogenous_expenditure_state":0,
+            "heterogenous_emissions_intensity_penalty_state": 0,
             "redistribution_state": 1,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
-            'quantity_state':"replicator_utility",#"replicator", # "optimal","alt_optimal","replicator_utility" 
-            "social_influence_state": "threshold_average",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
             'network_structure_seed': 8, 
-            'init_vals_seed': 5, 
+            'init_vals_seed': 8, 
             'imperfect_learning_seed': 4, 
             'num_individuals': 100, 
             'network_density': 0.1, 
-            'individual_phi': 0.05,
             'prob_rewire': 0.1,
             'homophily': 0,
-            'substitutability': 20, #0.95 parameter
+            'substitutability': 20,#20, #0.95 parameter
             "std_substitutability":0.5,
             'a_preferences': 1, 
             'b_preferences': 4, #TRY TO APPROXIMATE THE SKEWNORM STUFF MIQUEL HAS
@@ -111,12 +107,17 @@ if __name__ == '__main__':
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 0.1,
-            "emissions_intensity_penalty": 1,
+            "emissions_intensity_penalty": 10,
             'confirmation_bias': 5, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
+        },
+        "parameters_individual":{
+            'individual_phi': 0.05,
+            'quantity_state':"replicator_utility",#"replicator", # "optimal","alt_optimal","replicator_utility" 
+            "social_influence_state": "threshold_average",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
             "chi_ms": 1,
-            "omega": 2#THE LOWER, THE LESS STRINGENT IT IS SO THE GREENER IMITATION
+            "omega": 1#THE LOWER, THE LESS STRINGENT IT IS SO THE GREENER IMITATION
         }
     }
     
@@ -128,7 +129,7 @@ if __name__ == '__main__':
     """
     RUN_PLOT = 1
     social_plots = 1
-    firm_plots = 0
+    firm_plots = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName, social_plots = social_plots, firm_plots = firm_plots)

@@ -39,7 +39,7 @@ class Firm:
         self.segement_preference_bounds = np.linspace(0, 1, self.segment_number+1) 
         self.width_segment = self.segement_preference_bounds[1] - self.segement_preference_bounds[0]
         self.segement_preference = np.arange(self.width_segment/2, 1, self.width_segment)   #      np.linspace(0, 1, self.segment_number+1) #the plus 1 is so that theere are that number of divisions in the space
-        self.sunk_captial_cost = parameters_firm["sunk_captital_cost"]
+        self.unit_changing_captial_cost = parameters_firm["unit_changing_captial_cost"]
         self.num_individuals_surveyed = parameters_firm["num_individuals_surveyed"]
         self.survey_cost = parameters_firm["survey_bool"]
         self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
@@ -88,7 +88,8 @@ class Firm:
     #DO PREVIOUS TIME STEP STUFF
     def calculate_profits(self,consumed_quantities_vec):
         #print(",consumed_quantities_vec[self.firm_id]self.firm_price - self.firm_cost",consumed_quantities_vec[self.firm_id],self.firm_price - self.firm_cost)
-        self.profit = consumed_quantities_vec[self.firm_id]*(self.firm_price - self.firm_cost)
+        self.firm_demand = consumed_quantities_vec[self.firm_id]
+        self.profit = self.firm_demand*(self.firm_price - self.firm_cost)
 
     def update_budget(self):
         self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
@@ -227,7 +228,7 @@ class Firm:
         expected_profit_current_tech = self.calc_expected_profit(self.current_technology.fitnesses, percieved_fitnesses_vec)
         #print("profit forcast", self.profit, expected_profit_current_tech)
 
-        self.total_changing_captial_cost = self.sunk_captial_cost*consumed_quantities_vec[self.firm_id]#COST OF SWITCHING PER UNIT
+        self.total_changing_captial_cost = self.unit_changing_captial_cost*consumed_quantities_vec[self.firm_id]#COST OF SWITCHING PER UNIT
 
         if expected_profits_technologies[self.tech_index_max_profit] - self.total_changing_captial_cost > expected_profit_current_tech:
             self.current_technology = self.list_technology_memory[self.tech_index_max_profit]#np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
@@ -364,6 +365,9 @@ class Firm:
         self.t_firm +=1
         
         self.carbon_price = carbon_price
+
+        #print("emissions_intensities_vec, cost_vec,", emissions_intensities_vec, cost_vec)
+
 
         self.consumer_preferences_vec = consumer_preferences_vec
         #consumed_quantities_vec: is the vector for each firm how much of their product was consumed

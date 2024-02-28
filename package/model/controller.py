@@ -13,6 +13,9 @@ class Controller:
     def __init__(self, parameters_controller):
         
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
+        self.parameters_social_network = parameters_controller["parameters_social_network"]
+        self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
+
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
@@ -24,18 +27,17 @@ class Controller:
         self.policy_duration = parameters_controller["policy_duration"]
 
         #create firm manager
-        self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
+        
         self.parameters_firm_manager["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm_manager["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
+        self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
-
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
 
         #create social network
-        self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
         self.parameters_social_network["J"] = self.parameters_firm_manager["J"]
@@ -51,7 +53,8 @@ class Controller:
         self.parameters_social_network["emissions_intensities_vec"] = self.firm_manager.emissions_intensities_vec
         #print("self.parameters_social_network",self.parameters_social_network)
         #quit()
-        self.social_network = Social_Network(self.parameters_social_network)
+        self.parameters_individual = parameters_controller["parameters_individual"]
+        self.social_network = Social_Network(self.parameters_social_network, self.parameters_individual)
 
 
         #update values for the next step

@@ -50,7 +50,6 @@ class Individual:
         self.fixed_preferences_state = ["fixed_preferences_state"]
         self.social_influence_state = parameters_individuals["social_influence_state"]
         self.quantity_state = parameters_individuals["quantity_state"]
-        self.heterogenous_emissions_intensity_penalty_state = parameters_individuals["heterogenous_emissions_intensity_penalty_state"]
         self.emissions_intensity_penalty = emissions_intensity_penalty
         
 
@@ -149,8 +148,6 @@ class Individual:
         U_jit = u_jit/(self.expenditure_instant*self.expenditure_share_previous)
         #a = np.exp(-self.return_consum*self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec)*((self.expenditure_instant*self.expenditure_share_previous)**(self.return_consum-1)) /(self.prices_vec_instant**(self.return_consum))
         
-        #print("check", U_jit, a)
-        #quit()
         growth_utility = self.chi_ms*((U_jit - U_it)/U_it)
         y = self.expenditure_share_previous*(1 +  growth_utility)
         self.expenditure_share_previous = y
