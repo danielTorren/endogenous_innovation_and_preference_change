@@ -41,6 +41,9 @@ class Individual:
         self.compression_factor_state = parameters_individuals["compression_factor_state"]
         self.individual_phi = parameters_individuals["individual_phi"]
         self.substitutability = substitutability#parameters_individuals["substitutability"]
+        self.return_consum = ((self.substitutability-1)/self.substitutability)
+        
+        #print("self.return_consum", self.return_consum)
         self.prices_vec_instant = parameters_individuals["prices_vec"]#NOT SURE IF THIS IS RIGHT? IS IT UPDATED WITH THE CARBON PRICE TO START
         self.clipping_epsilon = parameters_individuals["clipping_epsilon"]
         self.emissions_intensities_vec = parameters_individuals["emissions_intensities_vec"]
@@ -51,8 +54,9 @@ class Individual:
         self.emissions_intensity_penalty = emissions_intensity_penalty
         
 
-        if self.quantity_state == "replicator":
+        if self.quantity_state in ("replicator", "replicator_utility"):
             self.market_share_individual = 1/self.num_firms
+            self.expenditure_share_previous = self.expenditure_instant/self.num_firms
             self.chi_ms = parameters_individuals["chi_ms"]
 
         if self.social_influence_state in ("threshold_EI", "threshold_price","threshold_average"):
@@ -100,7 +104,7 @@ class Individual:
         elif self.social_influence_state == "threshold_price":
             min_p = min(self.prices_vec_instant)
             p_T_t = min_p + (np.mean(self.prices_vec_instant) - min_p)/self.omega
-            index_cheaper = np.where(self.prices_vec_instant < p_T_t)
+            index_cheaper = np.where(self.prices_vec_instant > p_T_t)
             expenditure_cheaper = sum(self.quantities[index_cheaper]*self.prices_vec_instant[index_cheaper])
             outward_preference = expenditure_cheaper/self.expenditure_instant
         elif self.social_influence_state == "threshold_average":
@@ -113,11 +117,11 @@ class Individual:
             
             min_p = min(self.prices_vec_instant)
             p_T_t = min_p + (np.mean(self.prices_vec_instant) - min_p)/self.omega
-            index_cheaper = np.where(self.prices_vec_instant < p_T_t)
+            index_cheaper = np.where(self.prices_vec_instant > p_T_t)
             expenditure_cheaper = sum(self.quantities[index_cheaper]*self.prices_vec_instant[index_cheaper])
+            outward_cheaper = expenditure_cheaper/self.expenditure_instant
             
-            outward_preference_p = expenditure_cheaper/self.expenditure_instant
-            outward_preference = (outward_preference_ei + expenditure_cheaper)/2
+            outward_preference = (outward_preference_ei + outward_cheaper)/2
         else:#NEED TO HAVE A THING ABOUT IMPERFECT IMITAITON
             raiseExceptions("INVALID SOCIAL INFLUENCE STATE")
 
@@ -132,6 +136,26 @@ class Individual:
 
         return ms_new
 
+    def calc_utility_expenditure_ratio(self):
+        exp_term = np.exp(-self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec)
+        frac_term = (self.expenditure_instant*self.expenditure_share_previous)/self.prices_vec_instant
+        u = (exp_term*frac_term)**(self.return_consum)
+        return u
+
+    def calc_expentiture_share_replicator(self):
+        u_jit = self.calc_utility_expenditure_ratio()
+        u_it = np.sum(u_jit)
+        U_it = u_it/self.expenditure_instant
+        U_jit = u_jit/(self.expenditure_instant*self.expenditure_share_previous)
+        #a = np.exp(-self.return_consum*self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec)*((self.expenditure_instant*self.expenditure_share_previous)**(self.return_consum-1)) /(self.prices_vec_instant**(self.return_consum))
+        
+        #print("check", U_jit, a)
+        #quit()
+        growth_utility = self.chi_ms*((U_jit - U_it)/U_it)
+        y = self.expenditure_share_previous*(1 +  growth_utility)
+        self.expenditure_share_previous = y
+        return y
+
     def update_consumption(self):
         #calculate consumption
         if self.quantity_state == "optimal":
@@ -141,6 +165,9 @@ class Individual:
             component_1 = np.exp(-self.emissions_intensity_penalty*self.low_carbon_preference*self.emissions_intensities_vec*self.substitutability)
             Z = sum(self.prices_vec_instant**(1-self.substitutability)*component_1)
             self.quantities = (self.expenditure_instant*component_1)/(Z*self.prices_vec_instant**self.substitutability)
+        elif self.quantity_state == "replicator_utility":
+            self.expenditure_share = self.calc_expentiture_share_replicator()
+            self.quantities = (self.expenditure_instant*self.expenditure_share)/self.prices_vec_instant
         elif self.quantity_state == "replicator":
             self.market_share_individual = self.calc_market_share_replicator()
             self.quantities = self.expenditure_instant*self.market_share_individual
@@ -169,6 +196,7 @@ class Individual:
         #self.history_utility = [self.utility]
         self.history_expenditure = [self.expenditure_instant]
         self.history_carbon_dividend = [np.nan]
+        self.history_outward_social_influence = [self.outward_social_influence]
 
     def save_timeseries_data_state_individual(self):
         """
@@ -187,9 +215,10 @@ class Individual:
         #self.history_utility.append(self.utility)
         self.history_expenditure.append(self.expenditure_instant)
         self.history_carbon_dividend.append(self.carbon_dividend)
+        self.history_outward_social_influence.append(self.outward_social_influence)
 
 
-    def next_step(self, social_component, emissions_intensities, prices, carbon_dividend):
+    def next_step(self, social_component, emissions_intensities, prices, carbon_dividend, fixed_preferences_state_instant):
         #print(social_component, emissions_intensities, prices)
         #quit()
         self.t_individual += 1
@@ -199,10 +228,10 @@ class Individual:
         self.prices_vec_instant = prices
         #print("carbon_div",self.init_expenditure, carbon_dividend)
         self.carbon_dividend = carbon_dividend
-        self.instant_expenditure = self.init_expenditure + self.carbon_dividend
+        self.expenditure_instant = self.init_expenditure + self.carbon_dividend
 
         #update preferences, willingess to pay and firm prefereces
-        if self.fixed_preferences_state != "fixed_preferences":
+        if not fixed_preferences_state_instant:
             self.update_preferences(social_component)
 
 

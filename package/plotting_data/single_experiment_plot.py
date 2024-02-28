@@ -19,11 +19,20 @@ from package.resources.plot import (
     plot_network_timeseries
 )
 
+def burn_in(ax,data):
+    if data.burn_in_no_OD > 0:
+        ax.axvline(x = data.burn_in_no_OD,ls='--',  color='black')#OD
+    
+    if data.burn_in_duration_no_policy > 0:
+        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls='--',  color='black')#OD
+
 def plot_emissions_individuals(fileName, data, dpi_save):
 
     y_title = r"Individuals' emissions flow"
 
     fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
+
+    burn_in(ax,data)
 
     for v in range(data.num_individuals):
         data_indivdiual = data.agent_list[v]
@@ -46,6 +55,9 @@ def plot_low_carbon_preferences_timeseries(
     y_title = r"Low carbon preference"
 
     fig, ax = plt.subplots(figsize=(10, 6))
+    
+    burn_in(ax,data)
+
     data_list = []
     for v in range(data.num_individuals):
         data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preference)
@@ -77,6 +89,53 @@ def plot_low_carbon_preferences_timeseries(
     plotName = fileName + "/Plots"
 
     f = plotName + "/timeseries_preference"
+    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
+
+
+def plot_outward_social_influence_timeseries(
+    fileName, 
+    data, 
+    dpi_save,
+    ):
+
+    y_title = r"Outward social influence"
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    burn_in(ax,data)
+
+    data_list = []
+    for v in range(data.num_individuals):
+        data_indivdiual = np.asarray(data.agent_list[v].history_outward_social_influence)
+        data_list.append(data_indivdiual)
+        #print(data.history_time_social_network,data_indivdiual)
+        ax.plot(data.history_time_social_network,data_indivdiual)
+
+    data_list_array_t = np.asarray(data_list).T#t,n
+    mean_data = np.mean(data_list_array_t, axis = 1)
+    median_data = np.median(data_list_array_t, axis = 1)
+
+    ax.plot(
+            np.asarray(data.history_time_social_network),
+            mean_data,
+            label= "mean",
+            linestyle="dotted"
+        )
+    ax.plot(
+            np.asarray(data.history_time_social_network),
+            median_data,
+            label= "median",
+            linestyle="dashed"
+        )
+    ax.legend()          
+    #ax.tight_layout()
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"%s" % y_title)
+
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/plot_outward_social_influence_timeseries"
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
@@ -398,8 +457,8 @@ def main(
     firm_plots = 1
     ) -> None: 
 
-    social_plots = 0
-    firm_plots = 0
+    #social_plots = 0
+    #firm_plots = 0
 
     data_social_network = load_object(fileName + "/Data", "social_network")
     data_firm_manager = load_object(fileName + "/Data", "firm_manager")
@@ -408,6 +467,7 @@ def main(
         ###SOCIAL NETWORK PLOTS
         #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
         plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
+        plot_outward_social_influence_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
         plot_demand_individuals(fileName, data_social_network, dpi_save)
@@ -432,7 +492,7 @@ def main(
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
 
     #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
-    ani_1 = ani_scatter_price_EI(fileName, data_firm_manager, dpi_save)
+    #ani_1 = ani_scatter_price_EI(fileName, data_firm_manager, dpi_save)
 
     plt.show()
 

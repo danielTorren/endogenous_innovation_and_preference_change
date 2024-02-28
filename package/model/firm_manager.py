@@ -6,6 +6,7 @@ Created: 22/12/2023
 
 # imports
 
+from tkinter import N
 from package.model.firm import Firm
 import numpy as np
 import random
@@ -34,6 +35,11 @@ class Firm_Manager:
         self.init_carbon_premium_heterogenous_state = parameters_firm_manager["init_carbon_premium_heterogenous_state"]
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.nk_multiplier = parameters_firm_manager["nk_multiplier"]
+        self.c_min = parameters_firm_manager["c_min"]
+        self.c_max = parameters_firm_manager["c_max"]
+        self.ei_min = parameters_firm_manager["ei_min"]
+        self.ei_max = parameters_firm_manager["ei_max"]
+
 
         self.parameters_firm = parameters_firm
 
@@ -47,6 +53,10 @@ class Firm_Manager:
         self.parameters_firm["init_market_share"] = 1/self.J
         self.parameters_firm["J"] = self.J
         self.parameters_firm["carbon_price"] = self.carbon_price
+        parameters_firm["c_min"] = self.c_min 
+        parameters_firm["c_max"] = self.c_max 
+        parameters_firm["ei_min"] = self.ei_min 
+        parameters_firm["ei_max"] = self.ei_max 
 
         
         if self.init_tech_heterogenous_state:
@@ -103,8 +113,12 @@ class Firm_Manager:
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        emissions = np.mean(fitness_vector_emissions_intensity) #+1#NORMALIZE IT? we've added 1 
-        cost = np.mean(fitness_vector_cost) #+1#NORMALIZE IT
+        #emissions = np.mean(fitness_vector_emissions_intensity) #+1#NORMALIZE IT? we've added 1 
+        #cost = np.mean(fitness_vector_cost) #+1#NORMALIZE IT
+
+        cost = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(fitness_vector_cost, axis = 0)
+        emissions = self.ei_min +((self.ei_max-self.ei_min)/self.N)*np.sum(fitness_vector_emissions_intensity, axis = 0)
+
         return emissions, cost
 
 
@@ -126,13 +140,26 @@ class Firm_Manager:
             We make a landscape for cost of technologies
         """
         # Step 1: Create the value matrix
+        #value_matrix_cost = np.random.uniform(0, 1*self.nk_multiplier, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
+
         value_matrix_cost = np.random.uniform(0, 1*self.nk_multiplier, (2**(self.K+1), self.N)) * self.alpha#THIS IS THE COST
-        normalized_value_matrix_cost = value_matrix_cost + 1
-        #print("normalized_value_matrix_cost", np.min(normalized_value_matrix_cost), np.max(normalized_value_matrix_cost))
-        value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(normalized_value_matrix_cost)
-        #print("value_matrix_emissions_intensity", np.min(value_matrix_emissions_intensity), np.max(value_matrix_emissions_intensity))
+        #print(value_matrix_cost.shape)
+        #print(self.N, self.K, 2**(self.K+1))
+        #print(2**self.N-1)
         #quit()
-        return normalized_value_matrix_cost, value_matrix_emissions_intensity
+
+        #normalized_value_matrix_cost = value_matrix_cost + 1
+        #print("normalized_value_matrix_cost", np.min(normalized_value_matrix_cost), np.max(normalized_value_matrix_cost))
+        #value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(normalized_value_matrix_cost)
+        value_matrix_emissions_intensity = self.convert_technology_cost_to_emissions_intensities(value_matrix_cost)
+
+        #STEP 2 Normalize both
+        #normalized_cost_matrix = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(value_matrix_cost, axis = 1)
+        #normalized_emissions_intensity_matrix = self.ei_min +((self.ei_max-self.ei_min)/self.N)*np.sum(value_matrix_emissions_intensity, axis = 1)
+        #print(normalized_cost_matrix.shape)
+        #quit()
+        #return normalized_cost_matrix, normalized_emissions_intensity_matrix
+        return value_matrix_cost, value_matrix_emissions_intensity
         
     def convert_technology_cost_to_emissions_intensities(self, cost):
 
@@ -141,8 +168,9 @@ class Firm_Manager:
         else:
             emissions_intensity = (self.rho*cost + ((np.random.uniform(0,1*self.nk_multiplier, size = cost.shape))**(self.alpha))*(1-self.rho**2)**(0.5) - self.rho)/(-self.rho + (1-self.rho**2)**(0.5))
         
-        normalized_EI = emissions_intensity + 1
-        return normalized_EI
+        #normalized_EI = emissions_intensity + 1
+        #return normalized_EI
+        return emissions_intensity
     
     def calc_market_share(self, consumed_quantities_vec):
         market_share_vec = (consumed_quantities_vec*self.prices_vec)/np.matmul(consumed_quantities_vec,self.prices_vec) #price is the previous time step, so is the consumed quantity!!
@@ -164,6 +192,9 @@ class Firm_Manager:
             budget_vec.append(firm.firm_budget)
             expected_carbon_premium_vec.append(firm.expected_carbon_premium)
 
+        #print("KKKKK")
+        #print(np.asarray(emissions_intensities_vec), np.asarray(cost_vec))
+        #quit()
         return np.asarray(emissions_intensities_vec), np.asarray(prices_vec), np.asarray(cost_vec), np.asarray(budget_vec), np.asarray(expected_carbon_premium_vec)
 
     def set_up_time_series_firm_manager(self):

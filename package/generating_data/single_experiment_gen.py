@@ -41,11 +41,12 @@ def main(
 if __name__ == '__main__':
 
     base_params = {
-        "burn_in_duration": 0,
-        "policy_duration": 1000,
+        "burn_in_no_OD": 30,
+        "burn_in_duration_no_policy": 470,
+        "policy_duration": 500,
         "save_timeseries_data_state": 1,
-        "compression_factor_state": 10,
-        'carbon_price': 0,
+        "compression_factor_state": 1,
+        'carbon_price': 1,
         "parameters_firm_manager": {
             "J": 30,
             "N": 15,#15,
@@ -57,7 +58,11 @@ if __name__ == '__main__':
             "init_carbon_premium_heterogenous_state": 0,
             "expected_carbon_premium": 0.05,
             "expected_carbon_premium_init_sigma": 0.01,
-            "nk_multiplier": 1
+            "nk_multiplier": 1,
+            "c_max": 10,
+            "c_min": 1,
+            "ei_max": 10,
+            "ei_min": 1,
         },
         "parameters_firm": {
             "static_carbon_premium_heterogenous_state": 1,
@@ -67,7 +72,7 @@ if __name__ == '__main__':
             "firm_phi": 0.01,
             "markup_init": 0.25,
             "firm_budget": 500,
-            "static_tech_state": 0,
+            "static_tech_state": 1,
             "memory_cap": 30,
             "jump_scale": 2,
             "segment_number": 3,
@@ -86,32 +91,32 @@ if __name__ == '__main__':
             "redistribution_state": 1,      
             'save_timeseries_data_state': 1,
             'imperfect_learning_state': 0,
-            'quantity_state':"optimal",#"replicator", # "optimal","alt_optimal"
-            "social_influence_state": "threshold_EI",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
+            'quantity_state':"replicator_utility",#"replicator", # "optimal","alt_optimal","replicator_utility" 
+            "social_influence_state": "threshold_average",#common_knowledge,lowest_EI,relative_EI,relative_price_EI, threshold_EI, threshold_price, threshold_average
             'network_structure_seed': 8, 
             'init_vals_seed': 5, 
             'imperfect_learning_seed': 4, 
             'num_individuals': 100, 
             'network_density': 0.1, 
-            'individual_phi': 0.01,
+            'individual_phi': 0.05,
             'prob_rewire': 0.1,
             'homophily': 0,
-            'substitutability': 1.01, 
+            'substitutability': 20, #0.95 parameter
             "std_substitutability":0.5,
-            'a_preferences': 2, 
-            'b_preferences': 2, 
+            'a_preferences': 1, 
+            'b_preferences': 4, #TRY TO APPROXIMATE THE SKEWNORM STUFF MIQUEL HAS
             "preference_mul": 1,
             'clipping_epsilon': 1e-3, 
             'clipping_epsilon_init_preference': 1e-3,
             'std_low_carbon_preference': 0.01, 
             'std_learning_error': 0.02, 
             "std_emissions_intensity_penalty": 0.1,
-            "emissions_intensity_penalty": 10,
-            'confirmation_bias': 100, 
+            "emissions_intensity_penalty": 1,
+            'confirmation_bias': 5, 
             'total_expenditure': 1,
             "expenditure_inequality_const":1,
             "chi_ms": 1,
-            "omega": 1#THE LOWER, THE LESS STRINGENT IT IS SO THE GREENER IMITATION
+            "omega": 2#THE LOWER, THE LESS STRINGENT IT IS SO THE GREENER IMITATION
         }
     }
     

@@ -45,6 +45,10 @@ class Firm:
         self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
         self.survey_stoch_prob = parameters_firm["survey_stoch_prob"]
         self.total_changing_captial_cost = 0
+        self.c_min = parameters_firm["c_min"]
+        self.c_max = parameters_firm["c_max"]
+        self.ei_min = parameters_firm["ei_min"]
+        self.ei_max = parameters_firm["ei_max"]
 
         #ALLOWS FOR VARIABEL INIT TECH
         self.current_technology = init_tech#parameters_firm["technology_init"]#variable
@@ -153,8 +157,14 @@ class Firm:
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        emissions = np.mean(fitness_vector_emissions_intensity) #+ 1
-        cost = np.mean(fitness_vector_cost) #+ 1
+        cost = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(fitness_vector_cost, axis = 0)
+        emissions = self.ei_min +((self.ei_max-self.ei_min)/self.N)*np.sum(fitness_vector_emissions_intensity, axis = 0)
+        #print("HOOOO")
+        #print(cost, emissions)
+        #quit()
+        #emissions = np.mean(fitness_vector_emissions_intensity) #+ 1
+        #cost = np.mean(fitness_vector_cost) #+ 1
+
         return emissions, cost
 
     def explore_technology(self):

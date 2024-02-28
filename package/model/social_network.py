@@ -31,9 +31,22 @@ class Social_Network:
         """
         self.t_social_network = 0
 
+        #TIME 
+        self.burn_in_no_OD = parameters_social_network["burn_in_no_OD"] 
+        self.burn_in_duration_no_policy = parameters_social_network["burn_in_duration_no_policy"] 
+        self.policy_duration = parameters_social_network["policy_duration"]
+
         #INITAL STATE OF THE SYSTEMS, WHAT ARE THE RUN CONDITIONS
         self.imperfect_learning_state = parameters_social_network["imperfect_learning_state"]
-        self.fixed_preferences_state = parameters_social_network["fixed_preferences_state"]
+        self.fixed_preferences_state = parameters_social_network["fixed_preferences_state"]#DEAL WITH BURN IN
+
+        if self.fixed_preferences_state: 
+            self.fixed_preferences_state_instant = 1
+        elif self.t_social_network < self.burn_in_no_OD:
+            self.fixed_preferences_state_instant = 1
+        else:
+            self.fixed_preferences_state_instant = 0
+
         self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
 
@@ -56,7 +69,13 @@ class Social_Network:
         self.emissions_intensities_vec = parameters_social_network["emissions_intensities_vec"]
         #price
         self.prices_vec =  parameters_social_network["prices_vec"]#THIS NEEDS TO BE SET AFTER THE STUFF IS RUN.
-        self.carbon_price = parameters_social_network["carbon_price"]
+        
+        self.carbon_price_policy = parameters_social_network["carbon_price"]
+        if self.t_social_network == self.burn_in_no_OD + self.burn_in_duration_no_policy:
+            self.carbon_price = parameters_social_network["carbon_price"]
+        else:
+            self.carbon_price = 0
+
         #print("carbon_price",self.carbon_price)
 
         # social learning and bias
@@ -83,7 +102,7 @@ class Social_Network:
             self.omega = parameters_social_network["omega"]
         
         self.quantity_state = parameters_social_network["quantity_state"]
-        if self.quantity_state == "replicator":
+        if self.quantity_state in ("replicator","replicator_utility"):
             self.chi_ms = parameters_social_network["chi_ms"]
         
         # create network
@@ -148,11 +167,12 @@ class Social_Network:
         #NOW SET SEED FOR THE IMPERFECT LEARNING
         np.random.seed(self.imperfect_learning_seed)
 
-        if self.fixed_preferences_state:
+        if self.fixed_preferences_state_instant:
             self.social_component_matrix = np.asarray([n.low_carbon_preference for n in self.agent_list])#DUMBY FEED IT ITSELF? DO I EVEN NEED TO DEFINE IT
         else:
             self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
+
         #FIX
         self.total_carbon_emissions_cumulative = 0#this are for post tax
 
@@ -298,7 +318,7 @@ class Social_Network:
             "heterogenous_emissions_intensity_penalty_state": self.heterogenous_emissions_intensity_penalty_state,
         }
 
-        if self.quantity_state == "replicator":
+        if self.quantity_state in ("replicator","replicator_utility"):
             individual_params["chi_ms"] = self.chi_ms
         
         if self.social_influence_state in ("threshold_EI", "threshold_price","threshold_average"):
@@ -396,8 +416,9 @@ class Social_Network:
         ##THE WEIGHTING FOR THE IDENTITY IS DONE IN INDIVIDUALS
 
         self.preference_list = list(map(attrgetter('low_carbon_preference'), self.agent_list))
+        self.outward_social_influence_list = list(map(attrgetter('outward_social_influence'), self.agent_list))
 
-        norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.preference_list)
+        norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.outward_social_influence_list)
         #print("norm_weighting_matrix[0]", norm_weighting_matrix[0])
         #quit()
         return norm_weighting_matrix
@@ -441,19 +462,28 @@ class Social_Network:
 
         # Assuming you have self.agent_list as the list of objects
         ____ = list(map(
-            lambda agent, scm, carbon_div: agent.next_step(scm, self.emissions_intensities_vec, self.prices_vec_instant, carbon_div),
+            lambda agent, scm, carbon_div: agent.next_step(scm, self.emissions_intensities_vec, self.prices_vec_instant, carbon_div, self.fixed_preferences_state_instant),
             self.agent_list,
             self.social_component_matrix,
             self.carbon_dividend_array
         ))
     
+    def update_burn_in_OD(self):
+        if (self.t_social_network > self.burn_in_no_OD) and (not self.fixed_preferences_state):
+            self.fixed_preferences_state_instant = 0 
+
+
+    def update_carbon_price(self):
+        if self.t_social_network == self.burn_in_no_OD+self.burn_in_duration_no_policy:
+            self.carbon_price = self.carbon_price_policy
+
     def update_prices(self):
         #print("self.prices_vec + self.emissions_intensities_vec*self.carbon_price",self.prices_vec,self.emissions_intensities_vec,self.carbon_price)
         self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*self.carbon_price
         #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
     
     def set_up_time_series_social_network(self):
-        if self.fixed_preferences_state != "fixed_preferences":
+        if not self.fixed_preferences_state:
             self.history_preference_list = [self.preference_list]
         #self.history_weighting_matrix = [self.weighting_matrix]
         #self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
@@ -480,7 +510,7 @@ class Social_Network:
         #self.history_weighting_matrix_convergence.append(self.weighting_matrix_convergence)
         self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED
         self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
-        if self.fixed_preferences_state != "fixed_preferences":
+        if not self.fixed_preferences_state:
             self.history_preference_list.append(self.preference_list)
         self.history_consumed_quantities_vec.append(self.consumed_quantities_vec)
         self.history_consumed_quantities_vec_firms.append(self.consumed_quantities_vec_firms)
@@ -502,10 +532,14 @@ class Social_Network:
 
         self.t_social_network +=1
          
+        self.update_burn_in_OD()
+
         #update new tech and prices
         self.emissions_intensities_vec = emissions_intensities_vec
         self.prices_vec = prices_vec
 
+        #PRICE
+        self.update_carbon_price()
         self.update_prices()
 
         # execute step
@@ -515,7 +549,7 @@ class Social_Network:
         self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
 
         # update network parameters_social_network for next step
-        if not self.fixed_preferences_state:#if not fixed preferences then update
+        if not self.fixed_preferences_state_instant:#if not fixed preferences then update
             self.weighting_matrix = self.update_weightings()
             self.social_component_matrix = self.calc_social_component_matrix()
 

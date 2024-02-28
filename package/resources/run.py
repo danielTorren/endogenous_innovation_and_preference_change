@@ -32,8 +32,7 @@ def generate_data(parameters: dict,print_simu = 0):
 
     if print_simu:
         start_time = time.time()
-
-    parameters["time_steps_max"] = parameters["burn_in_duration"] + parameters["policy_duration"]
+    parameters["time_steps_max"] = parameters["burn_in_no_OD"] + parameters["burn_in_duration_no_policy"] + parameters["policy_duration"]
 
     #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
     controller = Controller(parameters)

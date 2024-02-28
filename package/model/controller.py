@@ -12,10 +12,16 @@ from package.model.firm_manager import Firm_Manager
 class Controller:
     def __init__(self, parameters_controller):
         
+        self.parameters_controller = parameters_controller#save copy in the object for ease of access
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
         self.carbon_price = parameters_controller["carbon_price"]
+
+        #TIME STUFF
+        self.burn_in_no_OD = parameters_controller["burn_in_no_OD"] 
+        self.burn_in_duration_no_policy = parameters_controller["burn_in_duration_no_policy"] 
+        self.policy_duration = parameters_controller["policy_duration"]
 
         #create firm manager
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
@@ -34,6 +40,10 @@ class Controller:
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
         self.parameters_social_network["J"] = self.parameters_firm_manager["J"]
         self.parameters_social_network["carbon_price"] = self.carbon_price
+
+        self.parameters_social_network["burn_in_no_OD"] = self.burn_in_no_OD
+        self.parameters_social_network["burn_in_duration_no_policy"] = self.burn_in_duration_no_policy
+        self.parameters_social_network["policy_duration"] = self.policy_duration
         #print("self.parameters_social_network",self.parameters_social_network)
         #quit()
         #GET FIRM PRICES
