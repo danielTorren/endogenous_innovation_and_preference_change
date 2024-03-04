@@ -74,7 +74,7 @@ class Social_Network:
         self.carbon_price_state = parameters_social_network["carbon_price_state"]
         self.carbon_price_policy = parameters_social_network["carbon_price"]
 
-        print("self.carbon_price_policy",self.carbon_price_policy)
+        #print("self.carbon_price_policy",self.carbon_price_policy)
         #quit()
 
         if self.carbon_price_state == "AR1":
