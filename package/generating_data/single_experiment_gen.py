@@ -38,7 +38,7 @@ def main(
 
     return fileName
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     base_params = {
         "burn_in_no_OD": 30,
@@ -46,7 +46,13 @@ if __name__ == '__main__':
         "policy_duration": 250,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        'carbon_price': 0,
+        "parameters_carbon_policy":{
+            "carbon_price": 0.1,
+            "carbon_price_state": "normal",#"AR1", "flat", "normal"
+            "ar_1_coefficient": 0.95,
+            "noise_mean": 0,
+            "noise_sigma": 0.01
+        },
         "parameters_firm_manager": {
             "J": 30,
             "N": 8,
@@ -55,9 +61,6 @@ if __name__ == '__main__':
             "rho":0,
             "landscape_seed": 6,
             "init_tech_heterogenous_state": 1,
-            "init_carbon_premium_heterogenous_state": 0,
-            "expected_carbon_premium": 0.05,
-            "expected_carbon_premium_init_sigma": 0.01,
             "nk_multiplier": 1,
             "c_max": 10,
             "c_min": 1,
@@ -65,7 +68,6 @@ if __name__ == '__main__':
             "ei_min": 1,
         },
         "parameters_firm": {
-            "static_carbon_premium_heterogenous_state": 1,
             "endogenous_mark_up_state":0,
             "markup_adjustment": 1,
             "firm_phi": 0.01,
@@ -87,33 +89,33 @@ if __name__ == '__main__':
             "heterogenous_expenditure_state":0,
             "heterogenous_emissions_intensity_penalty_state": 0,
             "redistribution_state": 1,      
-            'save_timeseries_data_state': 1,
-            'imperfect_learning_state': 0,
-            'network_structure_seed': 8, 
-            'init_vals_seed': 8, 
-            'imperfect_learning_seed': 4, 
-            'num_individuals': 100, 
-            'network_density': 0.1, 
-            'prob_rewire': 0.1,
-            'homophily': 0,
-            'substitutability': 20,
+            "save_timeseries_data_state": 1,
+            "imperfect_learning_state": 0,
+            "network_structure_seed": 8, 
+            "init_vals_seed": 8, 
+            "imperfect_learning_seed": 4, 
+            "num_individuals": 100, 
+            "network_density": 0.1, 
+            "prob_rewire": 0.1,
+            "homophily": 0,
+            "substitutability": 20,
             "std_substitutability":0.5,
-            'a_preferences': 1, 
-            'b_preferences': 4,
+            "a_preferences": 1, 
+            "b_preferences": 4,
             "preference_mul": 1,
-            'clipping_epsilon': 1e-3, 
-            'clipping_epsilon_init_preference': 1e-3,
-            'std_low_carbon_preference': 0.01, 
-            'std_learning_error': 0.02, 
+            "clipping_epsilon": 1e-3, 
+            "clipping_epsilon_init_preference": 1e-3,
+            "std_low_carbon_preference": 0.01, 
+            "std_learning_error": 0.02, 
             "std_emissions_intensity_penalty": 0.1,
             "emissions_intensity_penalty": 1,
-            'confirmation_bias': 5, 
-            'total_expenditure': 1,
+            "confirmation_bias": 20, 
+            "total_expenditure": 1,
             "expenditure_inequality_const":1,
         },
         "parameters_individual":{
-            'individual_phi': 0.05,
-            'quantity_state':"replicator_utility", 
+            "individual_phi": 0.05,
+            "quantity_state":"replicator_utility", 
             "social_influence_state": "threshold_average",
             "chi_ms": 1,
             "omega": 2

@@ -96,7 +96,7 @@ def main(
     plot_means_end_points_emissions(fileName, weighted_emissions_intensities, scenarios_titles ,property_values_list,"Weighted emissions intensities, EI", "weighted_emissions_intensities")
 
     plt.show()
-if __name__ == '__main__':
+if __name__ == "__main__":
     plots = main(
-        fileName = "results/tax_sweep_18_03_07__28_02_2024",
+        fileName = "results/tax_sweep_12_50_38__04_03_2024",
     )

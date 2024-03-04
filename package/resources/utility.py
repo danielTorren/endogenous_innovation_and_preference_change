@@ -23,9 +23,9 @@ def check_other_folder():
     if str(os.path.exists(plotsName)) == "False":
         os.mkdir(plotsName)
         
-def get_cmap_colours(n, name='plasma'):
-    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
-    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+def get_cmap_colours(n, name="plasma"):
+    """Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    RGB color; the keyword argument name must be a standard mpl colormap name."""
     return plt.cm.get_cmap(name, n)
 
 def createFolder(fileName: str) -> str:
@@ -106,16 +106,16 @@ def save_data_csv_firms(firm_manager_firms_list,save_data_csv_list_firm_manager,
             csv_file_path = fileName + "/" + title + "_firm_id_" + str(firm_id) + ".csv"
             #print("csv_file_path", csv_file_path)
             if is_2d_list(list_history):
-                # Use 'newline='' to ensure that newline characters are handled properly across different platforms
+                # Use "newline="" to ensure that newline characters are handled properly across different platforms
                 
-                with open(csv_file_path, 'w', newline='') as csv_file:
+                with open(csv_file_path, "w", newline="") as csv_file:
                     csv_writer = csv.writer(csv_file)
 
                     # Iterate through each list in your data and write it to the CSV file
                     for row in list_history:
                         csv_writer.writerow(row)
             else:
-                with open(csv_file_path, 'w', newline='') as csv_file:
+                with open(csv_file_path, "w", newline="") as csv_file:
                     csv_writer = csv.writer(csv_file)
                     csv_writer.writerow(list_history)
                 """
@@ -125,13 +125,13 @@ def save_data_csv_firms(firm_manager_firms_list,save_data_csv_list_firm_manager,
                 #print("ARRAY",title +"_firm_id_" + str(firm_id),array_history)
                 file_label = fileName + "/" + title +"_firm_id_" + str(firm_id) + ".csv"
                 print("file_label",file_label)
-                np.savetxt(file_label, array_history, delimiter=',')
+                np.savetxt(file_label, array_history, delimiter=",")
                 """
             
 def save_data_csv_2D(data,fileName,title):
 
     csv_file_path = fileName + "/" + title + ".csv"
-    with open(csv_file_path, 'w', newline='') as csv_file:
+    with open(csv_file_path, "w", newline="") as csv_file:
         csv_writer = csv.writer(csv_file)
         # Iterate through each list in your data and write it to the CSV file
         for row in data:

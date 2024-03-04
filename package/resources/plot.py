@@ -29,13 +29,13 @@ def set_latex(
 ):
 
 
-    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-    plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-    plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-    plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+    plt.rc("font", size=SMALL_SIZE)          # controls default text sizes
+    plt.rc("axes", titlesize=SMALL_SIZE)     # fontsize of the axes title
+    plt.rc("axes", labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+    plt.rc("xtick", labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc("ytick", labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc("legend", fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc("figure", titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
     plt.rcParams.update({
         "text.usetex": True,
@@ -127,7 +127,7 @@ def live_print_identity_timeseries(
             )
             #print("v.history_identity",v.history_identity)
         
-        ax.text(0.5, 1.03, string.ascii_uppercase[i], transform=ax.transAxes, size=20, weight='bold')
+        ax.text(0.5, 1.03, string.ascii_uppercase[i], transform=ax.transAxes, size=20, weight="bold")
 
         ax.set_xlabel(r"Time")
         ax.set_ylim(0, 1)
@@ -182,7 +182,7 @@ def multi_scatter_seperate_total_sensitivity_analysis_plot(
 
     fig, axes = plt.subplots(ncols=len(dict_list), nrows=1, constrained_layout=True , sharey=True,figsize=(12, 6))#,#sharex=True# figsize=(14, 7) # len(list(data_dict.keys())))
     
-    plt.rc('ytick', labelsize=4) 
+    plt.rc("ytick", labelsize=4) 
     if len(dict_list) == 1:
         if order == "First":
             print("heyyyyyyyy")
@@ -399,10 +399,10 @@ def plot_single(data_dict_list,fileName_list, dpi_save, latex_bool = 1):
     min_emissions_difference_matrix_compare_no_identity = data_dict_list[0]["emissions_difference_matrix_compare_no_identity"].min(axis=1)
     max_emissions_difference_matrix_compare_no_identity = data_dict_list[0]["emissions_difference_matrix_compare_no_identity"].max(axis=1)
 
-    ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_identity, ls="-", linewidth = 0.5, color='black', label = r"Inter-behavioural dependence")
-    ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_identity, max_emissions_difference_matrix_compare_identity, facecolor='black', alpha=0.5)
-    ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_no_identity, ls="--", linewidth = 0.5, color='red', label = r"Behavioural independence")
-    ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_no_identity, max_emissions_difference_matrix_compare_no_identity, facecolor='red', alpha=0.5)
+    ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_identity, ls="-", linewidth = 0.5, color="black", label = r"Inter-behavioural dependence")
+    ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_identity, max_emissions_difference_matrix_compare_identity, facecolor="black", alpha=0.5)
+    ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_no_identity, ls="--", linewidth = 0.5, color="red", label = r"Behavioural independence")
+    ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_no_identity, max_emissions_difference_matrix_compare_no_identity, facecolor="red", alpha=0.5)
     ax.legend(loc = "lower right")
 
     for fileName in fileName_list:
@@ -441,17 +441,17 @@ def plot_diff_emissions_comparison(data_dict_list,fileName_list, dpi_save, latex
 
         # cultuer vs no culteur repsresneted black vs red
         # green vs no green by solid vs dashed line
-        ax.plot(mean_list[::-1],mu_emissions_id_array_no_green_identity, ls="-", color='black', label = r"Inter-behavioural dependence, No green influencers")
-        ax.fill_between(mean_list[::-1], min_emissions_id_array_no_green_identity, max_emissions_id_array_no_green_identity, facecolor='black', alpha=0.5)
+        ax.plot(mean_list[::-1],mu_emissions_id_array_no_green_identity, ls="-", color="black", label = r"Inter-behavioural dependence, No green influencers")
+        ax.fill_between(mean_list[::-1], min_emissions_id_array_no_green_identity, max_emissions_id_array_no_green_identity, facecolor="black", alpha=0.5)
         
-        ax.plot(mean_list[::-1],mu_emissions_id_array_no_green_no_identity, ls="--", color='red', label = r"Behavioural independence, No green influencers")
-        ax.fill_between(mean_list[::-1], min_emissions_id_array_no_green_no_identity, max_emissions_id_array_no_green_no_identity, facecolor='red', alpha=0.5)
+        ax.plot(mean_list[::-1],mu_emissions_id_array_no_green_no_identity, ls="--", color="red", label = r"Behavioural independence, No green influencers")
+        ax.fill_between(mean_list[::-1], min_emissions_id_array_no_green_no_identity, max_emissions_id_array_no_green_no_identity, facecolor="red", alpha=0.5)
 
-        ax.plot(mean_list[::-1],mu_emissions_id_array_green_identity, ls="-", color='green', label = r"Inter-behavioural dependence, Green influencers")
-        ax.fill_between(mean_list[::-1], min_emissions_id_array_green_identity, max_emissions_id_array_green_identity, facecolor='green', alpha=0.5)
+        ax.plot(mean_list[::-1],mu_emissions_id_array_green_identity, ls="-", color="green", label = r"Inter-behavioural dependence, Green influencers")
+        ax.fill_between(mean_list[::-1], min_emissions_id_array_green_identity, max_emissions_id_array_green_identity, facecolor="green", alpha=0.5)
 
-        ax.plot(mean_list[::-1],mu_emissions_id_array_green_no_identity, ls="--", color='blue', label = r"Behavioural independence, Green influencers")
-        ax.fill_between(mean_list[::-1], min_emissions_id_array_green_no_identity, max_emissions_id_array_green_no_identity, facecolor='blue', alpha=0.5)
+        ax.plot(mean_list[::-1],mu_emissions_id_array_green_no_identity, ls="--", color="blue", label = r"Behavioural independence, Green influencers")
+        ax.fill_between(mean_list[::-1], min_emissions_id_array_green_no_identity, max_emissions_id_array_green_no_identity, facecolor="blue", alpha=0.5)
 
         
         ax.set_title(r"Confirmation bias, $\theta = %s$" % ( data_dict_list[i]["base_params"]["confirmation_bias"]))
@@ -466,10 +466,10 @@ def plot_diff_emissions_comparison(data_dict_list,fileName_list, dpi_save, latex
         min_emissions_difference_matrix_compare_no_identity = data_dict_list[i]["emissions_difference_matrix_compare_no_identity"].min(axis=1)
         max_emissions_difference_matrix_compare_no_identity = data_dict_list[i]["emissions_difference_matrix_compare_no_identity"].max(axis=1)
     
-        ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_identity, ls="-", linewidth = 0.5, color='black', label = r"Inter-behavioural dependence")
-        ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_identity, max_emissions_difference_matrix_compare_identity, facecolor='black', alpha=0.5)
-        ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_no_identity, ls="--", linewidth = 0.5, color='red', label = r"Behavioural independence")
-        ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_no_identity, max_emissions_difference_matrix_compare_no_identity, facecolor='red', alpha=0.5)
+        ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_identity, ls="-", linewidth = 0.5, color="black", label = r"Inter-behavioural dependence")
+        ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_identity, max_emissions_difference_matrix_compare_identity, facecolor="black", alpha=0.5)
+        ax.plot(mean_list[::-1],mu_emissions_difference_matrix_compare_no_identity, ls="--", linewidth = 0.5, color="red", label = r"Behavioural independence")
+        ax.fill_between(mean_list[::-1], min_emissions_difference_matrix_compare_no_identity, max_emissions_difference_matrix_compare_no_identity, facecolor="red", alpha=0.5)
         
         ax.set_xlabel(r"Initial attitude distance, $1-a_A/(a_A + b_A)$")
 
@@ -534,7 +534,7 @@ def plot_joint_cluster_micro(fileName, Data, clusters_index_lists,cluster_exampl
 
     ###################################################
 
-    cmap = get_cmap(name='viridis', lut = len(cluster_example_identity_list))
+    cmap = get_cmap(name="viridis", lut = len(cluster_example_identity_list))
     ani_step_colours = [cmap(i) for i in range(len(cluster_example_identity_list))] 
 
     if shuffle_colours:
@@ -695,10 +695,10 @@ def print_live_initial_identity_network(
 
 def burn_in(ax,data):
     if data.burn_in_no_OD > 0:
-        ax.axvline(x = data.burn_in_no_OD,ls='--',  color='black')#OD
+        ax.axvline(x = data.burn_in_no_OD,ls="--",  color="black")#OD
     
     if data.burn_in_duration_no_policy > 0:
-        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls='--',  color='black')#OD
+        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls="--",  color="black")#OD
 
 def plot_network_timeseries(
     fileName: str, Data: Social_Network, y_title: str, property: str, dpi_save: int,latex_bool = False
@@ -1080,7 +1080,7 @@ def plot_end_points_emissions(
     max_emissions=  Data_list.max(axis=1)
 
     ax.plot(property_vals, mu_emissions, c= "red", label = "flat")
-    ax.fill_between(property_vals, min_emissions, max_emissions, facecolor='red', alpha=0.5)
+    ax.fill_between(property_vals, min_emissions, max_emissions, facecolor="red", alpha=0.5)
 
     ax.set_xlabel(property_title)
     ax.set_ylabel(r"Carbon Emissions")
@@ -1243,9 +1243,9 @@ def plot_emissions_flat_versus_linear(fileName, data_flat,data_linear, carbon_pr
         
 
     ax.plot(carbon_prices, mu_emissions_flat, c= "red", label = "flat")
-    ax.fill_between(carbon_prices, min_emissions_flat, max_emissions_flat, facecolor='red', alpha=0.5)
+    ax.fill_between(carbon_prices, min_emissions_flat, max_emissions_flat, facecolor="red", alpha=0.5)
     ax.plot(carbon_prices,mu_emissions_linear, c="blue",label = "linear")
-    ax.fill_between(carbon_prices, min_emissions_linear, max_emissions_linear, facecolor='blue', alpha=0.5)
+    ax.fill_between(carbon_prices, min_emissions_linear, max_emissions_linear, facecolor="blue", alpha=0.5)
 
     ax.set_xlabel(r"Final carbon price")
     ax.set_ylabel(r"Normlised total carbon emissions, E/NM")
@@ -1273,9 +1273,9 @@ def plot_emissions_flat_versus_linear_quintile(fileName, data_flat,data_linear, 
         
 
     ax.plot(carbon_prices, mu_emissions_flat, c= "red", label = "flat")
-    ax.fill_between(carbon_prices, min_emissions_flat, max_emissions_flat, facecolor='red', alpha=0.5)
+    ax.fill_between(carbon_prices, min_emissions_flat, max_emissions_flat, facecolor="red", alpha=0.5)
     ax.plot(carbon_prices,mu_emissions_linear, c="blue",label = "linear")
-    ax.fill_between(carbon_prices, min_emissions_linear, max_emissions_linear, facecolor='blue', alpha=0.5)
+    ax.fill_between(carbon_prices, min_emissions_linear, max_emissions_linear, facecolor="blue", alpha=0.5)
 
     ax.set_xlabel(r"Final carbon price")
     ax.set_ylabel(r"Normlised total carbon emissions, E/NM")
@@ -1290,8 +1290,8 @@ def plot_emissions_flat_versus_linear_density(fileName, data_flat,data_linear, c
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 6), sharey=True, sharex=True)
     #print(data_flat)
-    im_flat = dense_lines(data_flat.T, x=carbon_prices, ax=axs[0], cmap='Reds', ny = 200)
-    im_linear = dense_lines(data_linear.T, x=carbon_prices, ax=axs[1], cmap='Blues', ny = 200)
+    im_flat = dense_lines(data_flat.T, x=carbon_prices, ax=axs[0], cmap="Reds", ny = 200)
+    im_linear = dense_lines(data_linear.T, x=carbon_prices, ax=axs[1], cmap="Blues", ny = 200)
 
     axs[0].set_title("Flat")
     axs[1].set_title("Linear")
@@ -1306,9 +1306,9 @@ def plot_emissions_flat_versus_linear_density(fileName, data_flat,data_linear, c
     #ax.boxplot(carbon_prices, data_flat)
     #ax.boxplot(carbon_prices, data_linear)
     #ax.plot(carbon_prices, mu_emissions_flat, c= "red", label = "flat")
-    #ax.fill_between(carbon_prices, min_emissions_flat, max_emissions_flat, facecolor='red', alpha=0.5)
+    #ax.fill_between(carbon_prices, min_emissions_flat, max_emissions_flat, facecolor="red", alpha=0.5)
     #ax.plotm
-    #ax.fill_between(carbon_prices, min_emissions_linear, max_emissions_linear, facecolor='blue', alpha=0.5)
+    #ax.fill_between(carbon_prices, min_emissions_linear, max_emissions_linear, facecolor="blue", alpha=0.5)
 
     axs[0].set_xlabel(r"Final carbon price")
     axs[1].set_xlabel(r"Final carbon price")
@@ -1391,7 +1391,7 @@ def multi_line_matrix_plot(
 
     if col_axis_x:
         axcb.set_label(row_label)#(r"Number of behaviours per agent, M")
-        ax.set_xlabel(col_label)#(r'Confirmation bias, $\theta$')
+        ax.set_xlabel(col_label)#(r"Confirmation bias, $\theta$")
         #ax.set_xticks(col_ticks_pos)
         #ax.set_xticklabels(col_ticks_label)
         #print("x ticks", col_label,col_ticks_pos, col_ticks_label)
@@ -1399,7 +1399,7 @@ def multi_line_matrix_plot(
         #ax.set_xlim(left = -10.0, right = 90)
 
     else:
-        axcb.set_label(col_label)#)(r'Confirmation bias, $\theta$')
+        axcb.set_label(col_label)#)(r"Confirmation bias, $\theta$")
         ax.set_xlabel(row_label)#(r"Number of behaviours per agent, M")
         #ax.set_xticks(row_ticks_pos)
         #ax.set_xticklabels(row_ticks_label)
@@ -1439,7 +1439,7 @@ def multi_line_matrix_plot_stoch(
 
     if col_axis_x:
         axcb.set_label(row_label)#(r"Number of behaviours per agent, M")
-        ax.set_xlabel(col_label)#(r'Confirmation bias, $\theta$')
+        ax.set_xlabel(col_label)#(r"Confirmation bias, $\theta$")
         #ax.set_xticks(col_ticks_pos)
         #ax.set_xticklabels(col_ticks_label)
         #print("x ticks", col_label,col_ticks_pos, col_ticks_label)
@@ -1447,7 +1447,7 @@ def multi_line_matrix_plot_stoch(
         #ax.set_xlim(left = -10.0, right = 90)
 
     else:
-        axcb.set_label(col_label)#)(r'Confirmation bias, $\theta$')
+        axcb.set_label(col_label)#)(r"Confirmation bias, $\theta$")
         ax.set_xlabel(row_label)#(r"Number of behaviours per agent, M")
         #ax.set_xticks(row_ticks_pos)
         #ax.set_xticklabels(row_ticks_label)
@@ -1500,9 +1500,9 @@ def multi_line_matrix_plot_stoch_bands(
     
     if col_axis_x:
         cbar.set_label(row_label)#(r"Number of behaviours per agent, M")
-        ax.set_xlabel(col_label)#(r'Confirmation bias, $\theta$')
+        ax.set_xlabel(col_label)#(r"Confirmation bias, $\theta$")
     else:
-        cbar.set_label(col_label)#)(r'Confirmation bias, $\theta$')
+        cbar.set_label(col_label)#)(r"Confirmation bias, $\theta$")
         ax.set_xlabel(row_label)#(r"Number of behaviours per agent, M")
 
     plotName = fileName + "/Plots"
@@ -1539,7 +1539,7 @@ def multiline(xs, ys, c, ax=None, **kwargs):
     lc.set_array(np.asarray(c))
 
     # add lines to axes and rescale 
-    #    Note: adding a collection doesn't autoscalee xlim/ylim
+    #    Note: adding a collection doesn"t autoscalee xlim/ylim
     ax.add_collection(lc)
     ax.autoscale()
     return lc

@@ -149,7 +149,7 @@ def main(
 
     return fileName
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     fileName_Figure_1 = main(
         BASE_PARAMS_LOAD = "package/constants/base_params_carbon_price_vary.json",
         VARIABLE_PARAMS_LOAD = "package/constants/oneD_dict_carbon_price_vary.json",

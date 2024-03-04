@@ -71,13 +71,27 @@ class Social_Network:
         #price
         self.prices_vec =  parameters_social_network["prices_vec"]#THIS NEEDS TO BE SET AFTER THE STUFF IS RUN.
         
+        self.carbon_price_state = parameters_social_network["carbon_price_state"]
         self.carbon_price_policy = parameters_social_network["carbon_price"]
+
+        if self.carbon_price_state == "AR1":
+                self.ar_1_coefficient = parameters_social_network["ar_1_coefficient"] 
+                self.noise_mean = parameters_social_network["noise_mean"]  
+                self.noise_sigma = parameters_social_network["noise_sigma"] 
+                self.carbon_price_AR1 = self.generate_ar1(self.carbon_price_policy,self.ar_1_coefficient, self.noise_mean, self.noise_sigma, self.policy_duration+2)
+        elif self.carbon_price_state == "normal":
+            self.noise_sigma = parameters_social_network["noise_sigma"] 
+            self.carbon_price_normal = np.random.normal(self.carbon_price_policy,self.noise_sigma, size = self.policy_duration + 2)
+
         if self.t_social_network == self.burn_in_no_OD + self.burn_in_duration_no_policy:
-            self.carbon_price = parameters_social_network["carbon_price"]
+            if self.carbon_price_state == "flat":
+                self.carbon_price = self.carbon_price_policy
+            elif self.carbon_price_state == "AR1":
+                self.carbon_price = self.carbon_price_AR1[0]
+            elif self.carbon_price_state == "normal":
+                self.carbon_price = self.carbon_price_normal[0]
         else:
             self.carbon_price = 0
-
-        #print("carbon_price",self.carbon_price)
 
         # social learning and bias
         self.confirmation_bias = parameters_social_network["confirmation_bias"]
@@ -114,7 +128,9 @@ class Social_Network:
         ) = self.generate_init_data_preferences()
         self.preference_mul = parameters_social_network["preference_mul"]
         self.low_carbon_preference_matrix_init = self.low_carbon_preference_matrix_init*self.preference_mul
-       
+        #print("MEAN vals", sum(self.low_carbon_preference_matrix_init))
+        #print("network", self.adjacency_matrix[0])
+        #quit()
         
         self.heterogenous_expenditure_state = parameters_social_network["heterogenous_expenditure_state"]
         self.total_expenditure = parameters_social_network["total_expenditure"]
@@ -133,26 +149,18 @@ class Social_Network:
             self.substitutability_vec = np.clip(np.random.normal(loc = self.substitutability , scale = self.std_substitutability, size = self.num_individuals), 1.05, None)#limit between 0.01
         else:
             self.substitutability_vec = np.asarray([self.substitutability]*self.num_individuals)
-        #print("self.substitutability_vec",self.substitutability_vec)
-        #quit()
-        #heterogenous_emissions_intensity_penalty_state
             
         self.heterogenous_emissions_intensity_penalty_state = parameters_social_network["heterogenous_emissions_intensity_penalty_state"]
         self.emissions_intensity_penalty = parameters_social_network["emissions_intensity_penalty"]
         if self.heterogenous_emissions_intensity_penalty_state:
             self.std_emissions_intensity_penalty = parameters_social_network["std_emissions_intensity_penalty"]
             self.emissions_intensity_penalty_vec = np.clip(np.random.normal(loc = self.emissions_intensity_penalty , scale = self.std_emissions_intensity_penalty, size = self.num_individuals), 0.01, None)#limit between 0.01
-
         else:
             self.emissions_intensity_penalty_vec = np.asarray([self.emissions_intensity_penalty]*self.num_individuals)
-            #print("self.emissions_intensity_penalty_vec",self.emissions_intensity_penalty_vec)
-            #quit()
 
-        #print("self.emissions_intensity_penalty_vec", self.emissions_intensity_penalty_vec)
-        #quit()
 
         self.agent_list = self.create_agent_list()
-        self.preference_list = list(map(attrgetter('low_carbon_preference'), self.agent_list))
+        self.preference_list = list(map(attrgetter("low_carbon_preference"), self.agent_list))
 
         self.shuffle_agent_list()#partial shuffle of the list based on prefernece
 
@@ -177,8 +185,6 @@ class Social_Network:
             self.carbon_dividend_array = self.calc_carbon_dividend_array()
         else:
             self.carbon_dividend_array = np.asarray([0]*self.num_individuals)
-        #print("self.carbon_dividend_array",self.carbon_dividend_array)
-
 
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
@@ -186,6 +192,13 @@ class Social_Network:
         if self.save_timeseries_data_state:
             self.set_up_time_series_social_network()
    
+    def generate_ar1(self, mean, acf, mu, sigma, N):
+        data = [mean]
+        for i in range(1,N):
+            noise = np.random.normal(mu,sigma)
+            data.append(mean + acf * (data[-1] - mean) + noise)
+        return np.array(data)
+    
     def normalize_vector_sum(self, vec):
         return vec/sum(vec)
     
@@ -221,8 +234,8 @@ class Social_Network:
         weighting_matrix: npt.NDArray[bool]
             adjacency matrix, array giving social network structure where 1 represents a connection between agents and 0 no connection. It is symetric about the diagonal
         norm_weighting_matrix: npt.NDArray[float]
-            an NxN array how how much each agent values the opinion of their neighbour. Note that is it not symetric and agent i doesn't need to value the
-            opinion of agent j as much as j does i's opinion
+            an NxN array how how much each agent values the opinion of their neighbour. Note that is it not symetric and agent i doesn"t need to value the
+            opinion of agent j as much as j does i"s opinion
         ws: nx.Graph
             a networkx watts strogatz small world graph
         """
@@ -230,9 +243,6 @@ class Social_Network:
         G = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
         weighting_matrix = nx.to_numpy_array(G)
-
-        #print("weighting_matrix", weighting_matrix)
-        #quit()
 
         norm_weighting_matrix = self.normlize_matrix(weighting_matrix)
 
@@ -329,12 +339,8 @@ class Social_Network:
     
     def calc_ego_influence_degroot(self) -> npt.NDArray:
 
-        attribute_matrix = np.asarray(list(map(attrgetter('outward_social_influence'), self.agent_list))) 
-        #prefences = np.asarray(list(map(attrgetter('low_carbon_preference'), self.agent_list))) 
-        #print("attribute_matrix",attribute_matrix)
-        #print("prefences", prefences)
-        #print("difference", prefences- attribute_matrix)
-        #quit()
+        attribute_matrix = np.asarray(list(map(attrgetter("outward_social_influence"), self.agent_list))) 
+
         neighbour_influence = np.matmul(self.weighting_matrix, attribute_matrix)    
         
         return neighbour_influence
@@ -362,11 +368,8 @@ class Social_Network:
     def calc_weighting_matrix_attribute(self,attribute_array):
 
         difference_matrix = np.subtract.outer(attribute_array, attribute_array) #euclidean_distances(attribute_array,attribute_array)# i think this actually not doing anything? just squared at the moment
-        #print("difference_matrix",difference_matrix)
-        #print("self.confirmation_bias",self.confirmation_bias)
         alpha_numerator = np.exp(-np.multiply(self.confirmation_bias, np.abs(difference_matrix)))
-        #print("alpha_numerator",alpha_numerator,alpha_numerator)
-        #quit()
+
         non_diagonal_weighting_matrix = (
             self.adjacency_matrix*alpha_numerator
         )  # We want only those values that have network connections 
@@ -393,12 +396,11 @@ class Social_Network:
 
         ##THE WEIGHTING FOR THE IDENTITY IS DONE IN INDIVIDUALS
 
-        self.preference_list = list(map(attrgetter('low_carbon_preference'), self.agent_list))
-        self.outward_social_influence_list = list(map(attrgetter('outward_social_influence'), self.agent_list))
+        self.preference_list = list(map(attrgetter("low_carbon_preference"), self.agent_list))
+        self.outward_social_influence_list = list(map(attrgetter("outward_social_influence"), self.agent_list))
 
         norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.outward_social_influence_list)
-        #print("norm_weighting_matrix[0]", norm_weighting_matrix[0])
-        #quit()
+
         return norm_weighting_matrix
 
     def calc_total_emissions(self) -> int:
@@ -415,7 +417,7 @@ class Social_Network:
             total network emissions from each Individual object
         """
 
-        total_network_emissions = sum(map(attrgetter('flow_carbon_emissions'), self.agent_list))
+        total_network_emissions = sum(map(attrgetter("flow_carbon_emissions"), self.agent_list))
         return total_network_emissions
     
     def calc_consumption_vec(self):
@@ -453,10 +455,20 @@ class Social_Network:
 
     def update_carbon_price(self):
         if self.t_social_network == self.burn_in_no_OD+self.burn_in_duration_no_policy:
-            self.carbon_price = self.carbon_price_policy
+            if self.carbon_price_state == "flat":
+                self.carbon_price = self.carbon_price_policy
+            elif self.carbon_price_state == "AR1":
+                self.carbon_price = self.carbon_price_AR1[0]
+            elif self.carbon_price_state == "normal":
+                self.carbon_price = self.carbon_price_normal[0]
+        elif (self.t_social_network > self.burn_in_no_OD+self.burn_in_duration_no_policy): 
+            if self.carbon_price_state == "AR1":
+                self.carbon_price = self.carbon_price_AR1[self.t_social_network - (self.burn_in_no_OD+self.burn_in_duration_no_policy)]
+            elif self.carbon_price_state == "normal":
+                self.carbon_price = self.carbon_price_normal[self.t_social_network - (self.burn_in_no_OD+self.burn_in_duration_no_policy)]
 
     def update_prices(self):
-        #print("self.prices_vec + self.emissions_intensities_vec*self.carbon_price",self.prices_vec,self.emissions_intensities_vec,self.carbon_price)
+        
         self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*self.carbon_price
         #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
     

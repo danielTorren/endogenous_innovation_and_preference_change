@@ -11,14 +11,13 @@ import random
 from package.model.technology import Technology
 
 class Firm:
-    def __init__(self, parameters_firm, init_tech, expected_carbon_premium, firm_id):
+    def __init__(self, parameters_firm, init_tech, firm_id):
         
         self.t_firm = 0
 
         self.firm_id = firm_id#this is used when indexing firms stuff
 
         
-        self.expected_carbon_premium =  expected_carbon_premium#parameters_firm["expected_carbon_premium"]#variable
         self.markup_adjustment = parameters_firm["markup_adjustment"]
         self.firm_phi = parameters_firm["firm_phi"]
         self.value_matrix_cost = parameters_firm["value_matrix_cost"]
@@ -32,7 +31,6 @@ class Firm:
         self.carbon_price = parameters_firm["carbon_price"]
         self.memory_cap = parameters_firm["memory_cap"]
         self.jump_scale = parameters_firm["jump_scale"]
-        self.static_carbon_premium_heterogenous_state = parameters_firm["static_carbon_premium_heterogenous_state"]
         self.theta = parameters_firm["theta"]
         self.segment_number = int(parameters_firm["segment_number"])
         self.expected_segment_share = [1/self.segment_number]*self.segment_number#initally uniformly distributed
@@ -130,7 +128,7 @@ class Firm:
                 inverted_value ^= (1 << bit_position)
             
             # Convert the inverted decimal value to binary
-            inverted_binary_value = format(inverted_value, f'0{length}b')
+            inverted_binary_value = format(inverted_value, f"0{length}b")
 
             # Append the inverted binary value to the list
             inverted_binary_values.append(inverted_binary_value)
@@ -321,10 +319,7 @@ class Firm:
         #self.history_price = [self.firm_price]
         #self.history_budget = [self.firm_budget]
         #self.history_cost = [self.firm_cost]
-        #self.history_expected_carbon_premium = [self.expected_carbon_premium]
         self.history_length_memory_list = [len(self.list_technology_memory)]
-        if not self.static_carbon_premium_heterogenous_state:
-            self.history_indices_higher = [len(self.indices_higher)]
         self.history_search_range = [self.search_range]
         self.history_profit = [self.profit]
         #self.history_segment_index_max_profit = [self.tech_index_max_profit]
@@ -350,10 +345,8 @@ class Firm:
         #self.history_price.append(self.firm_price)
         #self.history_budget.append(self.firm_budget)
         #self.history_cost.append(self.firm_cost)
-        #self.history_expected_carbon_premium.append(self.expected_carbon_premium)
+
         self.history_length_memory_list.append(len(self.list_technology_memory))
-        if not self.static_carbon_premium_heterogenous_state:
-            self.history_indices_higher.append(len(self.indices_higher))
         self.history_search_range.append(self.search_range)
         self.history_profit.append(self.profit)
         #self.history_segment_index_max_profit.append(self.tech_index_max_profit)

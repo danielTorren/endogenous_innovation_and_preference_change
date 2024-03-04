@@ -15,11 +15,12 @@ class Controller:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
+        self.parameters_carbon_policy = parameters_controller["parameters_carbon_policy"]
 
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
-        self.carbon_price = parameters_controller["carbon_price"]
+
 
         #TIME STUFF
         self.burn_in_no_OD = parameters_controller["burn_in_no_OD"] 
@@ -30,24 +31,42 @@ class Controller:
         
         self.parameters_firm_manager["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm_manager["compression_factor_state"] = self.compression_factor_state
-        self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
-        self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
-
+        
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
         self.parameters_social_network["J"] = self.parameters_firm_manager["J"]
-        self.parameters_social_network["carbon_price"] = self.carbon_price
+
+        #CARBON PRICING
+        self.parameters_social_network["carbon_price"] = self.parameters_carbon_policy["carbon_price"]
+        self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
+
+        if (self.burn_in_no_OD + self.burn_in_duration_no_policy) == 0:
+            self.carbon_price = self.parameters_carbon_policy["carbon_price"]
+            self.parameters_firm_manager["carbon_price"] = self.carbon_price
+        else:
+            self.carbon_price = 0
+
+        self.parameters_firm_manager["carbon_price"] = self.carbon_price
+        #IN THE CASE OF AR1 SET UP STUFF IN SOCIAL NETWORK
+        if  self.parameters_carbon_policy["carbon_price_state"] == "AR1":
+            self.parameters_social_network["ar_1_coefficient"] = self.parameters_carbon_policy["ar_1_coefficient"] 
+            self.parameters_social_network["noise_mean"] = self.parameters_carbon_policy["noise_mean"]  
+            self.parameters_social_network["noise_sigma"] = self.parameters_carbon_policy["noise_sigma"] 
+        elif self.parameters_carbon_policy["carbon_price_state"] == "normal":
+            self.parameters_social_network["noise_sigma"] = self.parameters_carbon_policy["noise_sigma"] 
+
+        #CREATE FIRMS    
+        self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
 
         self.parameters_social_network["burn_in_no_OD"] = self.burn_in_no_OD
         self.parameters_social_network["burn_in_duration_no_policy"] = self.burn_in_duration_no_policy
-        self.parameters_social_network["policy_duration"] = self.policy_duration
-        #print("self.parameters_social_network",self.parameters_social_network)
-        #quit()
+        self.parameters_social_network["policy_duration"] = self.policy_duration      
+
         #GET FIRM PRICES
         self.parameters_social_network["prices_vec"] = self.firm_manager.prices_vec
         self.parameters_social_network["emissions_intensities_vec"] = self.firm_manager.emissions_intensities_vec

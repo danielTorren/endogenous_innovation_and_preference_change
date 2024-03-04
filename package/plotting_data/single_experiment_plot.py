@@ -21,14 +21,14 @@ from package.resources.plot import (
 
 def burn_in(ax,data):
     if data.burn_in_no_OD > 0:
-        ax.axvline(x = data.burn_in_no_OD,ls='--',  color='black')#OD
+        ax.axvline(x = data.burn_in_no_OD,ls="--",  color="black")#OD
     
     if data.burn_in_duration_no_policy > 0:
-        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls='--',  color='black')#OD
+        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls="--",  color="black")#OD
 
 def plot_emissions_individuals(fileName, data, dpi_save):
 
-    y_title = r"Individuals' emissions flow"
+    y_title = r"Individuals" emissions flow"
 
     fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
 
@@ -188,11 +188,6 @@ def plot_firm_budget(fileName: str, Data, dpi_save: int):
     property = "history_budget_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
-def plot_firm_expected_carbon_premium_vec(fileName: str, Data, dpi_save: int):
-
-    y_title = "Firm expected carbon premium vec"
-    property = "history_expected_carbon_premium_vec"
-    plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
 def plot_demand_firm(fileName: str, Data, dpi_save: int):
 
@@ -380,11 +375,11 @@ def final_scatter_price_EI(
     fig, ax = plt.subplots(figsize=(10,6)) 
 
     # bodge
-    scatter = ax.scatter(data.history_prices_vec[-1], data.history_emissions_intensities_vec[-1],  c=data.history_market_share_vec[-1], cmap='viridis', alpha=0.9, edgecolors='black')
+    scatter = ax.scatter(data.history_prices_vec[-1], data.history_emissions_intensities_vec[-1],  c=data.history_market_share_vec[-1], cmap="viridis", alpha=0.9, edgecolors="black")
 
     # Add colorbar to indicate market share
     cbar = fig.colorbar(scatter)
-    cbar.set_label('Market Share')
+    cbar.set_label("Market Share")
 
     ax.set_xlabel(r"Price, p")
     ax.set_ylabel(r"Emissions intensities, ei")
@@ -406,13 +401,13 @@ def final_scatter_price_EI_alt(
     fig, ax = plt.subplots(figsize=(10,6)) 
 
     # bodge
-    scatter = ax.scatter(data.history_market_share_vec[-1], data.history_emissions_intensities_vec[-1],  c=data.history_prices_vec[-1], cmap='plasma', alpha=0.9, edgecolors='black')
+    scatter = ax.scatter(data.history_market_share_vec[-1], data.history_emissions_intensities_vec[-1],  c=data.history_prices_vec[-1], cmap="plasma", alpha=0.9, edgecolors="black")
 
     # Add colorbar to indicate market share
     cbar = fig.colorbar(scatter)
     cbar.set_label(r"Price, p")
 
-    ax.set_xlabel('Market Share')
+    ax.set_xlabel("Market Share")
     ax.set_ylabel(r"Emissions intensities, ei")
     ax.set_title("Price-Emissions intensity correlation $\\rho$ = %s" % (data.rho))
 
@@ -440,13 +435,13 @@ def ani_scatter_price_EI(fileName, data, dpi_save):
     cbar = fig.colorbar(
         plt.cm.ScalarMappable(cmap=get_cmap("plasma"), norm=Normalize(vmin=min_market_share, vmax=max_market_share)), ax=ax
         )
-    cbar.set_label('Market Share')
+    cbar.set_label("Market Share")
 
     def update(frame):
         ax.clear()
         ax.set_xlim(min_price, max_price)
         ax.set_ylim(min_ei, max_ei)
-        scatter = ax.scatter(data.history_prices_vec[frame], data.history_emissions_intensities_vec[frame],  c=data.history_market_share_vec[frame], cmap='viridis', alpha=0.9, edgecolors='black')
+        scatter = ax.scatter(data.history_prices_vec[frame], data.history_emissions_intensities_vec[frame],  c=data.history_market_share_vec[frame], cmap="viridis", alpha=0.9, edgecolors="black")
         ax.set_xlabel(r"Price, p")
         ax.set_ylabel(r"Emissions intensities, ei")
         ax.set_title("Price-Emissions intensity correlation $\\rho$ = %s" % (data.rho))
@@ -456,25 +451,35 @@ def ani_scatter_price_EI(fileName, data, dpi_save):
         #cbar.remove()
         # Set colorbar limits
         #scatter.set_clim(vmin=min_market_share, vmax=max_market_share)
-        #fig.colorbar(scatter, ax=ax).set_label('Market Share')
+        #fig.colorbar(scatter, ax=ax).set_label("Market Share")
 
         # Add step counter
-        ax.annotate('Step: %d/%s' % (data.history_time_firm_manager[frame], data.history_time_firm_manager[-1]), xy=(0.75, 0.95), xycoords='axes fraction', fontsize=12, color='black')
+        ax.annotate("Step: %d/%s" % (data.history_time_firm_manager[frame], data.history_time_firm_manager[-1]), xy=(0.75, 0.95), xycoords="axes fraction", fontsize=12, color="black")
 
     ani = animation.FuncAnimation(fig, update, frames=len(data.history_time_firm_manager), interval=1)
     # saving to m4 using ffmpeg writer 
     writervideo = animation.FFMpegWriter(fps=60) 
-    ani.save(fileName + '/Animations/scatter_price_EI.mp4', writer=writervideo) 
-    #ni.save(fileName + '/Animations/scatter_ei_price_market_share_animation.gif', dpi=dpi_save)
+    ani.save(fileName + "/Animations/scatter_price_EI.mp4", writer=writervideo) 
+    #ni.save(fileName + "/Animations/scatter_ei_price_market_share_animation.gif", dpi=dpi_save)
     print("done")
     #plt.close()
     return ani
     
 
 # Example usage:
-# final_scatter_price_EI('path_to_save', your_data_object, 100)
+# final_scatter_price_EI("path_to_save", your_data_object, 100)
 
+def plot_arbon_price_AR1(
+    fileName, 
+    data, 
+    ):
 
+    fig, ax = plt.subplots(figsize=(10,6)) 
+    ax.plot(data.carbon_price_AR1)
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/ar1 time_series"
+    fig.savefig(f + ".png", dpi=600, format="png")
 
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
@@ -499,6 +504,8 @@ def main(
         plot_demand_individuals(fileName, data_social_network, dpi_save)
         #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
         #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
+        if data_social_network.carbon_price_state == "AR1":
+            plot_arbon_price_AR1(fileName, data_social_network)
         
 
     if firm_plots:
@@ -510,7 +517,6 @@ def main(
         #plot_search_range(fileName, data_firm_manager, dpi_save)
         plot_firm_proft(fileName, data_firm_manager, dpi_save)
         plot_firm_budget(fileName, data_firm_manager, dpi_save)
-        #plot_firm_expected_carbon_premium_vec(fileName, data_firm_manager, dpi_save)
         #plot_demand_firm(fileName, data_social_network, dpi_save)
         plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
         #plot_firm_segment_index_max_profit(fileName, data_firm_manager, dpi_save)
@@ -523,7 +529,7 @@ def main(
 
     plt.show()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     plots = main(
         fileName = "results/single_experiment_16_47_36__28_02_2024",
     )

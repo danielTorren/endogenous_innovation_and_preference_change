@@ -32,7 +32,6 @@ class Firm_Manager:
         self.compression_factor_state = parameters_firm_manager["compression_factor_state"]
         self.init_tech_heterogenous_state = parameters_firm_manager["init_tech_heterogenous_state"]
         #print("self.init_tech_heterogenous_state",self.init_tech_heterogenous_state)
-        self.init_carbon_premium_heterogenous_state = parameters_firm_manager["init_carbon_premium_heterogenous_state"]
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.nk_multiplier = parameters_firm_manager["nk_multiplier"]
         self.c_min = parameters_firm_manager["c_min"]
@@ -64,25 +63,20 @@ class Firm_Manager:
 
         
         if self.init_tech_heterogenous_state:
-            init_tech_component_string_list = [f'{random.getrandbits(self.N):=0{self.N}b}' for _ in range(self.J)]#GENERATE A RANDOM STRING OF LENGTH N
+            init_tech_component_string_list = [f"{random.getrandbits(self.N):=0{self.N}b}" for _ in range(self.J)]#GENERATE A RANDOM STRING OF LENGTH N
             init_tech_emissions_list, inti_tech_cost_list = zip(*[self.calc_tech_emission_cost(x) for x in init_tech_component_string_list])
             self.init_tech_list = [Technology(init_tech_component_string_list[x], init_tech_emissions_list[x], inti_tech_cost_list[x], choosen_tech_bool = 1) for x in range(self.J)]
         else:
-            self.init_tech_component_string = f'{random.getrandbits(self.N):=0{self.N}b}'#GENERATE A RANDOM STRING OF LENGTH N
+            self.init_tech_component_string = f"{random.getrandbits(self.N):=0{self.N}b}"#GENERATE A RANDOM STRING OF LENGTH N
             self.init_tech_emissions, self.inti_tech_cost = self.calc_tech_emission_cost(self.init_tech_component_string)
             self.technology_init = Technology(self.init_tech_component_string, self.init_tech_emissions, self.inti_tech_cost, choosen_tech_bool = 1)
             #self.parameters_firm["technology_init"] = self.technology_init
             self.init_tech_list = [self.technology_init]*self.J
 
-        if self.init_carbon_premium_heterogenous_state:
-            self.expected_carbon_premium_list = np.random.normal(parameters_firm_manager["expected_carbon_premium"], parameters_firm_manager["expected_carbon_premium_init_sigma"], self.J)
-        else:
-            self.expected_carbon_premium_list = [parameters_firm_manager["expected_carbon_premium"]]*self.J
-
         self.firms_list = self.create_firms()
 
         #set up init stuff
-        self.emissions_intensities_vec, self.prices_vec, self.cost_vec, self.budget_vec, self.expected_carbon_premium_vec = self.get_firm_properties()
+        self.emissions_intensities_vec, self.prices_vec, self.cost_vec, self.budget_vec = self.get_firm_properties()
         self.market_share_vec = [firm.current_market_share for firm in self.firms_list]
         self.weighted_emissions_intensities_vec = self.emissions_intensities_vec*self.market_share_vec
         self.weighted_emissions_intensity = sum(self.weighted_emissions_intensities_vec) 
@@ -117,7 +111,7 @@ class Firm_Manager:
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        #emissions = np.mean(fitness_vector_emissions_intensity) #+1#NORMALIZE IT? we've added 1 
+        #emissions = np.mean(fitness_vector_emissions_intensity) #+1#NORMALIZE IT? we"ve added 1 
         #cost = np.mean(fitness_vector_cost) #+1#NORMALIZE IT
 
         cost = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(fitness_vector_cost, axis = 0)
@@ -131,7 +125,6 @@ class Firm_Manager:
         firms_list = [Firm(
                 self.parameters_firm,
                 self.init_tech_list[j],
-                self.expected_carbon_premium_list[j],
                 j
             ) 
             for j in range(self.J) 
@@ -188,19 +181,14 @@ class Firm_Manager:
         prices_vec = []
         cost_vec = []
         budget_vec = []
-        expected_carbon_premium_vec = []
 
         for j, firm in enumerate(self.firms_list):
             emissions_intensities_vec.append(firm.firm_emissions_intensity)
             prices_vec.append(firm.firm_price)
             cost_vec.append(firm.firm_cost)
             budget_vec.append(firm.firm_budget)
-            expected_carbon_premium_vec.append(firm.expected_carbon_premium)
 
-        #print("KKKKK")
-        #print(np.asarray(emissions_intensities_vec), np.asarray(cost_vec))
-        #quit()
-        return np.asarray(emissions_intensities_vec), np.asarray(prices_vec), np.asarray(cost_vec), np.asarray(budget_vec), np.asarray(expected_carbon_premium_vec)
+        return np.asarray(emissions_intensities_vec), np.asarray(prices_vec), np.asarray(cost_vec), np.asarray(budget_vec)
 
     def set_up_time_series_firm_manager(self):
 
@@ -210,7 +198,7 @@ class Firm_Manager:
         self.history_market_share_vec = [self.market_share_vec]#this may be off by 1 time step??
         self.history_cost_vec = [self.cost_vec]
         self.history_budget_vec = [self.budget_vec]
-        self.history_expected_carbon_premium_vec = [self.expected_carbon_premium_vec]
+
         self.history_time_firm_manager = [self.t_firm_manager]
 
     def save_timeseries_data_firm_manager(self):
@@ -232,7 +220,6 @@ class Firm_Manager:
         self.history_market_share_vec.append(self.market_share_vec)#this may be off by 1 time step??
         self.history_cost_vec.append(self.cost_vec)
         self.history_budget_vec.append(self.budget_vec)
-        self.history_expected_carbon_premium_vec.append(self.expected_carbon_premium_vec)
         self.history_time_firm_manager.append(self.t_firm_manager)
 
     def update_firms(self):
@@ -251,7 +238,7 @@ class Firm_Manager:
         self.update_firms()
 
         #calc stuff for next step to pass on to consumersm, get the new prices and emissiosn internsities for consumers
-        self.emissions_intensities_vec, self.prices_vec, self.cost_vec, self.budget_vec, self.expected_carbon_premium_vec = self.get_firm_properties()
+        self.emissions_intensities_vec, self.prices_vec, self.cost_vec, self.budget_vec = self.get_firm_properties()
         self.weighted_emissions_intensities_vec = self.emissions_intensities_vec*self.market_share_vec
         self.weighted_emissions_intensity = sum(self.weighted_emissions_intensities_vec) 
 

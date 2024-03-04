@@ -128,7 +128,6 @@ class Individual:
 
     def calc_market_share_replicator(self):
         fitness = 1/(self.low_carbon_preference*self.emissions_intensities_vec + self.prices_vec_instant)
-                    #1/(self.expected_carbon_premium*emissions_intensity*self.carbon_price + cost)
         mean_fitness = np.sum(self.market_share_individual*fitness)
         growth_market_share_individual = self.chi_ms*((fitness - mean_fitness)/mean_fitness)
         ms_new = self.market_share_individual*(1 + growth_market_share_individual)
