@@ -74,6 +74,9 @@ class Social_Network:
         self.carbon_price_state = parameters_social_network["carbon_price_state"]
         self.carbon_price_policy = parameters_social_network["carbon_price"]
 
+        print("self.carbon_price_policy",self.carbon_price_policy)
+        #quit()
+
         if self.carbon_price_state == "AR1":
                 self.ar_1_coefficient = parameters_social_network["ar_1_coefficient"] 
                 self.noise_mean = parameters_social_network["noise_mean"]  
