@@ -20,8 +20,7 @@ class Firm_Manager:
         self.t_firm_manager = 0
 
         self.landscape_seed = parameters_firm_manager["landscape_seed"]
-        np.random.seed(self.landscape_seed)#set seed for numpy
-        random.seed(self.landscape_seed)#set seed for random
+        self.init_tech_seed = parameters_firm_manager["init_tech_seed"] 
 
         self.J = parameters_firm_manager["J"]
         self.N = parameters_firm_manager["N"]
@@ -44,7 +43,33 @@ class Firm_Manager:
 
         self.parameters_firm = parameters_firm
 
+        #GEN INIT TECH
+        np.random.seed(self.init_tech_seed)#set seed for numpy
+        random.seed(self.init_tech_seed)#set seed for random
+
+        self.init_tech_component_string = f"{random.getrandbits(self.N):=0{self.N}b}"
+        if self.init_tech_heterogenous_state:
+            decimal_value = int(self.init_tech_component_string, 2) 
+            init_tech_component_string_list_N = self.invert_bits_one_at_a_time(decimal_value, len(self.init_tech_component_string))
+            init_tech_component_string_list = np.random.choice(init_tech_component_string_list_N, self.J)
+        
+        #################################################################################################################################################
+        #BELOW STUFF IS VARIED IN MONTECARLO SIMULATIONS
+        #################################################################################################################################################
+
+        np.random.seed(self.landscape_seed)#set seed for numpy
+        random.seed(self.landscape_seed)#set seed for random
+
         self.value_matrix_cost, self.value_matrix_emissions_intensity = self.create_NK_model()
+
+        if self.init_tech_heterogenous_state:
+            init_tech_emissions_list, inti_tech_cost_list = zip(*[self.calc_tech_emission_cost(x) for x in init_tech_component_string_list])
+            self.init_tech_list = [Technology(init_tech_component_string_list[x], init_tech_emissions_list[x], inti_tech_cost_list[x], choosen_tech_bool = 1) for x in range(self.J)]
+        else:
+            self.init_tech_emissions, self.inti_tech_cost = self.calc_tech_emission_cost(self.init_tech_component_string)
+            self.technology_init = Technology(self.init_tech_component_string, self.init_tech_emissions, self.inti_tech_cost, choosen_tech_bool = 1)
+            self.init_tech_list = [self.technology_init]*self.J
+
         self.parameters_firm["value_matrix_cost"] = self.value_matrix_cost
         self.parameters_firm["value_matrix_emissions_intensity"] = self.value_matrix_emissions_intensity
         self.parameters_firm["N"] = self.N
@@ -60,18 +85,6 @@ class Firm_Manager:
         self.parameters_firm["ei_max"] = self.ei_max 
         self.parameters_firm["survey_cost"] = self.survey_cost
         self.parameters_firm["research_cost"] = self.research_cost
-
-        
-        if self.init_tech_heterogenous_state:
-            init_tech_component_string_list = [f"{random.getrandbits(self.N):=0{self.N}b}" for _ in range(self.J)]#GENERATE A RANDOM STRING OF LENGTH N
-            init_tech_emissions_list, inti_tech_cost_list = zip(*[self.calc_tech_emission_cost(x) for x in init_tech_component_string_list])
-            self.init_tech_list = [Technology(init_tech_component_string_list[x], init_tech_emissions_list[x], inti_tech_cost_list[x], choosen_tech_bool = 1) for x in range(self.J)]
-        else:
-            self.init_tech_component_string = f"{random.getrandbits(self.N):=0{self.N}b}"#GENERATE A RANDOM STRING OF LENGTH N
-            self.init_tech_emissions, self.inti_tech_cost = self.calc_tech_emission_cost(self.init_tech_component_string)
-            self.technology_init = Technology(self.init_tech_component_string, self.init_tech_emissions, self.inti_tech_cost, choosen_tech_bool = 1)
-            #self.parameters_firm["technology_init"] = self.technology_init
-            self.init_tech_list = [self.technology_init]*self.J
 
         self.firms_list = self.create_firms()
 
@@ -101,24 +114,39 @@ class Firm_Manager:
                 #print("wrap around",substring)
             # Convert the binary substring to decimal
             decimal = int(substring, 2)
-            #print("decimal", decimal)
             # Retrieve the value from the value matrix
-            #print("self.value_matrix_cost",self.value_matrix_cost.shape)
-            #print("decimal, n",decimal, n)
-            #quit()
             #ISSUE, i think value matrix shoudl be at least (14,10) but its acctually 33,0? 0 makes sense, but not the 33
             #THE decimal conversion thing is wrong its giving values that are much larger than the size of the table
             fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
             fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
 
-        #emissions = np.mean(fitness_vector_emissions_intensity) #+1#NORMALIZE IT? we"ve added 1 
-        #cost = np.mean(fitness_vector_cost) #+1#NORMALIZE IT
 
         cost = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(fitness_vector_cost, axis = 0)
         emissions = self.ei_min +((self.ei_max-self.ei_min)/self.N)*np.sum(fitness_vector_emissions_intensity, axis = 0)
 
         return emissions, cost
 
+    def invert_bits_one_at_a_time(self,decimal_value, length):
+        # Convert decimal value to binary with leading zeros to achieve length N
+        # binary_value = format(decimal_value, f'0{length}b')
+
+        # Initialize an empty list to store inverted binary values
+        inverted_binary_values = []
+
+        # Iterate through each bit position
+        for bit_position in range(length):
+            """
+            NEED TO UNDERSTAND BETTER HOW THIS WORKS!!
+            """
+            inverted_value = decimal_value^(1 << bit_position)
+
+            # Convert the inverted decimal value to binary
+            inverted_binary_value = format(inverted_value, f'0{length}b')
+
+            # Append the inverted binary value to the list
+            inverted_binary_values.append(inverted_binary_value)
+
+        return inverted_binary_values
 
     def create_firms(self):
 

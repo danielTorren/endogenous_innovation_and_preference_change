@@ -28,7 +28,7 @@ def burn_in(ax,data):
 
 def plot_emissions_individuals(fileName, data, dpi_save):
 
-    y_title = r"Individuals" emissions flow"
+    y_title = r"Individuals emissions flow"
 
     fig, ax = plt.subplots(constrained_layout=True,figsize=(10, 6))
 

@@ -163,22 +163,12 @@ class Firm:
 
         cost = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(fitness_vector_cost, axis = 0)
         emissions = self.ei_min +((self.ei_max-self.ei_min)/self.N)*np.sum(fitness_vector_emissions_intensity, axis = 0)
-        #print("HOOOO")
-        #print(cost, emissions)
-        #quit()
-        #emissions = np.mean(fitness_vector_emissions_intensity) #+ 1
-        #cost = np.mean(fitness_vector_cost) #+ 1
+
 
         return emissions, cost
 
     def explore_technology(self):
-        #grab a random one
-        #if not self.list_neighouring_technologies_strings:
-        #    print("EMPTY",self.t_firm, self.firm_id, self.search_range )
-        #    print("self.history_search_range",self.history_search_range)
-        #if self.firm_id == 5:
-        #    print("JUST BEFORE CHOOSING RANDOM TECH self.list_neighouring_technologies_strings",self.list_neighouring_technologies_strings)
-        #print("self.list_neighouring_technologies_strings",self.list_neighouring_technologies_strings)
+
         self.random_technology_string = random.choice(self.list_neighouring_technologies_strings)#this is not empty
 
         tech_emissions_intensity, tech_cost = self.calc_tech_emission_cost(self.random_technology_string)

@@ -59,6 +59,7 @@ if __name__ == "__main__":
             "K": 4,
             "alpha":1,
             "rho":0,
+            "init_tech_seed": 10,
             "landscape_seed": 6,
             "init_tech_heterogenous_state": 1,
             "nk_multiplier": 1,
