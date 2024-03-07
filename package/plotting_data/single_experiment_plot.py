@@ -517,7 +517,7 @@ def main(
         #plot_search_range(fileName, data_firm_manager, dpi_save)
         plot_firm_proft(fileName, data_firm_manager, dpi_save)
         plot_firm_budget(fileName, data_firm_manager, dpi_save)
-        #plot_demand_firm(fileName, data_social_network, dpi_save)
+        plot_demand_firm(fileName, data_social_network, dpi_save)
         plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
         #plot_firm_segment_index_max_profit(fileName, data_firm_manager, dpi_save)
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)

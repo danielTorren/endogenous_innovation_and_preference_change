@@ -2,7 +2,7 @@
     "seed_reps": 25,
     "burn_in_no_OD": 30,
     "burn_in_duration_no_policy": 220,
-    "policy_duration": 250,
+    "policy_duration": 750,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
     "parameters_carbon_policy":{
@@ -33,7 +33,6 @@
         "firm_phi": 0.01,
         "markup_init": 0.25,
         "firm_budget": 500,
-        "static_tech_state": 0,
         "memory_cap": 30,
         "jump_scale": 2,
         "segment_number": 3,
@@ -69,7 +68,7 @@
         "std_learning_error": 0.02, 
         "std_emissions_intensity_penalty": 0.1,
         "emissions_intensity_penalty": 1,
-        "confirmation_bias": 20, 
+        "confirmation_bias": 40, 
         "total_expenditure": 1,
         "expenditure_inequality_const":1
     },

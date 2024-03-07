@@ -35,7 +35,10 @@ class Controller:
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
-        
+        self.parameters_firm["emissions_intensity_penalty"] = self.parameters_social_network["emissions_intensity_penalty"]
+        #self.parameters_firm["firm_budget"] = self.parameters_firm_manager["N"]*self.parameters_firm["research_cost"]
+        #print("Budget", self.parameters_firm["firm_budget"])
+
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state

@@ -19,7 +19,6 @@ class Firm:
 
         
         self.markup_adjustment = parameters_firm["markup_adjustment"]
-        self.firm_phi = parameters_firm["firm_phi"]
         self.value_matrix_cost = parameters_firm["value_matrix_cost"]
         self.value_matrix_emissions_intensity = parameters_firm["value_matrix_emissions_intensity"]
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
@@ -38,12 +37,14 @@ class Firm:
         self.width_segment = self.segement_preference_bounds[1] - self.segement_preference_bounds[0]
         self.segement_preference = np.arange(self.width_segment/2, 1, self.width_segment)   #      np.linspace(0, 1, self.segment_number+1) #the plus 1 is so that theere are that number of divisions in the space
         
-        self.research_cost = 0.1#parameters_firm["research_cost"]
-        self.survey_cost = 0#parameters_firm["survey_bool"]
-        self.unit_changing_captial_cost = 0#parameters_firm["unit_changing_captial_cost"]
+        self.emissions_intensity_penalty = parameters_firm["emissions_intensity_penalty"]#LAMBDA
+
+        self.research_cost = parameters_firm["research_cost"]
+        self.survey_cost = parameters_firm["survey_cost"]
+        self.unit_changing_captial_cost = parameters_firm["unit_changing_captial_cost"]
         
         self.num_individuals_surveyed = parameters_firm["num_individuals_surveyed"]
-        self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
+        #self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
         self.survey_stoch_prob = parameters_firm["survey_stoch_prob"]
         
         self.c_min = parameters_firm["c_min"]
@@ -94,13 +95,15 @@ class Firm:
         self.firm_demand = consumed_quantities_vec[self.firm_id]
         self.profit = self.firm_demand*(self.firm_price - self.firm_cost)
 
-    def update_budget(self):
-        self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
+    #def update_budget(self):
+    #    self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
 
+    def add_profits_budget(self):
+        self.firm_budget += self.profit #- self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
     
     def process_previous_info(self,consumed_quantities_vec):
         self.calculate_profits(consumed_quantities_vec)
-        self.update_budget()
+        self.add_profits_budget()
 
     ##############################################################################################################
     #SCIENCE!
@@ -108,10 +111,20 @@ class Firm:
         """COME BACK AND FIX THESE TWO FUNCITON INTO ONE"""
         f = 1/((1-self.segement_preference)*(cost + emissions_intensity*self.carbon_price) + self.segement_preference*self.theta*emissions_intensity)
         return f#2D VECTOR - (J or Memory, or tech essentially)*segments
+
+    def calculate_technology_fitnesses_single_alt(self, emissions_intensity, cost):#SINGLE EMISSIOSN AND COST
+        f = np.exp(-self.emissions_intensity_penalty*self.segement_preference*emissions_intensity)/(cost*(1+self.markup))
+        return f#2D VECTOR - (J or Memory, or tech essentially)*segments
     
     def calculate_technology_fitnesses(self, emissions_intensity, cost):
         segement_preference_matrix = np.tile(self.segement_preference,(len(emissions_intensity),1)).T
         f = 1/((1-segement_preference_matrix)*(cost + emissions_intensity*self.carbon_price) + segement_preference_matrix*self.theta*emissions_intensity)
+
+        return f.T#2D VECTOR - (J or Memory, or tech essentially)*segments
+    
+    def calculate_technology_fitnesses_alt(self, emissions_intensity, cost):
+        segement_preference_matrix = np.tile(self.segement_preference,(len(emissions_intensity),1)).T
+        f = np.exp(-self.emissions_intensity_penalty*segement_preference_matrix*emissions_intensity)/(cost*(1+self.markup))
 
         return f.T#2D VECTOR - (J or Memory, or tech essentially)*segments
     
@@ -181,16 +194,27 @@ class Firm:
         self.list_technology_memory.append(random_technology)
         self.list_technology_memory_strings.append(random_technology.component_string)
 
+    """
     def calc_expected_segment_share(self):
         survey_stoch = np.random.uniform(size=1)
-        if (self.firm_budget > self.survey_cost)  and (survey_stoch <= self.survey_stoch_prob):
+        if (self.firm_budget > self.survey_cost) and (survey_stoch <= self.survey_stoch_prob):
             self.survey_bool = 1
             survey_preferences = random.choices(self.consumer_preferences_vec, k = self.num_individuals_surveyed)
             hist,__ = np.histogram(survey_preferences, bins=self.segement_preference_bounds)
             self.expected_segment_share = hist/self.num_individuals_surveyed
-
         else: 
             self.survey_bool = 0
+    """
+
+    def calc_expected_segment_share_alt(self):
+        survey_stoch = np.random.uniform(size=1)
+        if (self.firm_budget >= self.survey_cost) and (self.best_tech.component_string != self.before_select_tech_string) and (survey_stoch <= self.survey_stoch_prob):#HAVE MONEY AND NOT SAVING TOWARDS SWITCHING adn draw above probability
+            survey_preferences = random.choices(self.consumer_preferences_vec, k = self.num_individuals_surveyed)
+            hist,__ = np.histogram(survey_preferences, bins=self.segement_preference_bounds)
+            self.expected_segment_share = hist/self.num_individuals_surveyed
+            self.firm_budget -= self.survey_cost
+        else:
+            pass#NO money
         
     def calc_expected_profit(self,current_tech_fitness, competitors_fitness):
 
@@ -198,6 +222,12 @@ class Firm:
         expected_profit = sum((self.markup/(1+self.markup))*expected_relative_fitnesses*self.expected_segment_share)
 
         return expected_profit
+    
+
+    def calc_expected_market_share(self,current_tech_fitness, competitors_fitness):
+
+        expected_market_share = sum(self.expected_segment_share*current_tech_fitness/(current_tech_fitness + np.sum(competitors_fitness, axis = 0)))
+        return expected_market_share
     
     def choose_technology(self,competitors_emissions_intensities_vec, competitors_cost_vec, consumed_quantities_vec):
 
@@ -230,6 +260,47 @@ class Firm:
         else:
             self.total_changing_captial_cost = 0
 
+
+
+
+    def choose_technology_alt(self,competitors_emissions_intensities_vec, competitors_cost_vec, consumed_quantities_vec):
+
+        #given competitors price and emissions intensity calculate the fitness of each technology for each firm.
+        percieved_fitnesses_vec = self.calculate_technology_fitnesses_alt(competitors_emissions_intensities_vec, competitors_cost_vec)
+
+        #update_fitness_values in tech
+        expected_market_share_technologies = []
+        for technology in self.list_technology_memory:#REDO THIS SO ITS NOT FOR LOOP
+            technology.fitnesses = self.calculate_technology_fitnesses_single_alt(technology.emissions_intensity, technology.cost)
+            expected_market_share_technologies.append(self.calc_expected_market_share(technology.fitnesses, percieved_fitnesses_vec))
+        
+        
+        #print("expected_profits_technologies", expected_profits_technologies)
+
+        #choose best  tech
+        self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
+        self.before_select_tech_string = self.current_technology.component_string
+
+
+        self.tech_index_max_profit = np.where(expected_market_share_technologies == max(expected_market_share_technologies))[0][0]#CHECK WHY DOUBLE
+       
+        self.best_tech = self.list_technology_memory[self.tech_index_max_profit]
+        
+        if self.best_tech.component_string != self.before_select_tech_string:
+            self.total_changing_captial_cost = self.unit_changing_captial_cost*consumed_quantities_vec[self.firm_id]#COST OF SWITCHING PER UNIT
+            if self.firm_budget >= self.total_changing_captial_cost:
+                self.current_technology = self.list_technology_memory[self.tech_index_max_profit]#np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
+                self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
+                self.firm_emissions_intensity = self.current_technology.emissions_intensity
+                self.firm_budget -= self.total_changing_captial_cost
+            else:
+                pass
+                #NOT ENOUGH MONEY
+        else:
+            pass
+            #DONT CHANGE ANYTHIGN AS GOOD
+        
+
     def update_memory(self):
         #update_flags
         self.current_technology.choosen_tech_bool = 1
@@ -240,15 +311,11 @@ class Firm:
             self.list_technology_memory = list( filter(lambda x: x.timer == timer_max, self.list_technology_memory) ) 
 
     def calc_jump_weights(self,jumps):
-        #print("jumps",jumps)
-        denominator = sum((1/jumps)**self.jump_scale)
-        jump_weights = ((1/jumps)**self.jump_scale)/denominator
-        #print("jump_weights",jump_weights)
+        jump_weights = ((1/jumps)**self.jump_scale)/sum((1/jumps)**self.jump_scale)
         return jump_weights
     
     def update_search_range_prob(self):
         # Update search range based on Equation (\ref{eq_searchrange})
-        
         #Have i discovered everything within 1 jump (local search)
         neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings_1)
 
@@ -258,23 +325,25 @@ class Firm:
         elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
             #Establish what the minimum jump length is - want this to be 2
 
-            minimum_jump = 2#FIX THIS TO BE DYNAMIC 
+            minimum_jump = 1#WORST IS REDUNDANT RESEARCH
 
             #Establish what the maximum jump length is
-            maximum_jump = np.clip(np.floor(self.firm_budget/self.research_cost), None, self.N)
-            #print(minimum_jump,maximum_jump)
-            if minimum_jump == maximum_jump:
-                self.search_range = minimum_jump#FIX THIS
-            else:
-                jumps = np.arange(minimum_jump,maximum_jump)
-                jump_weights = self.calc_jump_weights(jumps)
-                self.search_range = int(random.choices(jumps, weights = jump_weights, k = 1)[0])
+            max_jump_unbounded = np.floor(self.firm_budget/self.research_cost)
+            maximum_jump = np.clip(max_jump_unbounded, 1, self.N)
+
+            jumps = np.arange(minimum_jump,maximum_jump+1)
+            #print("CEHCKE THAT THIS IS CORRECT",minimum_jump,maximum_jump,jumps )
+            #print("jumps", jumps)
+            jump_weights = self.calc_jump_weights(jumps)
+            self.search_range = int(random.choices(jumps, weights = jump_weights, k = 1)[0])
+            self.firm_budget -= self.research_cost*self.search_range
         else:
             self.search_range = 1
+            self.firm_budget -= self.research_cost*2#FIXED COST OF LONG RANGE RESEARCH
 
     def research_technology(self,emissions_intensities_vec,cost_vec, consumed_quantities_vec):
+
         #research new technology to get emissions intensities and cost
-        
         self.update_search_range_prob()
         
         if self.search_range > 0:
@@ -284,13 +353,8 @@ class Firm:
                 random_technology = self.explore_technology()
 
                 self.add_new_tech_memory(random_technology)
-            #ISSUE IS THAT AFTER a 2 step it goes back to 1 and it hasnt changed anything so it doesnt find anything
 
-        self.calc_expected_segment_share()#update survey
-
-        self.choose_technology(emissions_intensities_vec,cost_vec, consumed_quantities_vec)#can change technology if preferences change!
-
-        self.update_memory()
+        self.update_memory()#ADD TIME AND REMOVE LEAST USED MEMORY
     
     ##############################################################################################################
     #MONEY
@@ -318,8 +382,8 @@ class Firm:
             self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
             self.history_list_neighouring_technologies_strings = [self.list_neighouring_technologies_strings]
             #self.history_filtered_list_strings = [self.filtered_list_strings]
-            if not self.static_tech_state:
-                self.history_random_technology_string = [self.random_technology_string]
+            #if not self.static_tech_state:
+            #    self.history_random_technology_string = [self.random_technology_string]
         
     def save_timeseries_data_firm(self):
         """
@@ -345,8 +409,8 @@ class Firm:
             self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)
             self.history_list_neighouring_technologies_strings.append(self.list_neighouring_technologies_strings)#list of list
             #self.history_filtered_list_strings.append(self.filtered_list_strings)#list of list
-            if not self.static_tech_state:
-                self.history_random_technology_string.append(self.random_technology_string)
+            #if not self.static_tech_state:
+            #    self.history_random_technology_string.append(self.random_technology_string)
 
     def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec, carbon_price, consumer_preferences_vec) -> None:
         
@@ -370,7 +434,12 @@ class Firm:
         self.current_consumed_quantity = consumed_quantities_vec[self.firm_id]
 
         self.process_previous_info(consumed_quantities_vec)#assume all are arrays
+        
+        #PICK A TECH FROM LAST TIME STEP INFO
+        self.choose_technology_alt(emissions_intensities_vec,cost_vec, consumed_quantities_vec)#can change technology if preferences change!
+        self.calc_expected_segment_share_alt()#update survey
 
+        #RESEARCH TECH
         if not self.static_tech_state:
             self.research_technology(emissions_intensities_vec,cost_vec, consumed_quantities_vec)
 

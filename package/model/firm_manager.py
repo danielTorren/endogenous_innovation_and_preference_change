@@ -41,6 +41,7 @@ class Firm_Manager:
         self.survey_cost = self.num_individuals/(2*self.J)
         self.research_cost = self.num_individuals/(2*self.J)
 
+
         self.parameters_firm = parameters_firm
 
         #GEN INIT TECH

@@ -400,6 +400,7 @@ class Social_Network:
         ##THE WEIGHTING FOR THE IDENTITY IS DONE IN INDIVIDUALS
 
         self.preference_list = list(map(attrgetter("low_carbon_preference"), self.agent_list))
+        #PROXIMITY IN PERCIEVED IDENTITY
         self.outward_social_influence_list = list(map(attrgetter("outward_social_influence"), self.agent_list))
 
         norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.outward_social_influence_list)

@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import (
     load_object,
-    save_object
+    save_object,
+    calc_bounds
 )
 from matplotlib.cm import rainbow
 import matplotlib.pyplot as plt
@@ -52,9 +53,10 @@ def plot_means_end_points_emissions(
         color = next(colors)#set color for whole scenario?
         Data = emissions[i]
         #print("Data", Data.shape)
-        mu_emissions =  Data.mean(axis=1)
-        min_emissions =  Data.min(axis=1)
-        max_emissions=  Data.max(axis=1)
+        mu_emissions, min_emissions, max_emissions = calc_bounds(Data, 0.95)
+        #mu_emissions =  Data.mean(axis=1)
+        #min_emissions =  Data.min(axis=1)
+        #max_emissions=  Data.max(axis=1)
 
         #print("mu_emissions",mu_emissions)
         ax.plot(property_vals, mu_emissions, c= color, label=scenarios_titles[i])
@@ -98,5 +100,5 @@ def main(
     plt.show()
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/tax_sweep_13_32_34__04_03_2024",
+        fileName = "results/tax_sweep_14_42_10__04_03_2024",
     )
