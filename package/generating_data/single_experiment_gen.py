@@ -11,7 +11,6 @@ from package.resources.utility import (
     produce_name_datetime
 )
 from package.plotting_data.single_experiment_plot import main as plotting_main
-#from package.plotting_data import single_experiment_plot
 import pyperclip
 
 def main(
@@ -23,103 +22,75 @@ def main(
     pyperclip.copy(fileName)
     print("fileName:", fileName)
 
-    controller = generate_data(base_params)  # run the simulation
+    controller = generate_data(base_params)  # run the simulation 
 
     createFolder(fileName)
-    #save_object(controller, fileName + "/Data", "controller")
-    save_object(controller.social_network, fileName + "/Data", "social_network")
-    save_object(controller.firm_manager, fileName + "/Data", "firm_manager")
+    save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
-    #SAVE AS CSV SO THAT MIQUEL CAN USE THEM
-    save_csv = 0
-    if save_csv:
-        save_data_csv_list_firm_manager = ["history_decimal_value_current_tech","history_list_neighouring_technologies_strings","history_filtered_list_strings", "history_random_technology_string"]
-        save_data_csv_firms(controller.firm_manager.firms_list, save_data_csv_list_firm_manager, fileName + "/Data")
+
 
     return fileName
 
 if __name__ == "__main__":
 
     base_params = {
-        "burn_in_no_OD": 30,
-        "burn_in_duration_no_policy": 220,
-        "policy_duration": 750,
+        "burn_in_no_OD": 0,
+        "burn_in_duration_no_policy": 0,
+        "no_climate_impact": 0,
+        "policy_duration": 1000,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "parameters_carbon_policy":{
             "carbon_price": 0,
-            "carbon_price_state": "flat",#"AR1", "flat", "normal"
-            "ar_1_coefficient": 0.95,
-            "noise_mean": 0,
-            "noise_sigma": 0.01
+            "carbon_price_state": "flat",
         },
         "parameters_firm_manager": {
             "J": 30,
             "N": 8,
             "K": 4,
             "alpha":1,
-            "rho":0,
+            "rho":[0,0.5],#enviromnet not correlated to cost but quality is correlated to cost
             "init_tech_seed": 10,
             "landscape_seed": 6,
             "init_tech_heterogenous_state": 1,
-            "nk_multiplier": 1,
-            "c_max": 10,
-            "c_min": 1,
-            "ei_max": 10,
-            "ei_min": 1,
+            "A": 3,
+            "markup": 0.25,
         },
         "parameters_firm": {
             "static_tech_state": 0,
-            "endogenous_mark_up_state":1,
-            "markup_adjustment": 1,
-            "markup_init": 0.25,
             "memory_cap": 30,
-            "jump_scale": 2,
             "segment_number": 3,
             "theta": 1,
-            "num_individuals_surveyed": 30,
-            "firm_budget":10,
-            "research_cost":0.05,
-            "survey_cost": 0.05,
-            "unit_changing_captial_cost": 0.05,
-            "survey_stoch_prob":0.1,
+            "rank_number": 4
         },
         "parameters_social_network":{  
-            "fixed_preferences_state": 1,
-            "heterogenous_substitutability_state": 0,
-            "heterogenous_expenditure_state":0,
-            "heterogenous_emissions_intensity_penalty_state": 0,
+            "fixed_preferences_state": 0,
             "redistribution_state": 1,      
             "save_timeseries_data_state": 1,
-            "imperfect_learning_state": 0,
+            "imperfect_learning_state": 1,
             "network_structure_seed": 8, 
             "init_vals_seed": 8, 
             "imperfect_learning_seed": 4, 
             "num_individuals": 500, 
             "network_density": 0.1, 
             "prob_rewire": 0.1,
-            "homophily": 0.9,
-            "substitutability": 2,#20,
-            "std_substitutability":0.5,
+            "homophily": 0,
+            "substitutability": 2,
             "a_preferences": 1, 
             "b_preferences": 4,
-            "preference_mul": 1,
             "clipping_epsilon": 1e-3, 
-            "clipping_epsilon_init_preference": 1e-3,
-            "std_low_carbon_preference": 0.01, 
-            "std_learning_error": 0.02, 
-            "std_emissions_intensity_penalty": 0.1,
-            "emissions_intensity_penalty": 1,
-            "confirmation_bias": 40, 
-            "total_expenditure": 1,
-            "expenditure_inequality_const":1,
+            "preference_drift_std": 0.02, 
+            "confirmation_bias": 5,
+            "emissions_max": 1e5,
+            "upsilon": 0.05,
+            "upsilon_E": 0.05 
         },
         "parameters_individual":{
-            "individual_phi": 0.05,
-            "quantity_state":"replicator_utility", 
-            "social_influence_state": "threshold_average",#"common_knowledge",#"threshold_average",
-            "chi_ms": 1,
-            "omega": 2
+            "individual_upsilon": 0.05,
+            "omega": 2,
+            "delta": 0.1,
+            "kappa": 1,
+            "gamma": 0.1
         }
     }
     

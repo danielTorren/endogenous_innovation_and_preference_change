@@ -92,6 +92,26 @@ def plot_low_carbon_preferences_timeseries(
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=dpi_save, format="png")
 
+def plot_low_carbon_preference(fileName, data):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    #burn_in(ax,data)
+
+    for v in range(data.num_individuals):
+        data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preference)
+        ax.plot(data.history_time_social_network,data_indivdiual)
+
+    ax.legend()          
+    #ax.tight_layout()
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"Low carbon preference")
+
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/timeseries_preference"
+    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
+
 
 def plot_outward_social_influence_timeseries(
     fileName, 
@@ -164,7 +184,7 @@ def plot_firm_market_share(fileName: str, Data, dpi_save: int):
     property = "history_market_share_vec"
     plot_firm_manager_timeseries(fileName, Data, y_title, property, dpi_save)
 
-def plot_emissions_intensity_firm(fileName: str, Data, dpi_save: int):
+def plot_emissions_firm(fileName: str, Data, dpi_save: int):
 
     y_title = "Firm emissions intensities"
     property = "history_emissions_intensities_vec"
@@ -481,6 +501,121 @@ def plot_arbon_price_AR1(
     f = plotName + "/ar1 time_series"
     fig.savefig(f + ".png", dpi=600, format="png")
 
+def plot_firm_count(fileName,data_social_network):
+    # Initialize a dictionary to store the data
+    data = {}
+
+    # Extract data
+    for time_point, snapshot in enumerate(data_social_network.history_firm_count):
+        for firm, cars in snapshot.items():
+            if firm not in data:
+                data[firm] = []
+            total_cars_sold = sum(cars.values())
+            data[firm].append((time_point, total_cars_sold))
+
+    # Convert to a DataFrame
+    df = pd.DataFrame()
+    for firm, sales in data.items():
+        times, car_sales = zip(*sales)
+        df[firm] = pd.Series(car_sales, index=times)
+
+    # Fill missing values with 0 (if any firm didn't sell cars at some time points)
+    df = df.fillna(0)
+
+    #print(df)
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10,6)) 
+    for firm in df.columns:
+        ax.plot(df.index, df[firm], marker='o', label=firm)
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Number of Cars Sold')
+    ax.set_title('Number of Cars Sold by Each Firm Over Time')
+    #ax.legend()
+    ax.grid(True)
+    
+    
+    plotName = fileName + "/Plots"
+    f = plotName + "/firm_count"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def weighted_average_plots(fileName,data_social_network,data_firm_manager):
+
+    time_series_demand = data_social_network.history_firm_count
+    time_series_cars = data_firm_manager.history_cars_on_sale_all_firms
+
+    # Initialize data structures to hold weighted averages over time
+    weighted_averages = {
+        'emissions': [],
+        'cost': [],
+        'quality': []
+    }
+
+    # Calculate weighted averages for each time step
+    for demand_snapshot, car_snapshot in zip(time_series_demand, time_series_cars):
+        total_demand = sum(sum(cars.values()) for cars in demand_snapshot.values())
+        if total_demand == 0:
+            weighted_averages['emissions'].append(0)
+            weighted_averages['cost'].append(0)
+            weighted_averages['quality'].append(0)
+            continue
+
+        weighted_emissions_sum = 0
+        weighted_cost_sum = 0
+        weighted_quality_sum = 0
+
+        for car in car_snapshot:
+            car_demand = sum(demand_snapshot[firm].get(car.id, 0) for firm in demand_snapshot)
+            if car_demand > 0:
+                weighted_emissions_sum += car.emissions * car_demand
+                weighted_cost_sum += car.cost * car_demand
+                weighted_quality_sum += car.quality * car_demand
+
+        weighted_averages['emissions'].append(weighted_emissions_sum / total_demand)
+        weighted_averages['cost'].append(weighted_cost_sum / total_demand)
+        weighted_averages['quality'].append(weighted_quality_sum / total_demand)
+
+    # Convert to DataFrame for easier plotting
+    df_weighted_averages = pd.DataFrame(weighted_averages)
+
+    #print(df_weighted_averages)
+
+    # Plot the data using subfigures
+    fig, axes = plt.subplots(nrows= 1, ncols = 3,figsize=(10,6)) 
+
+    subfig1 = axes[0]
+    subfig2 = axes[1]
+    subfig3 = axes[2]
+
+    # Subfigure for emissions
+    subfig1.plot(df_weighted_averages.index, df_weighted_averages['emissions'], marker='o')
+    subfig1.set_xlabel('Time')
+    subfig1.set_ylabel('Weighted Average Emissions')
+    subfig1.set_title('Weighted Average Emissions Over Time')
+    subfig1.grid(True)
+
+    # Subfigure for cost
+    subfig2.plot(df_weighted_averages.index, df_weighted_averages['cost'], marker='o')
+    subfig2.set_xlabel('Time')
+    subfig2.set_ylabel('Weighted Average Cost')
+    subfig2.set_title('Weighted Average Cost Over Time')
+    subfig2.grid(True)
+
+    # Subfigure for quality
+    subfig3.plot(df_weighted_averages.index, df_weighted_averages['quality'], marker='o')
+    subfig3.set_xlabel('Time')
+    subfig3.set_ylabel('Weighted Average Quality')
+    subfig3.set_title('Weighted Average Quality Over Time')
+    subfig3.grid(True)
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/weighted_vals"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
@@ -491,47 +626,51 @@ def main(
     #social_plots = 0
     #firm_plots = 0
 
-    data_social_network = load_object(fileName + "/Data", "social_network")
-    data_firm_manager = load_object(fileName + "/Data", "firm_manager")
+    data_controller= load_object(fileName + "/Data", "controller")
+    data_social_network = data_controller.social_network
+    data_firm_manager = data_controller.firm_manager
 
     if social_plots:
         ###SOCIAL NETWORK PLOTS
         #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
-        plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
-        plot_outward_social_influence_timeseries(fileName, data_social_network, dpi_save)
+        #plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
+        plot_low_carbon_preference(fileName, data_social_network)
+        #plot_outward_social_influence_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        plot_demand_individuals(fileName, data_social_network, dpi_save)
+        #plot_demand_individuals(fileName, data_social_network, dpi_save)
         #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
         #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
-        if data_social_network.carbon_price_state == "AR1":
-            plot_arbon_price_AR1(fileName, data_social_network)
+        #if data_social_network.carbon_price_state == "AR1":
+        #   plot_arbon_price_AR1(fileName, data_social_network)
         
 
     if firm_plots:
         ##FIRM PLOTS
         #plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
-        plot_firm_market_share(fileName, data_firm_manager, dpi_save)
+        #plot_firm_market_share(fileName, data_firm_manager, dpi_save)
         #plot_frim_price(fileName, data_firm_manager, dpi_save)
-        plot_firm_cost(fileName, data_firm_manager, dpi_save)
+        #plot_firm_cost(fileName, data_firm_manager, dpi_save)
         #plot_search_range(fileName, data_firm_manager, dpi_save)
-        plot_firm_proft(fileName, data_firm_manager, dpi_save)
-        plot_firm_budget(fileName, data_firm_manager, dpi_save)
-        plot_demand_firm(fileName, data_social_network, dpi_save)
-        plot_emissions_intensity_firm(fileName, data_firm_manager, dpi_save)
+        #plot_firm_proft(fileName, data_firm_manager, dpi_save)
+        #plot_firm_budget(fileName, data_firm_manager, dpi_save)
+        #plot_demand_firm(fileName, data_social_network, dpi_save)
+        #plot_emissions_firm(fileName, data_firm_manager, dpi_save)
         #plot_firm_segment_index_max_profit(fileName, data_firm_manager, dpi_save)
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
+        plot_firm_count(fileName, data_social_network)
+        weighted_average_plots(fileName, data_social_network, data_firm_manager)
 
-    final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
-    final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
+    #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
+    #final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
     #ani_1 = ani_scatter_price_EI(fileName, data_firm_manager, dpi_save)
 
     plt.show()
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_16_47_36__28_02_2024",
+        fileName = "results/single_experiment_20_07_06__01_06_2024",
     )
 
 

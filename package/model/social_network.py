@@ -1,22 +1,21 @@
 """Create social network with individuals
-A module that use input data to generate a social network containing individuals who each have multiple 
-behaviours. The weighting of individuals within the social network is determined by the preference distance 
-between neighbours. The simulation evolves over time saving data at set intervals to reduce data output.
-
 
 Created: 10/10/2022
 """
-
 
 # imports
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
 from package.model.individual import Individual
-from operator import attrgetter
-
+from collections import defaultdict
 
 # modules
+
+# Define the default factory function outside the method
+def nested_defaultdict():
+    return defaultdict(int)
+
 class Social_Network:
 
     def __init__(self, parameters_social_network: list, parameters_individual):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
@@ -56,61 +55,35 @@ class Social_Network:
         self.init_vals_seed = parameters_social_network["init_vals_seed"] 
         self.imperfect_learning_seed = int(round(parameters_social_network["imperfect_learning_seed"]))
 
+        #carbon price
+        self.carbon_price = parameters_social_network["carbon_price"]
+
+        #Emissiosn
+        self.emissions_max = parameters_social_network["emissions_max"]#NEEDS TO BE SET ACCOUNTING FOR THE NUMBER OF TIME STEPS, PEOPLE AND CARBON INTENSITY, MAX = steps*people
+
         np.random.seed(self.init_vals_seed)#For inital construction set a seed, this is the same for all runs, then later change it to imperfect_learning_seed
-        
+
         # network
         self.network_density_input = parameters_social_network["network_density"]
         self.num_individuals = int(round(parameters_social_network["num_individuals"]))
         self.K_social_network = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
-        #print("self.K",self.K)
         self.prob_rewire = parameters_social_network["prob_rewire"]
 
-        #firms stuff
-        self.num_firms = parameters_social_network["J"]
-        self.emissions_intensities_vec = parameters_social_network["emissions_intensities_vec"]
-        #price
-        self.prices_vec =  parameters_social_network["prices_vec"]#THIS NEEDS TO BE SET AFTER THE STUFF IS RUN.
-        
-        self.carbon_price_state = parameters_social_network["carbon_price_state"]
-        self.carbon_price_policy = parameters_social_network["carbon_price"]
-
-        #print("self.carbon_price_policy",self.carbon_price_policy)
-        #quit()
-
-        if self.carbon_price_state == "AR1":
-                self.ar_1_coefficient = parameters_social_network["ar_1_coefficient"] 
-                self.noise_mean = parameters_social_network["noise_mean"]  
-                self.noise_sigma = parameters_social_network["noise_sigma"] 
-                self.carbon_price_AR1 = self.generate_ar1(self.carbon_price_policy,self.ar_1_coefficient, self.noise_mean, self.noise_sigma, self.policy_duration+2)
-        elif self.carbon_price_state == "normal":
-            self.noise_sigma = parameters_social_network["noise_sigma"] 
-            self.carbon_price_normal = np.random.normal(self.carbon_price_policy,self.noise_sigma, size = self.policy_duration + 2)
-
-        if self.t_social_network == self.burn_in_no_OD + self.burn_in_duration_no_policy:
-            if self.carbon_price_state == "flat":
-                self.carbon_price = self.carbon_price_policy
-            elif self.carbon_price_state == "AR1":
-                self.carbon_price = self.carbon_price_AR1[0]
-            elif self.carbon_price_state == "normal":
-                self.carbon_price = self.carbon_price_normal[0]
-        else:
-            self.carbon_price = 0
-
         # social learning and bias
+        self.upsilon = parameters_social_network["upsilon"]
+        self.upsilon_E = parameters_social_network["upsilon_E"]
         self.confirmation_bias = parameters_social_network["confirmation_bias"]
         if self.imperfect_learning_state:
-            self.std_learning_error = parameters_social_network["std_learning_error"]
+            self.preference_drift_std = parameters_social_network["preference_drift_std"]
             self.clipping_epsilon = parameters_social_network["clipping_epsilon"]
         else:
-            self.std_learning_error = 0
+            self.preference_drift_std = 0
             self.clipping_epsilon = 0     
-
-        self.clipping_epsilon_init_preference = parameters_social_network["clipping_epsilon_init_preference"]
 
         # network homophily
         self.homophily = parameters_social_network["homophily"]  # 0-1
         self.shuffle_reps = int(
-            round(self.num_individuals*(1 - self.homophily))
+            round(self.num_individuals*((1 - self.homophily)**1.5))#1.5 to just make the mixing stronger
         )
         
         # create network
@@ -122,85 +95,34 @@ class Social_Network:
 
         self.network_density = nx.density(self.network)
 
-        self.a_preferences = parameters_social_network["a_preferences"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
-        self.b_preferences = parameters_social_network["b_preferences"]#A #IN THIS BRANCH CONSISTEN BEHAVIOURS USE THIS FOR THE IDENTITY DISTRIBUTION
-        #self.shift_preferences = parameters_social_network["shift_preferences"]
-        self.std_low_carbon_preference = parameters_social_network["std_low_carbon_preference"]
+        self.a_preferences = parameters_social_network["a_preferences"]
+        self.b_preferences = parameters_social_network["b_preferences"]
         (
-            self.low_carbon_preference_matrix_init
+            self.low_carbon_preference_arr_init
         ) = self.generate_init_data_preferences()
-        self.preference_mul = parameters_social_network["preference_mul"]
-        self.low_carbon_preference_matrix_init = self.low_carbon_preference_matrix_init*self.preference_mul
-        #print("MEAN vals", sum(self.low_carbon_preference_matrix_init))
-        #print("network", self.adjacency_matrix[0])
-        #quit()
-        
-        self.heterogenous_expenditure_state = parameters_social_network["heterogenous_expenditure_state"]
-        self.total_expenditure = parameters_social_network["total_expenditure"]
-        if self.heterogenous_expenditure_state:
-            self.expenditure_inequality_const = parameters_social_network["expenditure_inequality_const"]
-            u = np.linspace(0.01,1,self.num_individuals)
-            no_norm_individual_expenditure_array = u**(-1/self.expenditure_inequality_const)       
-            self.individual_expenditure_array =  self.total_expenditure*self.normalize_vector_sum(no_norm_individual_expenditure_array)
-        else:   
-            self.individual_expenditure_array =  np.asarray([self.total_expenditure/(self.num_individuals)]*self.num_individuals)#sums to 1
-        
-        self.substitutability = parameters_social_network["substitutability"]
-        self.heterogenous_substitutability_state = parameters_social_network["heterogenous_substitutability_state"]
-        if self.heterogenous_substitutability_state:
-            self.std_substitutability = parameters_social_network["std_substitutability"]
-            self.substitutability_vec = np.clip(np.random.normal(loc = self.substitutability , scale = self.std_substitutability, size = self.num_individuals), 1.05, None)#limit between 0.01
-        else:
-            self.substitutability_vec = np.asarray([self.substitutability]*self.num_individuals)
             
-        self.heterogenous_emissions_intensity_penalty_state = parameters_social_network["heterogenous_emissions_intensity_penalty_state"]
-        self.emissions_intensity_penalty = parameters_social_network["emissions_intensity_penalty"]
-        if self.heterogenous_emissions_intensity_penalty_state:
-            self.std_emissions_intensity_penalty = parameters_social_network["std_emissions_intensity_penalty"]
-            self.emissions_intensity_penalty_vec = np.clip(np.random.normal(loc = self.emissions_intensity_penalty , scale = self.std_emissions_intensity_penalty, size = self.num_individuals), 0.01, None)#limit between 0.01
-        else:
-            self.emissions_intensity_penalty_vec = np.asarray([self.emissions_intensity_penalty]*self.num_individuals)
-
-
         self.agent_list = self.create_agent_list()
-        self.preference_list = list(map(attrgetter("low_carbon_preference"), self.agent_list))
-
         self.shuffle_agent_list()#partial shuffle of the list based on prefernece
 
         #NOW SET SEED FOR THE IMPERFECT LEARNING
         np.random.seed(self.imperfect_learning_seed)
 
-        if self.fixed_preferences_state_instant:
-            self.social_component_matrix = np.asarray([n.low_carbon_preference for n in self.agent_list])#DUMBY FEED IT ITSELF? DO I EVEN NEED TO DEFINE IT
-        else:
-            self.weighting_matrix = self.update_weightings()
-            self.social_component_matrix = self.calc_social_component_matrix()
+        self.low_carbon_preference_arr = self.low_carbon_preference_arr_init
+        self.weighting_matrix = self.update_weightings()
 
         #FIX
         self.total_carbon_emissions_cumulative = 0#this are for post tax
 
         #calc consumption quantities
-        self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
+        self.firm_count = self.calc_consumption_vec()
 
-        self.redistribution_state = parameters_social_network["redistribution_state"]
-        #redistribute, for next turn
-        if self.redistribution_state:
-            self.carbon_dividend_array = self.calc_carbon_dividend_array()
-        else:
-            self.carbon_dividend_array = np.asarray([0]*self.num_individuals)
-
+        #print(self.agent_list[0].omega)
+        #quit()
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_social_network()
-   
-    def generate_ar1(self, mean, acf, mu, sigma, N):
-        data = [mean]
-        for i in range(1,N):
-            noise = np.random.normal(mu,sigma)
-            data.append(mean + acf * (data[-1] - mean) + noise)
-        return np.array(data)
     
     def normalize_vector_sum(self, vec):
         return vec/sum(vec)
@@ -285,13 +207,8 @@ class Social_Network:
             self.agent_list[b], self.agent_list[a] = self.agent_list[a], self.agent_list[b]
     
     def generate_init_data_preferences(self) -> tuple[npt.NDArray, npt.NDArray]:
-
-        preferences_uncapped = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)# + self.shift_preferences
-       
-        low_carbon_preference_matrix = np.clip(preferences_uncapped, 0 + self.clipping_epsilon_init_preference, 1- self.clipping_epsilon_init_preference)
-        #low_carbon_preference_matrix = preferences_uncapped
-
-        return low_carbon_preference_matrix
+        low_carbon_preference_arr = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
+        return low_carbon_preference_arr
 
     def create_agent_list(self) -> list[Individual]:
         """
@@ -301,35 +218,20 @@ class Social_Network:
         ----------
         None
 
-        Returns
+        Returns 
         -------
         agent_list: list[Individual]
             List of Individual objects 
         """
-        self.parameters_individual["save_timeseries_data_state"] = self.save_timeseries_data_state
-        self.parameters_individual["compression_factor_state"] = self.compression_factor_state
-        self.parameters_individual["carbon_price"] = self.carbon_price
-        self.parameters_individual["prices_vec"] = self.prices_vec
-        self.parameters_individual["emissions_intensities_vec"] = self.emissions_intensities_vec
-        self.parameters_individual["clipping_epsilon"] = self.clipping_epsilon
-        self.parameters_individual["fixed_preferences_state"] = self.fixed_preferences_state
-        self.parameters_individual["num_firms"] = self.num_firms
 
         agent_list = [
             Individual(
                 self.parameters_individual,
-                self.low_carbon_preference_matrix_init[n],
-                #self.sector_preference_matrix_init,
-                self.individual_expenditure_array[n],
-                self.emissions_intensity_penalty_vec[n],
-                self.substitutability_vec[n],
+                self.low_carbon_preference_arr_init[n],
                 n
             )
             for n in range(self.num_individuals)
         ]
-
-
-
 
         return agent_list
         
@@ -339,105 +241,58 @@ class Social_Network:
         self.circular_agent_list()#agent list is now circular in terms of preference
         self.partial_shuffle_agent_list()#partial shuffle of the list
 
-    
-    def calc_ego_influence_degroot(self) -> npt.NDArray:
 
-        attribute_matrix = np.asarray(list(map(attrgetter("outward_social_influence"), self.agent_list))) 
+##################################################################################################################
+    #IMPORTED FROM PAPER 2 VECTORISED SO IT WILL RUN FAST!
+    #UPDATE PREFERENCES
 
-        neighbour_influence = np.matmul(self.weighting_matrix, attribute_matrix)    
-        
-        return neighbour_influence
+    def update_preferences(self):
+        social_influence = np.matmul(self.weighting_matrix, self.low_carbon_preference_arr)
 
-    def calc_social_component_matrix(self) -> npt.NDArray:
-        """
-        Combine neighbour influence and social learning error to updated individual behavioural attitudes
+        cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
 
-        parameters_social_network
-        ----------
-        None
+        low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*((1 - self.upsilon_E) * social_influence + self.upsilon_E*cumulative_emissions_influence) + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
+        low_carbon_preferences  = np.clip(low_carbon_preferences, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
+       
+        return low_carbon_preferences
 
-        Returns
-        -------
-        social_influence: npt.NDArray
-            NxM array giving the influence of social learning from neighbours for that time step
-        """
+    #UPDATE WEIGHTING
+    def update_weightings(self):
 
-        ego_influence = self.calc_ego_influence_degroot()           
-         
-        social_influence = ego_influence + np.random.normal(loc=0, scale=self.std_learning_error, size=(self.num_individuals))
-
-        return social_influence
-
-    def calc_weighting_matrix_attribute(self,attribute_array):
-
-        difference_matrix = np.subtract.outer(attribute_array, attribute_array) #euclidean_distances(attribute_array,attribute_array)# i think this actually not doing anything? just squared at the moment
+        difference_matrix = np.subtract.outer(self.low_carbon_preference_arr, self.low_carbon_preference_arr) 
         alpha_numerator = np.exp(-np.multiply(self.confirmation_bias, np.abs(difference_matrix)))
 
         non_diagonal_weighting_matrix = (
             self.adjacency_matrix*alpha_numerator
-        )  # We want only those values that have network connections 
+        )  # We want onlythose values that have network connections
 
         norm_weighting_matrix = self.normlize_matrix(
             non_diagonal_weighting_matrix
         )  # normalize the matrix row wise
     
         return norm_weighting_matrix
-
-    def update_weightings(self) -> tuple[npt.NDArray, float]:
-        """
-        Update the link strength array according to the new agent preferences
-
-        parameters_social_network
-        ----------
-        None
-
-        Returns
-        -------
-        norm_weighting_matrix: npt.NDArray
-            Row normalized weighting array giving the strength of inter-Individual connections due to similarity in preference
-        """
-
-        ##THE WEIGHTING FOR THE IDENTITY IS DONE IN INDIVIDUALS
-
-        self.preference_list = list(map(attrgetter("low_carbon_preference"), self.agent_list))
-        #PROXIMITY IN PERCIEVED IDENTITY
-        self.outward_social_influence_list = list(map(attrgetter("outward_social_influence"), self.agent_list))
-
-        norm_weighting_matrix = self.calc_weighting_matrix_attribute(self.outward_social_influence_list)
-
-        return norm_weighting_matrix
+    
+##################################################################################################################
 
     def calc_total_emissions(self) -> int:
-        """
-        Calculate total carbon emissions of N*M behaviours
-
-        parameters_social_network
-        ----------
-        None
-
-        Returns
-        -------
-        total_network_emissions: float
-            total network emissions from each Individual object
-        """
-
-        total_network_emissions = sum(map(attrgetter("flow_carbon_emissions"), self.agent_list))
+        total_network_emissions = sum([x.omega.emissions for x in self.agent_list])
         return total_network_emissions
-    
+
     def calc_consumption_vec(self):
-        consumption_matrix = np.asarray([x.quantities for x in self.agent_list])        
-        consumption_vec = np.sum(consumption_matrix, axis=1)
-        consumption_vec_firms = np.sum(consumption_matrix, axis=0)
+        # Extract the new car boolean vector and car vector from the agent list
+        new_car_bool_vec = [x.new_car_bool for x in self.agent_list]
+        car_owned_list = [x.omega for x in self.agent_list]
 
-        return consumption_matrix, consumption_vec,consumption_vec_firms
-    
-    def calc_carbon_dividend_array(self):
+        # Initialize a defaultdict for counting car purchases by firm
+        firm_car_count = defaultdict(nested_defaultdict)
 
-        emissions_generated_vec = np.dot(self.consumption_matrix,self.emissions_intensities_vec)
-        tax_income_R =  sum(self.carbon_price*emissions_generated_vec)        
-        carbon_dividend_array =  np.asarray([tax_income_R/self.num_individuals]*self.num_individuals)
+        # Iterate over the agents and update the purchase counts
+        for bought_new, car in zip(new_car_bool_vec, car_owned_list):
+            if bought_new:
+                firm_car_count[car.firm_id][car.id] += 1
 
-        return carbon_dividend_array
+        return firm_car_count
+
 
     def update_individuals(self):
         """
@@ -445,48 +300,20 @@ class Social_Network:
         """
 
         # Assuming you have self.agent_list as the list of objects
-        ____ = list(map(
-            lambda agent, scm, carbon_div: agent.next_step(scm, self.emissions_intensities_vec, self.prices_vec_instant, carbon_div, self.fixed_preferences_state_instant),
-            self.agent_list,
-            self.social_component_matrix,
-            self.carbon_dividend_array
-        ))
+        for i, agent in enumerate(self.agent_list):
+            agent.next_step(self.low_carbon_preference_arr[i], self.cars_on_sale_all_firms, self.carbon_price)
     
     def update_burn_in_OD(self):
         if (self.t_social_network > self.burn_in_no_OD) and (not self.fixed_preferences_state):
             self.fixed_preferences_state_instant = 0 
 
-
-    def update_carbon_price(self):
-        if self.t_social_network == self.burn_in_no_OD+self.burn_in_duration_no_policy:
-            if self.carbon_price_state == "flat":
-                self.carbon_price = self.carbon_price_policy
-            elif self.carbon_price_state == "AR1":
-                self.carbon_price = self.carbon_price_AR1[0]
-            elif self.carbon_price_state == "normal":
-                self.carbon_price = self.carbon_price_normal[0]
-        elif (self.t_social_network > self.burn_in_no_OD+self.burn_in_duration_no_policy): 
-            if self.carbon_price_state == "AR1":
-                self.carbon_price = self.carbon_price_AR1[self.t_social_network - (self.burn_in_no_OD+self.burn_in_duration_no_policy)]
-            elif self.carbon_price_state == "normal":
-                self.carbon_price = self.carbon_price_normal[self.t_social_network - (self.burn_in_no_OD+self.burn_in_duration_no_policy)]
-
-    def update_prices(self):
-        
-        self.prices_vec_instant = self.prices_vec + self.emissions_intensities_vec*self.carbon_price
-        #CHANGE THIS TO BE DONE BY THE SOCIAL NETWORK
-    
     def set_up_time_series_social_network(self):
         if not self.fixed_preferences_state:
-            self.history_preference_list = [self.preference_list]
-        #self.history_weighting_matrix = [self.weighting_matrix]
-        #self.weighting_matrix_convergence = 0  # there is no convergence in the first step, to deal with time issues when plotting
-        #self.history_weighting_matrix_convergence = [self.weighting_matrix_convergence]
+            self.history_preference_list = [self.low_carbon_preference_arr]
         self.history_flow_carbon_emissions = [self.total_carbon_emissions_flow]
         self.history_cumulative_carbon_emissions = [self.total_carbon_emissions_cumulative]#FIX
-        self.history_consumed_quantities_vec = [self.consumed_quantities_vec]#consumtion associated with each firm quantity
-        self.history_consumed_quantities_vec_firms = [self.consumed_quantities_vec_firms]#consumtion associated with each firm quantity
         self.history_time_social_network = [self.t_social_network]
+        self.history_firm_count = [self.firm_count]
 
     def save_timeseries_data_social_network(self):
         """
@@ -500,17 +327,14 @@ class Social_Network:
         -------
         None
         """
-        #self.history_weighting_matrix.append(self.weighting_matrix)
-        #self.history_weighting_matrix_convergence.append(self.weighting_matrix_convergence)
         self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED
         self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
         if not self.fixed_preferences_state:
-            self.history_preference_list.append(self.preference_list)
-        self.history_consumed_quantities_vec.append(self.consumed_quantities_vec)
-        self.history_consumed_quantities_vec_firms.append(self.consumed_quantities_vec_firms)
+            self.history_preference_list.append(self.low_carbon_preference_arr)
         self.history_time_social_network.append(self.t_social_network)
+        self.history_firm_count.append(self.firm_count)
 
-    def next_step(self, emissions_intensities_vec, prices_vec):
+    def next_step(self, carbon_price, cars_on_sale_all_firms):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -525,37 +349,30 @@ class Social_Network:
         """
 
         self.t_social_network +=1
+
+        self.carbon_price = carbon_price
          
         self.update_burn_in_OD()
 
         #update new tech and prices
-        self.emissions_intensities_vec = emissions_intensities_vec
-        self.prices_vec = prices_vec
+        self.cars_on_sale_all_firms = cars_on_sale_all_firms
 
-        #PRICE
-        self.update_carbon_price()
-        self.update_prices()
+        #update preferences 
+        if not self.fixed_preferences_state:
+            self.weighting_matrix = self.update_weightings()#UNSURE WHAT THE ORDER SHOULD BE HERE
+            self.low_carbon_preference_arr = self.update_preferences()
 
         # execute step
         self.update_individuals()
 
         #calc consumption quantities
-        self.consumption_matrix, self.consumed_quantities_vec, self.consumed_quantities_vec_firms = self.calc_consumption_vec()
+        self.firm_count = self.calc_consumption_vec()
 
-        # update network parameters_social_network for next step
-        if not self.fixed_preferences_state_instant:#if not fixed preferences then update
-            self.weighting_matrix = self.update_weightings()
-            self.social_component_matrix = self.calc_social_component_matrix()
-
-        if self.redistribution_state:
-            self.carbon_dividend_array = self.calc_carbon_dividend_array()
-        #print("self.carbon_dividend_array",self.carbon_dividend_array)
-        #quit()
-
+        #calc emissions
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
             
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.save_timeseries_data_social_network()
 
-        return self.consumed_quantities_vec_firms, self.carbon_price, self.preference_list
+        return self.low_carbon_preference_arr

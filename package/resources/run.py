@@ -55,7 +55,7 @@ def generate_data(parameters: dict,print_simu = 0):
 #multi-run
 def generate_emissions_intensities(params):
     data = generate_data(params)
-    return data.social_network.total_carbon_emissions_cumulative, data.firm_manager.weighted_emissions_intensity
+    return data.social_network.total_carbon_emissions_cumulative, data.firm_manager.weighted_emissions
 
 def emissions_intensities_parallel_run(
         params_dict: list[dict]

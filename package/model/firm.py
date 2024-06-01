@@ -7,384 +7,271 @@ Created: 21/12/2023
 # imports
 import numpy as np
 import random
-
-from package.model.technology import Technology
+from package.model.cars import Car
 
 class Firm:
-    def __init__(self, parameters_firm, init_tech, firm_id):
+    def __init__(self, parameters_firm, init_tech, firm_id, nk_model):
         
         self.t_firm = 0
 
         self.firm_id = firm_id#this is used when indexing firms stuff
-
-        
-        self.markup_adjustment = parameters_firm["markup_adjustment"]
-        self.value_matrix_cost = parameters_firm["value_matrix_cost"]
-        self.value_matrix_emissions_intensity = parameters_firm["value_matrix_emissions_intensity"]
+        self.id_generator = parameters_firm["id_generator"]
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.static_tech_state = parameters_firm["static_tech_state"]
-        self.endogenous_mark_up_state = parameters_firm["endogenous_mark_up_state"]
-        self.markup = parameters_firm["markup_init"]#variable
+        self.markup = parameters_firm["markup"]#variable
         self.J = parameters_firm["J"]
         self.carbon_price = parameters_firm["carbon_price"]
         self.memory_cap = parameters_firm["memory_cap"]
-        self.jump_scale = parameters_firm["jump_scale"]
-        self.theta = parameters_firm["theta"]
+        self.num_individuals = parameters_firm["num_individuals"]
+        self.gamma = parameters_firm["gamma"]
+        self.kappa = parameters_firm["kappa"]
+        
+        #SEGMENTS
         self.segment_number = int(parameters_firm["segment_number"])
         self.expected_segment_share = [1/self.segment_number]*self.segment_number#initally uniformly distributed
         self.segement_preference_bounds = np.linspace(0, 1, self.segment_number+1) 
         self.width_segment = self.segement_preference_bounds[1] - self.segement_preference_bounds[0]
         self.segement_preference = np.arange(self.width_segment/2, 1, self.width_segment)   #      np.linspace(0, 1, self.segment_number+1) #the plus 1 is so that theere are that number of divisions in the space
-        
-        self.emissions_intensity_penalty = parameters_firm["emissions_intensity_penalty"]#LAMBDA
 
-        self.research_cost = parameters_firm["research_cost"]
-        self.survey_cost = parameters_firm["survey_cost"]
-        self.unit_changing_captial_cost = parameters_firm["unit_changing_captial_cost"]
-        
-        self.num_individuals_surveyed = parameters_firm["num_individuals_surveyed"]
-        #self.survey_bool = 1# NEEDS TO BE TRUE INITIALLY
-        self.survey_stoch_prob = parameters_firm["survey_stoch_prob"]
-        
-        self.c_min = parameters_firm["c_min"]
-        self.c_max = parameters_firm["c_max"]
-        self.ei_min = parameters_firm["ei_min"]
-        self.ei_max = parameters_firm["ei_max"]
+        #RANKS
+        self.rank_number = int(parameters_firm["rank_number"])
+        self.rank_bounds = np.linspace(0, self.markup*self.num_individuals, self.rank_number) 
 
-        #ALLOWS FOR VARIABEL INIT TECH
-        self.current_technology = init_tech#parameters_firm["technology_init"]#variable
-        
-        self.total_changing_captial_cost = 0
+        self.nk_model = nk_model
 
-        self.current_technology.fitnesses = self.calculate_technology_fitnesses_single(self.current_technology.emissions_intensity, self.current_technology.cost)#assign fitness to inti technology
-
-        self.firm_budget = parameters_firm["firm_budget"]#variablees
         self.N = parameters_firm["N"]
         self.K = parameters_firm["K"]
-        self.current_market_share = parameters_firm["init_market_share"]
-        self.current_market_share_vec = [self.current_market_share]*self.J
 
-        self.previous_market_share = self.current_market_share#DEFINE THIS
-
-        self.list_technology_memory = [self.current_technology]
-        self.list_technology_memory_strings = [self.current_technology.component_string]
-
-        #set up inital stuff relating to emissions prices, costs, and intensities
-        self.firm_cost = self.current_technology.cost
-        self.firm_emissions_intensity = self.current_technology.emissions_intensity
-        #self.set_price()
-        self.firm_price = self.firm_cost*(1+self.markup)
-
-        #SET INTITAL SEARCH RANGE TO 1 if you have enough money, BASICALLY WONT DO ANYTHING IF COMPANIES DONT HAVE ENOUGH MONEY INITIALLY
-        if self.firm_budget < self.research_cost:
-            self.search_range = 0
-        else:
-            self.search_range = 1
-
-        #CALCULATE NEIGHBOURING TECH BASED ON INITIAL TECHNOLOGY
-        #self.list_neighouring_technologies_strings = self.calc_neighbouring_technologies_long(1)
-        self.calc_neighbouring_technologies_long(1)
-        #print("init tech",self.list_neighouring_technologies_strings)
-        self.before_select_tech_string = self.current_technology.component_string
+        self.init_tech = init_tech 
+        self.list_technology_memory = [self.init_tech]
+        self.list_technology_memory_strings = [init_tech.component_string]
+        self.cars_on_sale = [init_tech]
     
-    ##############################################################################################################
-    #DO PREVIOUS TIME STEP STUFF
-    def calculate_profits(self,consumed_quantities_vec):
-        #print(",consumed_quantities_vec[self.firm_id]self.firm_price - self.firm_cost",consumed_quantities_vec[self.firm_id],self.firm_price - self.firm_cost)
-        self.firm_demand = consumed_quantities_vec[self.firm_id]
-        self.profit = self.firm_demand*(self.firm_price - self.firm_cost)
-
-    #def update_budget(self):
-    #    self.firm_budget += self.profit - self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
-
-    def add_profits_budget(self):
-        self.firm_budget += self.profit #- self.research_cost*self.search_range - self.survey_bool*self.survey_cost - self.total_changing_captial_cost#SCALES LINEARLY #((1+ self.research_cost)**self.search_range)-1#this is past time step search range?[CHECK THIS]
+###########################################################################################################################################################
+    #REASERACH TECHNOLOGY
     
-    def process_previous_info(self,consumed_quantities_vec):
-        self.calculate_profits(consumed_quantities_vec)
-        self.add_profits_budget()
-
-    ##############################################################################################################
-    #SCIENCE!
-    def calculate_technology_fitnesses_single(self, emissions_intensity, cost):#SINGLE EMISSIOSN AND COST
-        """COME BACK AND FIX THESE TWO FUNCITON INTO ONE"""
-        f = 1/((1-self.segement_preference)*(cost + emissions_intensity*self.carbon_price) + self.segement_preference*self.theta*emissions_intensity)
-        return f#2D VECTOR - (J or Memory, or tech essentially)*segments
-
-    def calculate_technology_fitnesses_single_alt(self, emissions_intensity, cost):#SINGLE EMISSIOSN AND COST
-        f = np.exp(-self.emissions_intensity_penalty*self.segement_preference*emissions_intensity)/(cost*(1+self.markup))
-        return f#2D VECTOR - (J or Memory, or tech essentially)*segments
-    
-    def calculate_technology_fitnesses(self, emissions_intensity, cost):
-        segement_preference_matrix = np.tile(self.segement_preference,(len(emissions_intensity),1)).T
-        f = 1/((1-segement_preference_matrix)*(cost + emissions_intensity*self.carbon_price) + segement_preference_matrix*self.theta*emissions_intensity)
-
-        return f.T#2D VECTOR - (J or Memory, or tech essentially)*segments
-    
-    def calculate_technology_fitnesses_alt(self, emissions_intensity, cost):
-        segement_preference_matrix = np.tile(self.segement_preference,(len(emissions_intensity),1)).T
-        f = np.exp(-self.emissions_intensity_penalty*segement_preference_matrix*emissions_intensity)/(cost*(1+self.markup))
-
-        return f.T#2D VECTOR - (J or Memory, or tech essentially)*segments
-    
-    def invert_bits_n_at_a_time(self,decimal_value, length, n):
+    def invert_bits_one_at_a_time(self,decimal_value, length):
+        # Convert decimal value to binary with leading zeros to achieve length N
+        # binary_value = format(decimal_value, f'0{length}b')
 
         # Initialize an empty list to store inverted binary values
         inverted_binary_values = []
 
-        # Iterate through each bit position, incrementing by n
-        for start_bit_position in range(0, length, n):
-            inverted_value = decimal_value
-            # Iterate through the bits in the current chunk to invert them
-            for bit_position in range(start_bit_position, min(start_bit_position + n, length)):
-                inverted_value ^= (1 << bit_position)
-            
+        # Iterate through each bit position
+        for bit_position in range(length):
+            """
+            NEED TO UNDERSTAND BETTER HOW THIS WORKS!!
+            """
+            inverted_value = decimal_value^(1 << bit_position)
+
             # Convert the inverted decimal value to binary
-            inverted_binary_value = format(inverted_value, f"0{length}b")
+            inverted_binary_value = format(inverted_value, f'0{length}b')
 
             # Append the inverted binary value to the list
             inverted_binary_values.append(inverted_binary_value)
 
         return inverted_binary_values
     
-    def calc_neighbouring_technologies_long(self,n):
-    
-        self.decimal_value_current_tech = int(self.current_technology.component_string, 2) 
-        #print(self.decimal_value_current_tech, len(self.current_technology.component_string), n)
-        unfiltered_list_neighouring_technologies_strings = self.invert_bits_n_at_a_time(self.decimal_value_current_tech, len(self.current_technology.component_string), n)
+    def calc_neighbouring_technologies_tumor(self):
         
-        self.list_neighouring_technologies_strings_1 = self.invert_bits_n_at_a_time(self.decimal_value_current_tech, len(self.current_technology.component_string), 1)
+        #NEED TO GET ALL THE NEIGHBOURING TECHS OF THE MEMORY
+        """REDO THIS SO ITS MORE ELEGANT THAT JUST FLATTENING"""
+        decimal_value_memory_list = [x.decimal_value for x in self.list_technology_memory]
+        list_of_lists = [self.invert_bits_one_at_a_time(x, self.N) for x in decimal_value_memory_list]
+        unfiltered_list_neighouring_technologies_strings = list(set(np.array( list_of_lists).flatten().tolist()))#the set makes it a unique list, the list allows it to be used in the next step
         self.list_neighouring_technologies_strings = [i for i in unfiltered_list_neighouring_technologies_strings if i not in self.list_technology_memory_strings]
 
-    def calc_tech_emission_cost(self, random_technology_string):
+    ##############################################################################
 
-        fitness_vector_cost = np.zeros((self.N))
-        fitness_vector_emissions_intensity = np.zeros((self.N))
+    def utility_buy_matrix(self, car_attributes_matrix):
+        #IDEA IS TO DO THIS ALL IN ONE GO, ALL SEGMENTS AND ALL CARTIONS
 
-        for n in range(self.N):#Look through substrings
-            # Create the binary substring
-            substring = random_technology_string[n:n+self.K]
-            # If the substring is shorter than K, wrap around (toroidal)
-            if len(substring) < self.K:
-                substring += random_technology_string[:self.K-len(substring)]
-            # Convert the binary substring to decimal
-            decimal = int(substring, 2)
-            # Retrieve the value from the value matrix
-            fitness_vector_cost[n] = self.value_matrix_cost[decimal, n]
-            fitness_vector_emissions_intensity[n] = self.value_matrix_emissions_intensity[decimal, n]
+        utilities = np.zeros_like(car_attributes_matrix)
+        #print(self.segement_preference.shape,car_attributes_matrix.shape )
+        for i, pref in enumerate(self.segement_preference):
+            utilities[:,i] = pref*car_attributes_matrix[:,1] + (1 -  pref) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) *( (1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+        return utilities
 
-        cost = self.c_min +((self.c_max-self.c_min)/self.N)*np.sum(fitness_vector_cost, axis = 0)
-        emissions = self.ei_min +((self.ei_max-self.ei_min)/self.N)*np.sum(fitness_vector_emissions_intensity, axis = 0)
+    def calculate_profitability_alternatives(self, utilities_competitors):
 
-
-        return emissions, cost
-
-    def explore_technology(self):
-
-        self.random_technology_string = random.choice(self.list_neighouring_technologies_strings)#this is not empty
-
-        tech_emissions_intensity, tech_cost = self.calc_tech_emission_cost(self.random_technology_string)
-
-        random_technology = Technology(self.random_technology_string,tech_emissions_intensity, tech_cost, choosen_tech_bool = 0) 
-
-        return random_technology
-
-    def add_new_tech_memory(self,random_technology):
-        self.list_technology_memory.append(random_technology)
-        self.list_technology_memory_strings.append(random_technology.component_string)
-
-    """
-    def calc_expected_segment_share(self):
-        survey_stoch = np.random.uniform(size=1)
-        if (self.firm_budget > self.survey_cost) and (survey_stoch <= self.survey_stoch_prob):
-            self.survey_bool = 1
-            survey_preferences = random.choices(self.consumer_preferences_vec, k = self.num_individuals_surveyed)
-            hist,__ = np.histogram(survey_preferences, bins=self.segement_preference_bounds)
-            self.expected_segment_share = hist/self.num_individuals_surveyed
-        else: 
-            self.survey_bool = 0
-    """
-
-    def calc_expected_segment_share_alt(self):
-        survey_stoch = np.random.uniform(size=1)
-        if (self.firm_budget >= self.survey_cost) and (self.best_tech.component_string != self.before_select_tech_string) and (survey_stoch <= self.survey_stoch_prob):#HAVE MONEY AND NOT SAVING TOWARDS SWITCHING adn draw above probability
-            survey_preferences = random.choices(self.consumer_preferences_vec, k = self.num_individuals_surveyed)
-            hist,__ = np.histogram(survey_preferences, bins=self.segement_preference_bounds)
-            self.expected_segment_share = hist/self.num_individuals_surveyed
-            self.firm_budget -= self.survey_cost
-        else:
-            pass#NO money
+        #Take strings and workout their profitability
+        alternatives_attributes_matrix = np.asarray([self.nk_model.calculate_fitness(x) for x in self.list_neighouring_technologies_strings])
         
-    def calc_expected_profit(self,current_tech_fitness, competitors_fitness):
+        #For each segment need ot caluclate the probability of purchasing the car
+        #print("calculate_profitability_alternatives",alternatives_attributes_matrix.shape)
+        utilities_neighbour = self.utility_buy_matrix(alternatives_attributes_matrix) 
 
-        expected_relative_fitnesses = current_tech_fitness/(current_tech_fitness + np.sum(competitors_fitness, axis = 0))
-        expected_profit = sum((self.markup/(1+self.markup))*expected_relative_fitnesses*self.expected_segment_share)
+        market_options_utilities = np.concatenate((utilities_neighbour , utilities_competitors ),axis = 0)#join as the probabilities are relative to all other market options
 
-        return expected_profit
+        utilities_neighbour[utilities_neighbour < 0] = 0#IF NEGATIVE UTILITY PUT IT AT 0
+        market_options_utilities[market_options_utilities < 0] = 0#IF NEGATIVE UTILITY PUT IT AT 0
+
+        #print("market_options_utilities", market_options_utilities)
+        denominators = np.sum(market_options_utilities ** self.kappa, axis = 0)
+        if 0 not in denominators:
+            alternatives_probability_buy_car = utilities_neighbour ** self.kappa / denominators#CHECK FOR HAVING CURRENT TECH IN HERE NOT TO DOUBLE COUNT
+        else:
+            alternatives_probability_buy_car = np.zeros_like(utilities_neighbour, dtype=float)#i only change the ones that are not zero
+            non_zero_mask = denominators != 0
+            alternatives_probability_buy_car[:,non_zero_mask] = (utilities_neighbour[:,non_zero_mask] ** self.kappa) / denominators[non_zero_mask]
+
+        expected_number_customer = self.segment_consumer_count*alternatives_probability_buy_car
+        self.expected_profit_research_alternatives = self.markup*alternatives_attributes_matrix[:,0]*np.sum(expected_number_customer, axis= 1)
+            #self.expected_profit_research_alternatives = np.asarray([[0]*self.segment_number])
+
+    def last_tech_profitability(self, utilities_competitors):
+        #CALCUALTE THE PREDICTED PROFITABILITY OF TECHNOLOGY RESEARCHED IN PAST STEP
+        self.last_tech_researched = self.list_technology_memory[-1]
+        last_tech_fitness_arr = np.asarray([self.nk_model.calculate_fitness(self.last_tech_researched.component_string)])
+        
+
+        utility_last_tech = self.utility_buy_matrix(last_tech_fitness_arr )
+        last_tech_market_options_utilities = np.concatenate((utility_last_tech , utilities_competitors ), axis = 0)#join as the probabilities are relative to all other market options
+        last_tech_market_options_utilities[last_tech_market_options_utilities < 0] = 0
+
+        denominators = np.sum(last_tech_market_options_utilities ** self.kappa, axis = 0)
+
+        if 0 not in denominators:
+            alternatives_probability_buy_car = utility_last_tech ** self.kappa /denominators#CHECK FOR HAVING CURRENT TECH IN HERE NOT TO DOUBLE COUNT
+            expected_number_customer = self.segment_consumer_count*alternatives_probability_buy_car
+            self.last_tech_expected_profit = self.markup*last_tech_fitness_arr[0]*np.sum(expected_number_customer, axis= 1)
+        else:
+            self.last_tech_expected_profit = 0
+
+    ###################################################################################
+
+    def rank_options(self):
+        #RANK THE TECH
+        #split up the 
+        self.ranked_alternatives = []
+        for tech, profitability in zip(self.list_neighouring_technologies_strings, self.expected_profit_research_alternatives):
+            rank = None
+            for r in range(1, self.rank_number + 1):
+                if profitability < r / self.rank_number:
+                    rank = r
+                    break
+            self.ranked_alternatives.append((tech, rank))
+        #print("self.ranked_alternatives", self.ranked_alternatives)
+        #quit()
     
+    def rank_last_tech(self):            
+        for r in range(1, self.rank_number + 1):
+            if self.last_tech_expected_profit < r / self.rank_number:
+                self.last_tech_rank = r
+                break
 
-    def calc_expected_market_share(self,current_tech_fitness, competitors_fitness):
+    def add_new_tech_memory(self,chosen_technology):
+        self.list_technology_memory.append(chosen_technology)
+        self.list_technology_memory_strings.append(chosen_technology.component_string)
 
-        expected_market_share = sum(self.expected_segment_share*current_tech_fitness/(current_tech_fitness + np.sum(competitors_fitness, axis = 0)))
-        return expected_market_share
-    
-    def choose_technology(self,competitors_emissions_intensities_vec, competitors_cost_vec, consumed_quantities_vec):
+    def select_alternative_technology(self):
+        #SELECT TECHNOLOGIES FROM ANY RANK THAT ITS ABOVE CURRENT
+        #CREATE A LIST OF POSSIBLE TECHNOLOGIES
+        tech_alternative_options = []
+        while not tech_alternative_options:
+            tech_alternative_options = [tech for tech, rank in self.ranked_alternatives if rank >= self.last_tech_rank]
+                    
+        if tech_alternative_options:
+            selected_technology_string = random.choice(tech_alternative_options)#this is not empty
+            unique_tech_id = self.id_generator.get_new_id()
+            attribute_selected_tech  = self.nk_model.calculate_fitness(selected_technology_string) 
+            self.researched_technology = Car(unique_tech_id,self.firm_id, selected_technology_string, attribute_selected_tech, choosen_tech_bool = 0) 
+            self.add_new_tech_memory(self.researched_technology)
+        
+        #UPDATE THE MEMEORY
+        self.update_memory()
 
-        percieved_fitnesses_vec = self.calculate_technology_fitnesses(competitors_emissions_intensities_vec, competitors_cost_vec)
+    def research_technology(self, utilities_competitors):
+        self.calc_neighbouring_technologies_tumor()#Now i know what the possible neighbouring strings are
+        self.calculate_profitability_alternatives(utilities_competitors)
+        self.last_tech_profitability(utilities_competitors)
+        self.rank_options()
+        self.rank_last_tech()
+        self.select_alternative_technology()
 
-        #update_fitness_values in tech
-        expected_profits_technologies = []
-        for technology in self.list_technology_memory:#REDO THIS SO ITS NOT FOR LOOP
-            technology.fitnesses = self.calculate_technology_fitnesses_single(technology.emissions_intensity, technology.cost)
-            expected_profits_technologies.append(self.calc_expected_profit(technology.fitnesses, percieved_fitnesses_vec))
-        #print("expected_profits_technologies", expected_profits_technologies)
+    ##############################################################################################################
+    #CHOOSING TECH FROM MEMORY
 
-        #choose best  tech
-        self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
-        self.before_select_tech_string = self.current_technology.component_string
+    def calculate_profitability_memory_segments(self,utilities_competitors):
+        """For each segement work out teh expectedprofitability, but then dont sum so its acutally for each car and secto"""
+        
+        #Take strings and workout their profitability
+        alternatives_attributes_matrix = np.asarray([self.nk_model.calculate_fitness(x) for x in self.list_technology_memory_strings])
+        
+        #For each segment need ot caluclate the probability of purchasing the car
+        #print("alternatives_attributes_matrix", alternatives_attributes_matrix.shape)
+        utilities_memory = self.utility_buy_matrix(alternatives_attributes_matrix) 
+        market_options_utilities = np.concatenate((utilities_memory , utilities_competitors), axis = 0)#join as the probabilities are relative to all other market options
+        
+        utilities_memory[utilities_memory < 0] = 0#IF NEGATIVE UTILITY PUT IT AT 0
+        market_options_utilities[market_options_utilities < 0] = 0#IF NEGATIVE UTILITY PUT IT AT 0
 
+        denominators = np.sum(market_options_utilities ** self.kappa, axis = 0)
 
-        self.tech_index_max_profit = np.where(expected_profits_technologies == max(expected_profits_technologies))[0][0]#CHECK WHY DOUBLE
-        #print("self.tech_index_max_profit",self.tech_index_max_profit)
-
-        expected_profit_current_tech = self.calc_expected_profit(self.current_technology.fitnesses, percieved_fitnesses_vec)
-        #print("profit forcast", self.profit, expected_profit_current_tech)
-
-        self.total_changing_captial_cost = self.unit_changing_captial_cost*consumed_quantities_vec[self.firm_id]#COST OF SWITCHING PER UNIT
-
-        if expected_profits_technologies[self.tech_index_max_profit] - self.total_changing_captial_cost > expected_profit_current_tech:
-            self.current_technology = self.list_technology_memory[self.tech_index_max_profit]#np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
-            self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
-            self.firm_emissions_intensity = self.current_technology.emissions_intensity
+        if 0 not in denominators:
+            alternatives_probability_buy_car = utilities_memory ** self.kappa / denominators#CHECK FOR HAVING CURRENT TECH IN HERE NOT TO DOUBLE COUNT
         else:
-            self.total_changing_captial_cost = 0
-
-
-
-
-    def choose_technology_alt(self,competitors_emissions_intensities_vec, competitors_cost_vec, consumed_quantities_vec):
-
-        #given competitors price and emissions intensity calculate the fitness of each technology for each firm.
-        percieved_fitnesses_vec = self.calculate_technology_fitnesses_alt(competitors_emissions_intensities_vec, competitors_cost_vec)
-
-        #update_fitness_values in tech
-        expected_market_share_technologies = []
-        for technology in self.list_technology_memory:#REDO THIS SO ITS NOT FOR LOOP
-            technology.fitnesses = self.calculate_technology_fitnesses_single_alt(technology.emissions_intensity, technology.cost)
-            expected_market_share_technologies.append(self.calc_expected_market_share(technology.fitnesses, percieved_fitnesses_vec))
+            #FOR SEGMENTS WHERE IS IT not zero do the calc else where is 0
+            alternatives_probability_buy_car = np.zeros_like(utilities_memory, dtype=float)#i only change the ones that are not zero
+            non_zero_mask = denominators != 0
+            alternatives_probability_buy_car[:,non_zero_mask] = (utilities_memory[:,non_zero_mask] ** self.kappa) / denominators[non_zero_mask]
         
-        
-        #print("expected_profits_technologies", expected_profits_technologies)
-
-        #choose best  tech
-        self.current_technology.choosen_tech_bool = 0#in case it changes but the current one to zero
-        self.before_select_tech_string = self.current_technology.component_string
-
-
-        self.tech_index_max_profit = np.where(expected_market_share_technologies == max(expected_market_share_technologies))[0][0]#CHECK WHY DOUBLE
-       
-        self.best_tech = self.list_technology_memory[self.tech_index_max_profit]
-        
-        if self.best_tech.component_string != self.before_select_tech_string:
-            self.total_changing_captial_cost = self.unit_changing_captial_cost*consumed_quantities_vec[self.firm_id]#COST OF SWITCHING PER UNIT
-            if self.firm_budget >= self.total_changing_captial_cost:
-                self.current_technology = self.list_technology_memory[self.tech_index_max_profit]#np.max(self.list_technology_memory, key=lambda technology: technology.fitnesses[segment_index_max_profit])
-                self.firm_cost = self.current_technology.cost#SEEMS LIKE THIS ISNT CHANGING??
-                self.firm_emissions_intensity = self.current_technology.emissions_intensity
-                self.firm_budget -= self.total_changing_captial_cost
-            else:
-                pass
-                #NOT ENOUGH MONEY
-        else:
-            pass
-            #DONT CHANGE ANYTHIGN AS GOOD
-        
+        """these following steps arent neccessary, just linear transformation of all the same"""
+        expected_number_customer = self.segment_consumer_count*alternatives_probability_buy_car
+        expected_profit_memory_segements = self.markup*expected_number_customer
+        return expected_profit_memory_segements
 
     def update_memory(self):
-        #update_flags
-        self.current_technology.choosen_tech_bool = 1
+        for car in self.list_technology_memory:
+            if car not in self.cars_on_sale:
+                car.choosen_tech_bool = 0
+            else:
+                car.choosen_tech_bool = 1
+
         list(map(lambda technology: technology.update_timer(), self.list_technology_memory))#update_timer on all tech
         #remove additional technologies
         if len(self.list_technology_memory) > self.memory_cap:
-            timer_max = max(x.timer for x in self.list_technology_memory)
-            self.list_technology_memory = list( filter(lambda x: x.timer == timer_max, self.list_technology_memory) ) 
+            
+            max_item = max((item for item in self.list_technology_memory if not item.choosen_tech_bool), key=lambda x: x.timer, default=None)
+            index_to_remove = self.list_technology_memory.index(max_item)
+            self.list_technology_memory.remove(max_item)
+            del self.list_technology_memory_strings[index_to_remove]
 
-    def calc_jump_weights(self,jumps):
-        jump_weights = ((1/jumps)**self.jump_scale)/sum((1/jumps)**self.jump_scale)
-        return jump_weights
-    
-    def update_search_range_prob(self):
-        # Update search range based on Equation (\ref{eq_searchrange})
-        #Have i discovered everything within 1 jump (local search)
-        neighbour_bool = all(i in self.list_technology_memory_strings for i in self.list_neighouring_technologies_strings_1)
+    def get_random_max_tech(self, col):
+        max_value = np.max(col)
+        max_indices = np.where(col == max_value)[0]
+        random_index = np.random.choice(max_indices)
 
-        #simple scenario, to get you out of 1 research
-        if (self.firm_budget < self.research_cost):#no money no research
-            self.search_range = 0
-        elif (self.firm_budget >= 2*self.research_cost) and (neighbour_bool):
-            #Establish what the minimum jump length is - want this to be 2
+        #if self.t_firm> 28:
+            #print("max_indices", max_indices)
+            #print("random_index", random_index)
+            #print("self.list_technology_memory", len(self.list_technology_memory), len(col))
+        return self.list_technology_memory[random_index]
 
-            minimum_jump = 1#WORST IS REDUNDANT RESEARCH
+    def choose_technologies(self, utilities_competitors):        
+        #evaluate for which car is best for which techology
+        expected_profit_memory = self.calculate_profitability_memory_segments(utilities_competitors)
+        #print("expected_profit_research_alternatives", expected_profit_research_alternatives)
+        #if self.t_firm> 28:
+            #print("firm id", self.firm_id, self.t_firm)
+            #print("len eme", len(self.list_technology_memory))
+            #print("expected_profit_memory ", len(expected_profit_memory))
+        #if self.t_firm> 30:
+            #print("expected_profit_memory ",expected_profit_memory )
 
-            #Establish what the maximum jump length is
-            max_jump_unbounded = np.floor(self.firm_budget/self.research_cost)
-            maximum_jump = np.clip(max_jump_unbounded, 1, self.N)
+        max_profit_technologies = [self.get_random_max_tech(col) for col in expected_profit_memory.T]
+        #print("max_profit_technologies",max_profit_technologies)
+       
+        self.cars_on_sale = list(set(max_profit_technologies))#make it a unique list
 
-            jumps = np.arange(minimum_jump,maximum_jump+1)
-            #print("CEHCKE THAT THIS IS CORRECT",minimum_jump,maximum_jump,jumps )
-            #print("jumps", jumps)
-            jump_weights = self.calc_jump_weights(jumps)
-            self.search_range = int(random.choices(jumps, weights = jump_weights, k = 1)[0])
-            self.firm_budget -= self.research_cost*self.search_range
-        else:
-            self.search_range = 1
-            self.firm_budget -= self.research_cost*2#FIXED COST OF LONG RANGE RESEARCH
 
-    def research_technology(self,emissions_intensities_vec,cost_vec, consumed_quantities_vec):
-
-        #research new technology to get emissions intensities and cost
-        self.update_search_range_prob()
-        
-        if self.search_range > 0:
-            self.calc_neighbouring_technologies_long(self.search_range)#IN HERE self.list_neighouring_technologies_strings set
-
-            if self.list_technology_memory_strings and self.list_neighouring_technologies_strings:#Needs to be stuff in memory and neighbouring
-                random_technology = self.explore_technology()
-
-                self.add_new_tech_memory(random_technology)
-
-        self.update_memory()#ADD TIME AND REMOVE LEAST USED MEMORY
-    
-    ##############################################################################################################
-    #MONEY
-    def set_price(self):
-        if self.endogenous_mark_up_state:
-            new_markup = self.markup*(1+(self.markup_adjustment*(self.current_market_share - self.previous_market_share)/self.previous_market_share))
-            self.firm_price = self.firm_cost*(1+new_markup)
-            self.markup = new_markup
-        else:
-            self.firm_price = self.firm_cost*(1+self.markup)
     ##############################################################################################################
     #FORWARD
         
     def set_up_time_series_firm(self):
-        #self.history_emissions_intensity = [self.firm_emissions_intensity]
-        #self.history_price = [self.firm_price]
-        #self.history_budget = [self.firm_budget]
-        #self.history_cost = [self.firm_cost]
         self.history_length_memory_list = [len(self.list_technology_memory)]
-        self.history_search_range = [self.search_range]
-        self.history_profit = [self.profit]
-        #self.history_segment_index_max_profit = [self.tech_index_max_profit]
 
-        if self.firm_id in [1,2,3]:
-            self.history_decimal_value_current_tech = [self.decimal_value_current_tech]
-            self.history_list_neighouring_technologies_strings = [self.list_neighouring_technologies_strings]
-            #self.history_filtered_list_strings = [self.filtered_list_strings]
-            #if not self.static_tech_state:
-            #    self.history_random_technology_string = [self.random_technology_string]
-        
     def save_timeseries_data_firm(self):
         """
         Save time series data
@@ -395,57 +282,29 @@ class Firm:
         -------
         None
         """
-        #self.history_emissions_intensity.append(self.firm_emissions_intensity)
-        #self.history_price.append(self.firm_price)
-        #self.history_budget.append(self.firm_budget)
-        #self.history_cost.append(self.firm_cost)
 
         self.history_length_memory_list.append(len(self.list_technology_memory))
-        self.history_search_range.append(self.search_range)
-        self.history_profit.append(self.profit)
-        #self.history_segment_index_max_profit.append(self.tech_index_max_profit)
 
-        if self.firm_id in [1,2,3]:
-            self.history_decimal_value_current_tech.append(self.decimal_value_current_tech)
-            self.history_list_neighouring_technologies_strings.append(self.list_neighouring_technologies_strings)#list of list
-            #self.history_filtered_list_strings.append(self.filtered_list_strings)#list of list
-            #if not self.static_tech_state:
-            #    self.history_random_technology_string.append(self.random_technology_string)
-
-    def next_step(self,  market_share_vec, consumed_quantities_vec, emissions_intensities_vec, cost_vec, carbon_price, consumer_preferences_vec) -> None:
+    def next_step(self, carbon_price, segment_consumer_count, utilities_competitors) -> None:
         
         self.t_firm +=1
         
         self.carbon_price = carbon_price
-
-        #print("emissions_intensities_vec, cost_vec,", emissions_intensities_vec, cost_vec)
-
-
-        self.consumer_preferences_vec = consumer_preferences_vec
-        #consumed_quantities_vec: is the vector for each firm how much of their product was consumed
-        self.previous_market_share = self.current_market_share
-        self.current_market_share = market_share_vec[self.firm_id]
-
-        self.previous_market_share_vec = self.current_market_share_vec
-        self.current_market_share_vec = market_share_vec
-        self.market_share_growth_vec = (self.current_market_share_vec - self.previous_market_share_vec)/self.previous_market_share_vec
-        self.current_market_share_growth = self.market_share_growth_vec[self.firm_id]
-
-        self.current_consumed_quantity = consumed_quantities_vec[self.firm_id]
-
-        self.process_previous_info(consumed_quantities_vec)#assume all are arrays
+        self.segment_consumer_count = segment_consumer_count
         
-        #PICK A TECH FROM LAST TIME STEP INFO
-        self.choose_technology_alt(emissions_intensities_vec,cost_vec, consumed_quantities_vec)#can change technology if preferences change!
-        self.calc_expected_segment_share_alt()#update survey
-
         #RESEARCH TECH
         if not self.static_tech_state:
-            self.research_technology(emissions_intensities_vec,cost_vec, consumed_quantities_vec)
+            self.research_technology(utilities_competitors)
 
-        self.set_price()
+        #CHOOSE CARS FROM MEMORY
+        #print("AFTER RESERACH len(self.list_technology_memory_strings)", self.t_firm , len(self.list_technology_memory_strings))
 
+        self.choose_technologies(utilities_competitors)
+        #quit()
         if self.save_timeseries_data_state and self.t_firm == 1:
             self.set_up_time_series_firm()
         elif self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()
+
+        #print("firm", self.cars_on_sale )
+        return self.cars_on_sale
