@@ -32,20 +32,47 @@ class Social_Network:
         
         self.parameters_individual = parameters_individual
         #TIME 
-        self.burn_in_no_OD = parameters_social_network["burn_in_no_OD"] 
-        self.burn_in_duration_no_policy = parameters_social_network["burn_in_duration_no_policy"] 
-        self.policy_duration = parameters_social_network["policy_duration"]
+        self.duration_no_OD_no_stock_no_policy = parameters_social_network["duration_no_OD_no_stock_no_policy"] 
+        self.duration_OD_no_stock_no_policy = parameters_social_network["duration_OD_no_stock_no_policy"] 
+        self.duration_OD_stock_no_policy = parameters_social_network["duration_OD_stock_no_policy"] 
+        self.duration_OD_stock_policy = parameters_social_network["duration_OD_stock_policy"]
+        self.policy_start_time = parameters_social_network["policy_start_time"]  
 
         #INITAL STATE OF THE SYSTEMS, WHAT ARE THE RUN CONDITIONS
-        self.imperfect_learning_state = parameters_social_network["imperfect_learning_state"]
+        self.preference_drift_state = parameters_social_network["preference_drift_state"]
         self.fixed_preferences_state = parameters_social_network["fixed_preferences_state"]#DEAL WITH BURN IN
-
+        self.heterogenous_init_preferences = parameters_social_network["heterogenous_init_preferences"]
+        
+        self.num_individuals = int(round(parameters_social_network["num_individuals"]))
+        
+        #FIXED PREFERENCES
+        #NOTE THE DIFFERENCE BETWEEN THE STATE AND INSTANT STATE
         if self.fixed_preferences_state: 
             self.fixed_preferences_state_instant = 1
-        elif self.t_social_network < self.burn_in_no_OD:
+        elif self.t_social_network < self.duration_no_OD_no_stock_no_policy:
             self.fixed_preferences_state_instant = 1
         else:
             self.fixed_preferences_state_instant = 0
+            
+        #CUMULATIVE EMISSIONS
+        #NOTE THE DIFFERENCE BETWEEN STATE AND INSTANT
+        self.cumulative_emissions_preference_state = parameters_social_network["cumulative_emissions_preference_state"]
+        if self.cumulative_emissions_preference_state: 
+            self.cumulative_emissions_preference_start_time = self.duration_no_OD_no_stock_no_policy + self.duration_OD_no_stock_no_policy
+            if self.t_social_network < self.cumulative_emissions_preference_start_time:
+                self.cumulative_emissions_preference_state_instant = 0
+            else:
+                self.cumulative_emissions_preference_state_instant = 1
+            
+            self.upsilon_E_center = parameters_social_network["upsilon_E"]
+            self.heterogenous_reaction_cumulative_emissions_state  = parameters_social_network["heterogenous_reaction_cumulative_emissions_state"]
+            if self.heterogenous_reaction_cumulative_emissions_state: 
+                self.upsilon_E_std = parameters_social_network["upsilon_E_std"]
+                self.upsilon_E_uncapped = np.random.normal(self.upsilon_E_center, self.upsilon_E_std, size=(self.num_individuals))
+                self.upsilon_E = np.clip(self.upsilon_E_uncapped, 0, 1)
+            else:
+                self.upsilon_E = self.upsilon_E_center
+
 
         self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
@@ -53,7 +80,7 @@ class Social_Network:
         #seeds
         self.network_structure_seed = parameters_social_network["network_structure_seed"] 
         self.init_vals_seed = parameters_social_network["init_vals_seed"] 
-        self.imperfect_learning_seed = int(round(parameters_social_network["imperfect_learning_seed"]))
+        self.preference_drift_seed = int(round(parameters_social_network["preference_drift_seed"]))
 
         #carbon price
         self.carbon_price = parameters_social_network["carbon_price"]
@@ -61,19 +88,18 @@ class Social_Network:
         #Emissiosn
         self.emissions_max = parameters_social_network["emissions_max"]#NEEDS TO BE SET ACCOUNTING FOR THE NUMBER OF TIME STEPS, PEOPLE AND CARBON INTENSITY, MAX = steps*people
 
-        np.random.seed(self.init_vals_seed)#For inital construction set a seed, this is the same for all runs, then later change it to imperfect_learning_seed
+        np.random.seed(self.init_vals_seed)#For inital construction set a seed, this is the same for all runs, then later change it to preference_drift_seed
 
         # network
         self.network_density_input = parameters_social_network["network_density"]
-        self.num_individuals = int(round(parameters_social_network["num_individuals"]))
         self.K_social_network = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
         self.prob_rewire = parameters_social_network["prob_rewire"]
 
         # social learning and bias
         self.upsilon = parameters_social_network["upsilon"]
-        self.upsilon_E = parameters_social_network["upsilon_E"]
+        
         self.confirmation_bias = parameters_social_network["confirmation_bias"]
-        if self.imperfect_learning_state:
+        if self.preference_drift_state:
             self.preference_drift_std = parameters_social_network["preference_drift_std"]
             self.clipping_epsilon = parameters_social_network["clipping_epsilon"]
         else:
@@ -95,20 +121,28 @@ class Social_Network:
 
         self.network_density = nx.density(self.network)
 
-        self.a_preferences = parameters_social_network["a_preferences"]
-        self.b_preferences = parameters_social_network["b_preferences"]
-        (
-            self.low_carbon_preference_arr_init
-        ) = self.generate_init_data_preferences()
+        if self.heterogenous_init_preferences:
+            self.a_preferences = parameters_social_network["a_preferences"]
+            self.b_preferences = parameters_social_network["b_preferences"]
+            (
+                self.low_carbon_preference_arr_init
+            ) = self.generate_init_data_preferences()
+        else:
+            self.low_carbon_preference_arr_init = np.asarray([0.5]*self.num_individuals)
+        
             
         self.agent_list = self.create_agent_list()
-        self.shuffle_agent_list()#partial shuffle of the list based on prefernece
+
+        if self.heterogenous_init_preferences:
+            self.shuffle_agent_list()#partial shuffle of the list based on prefernece
 
         #NOW SET SEED FOR THE IMPERFECT LEARNING
-        np.random.seed(self.imperfect_learning_seed)
+        np.random.seed(self.preference_drift_seed)
 
         self.low_carbon_preference_arr = self.low_carbon_preference_arr_init
-        self.weighting_matrix = self.update_weightings()
+        
+        if not self.fixed_preferences_state_instant:
+            self.weighting_matrix = self.update_weightings()
 
         #FIX
         self.total_carbon_emissions_cumulative = 0#this are for post tax
@@ -116,8 +150,6 @@ class Social_Network:
         #calc consumption quantities
         self.firm_count = self.calc_consumption_vec()
 
-        #print(self.agent_list[0].omega)
-        #quit()
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
 
@@ -249,9 +281,13 @@ class Social_Network:
     def update_preferences(self):
         social_influence = np.matmul(self.weighting_matrix, self.low_carbon_preference_arr)
 
-        cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
-
-        low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*((1 - self.upsilon_E) * social_influence + self.upsilon_E*cumulative_emissions_influence) + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
+        #idea is that noise is constant proportion of signal over timer
+        if self.cumulative_emissions_preference_state_instant:
+            cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
+            low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*((1 - self.upsilon_E) * social_influence + self.upsilon_E*cumulative_emissions_influence) + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
+        else:
+            low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*social_influence + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
+        
         low_carbon_preferences  = np.clip(low_carbon_preferences, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
        
         return low_carbon_preferences
@@ -281,13 +317,13 @@ class Social_Network:
     def calc_consumption_vec(self):
         # Extract the new car boolean vector and car vector from the agent list
         new_car_bool_vec = [x.new_car_bool for x in self.agent_list]
-        car_owned_list = [x.omega for x in self.agent_list]
+        self.car_owned_list = [x.omega for x in self.agent_list]
 
         # Initialize a defaultdict for counting car purchases by firm
         firm_car_count = defaultdict(nested_defaultdict)
 
         # Iterate over the agents and update the purchase counts
-        for bought_new, car in zip(new_car_bool_vec, car_owned_list):
+        for bought_new, car in zip(new_car_bool_vec, self.car_owned_list):
             if bought_new:
                 firm_car_count[car.firm_id][car.id] += 1
 
@@ -303,17 +339,21 @@ class Social_Network:
         for i, agent in enumerate(self.agent_list):
             agent.next_step(self.low_carbon_preference_arr[i], self.cars_on_sale_all_firms, self.carbon_price)
     
-    def update_burn_in_OD(self):
-        if (self.t_social_network > self.burn_in_no_OD) and (not self.fixed_preferences_state):
+    def update_burn_in_state(self):
+        #
+        if (self.t_social_network > self.duration_no_OD_no_stock_no_policy) and (not self.fixed_preferences_state):
             self.fixed_preferences_state_instant = 0 
+        
+        if (self.t_social_network > self.duration_no_OD_no_stock_no_policy) and self.cumulative_emissions_preference_state:
+            self.cumulative_emissions_preference_state_instant = 1
 
     def set_up_time_series_social_network(self):
-        if not self.fixed_preferences_state:
-            self.history_preference_list = [self.low_carbon_preference_arr]
+        self.history_preference_list = [self.low_carbon_preference_arr]
         self.history_flow_carbon_emissions = [self.total_carbon_emissions_flow]
         self.history_cumulative_carbon_emissions = [self.total_carbon_emissions_cumulative]#FIX
         self.history_time_social_network = [self.t_social_network]
         self.history_firm_count = [self.firm_count]
+        self.history_car_owned_list = [self.car_owned_list]
 
     def save_timeseries_data_social_network(self):
         """
@@ -329,10 +369,10 @@ class Social_Network:
         """
         self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED
         self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
-        if not self.fixed_preferences_state:
-            self.history_preference_list.append(self.low_carbon_preference_arr)
+        self.history_preference_list.append(self.low_carbon_preference_arr)
         self.history_time_social_network.append(self.t_social_network)
         self.history_firm_count.append(self.firm_count)
+        self.history_car_owned_list.append(self.car_owned_list)
 
     def next_step(self, carbon_price, cars_on_sale_all_firms):
         """
@@ -352,7 +392,7 @@ class Social_Network:
 
         self.carbon_price = carbon_price
          
-        self.update_burn_in_OD()
+        self.update_burn_in_state()
 
         #update new tech and prices
         self.cars_on_sale_all_firms = cars_on_sale_all_firms

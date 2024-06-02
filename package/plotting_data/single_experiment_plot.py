@@ -20,11 +20,11 @@ from package.resources.plot import (
 )
 
 def burn_in(ax,data):
-    if data.burn_in_no_OD > 0:
-        ax.axvline(x = data.burn_in_no_OD,ls="--",  color="black")#OD
+    if data.duration_no_OD_no_stock_no_policy > 0:
+        ax.axvline(x = data.duration_no_OD_no_stock_no_policy,ls="--",  color="black")#OD
     
-    if data.burn_in_duration_no_policy > 0:
-        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls="--",  color="black")#OD
+    if data.duration_OD_no_stock_no_policy > 0:
+        ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy),ls="--",  color="black")#OD
 
 def plot_emissions_individuals(fileName, data, dpi_save):
 
@@ -101,7 +101,7 @@ def plot_low_carbon_preference(fileName, data):
         data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preference)
         ax.plot(data.history_time_social_network,data_indivdiual)
 
-    ax.legend()          
+    #ax.legend()          
     #ax.tight_layout()
     ax.set_xlabel(r"Time")
     ax.set_ylabel(r"Low carbon preference")
@@ -527,20 +527,20 @@ def plot_firm_count(fileName,data_social_network):
     # Plot the data
     fig, ax = plt.subplots(figsize=(10,6)) 
     for firm in df.columns:
-        ax.plot(df.index, df[firm], marker='o', label=firm)
+        ax.scatter(df.index, df[firm], marker='o')
 
     ax.set_xlabel('Time')
     ax.set_ylabel('Number of Cars Sold')
     ax.set_title('Number of Cars Sold by Each Firm Over Time')
     #ax.legend()
     ax.grid(True)
-    
+    ax.set_xlim(0,1000)
     
     plotName = fileName + "/Plots"
     f = plotName + "/firm_count"
     fig.savefig(f + ".png", dpi=600, format="png")
 
-def weighted_average_plots(fileName,data_social_network,data_firm_manager):
+def weighted_bought_average_plots(fileName,data_social_network,data_firm_manager):
 
     time_series_demand = data_social_network.history_firm_count
     time_series_cars = data_firm_manager.history_cars_on_sale_all_firms
@@ -556,9 +556,9 @@ def weighted_average_plots(fileName,data_social_network,data_firm_manager):
     for demand_snapshot, car_snapshot in zip(time_series_demand, time_series_cars):
         total_demand = sum(sum(cars.values()) for cars in demand_snapshot.values())
         if total_demand == 0:
-            weighted_averages['emissions'].append(0)
-            weighted_averages['cost'].append(0)
-            weighted_averages['quality'].append(0)
+            weighted_averages['emissions'].append(None)
+            weighted_averages['cost'].append(None)
+            weighted_averages['quality'].append(None)
             continue
 
         weighted_emissions_sum = 0
@@ -589,32 +589,91 @@ def weighted_average_plots(fileName,data_social_network,data_firm_manager):
     subfig3 = axes[2]
 
     # Subfigure for emissions
-    subfig1.plot(df_weighted_averages.index, df_weighted_averages['emissions'], marker='o')
+    subfig1.scatter(df_weighted_averages.index, df_weighted_averages['emissions'], marker='o')
     subfig1.set_xlabel('Time')
-    subfig1.set_ylabel('Weighted Average Emissions')
-    subfig1.set_title('Weighted Average Emissions Over Time')
+    subfig1.set_ylabel('Weighted Average Emissions - Bought')
+    subfig1.set_title('Emissions')
+    subfig1.grid(True)
+    subfig1.set_xlim(0,1000)
+
+    # Subfigure for cost
+    subfig2.scatter(df_weighted_averages.index, df_weighted_averages['cost'], marker='*')
+    subfig2.set_xlabel('Time')
+    subfig2.set_ylabel('Weighted Average Cost - Bought')
+    subfig2.set_title('Cost')
+    subfig2.grid(True)
+    subfig2.set_xlim(0,1000)
+
+    # Subfigure for quality
+    subfig3.scatter(df_weighted_averages.index, df_weighted_averages['quality'], marker='x')
+    subfig3.set_xlabel('Time')
+    subfig3.set_ylabel('Weighted Average Quality - Bought')
+    subfig3.set_title('Quality')
+    subfig3.grid(True)
+    subfig3.set_xlim(0,1000)
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/bought_weighted_vals"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def weighted_owned_average_plots(fileName,data_social_network):
+
+    time_series_cars = data_social_network.history_car_owned_list
+
+    # Initialize data structures to hold weighted averages over time
+    weighted_averages = {
+        'emissions': [],
+        'cost': [],
+        'quality': []
+    }
+
+    for snapshot in time_series_cars:
+        attributes_matrix = np.asarray([car.attributes_fitness  for car in snapshot])
+        weighted_averages['emissions'].append(np.mean(attributes_matrix[:,1]))
+        weighted_averages['cost'].append(np.mean(attributes_matrix[:,0]))
+        weighted_averages['quality'].append(np.mean(attributes_matrix[:,2]))
+
+    # Convert to DataFrame for easier plotting
+    df_weighted_averages = pd.DataFrame(weighted_averages)
+
+    # Plot the data using subfigures
+    fig, axes = plt.subplots(nrows= 1, ncols = 3,figsize=(10,6)) 
+
+    subfig1 = axes[0]
+    subfig2 = axes[1]
+    subfig3 = axes[2]
+
+    # Subfigure for emissions
+    subfig1.scatter(df_weighted_averages.index, df_weighted_averages['emissions'], marker='o')
+    subfig1.set_xlabel('Time')
+    subfig1.set_ylabel('Weighted Average Emissions - Owned')
+    subfig1.set_title('Emissions')
     subfig1.grid(True)
 
     # Subfigure for cost
-    subfig2.plot(df_weighted_averages.index, df_weighted_averages['cost'], marker='o')
+    subfig2.scatter(df_weighted_averages.index, df_weighted_averages['cost'], marker='*')
     subfig2.set_xlabel('Time')
-    subfig2.set_ylabel('Weighted Average Cost')
-    subfig2.set_title('Weighted Average Cost Over Time')
+    subfig2.set_ylabel('Weighted Average Cost - Owned')
+    subfig2.set_title('Cost')
     subfig2.grid(True)
 
     # Subfigure for quality
-    subfig3.plot(df_weighted_averages.index, df_weighted_averages['quality'], marker='o')
+    subfig3.scatter(df_weighted_averages.index, df_weighted_averages['quality'], marker='x')
     subfig3.set_xlabel('Time')
-    subfig3.set_ylabel('Weighted Average Quality')
-    subfig3.set_title('Weighted Average Quality Over Time')
+    subfig3.set_ylabel('Weighted Average Quality - Owned')
+    subfig3.set_title('Quality')
     subfig3.grid(True)
 
     # Adjust layout and show plot
     fig.tight_layout()
 
     plotName = fileName + "/Plots"
-    f = plotName + "/weighted_vals"
+    f = plotName + "/owned_weighted_vals"
     fig.savefig(f + ".png", dpi=600, format="png")
+
 
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
@@ -637,12 +696,13 @@ def main(
         plot_low_carbon_preference(fileName, data_social_network)
         #plot_outward_social_influence_timeseries(fileName, data_social_network, dpi_save)
         #plot_emissions_individuals(fileName, data_social_network, dpi_save)
-        #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
+        plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
         #plot_demand_individuals(fileName, data_social_network, dpi_save)
         #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
         #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
         #if data_social_network.carbon_price_state == "AR1":
         #   plot_arbon_price_AR1(fileName, data_social_network)
+        weighted_owned_average_plots(fileName, data_social_network)
         
 
     if firm_plots:
@@ -660,7 +720,8 @@ def main(
         #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
         #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
         plot_firm_count(fileName, data_social_network)
-        weighted_average_plots(fileName, data_social_network, data_firm_manager)
+        weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
+        
 
     #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
     #final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
@@ -670,7 +731,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_20_07_06__01_06_2024",
+        fileName = "results/single_experiment_11_03_41__02_06_2024",
     )
 
 

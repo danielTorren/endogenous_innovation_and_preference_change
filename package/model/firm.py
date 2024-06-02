@@ -37,6 +37,7 @@ class Firm:
         #RANKS
         self.rank_number = int(parameters_firm["rank_number"])
         self.rank_bounds = np.linspace(0, self.markup*self.num_individuals, self.rank_number) 
+        self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
 
         self.nk_model = nk_model
 
@@ -146,9 +147,10 @@ class Firm:
         #split up the 
         self.ranked_alternatives = []
         for tech, profitability in zip(self.list_neighouring_technologies_strings, self.expected_profit_research_alternatives):
-            rank = None
-            for r in range(1, self.rank_number + 1):
-                if profitability < r / self.rank_number:
+            rank = 0
+            for r in range(0, self.rank_number + 1):
+                #print("profitability", profitability/self.max_profitability , r / self.rank_number)
+                if (profitability/self.max_profitability) < (r / self.rank_number):
                     rank = r
                     break
             self.ranked_alternatives.append((tech, rank))
@@ -169,9 +171,13 @@ class Firm:
         #SELECT TECHNOLOGIES FROM ANY RANK THAT ITS ABOVE CURRENT
         #CREATE A LIST OF POSSIBLE TECHNOLOGIES
         tech_alternative_options = []
-        while not tech_alternative_options:
-            tech_alternative_options = [tech for tech, rank in self.ranked_alternatives if rank >= self.last_tech_rank]
-                    
+        
+        #while not tech_alternative_options:
+        #print(self.ranked_alternatives)
+        #quit()
+        tech_alternative_options = [tech for tech, rank in self.ranked_alternatives if rank >= self.last_tech_rank]
+        #print("tech_alternative_options", tech_alternative_options)
+        #quit()        
         if tech_alternative_options:
             selected_technology_string = random.choice(tech_alternative_options)#this is not empty
             unique_tech_id = self.id_generator.get_new_id()

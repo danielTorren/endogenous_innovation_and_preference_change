@@ -694,11 +694,11 @@ def print_live_initial_identity_network(
     fig.savefig(f + ".png", dpi=600, format="png")
 
 def burn_in(ax,data):
-    if data.burn_in_no_OD > 0:
-        ax.axvline(x = data.burn_in_no_OD,ls="--",  color="black")#OD
+    if data.duration_no_OD_no_stock_no_policy > 0:
+        ax.axvline(x = data.duration_no_OD_no_stock_no_policy,ls="--",  color="black")#OD
     
-    if data.burn_in_duration_no_policy > 0:
-        ax.axvline(x = (data.burn_in_no_OD+data.burn_in_duration_no_policy),ls="--",  color="black")#OD
+    if data.duration_OD_no_stock_no_policy > 0:
+        ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy),ls="--",  color="black")#OD
 
 def plot_network_timeseries(
     fileName: str, Data: Social_Network, y_title: str, property: str, dpi_save: int,latex_bool = False

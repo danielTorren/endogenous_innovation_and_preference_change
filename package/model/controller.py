@@ -22,9 +22,12 @@ class Controller:
         self.compression_factor_state = parameters_controller["compression_factor_state"]
 
         #TIME STUFF
-        self.burn_in_no_OD = parameters_controller["burn_in_no_OD"] 
-        self.burn_in_duration_no_policy = parameters_controller["burn_in_duration_no_policy"] 
-        self.policy_duration = parameters_controller["policy_duration"]
+        self.duration_no_OD_no_stock_no_policy = parameters_controller["duration_no_OD_no_stock_no_policy"] 
+        self.duration_OD_no_stock_no_policy = parameters_controller["duration_OD_no_stock_no_policy"] 
+        self.duration_OD_stock_no_policy = parameters_controller["duration_OD_stock_no_policy"] 
+        self.duration_OD_stock_policy = parameters_controller["duration_OD_stock_policy"]
+
+        self.policy_start_time = self.duration_no_OD_no_stock_no_policy + self.duration_OD_no_stock_no_policy + self.duration_OD_stock_no_policy
         
         #CARBON PRICE
         self.carbon_price_state = self.parameters_carbon_policy["carbon_price_state"]
@@ -62,9 +65,11 @@ class Controller:
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
-        self.parameters_social_network["burn_in_no_OD"] = self.burn_in_no_OD
-        self.parameters_social_network["burn_in_duration_no_policy"] = self.burn_in_duration_no_policy
-        self.parameters_social_network["policy_duration"] = self.policy_duration      
+        self.parameters_social_network["duration_no_OD_no_stock_no_policy"] = self.duration_no_OD_no_stock_no_policy
+        self.parameters_social_network["duration_OD_no_stock_no_policy"] = self.duration_OD_no_stock_no_policy
+        self.parameters_social_network["duration_OD_stock_no_policy"] = self.duration_OD_stock_no_policy
+        self.parameters_social_network["duration_OD_stock_policy"] = self.duration_OD_stock_policy
+        self.parameters_social_network["policy_start_time"] = self.policy_start_time      
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
 
@@ -86,7 +91,7 @@ class Controller:
         self.controller_low_carbon_preference_arr = self.social_network.low_carbon_preference_arr
 
     def update_carbon_price(self):
-        if self.t_controller == self.burn_in_no_OD+self.burn_in_duration_no_policy:
+        if self.t_controller == self.policy_start_time:
             if self.carbon_price_state == "flat":
                 carbon_price = self.carbon_price_policy
         else:
