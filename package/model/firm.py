@@ -150,7 +150,8 @@ class Firm:
             rank = 0
             for r in range(0, self.rank_number + 1):
                 #print("profitability", profitability/self.max_profitability , r / self.rank_number)
-                if (profitability/self.max_profitability) < (r / self.rank_number):
+                if profitability < (self.max_profitability*r / self.rank_number):
+                #if (profitability/self.max_profitability) < (r / self.rank_number):
                     rank = r
                     break
             self.ranked_alternatives.append((tech, rank))
@@ -159,7 +160,7 @@ class Firm:
     
     def rank_last_tech(self):            
         for r in range(1, self.rank_number + 1):
-            if self.last_tech_expected_profit < r / self.rank_number:
+            if self.last_tech_expected_profit < self.max_profitability*(r / self.rank_number):
                 self.last_tech_rank = r
                 break
 

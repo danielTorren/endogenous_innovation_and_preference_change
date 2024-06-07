@@ -34,10 +34,10 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_OD_no_stock_no_policy": 50,
-        "duration_OD_no_stock_no_policy": 50,
-        "duration_OD_stock_no_policy": 450,
-        "duration_OD_stock_policy": 450,
+        "duration_no_OD_no_stock_no_policy": 10,
+        "duration_OD_no_stock_no_policy": 10,
+        "duration_OD_stock_no_policy": 0,
+        "duration_OD_stock_policy": 0,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "parameters_carbon_policy":{
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             "landscape_seed": 6,
             "init_tech_heterogenous_state": 1,
             "A": 3,
-            "markup": 0.25,
+            "markup": 0.1,
         },
         "parameters_firm": {
             "static_tech_state": 0,
@@ -78,7 +78,7 @@ if __name__ == "__main__":
             "network_density": 0.05, 
             "prob_rewire": 0.1,
             "homophily": 0,
-            "a_preferences": 10, 
+            "a_preferences": 1, 
             "b_preferences": 10,
             "clipping_epsilon": 1e-5, 
             "preference_drift_std": 0.001, 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         "parameters_individual":{
             "individual_upsilon": 0.05,
             "omega": 2,
-            "delta": 0.1,
+            "delta": 0.01,
             "kappa": 1,
             "gamma": 0.1
         }

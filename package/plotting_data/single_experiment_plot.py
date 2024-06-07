@@ -18,6 +18,7 @@ from package.resources.plot import (
     plot_total_flow_carbon_emissions_timeseries,
     plot_network_timeseries
 )
+import matplotlib.lines as mlines
 
 def burn_in(ax,data):
     if data.duration_no_OD_no_stock_no_policy > 0:
@@ -109,6 +110,26 @@ def plot_low_carbon_preference(fileName, data):
     plotName = fileName + "/Plots"
 
     f = plotName + "/timeseries_preference"
+    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def plot_car_utility(fileName, data):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    #burn_in(ax,data)
+
+    for v in range(data.num_individuals):
+        data_indivdiual = np.asarray(data.agent_list[v].history_car_utility)
+        ax.plot(data.history_time_social_network,data_indivdiual)
+
+    #ax.legend()          
+    #ax.tight_layout()
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"Owned car utility")
+
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/timeseries_car_util"
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
@@ -675,6 +696,119 @@ def weighted_owned_average_plots(fileName,data_social_network):
     fig.savefig(f + ".png", dpi=600, format="png")
 
 
+def scatter_trace_plots(fileName, data_social_network, x_param, y_param):
+    time_series_cars = data_social_network.history_car_owned_list
+
+    # Initialize lists to hold values over time
+    time_points = []
+    x_values = []
+    y_values = []
+
+    if x_param == "cost":
+        x_param_index = 0
+    elif x_param == "emissions":
+        x_param_index = 1
+    elif x_param == "quality": 
+        x_param_index = 2
+
+    if y_param == "cost":
+        y_param_index = 0
+    elif y_param == "emissions":
+        y_param_index = 1
+    elif y_param == "quality": 
+        t_param_index = 2
+
+    for t, snapshot in enumerate(time_series_cars):
+        for car in snapshot:
+            attributes = car.attributes_fitness
+            time_points.append(t)
+            x_values.append(attributes[x_param_index])
+            y_values.append(attributes[y_param_index])
+
+    # Convert to DataFrame for easier plotting
+    df = pd.DataFrame({
+        'time': time_points,
+        'x': x_values,
+        'y': y_values
+    })
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    scatter = ax.scatter(df['x'], df['y'], c=df['time'], cmap='viridis', alpha=0.6, edgecolors='w', linewidth=0.5)
+    ax.set_xlabel(x_param.capitalize())
+    ax.set_ylabel(y_param.capitalize())
+    ax.set_title(f'{x_param.capitalize()} vs {y_param.capitalize()} Over Time')
+    ax.grid(True)
+
+    # Add colorbar to show the time evolution
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label('Time')
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + f"/scatter_{x_param}_vs_{y_param}"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+    plt.show()
+
+def scatter_trace_plots_offered(fileName, data_firm_manager, x_param, y_param):
+    time_series_cars = data_firm_manager.history_cars_on_sale_all_firms
+
+    # Initialize lists to hold values over time
+    time_points = []
+    x_values = []
+    y_values = []
+    firm_ids = []
+
+    param_map = {'cost': 0, 'emissions': 1, 'quality': 2}
+    x_param_index = param_map[x_param]
+    y_param_index = param_map[y_param]
+
+    for t, snapshot in enumerate(time_series_cars):
+        for car in snapshot:
+            attributes = car.attributes_fitness
+            time_points.append(t)
+            x_values.append(attributes[x_param_index])
+            y_values.append(attributes[y_param_index])
+            firm_ids.append(car.firm_id)
+
+    # Convert to DataFrame for easier plotting
+    df = pd.DataFrame({
+        'time': time_points,
+        'x': x_values,
+        'y': y_values,
+        'firm_id': firm_ids
+    })
+
+    # Assign a unique marker for each firm
+    unique_firms = df['firm_id'].unique()
+    markers = list(mlines.Line2D.markers.keys())
+    marker_map = {firm_id: markers[i % len(markers)] for i, firm_id in enumerate(unique_firms)}
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for firm_id in unique_firms:
+        firm_data = df[df['firm_id'] == firm_id]
+        ax.scatter(firm_data['x'], firm_data['y'], label=f'Firm {firm_id}', 
+                   marker=marker_map[firm_id], alpha=0.6, edgecolors='w', linewidth=0.5)
+
+    ax.set_xlabel(x_param.capitalize())
+    ax.set_ylabel(y_param.capitalize())
+    ax.set_title(f'{x_param.capitalize()} vs {y_param.capitalize()} Over Time - Firms')
+    ax.grid(True)
+    ax.legend(title='Firms', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + f"/scatter_{x_param}_vs_{y_param}_offered"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
@@ -691,37 +825,23 @@ def main(
 
     if social_plots:
         ###SOCIAL NETWORK PLOTS
-        #THERES A BUINCH MORE IN PLOT.PY BUT PUT THEM HERE FOR NOW JUST TO SEPERATE
-        #plot_low_carbon_preferences_timeseries(fileName, data_social_network, dpi_save)
         plot_low_carbon_preference(fileName, data_social_network)
-        #plot_outward_social_influence_timeseries(fileName, data_social_network, dpi_save)
-        #plot_emissions_individuals(fileName, data_social_network, dpi_save)
-        plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        #plot_demand_individuals(fileName, data_social_network, dpi_save)
-        #plot_expenditure_individuals(fileName, data_social_network, dpi_save)
-        #plot_carbon_dividend_individuals(fileName, data_social_network, dpi_save)
-        #if data_social_network.carbon_price_state == "AR1":
-        #   plot_arbon_price_AR1(fileName, data_social_network)
-        weighted_owned_average_plots(fileName, data_social_network)
+        #plot_car_utility(fileName, data_social_network)
+        #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
+        #weighted_owned_average_plots(fileName, data_social_network)
+        #scatter_trace_plots(fileName, data_social_network, 'emissions', 'cost')
+        #scatter_trace_plots(fileName, data_social_network, 'emissions', 'quality')
+        #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
         
+    #print(len(list(mlines.Line2D.markers.keys())))
+    #quit()
 
-    if firm_plots:
+    #if firm_plots:
         ##FIRM PLOTS
-        #plot_len_indices_higher(fileName, data_firm_manager, dpi_save)
-        #plot_firm_market_share(fileName, data_firm_manager, dpi_save)
-        #plot_frim_price(fileName, data_firm_manager, dpi_save)
-        #plot_firm_cost(fileName, data_firm_manager, dpi_save)
-        #plot_search_range(fileName, data_firm_manager, dpi_save)
-        #plot_firm_proft(fileName, data_firm_manager, dpi_save)
-        #plot_firm_budget(fileName, data_firm_manager, dpi_save)
-        #plot_demand_firm(fileName, data_social_network, dpi_save)
-        #plot_emissions_firm(fileName, data_firm_manager, dpi_save)
-        #plot_firm_segment_index_max_profit(fileName, data_firm_manager, dpi_save)
-        #plot_flow_emissions_firm(fileName, data_social_network,data_firm_manager)
-        #plot_cumulative_emissions_firm(fileName, data_social_network, data_firm_manager)
-        plot_firm_count(fileName, data_social_network)
-        weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
-        
+        #plot_firm_count(fileName, data_social_network)
+        #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
+        """THIS DOESNT QUITE WORK"""
+        #scatter_trace_plots_offered(fileName, data_firm_manager, 'emissions', 'cost')
 
     #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
     #final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
@@ -731,7 +851,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_11_03_41__02_06_2024",
+        fileName = "results/single_experiment_08_57_38__07_06_2024",
     )
 
 

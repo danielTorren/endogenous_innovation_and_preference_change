@@ -45,7 +45,7 @@ class Individual:
 
         self.new_car_bool = self.decide_purchase(self.init_car_vec)#PICK CAR AT THE START
 
-        self.flow_carbon_emissions = self.omega.emissions#NO CAR CHOSEN YET
+        #self.flow_carbon_emissions = self.omega.emissions#NO CAR CHOSEN YET
 
         if self.save_timeseries_data_state:
             self.set_up_time_series()  
@@ -55,13 +55,12 @@ class Individual:
         #CHAT GPT ATTEMPT AT CONSUMPTION
 
     def utility_buy_matrix(self, car_attributes_matrix):
-
         utilities = self.low_carbon_preference*car_attributes_matrix[:,1] + (1 -  self.low_carbon_preference) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
         return utilities
     
     def utility_keep(self, car):
         X_E, X_Q = car.emissions, car.quality
-        return self.low_carbon_preference * X_E + (1 - self.low_carbon_preference) * (1 - self.delta) ** self.age * X_Q
+        return (self.low_carbon_preference * X_E + (1 - self.low_carbon_preference) * X_Q)*(1 - self.delta) ** self.age
 
     def choose_replacement_candidate(self, cars):
         car_attributes_matrix = np.asarray([x.attributes_fitness for x in cars])
@@ -94,6 +93,8 @@ class Individual:
         else:
             utility_old = 0  # Assume no utility if no car is owned
 
+        self.owned_car_utility = utility_old
+
         if self.omega is None:
             self.omega = replacement_candidate
             self.age = 0
@@ -111,12 +112,13 @@ class Individual:
     def update_consumption(self, cars):
         self.new_car_bool = self.decide_purchase(cars)
 
-    def calc_total_emissions(self):      
-        return self.omega.emissions
+    #def calc_total_emissions(self):      
+    #    return 1 - self.omega.emissions
 
     def set_up_time_series(self):
         self.history_low_carbon_preference = [self.low_carbon_preference]
-        self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
+        #self.history_flow_carbon_emissions = [self.flow_carbon_emissions]
+        self.history_car_utility = [self.owned_car_utility]
 
     def save_timeseries_data_state_individual(self):
         """
@@ -131,7 +133,8 @@ class Individual:
         None
         """
         self.history_low_carbon_preference.append(self.low_carbon_preference)
-        self.history_flow_carbon_emissions.append(self.flow_carbon_emissions)
+        #self.history_flow_carbon_emissions.append(self.flow_carbon_emissions)
+        self.history_car_utility.append(self.owned_car_utility)
 
     def next_step(self, updated_preference, cars, carbon_price):
 
@@ -144,7 +147,7 @@ class Individual:
         self.update_consumption( cars)
 
         #calc_emissions
-        self.flow_carbon_emissions = self.calc_total_emissions()
+        #self.flow_carbon_emissions = self.calc_total_emissions()
 
         if self.save_timeseries_data_state and (self.t_individual % self.compression_factor_state == 0):
             #self.utility = self.calc_utility_CES()

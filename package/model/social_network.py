@@ -128,7 +128,7 @@ class Social_Network:
                 self.low_carbon_preference_arr_init
             ) = self.generate_init_data_preferences()
         else:
-            self.low_carbon_preference_arr_init = np.asarray([0.5]*self.num_individuals)
+            self.low_carbon_preference_arr_init = np.asarray([self.clipping_epsilon]*self.num_individuals)
         
             
         self.agent_list = self.create_agent_list()
@@ -311,7 +311,7 @@ class Social_Network:
 ##################################################################################################################
 
     def calc_total_emissions(self) -> int:
-        total_network_emissions = sum([x.omega.emissions for x in self.agent_list])
+        total_network_emissions = sum([(1-x.omega.emissions) for x in self.agent_list])
         return total_network_emissions
 
     def calc_consumption_vec(self):
@@ -344,7 +344,7 @@ class Social_Network:
         if (self.t_social_network > self.duration_no_OD_no_stock_no_policy) and (not self.fixed_preferences_state):
             self.fixed_preferences_state_instant = 0 
         
-        if (self.t_social_network > self.duration_no_OD_no_stock_no_policy) and self.cumulative_emissions_preference_state:
+        if (self.t_social_network > (self.duration_no_OD_no_stock_no_policy + self.duration_OD_no_stock_no_policy)) and self.cumulative_emissions_preference_state:
             self.cumulative_emissions_preference_state_instant = 1
 
     def set_up_time_series_social_network(self):
@@ -398,7 +398,7 @@ class Social_Network:
         self.cars_on_sale_all_firms = cars_on_sale_all_firms
 
         #update preferences 
-        if not self.fixed_preferences_state:
+        if not self.fixed_preferences_state_instant:
             self.weighting_matrix = self.update_weightings()#UNSURE WHAT THE ORDER SHOULD BE HERE
             self.low_carbon_preference_arr = self.update_preferences()
 
