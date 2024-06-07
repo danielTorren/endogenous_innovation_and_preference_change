@@ -14,7 +14,6 @@ class Controller:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
-        self.parameters_individual =  parameters_controller["parameters_individual"]
         self.parameters_carbon_policy = parameters_controller["parameters_carbon_policy"]
 
         self.t_controller = 0
@@ -42,7 +41,7 @@ class Controller:
         self.parameters_firm_manager["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm_manager["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
-        self.parameters_firm_manager["gamma"] = self.parameters_individual["gamma"] 
+        self.parameters_firm_manager["gamma"] = self.parameters_social_network["gamma"] 
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
 
@@ -51,7 +50,7 @@ class Controller:
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["num_individuals"] = self.parameters_social_network["num_individuals"]
-        self.parameters_firm["kappa"] = self.parameters_individual["kappa"]
+        self.parameters_firm["kappa"] = self.parameters_social_network["kappa"]
         self.parameters_firm["N"] = self.parameters_firm_manager["N"]
         self.parameters_firm["K"] = self.parameters_firm_manager["K"]
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -72,20 +71,15 @@ class Controller:
         self.parameters_social_network["policy_start_time"] = self.policy_start_time      
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
-
-        #INDIVIDUALS
-        self.parameters_individual["markup"] = self.parameters_firm_manager["markup"]
-        self.parameters_individual["save_timeseries_data_state"] = self.save_timeseries_data_state
-        self.parameters_individual["compression_factor_state"] = self.compression_factor_state
-        self.parameters_individual["carbon_price"] = self.carbon_price
+        self.parameters_social_network["markup"] = self.parameters_firm_manager["markup"]
 
         #CREATE FIRMS    
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
 
-        self.parameters_individual["init_car_vec"] = self.firm_manager.cars_on_sale_all_firms
+        self.parameters_social_network["init_car_vec"] = self.firm_manager.cars_on_sale_all_firms
 
         #GET FIRM PRICES
-        self.social_network = Social_Network(self.parameters_social_network, self.parameters_individual)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
+        self.social_network = Social_Network(self.parameters_social_network)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
         
         #update values for the next step
         self.controller_low_carbon_preference_arr = self.social_network.low_carbon_preference_arr

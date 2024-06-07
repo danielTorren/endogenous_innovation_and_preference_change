@@ -97,9 +97,8 @@ def plot_low_carbon_preference(fileName, data):
     fig, ax = plt.subplots(figsize=(10, 6))
     
     #burn_in(ax,data)
-
-    for v in range(data.num_individuals):
-        data_indivdiual = np.asarray(data.agent_list[v].history_low_carbon_preference)
+    data_t = np.asarray(data.history_preference_list).T
+    for data_indivdiual in data_t:
         ax.plot(data.history_time_social_network,data_indivdiual)
 
     #ax.legend()          
@@ -851,7 +850,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_08_57_38__07_06_2024",
+        fileName = "results/single_experiment_15_43_31__07_06_2024",
     )
 
 

@@ -7,7 +7,6 @@ Created: 10/10/2022
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
-from package.model.individual import Individual
 from collections import defaultdict
 
 # modules
@@ -18,7 +17,7 @@ def nested_defaultdict():
 
 class Social_Network:
 
-    def __init__(self, parameters_social_network: list, parameters_individual):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
+    def __init__(self, parameters_social_network: list):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
         """
         Constructs all the necessary attributes for the Network object.
 
@@ -30,7 +29,7 @@ class Social_Network:
         """
         self.t_social_network = 0
         
-        self.parameters_individual = parameters_individual
+
         #TIME 
         self.duration_no_OD_no_stock_no_policy = parameters_social_network["duration_no_OD_no_stock_no_policy"] 
         self.duration_OD_no_stock_no_policy = parameters_social_network["duration_OD_no_stock_no_policy"] 
@@ -105,12 +104,6 @@ class Social_Network:
         else:
             self.preference_drift_std = 0
             self.clipping_epsilon = 0     
-
-        # network homophily
-        self.homophily = parameters_social_network["homophily"]  # 0-1
-        self.shuffle_reps = int(
-            round(self.num_individuals*((1 - self.homophily)**1.5))#1.5 to just make the mixing stronger
-        )
         
         # create network
         (
@@ -130,25 +123,35 @@ class Social_Network:
         else:
             self.low_carbon_preference_arr_init = np.asarray([self.clipping_epsilon]*self.num_individuals)
         
-            
-        self.agent_list = self.create_agent_list()
-
-        if self.heterogenous_init_preferences:
-            self.shuffle_agent_list()#partial shuffle of the list based on prefernece
 
         #NOW SET SEED FOR THE IMPERFECT LEARNING
         np.random.seed(self.preference_drift_seed)
 
         self.low_carbon_preference_arr = self.low_carbon_preference_arr_init
-        
+        self.low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
+
         if not self.fixed_preferences_state_instant:
             self.weighting_matrix = self.update_weightings()
 
         #FIX
         self.total_carbon_emissions_cumulative = 0#this are for post tax
 
+        #CARS
+        self.car_age_vec = np.zeros(self.num_individuals)
+        self.car_owned_vec = np.asarray([None]*self.num_individuals)
+        self.gamma = parameters_social_network["gamma"]  # weight for car quality
+        self.markup = parameters_social_network["markup"]  # industry mark-up on production costs
+        self.delta =  parameters_social_network["delta"]  # depreciation rate
+        self.kappa = parameters_social_network["kappa"]  # parameter indicating consumers' ability to make rational choices
+        self.init_car_vec = parameters_social_network["init_car_vec"]
+
         #calc consumption quantities
-        self.firm_count = self.calc_consumption_vec()
+        replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
+        self.new_car_bool_vec = np.ones(self.num_individuals)
+        self.car_owned_vec = replacement_candidate_vec
+        self.car_age_vec = np.zeros(self.num_individuals)   
+        
+        self.firm_count = self.calc_bought_firm_car_count()
 
         self.total_carbon_emissions_flow = self.calc_total_emissions()
         self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
@@ -208,70 +211,10 @@ class Social_Network:
             norm_weighting_matrix,
             G,
         )
-    
-    def circular_agent_list(self) -> list:
-        """
-        Makes an ordered list circular so that the start and end values are matched in value and value distribution is symmetric
-
-        parameters_social_network
-        ----------
-        list: list
-            an ordered list e.g [1,2,3,4,5]
-        Returns
-        -------
-        circular: list
-            a circular list symmetric about its middle entry e.g [1,3,5,4,2]
-        """
-
-        first_half = self.agent_list[::2]  # take every second element in the list, even indicies
-        second_half = (self.agent_list[1::2])[::-1]  # take every second element , odd indicies
-        self.agent_list = first_half + second_half
-
-    def partial_shuffle_agent_list(self) -> list:
-        """
-        Partially shuffle a list using Fisher Yates shuffle
-        """
-
-        for _ in range(self.shuffle_reps):
-            a, b = np.random.randint(
-                low=0, high=self.num_individuals, size=2
-            )  # generate pair of indicies to swap
-            self.agent_list[b], self.agent_list[a] = self.agent_list[a], self.agent_list[b]
-    
+        
     def generate_init_data_preferences(self) -> tuple[npt.NDArray, npt.NDArray]:
         low_carbon_preference_arr = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
         return low_carbon_preference_arr
-
-    def create_agent_list(self) -> list[Individual]:
-        """
-        Create list of Individual objects that each have behaviours
-
-        parameters_social_network
-        ----------
-        None
-
-        Returns 
-        -------
-        agent_list: list[Individual]
-            List of Individual objects 
-        """
-
-        agent_list = [
-            Individual(
-                self.parameters_individual,
-                self.low_carbon_preference_arr_init[n],
-                n
-            )
-            for n in range(self.num_individuals)
-        ]
-
-        return agent_list
-        
-    def shuffle_agent_list(self): 
-        #make list cirucalr then partial shuffle it
-        self.agent_list.sort(key=lambda x: x.low_carbon_preference)#sorted by preference
-        self.circular_agent_list()#agent list is now circular in terms of preference
-        self.partial_shuffle_agent_list()#partial shuffle of the list
 
 
 ##################################################################################################################
@@ -289,7 +232,7 @@ class Social_Network:
             low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*social_influence + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
         
         low_carbon_preferences  = np.clip(low_carbon_preferences, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
-       
+        
         return low_carbon_preferences
 
     #UPDATE WEIGHTING
@@ -311,34 +254,102 @@ class Social_Network:
 ##################################################################################################################
 
     def calc_total_emissions(self) -> int:
-        total_network_emissions = sum([(1-x.omega.emissions) for x in self.agent_list])
+        total_network_emissions = sum([(1-car.emissions) for car in self.car_owned_vec])
         return total_network_emissions
 
-    def calc_consumption_vec(self):
-        # Extract the new car boolean vector and car vector from the agent list
-        new_car_bool_vec = [x.new_car_bool for x in self.agent_list]
-        self.car_owned_list = [x.omega for x in self.agent_list]
+    def calc_bought_firm_car_count(self):
 
         # Initialize a defaultdict for counting car purchases by firm
         firm_car_count = defaultdict(nested_defaultdict)
 
         # Iterate over the agents and update the purchase counts
-        for bought_new, car in zip(new_car_bool_vec, self.car_owned_list):
+        #print(self.new_car_bool_vec, self.car_owned_vec)
+        #print(self.new_car_bool_vec.shape, self.car_owned_vec.shape)
+        #quit()
+        for bought_new, car in zip(self.new_car_bool_vec, self.car_owned_vec):
             if bought_new:
                 firm_car_count[car.firm_id][car.id] += 1
 
         return firm_car_count
 
 
-    def update_individuals(self):
-        """
-        Update Individual objects with new information regarding social interactions, prices and dividend
-        """
-
-        # Assuming you have self.agent_list as the list of objects
-        for i, agent in enumerate(self.agent_list):
-            agent.next_step(self.low_carbon_preference_arr[i], self.cars_on_sale_all_firms, self.carbon_price)
+    #########################################################################
+    #CHAT GPT ATTEMPT AT CONSUMPTION
+    def utility_buy_matrix(self, car_attributes_matrix):
+        low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+        return utilities
     
+    def utility_keep(self, cars_owned_attributes_matrix):
+        utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + (1 - self.low_carbon_preference_arr) * cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
+        return utilities
+
+    def choose_replacement_candidate(self, cars):
+        car_attributes_matrix = np.asarray([x.attributes_fitness for x in cars])  # ARRAY OF ALL THE CARS
+        
+        utilities_matrix = self.utility_buy_matrix(car_attributes_matrix)  # FOR EACH INDIVIDUAL WHAT IS THE UTILITY OF THE DIFFERENT CARS
+        utilities_matrix[utilities_matrix < 0] = 0  # IF NEGATIVE UTILITY PUT IT AT 0
+        
+        # Calculate the denominator vector
+        denominator_vec = np.sum(utilities_matrix ** self.kappa, axis=1)
+        
+        # Create a boolean mask for non-zero denominators
+        non_zero_denominator_mask = denominator_vec != 0
+        
+        # Initialize probabilities matrix with zeros
+        probabilities = np.zeros_like(utilities_matrix)
+        
+        # Calculate probabilities for non-zero denominators
+        probabilities[non_zero_denominator_mask] = (utilities_matrix[non_zero_denominator_mask] ** self.kappa) / denominator_vec[non_zero_denominator_mask, np.newaxis]
+        
+        # Handle cases where the denominator is zero by assigning uniform probabilities
+        zero_denominator_indices = np.where(denominator_vec == 0)[0]
+        probabilities[zero_denominator_indices] = 1.0 / len(cars)
+        
+        # Create cumulative probabilities for each individual
+        cumulative_probabilities = np.cumsum(probabilities, axis=1)#THIS MIGHT NEED TO BE IN THE OTHER AXIS
+        
+        # Generate random values for each individual
+        random_values = np.random.rand(self.num_individuals, 1)
+        
+        # Select indices based on cumulative probabilities
+        #IDEA OF USING CUMULATIVE PROBABILITIES IS THAT I DONT NEED TO USE A FOR LOOP
+        replacement_index_vec = (cumulative_probabilities > random_values).argmax(axis=1)# CHECK IF THIS WORKS HOW I THINK IT DOES
+
+        #print(self.t_social_network)
+        #print(cars, replacement_index_vec.shape)
+
+        replacement_candidate_vec = cars[replacement_index_vec]
+        utility_replacement_vec = utilities_matrix[np.arange(self.num_individuals), replacement_index_vec]#ADVANCED INDEXING; THE ARANGE LOOPS THROUGH EACH ROW AND THEN PICKS OUT THE COLUMN, SELECTING USING TWO 1D VECTORS DOES STUFF ELEMENT WISE
+
+        return replacement_candidate_vec, utility_replacement_vec
+
+
+    def decide_purchase(self, cars):
+
+        replacement_candidate_vec, utility_replacement_vec = self.choose_replacement_candidate(cars)
+        # Create utility_old_vec based on whether omega is None or not
+        has_car_mask = np.asarray([car is not None for car in self.car_owned_vec])
+        cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec[has_car_mask]])
+        #print("cars_owned_attributes_matrix",cars_owned_attributes_matrix)
+        utility_old_vec = np.zeros(self.num_individuals)
+        #print(self.t_social_network, has_car_mask)
+        #print(cars_owned_attributes_matrix)
+        #a = cars_owned_attributes_matrix[has_car_mask]
+        #print(a)
+        #util_car_kept = self.utility_keep(cars_owned_attributes_matrix[has_car_mask])
+        #print(util_car_kept.shape)
+        #print("DONE")
+        utility_old_vec[has_car_mask] = self.utility_keep(cars_owned_attributes_matrix[has_car_mask])
+        
+        self.owned_car_utility_vec = utility_old_vec
+
+        new_car_bool_vec = utility_replacement_vec > utility_old_vec
+        self.car_owned_vec = np.where(new_car_bool_vec, replacement_candidate_vec, self.car_owned_vec)
+        self.car_age_vec = np.where(new_car_bool_vec, 0, self.car_age_vec + 1)
+        
+        return new_car_bool_vec
+
     def update_burn_in_state(self):
         #
         if (self.t_social_network > self.duration_no_OD_no_stock_no_policy) and (not self.fixed_preferences_state):
@@ -353,7 +364,7 @@ class Social_Network:
         self.history_cumulative_carbon_emissions = [self.total_carbon_emissions_cumulative]#FIX
         self.history_time_social_network = [self.t_social_network]
         self.history_firm_count = [self.firm_count]
-        self.history_car_owned_list = [self.car_owned_list]
+        self.history_car_owned_vec = [self.car_owned_vec]
 
     def save_timeseries_data_social_network(self):
         """
@@ -372,7 +383,7 @@ class Social_Network:
         self.history_preference_list.append(self.low_carbon_preference_arr)
         self.history_time_social_network.append(self.t_social_network)
         self.history_firm_count.append(self.firm_count)
-        self.history_car_owned_list.append(self.car_owned_list)
+        self.history_car_owned_vec.append(self.car_owned_vec)
 
     def next_step(self, carbon_price, cars_on_sale_all_firms):
         """
@@ -402,11 +413,11 @@ class Social_Network:
             self.weighting_matrix = self.update_weightings()#UNSURE WHAT THE ORDER SHOULD BE HERE
             self.low_carbon_preference_arr = self.update_preferences()
 
-        # execute step
-        self.update_individuals()
+        #decide to buy new cars
+        self.new_car_bool = self.decide_purchase(self.cars_on_sale_all_firms)
 
         #calc consumption quantities
-        self.firm_count = self.calc_consumption_vec()
+        self.firm_count = self.calc_bought_firm_car_count()
 
         #calc emissions
         self.total_carbon_emissions_flow = self.calc_total_emissions()

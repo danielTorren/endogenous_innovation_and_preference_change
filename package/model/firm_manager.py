@@ -119,10 +119,13 @@ class Firm_Manager:
         car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
         self.utilities_competitors =  self.utility_buy_matrix(car_attributes_matrix)
 
-        self.cars_on_sale_all_firms = []
+        cars_on_sale_all_firms = []
         for j,firm in enumerate(self.firms_list):
             cars_on_sale = firm.next_step(self.carbon_price, segment_consumer_count, self.utilities_competitors)
-            self.cars_on_sale_all_firms.extend(cars_on_sale)
+            cars_on_sale_all_firms.extend(cars_on_sale)
+
+        self.cars_on_sale_all_firms = np.asarray(cars_on_sale_all_firms)
+        
 
     def set_up_time_series_social_network(self):
         self.history_cars_on_sale_all_firms = [self.cars_on_sale_all_firms]

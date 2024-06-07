@@ -34,10 +34,10 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_OD_no_stock_no_policy": 10,
-        "duration_OD_no_stock_no_policy": 10,
-        "duration_OD_stock_no_policy": 0,
-        "duration_OD_stock_policy": 0,
+        "duration_no_OD_no_stock_no_policy": 50,
+        "duration_OD_no_stock_no_policy": 50,
+        "duration_OD_stock_no_policy": 450,
+        "duration_OD_stock_policy": 450,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "parameters_carbon_policy":{
@@ -86,9 +86,7 @@ if __name__ == "__main__":
             "emissions_max": 1e5,
             "upsilon": 0.05,
             "upsilon_E": 0.02,
-            "upsilon_E_std": 0.1
-        },
-        "parameters_individual":{
+            "upsilon_E_std": 0.1,
             "individual_upsilon": 0.05,
             "omega": 2,
             "delta": 0.01,
