@@ -5,7 +5,8 @@ Created: 22/12/2023
 # imports
 
 from package.model.social_network import Social_Network
-from package.model.firm_manager import Firm_Manager 
+#from package.model.gpt_firm_manager import Firm_Manager 
+from package.model.GPT2_Firm_manager import Firm_Manager 
 from package.model.centralized_ID_generator import IDGenerator
 
 class Controller:
@@ -44,7 +45,7 @@ class Controller:
         self.parameters_firm_manager["gamma"] = self.parameters_social_network["gamma"] 
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
-
+        self.parameters_firm_manager["kappa"] = self.parameters_social_network["kappa"]
         #FIRM
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -74,7 +75,8 @@ class Controller:
         self.parameters_social_network["markup"] = self.parameters_firm_manager["markup"]
 
         #CREATE FIRMS    
-        self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
+        #self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
+        self.firm_manager = Firm_Manager(self.parameters_firm_manager)
 
         self.parameters_social_network["init_car_vec"] = self.firm_manager.cars_on_sale_all_firms
 

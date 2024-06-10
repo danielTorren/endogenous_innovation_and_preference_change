@@ -55,12 +55,15 @@ if __name__ == "__main__":
             "init_tech_heterogenous_state": 1,
             "A": 3,
             "markup": 0.1,
-        },
-        "parameters_firm": {
             "static_tech_state": 0,
             "memory_cap": 30,
             "segment_number": 3,
-            "theta": 1,
+            "rank_number": 100
+        },
+        "parameters_firm": {#NO LONGER NEEDED
+            "static_tech_state": 0,
+            "memory_cap": 30,
+            "segment_number": 3,
             "rank_number": 100
         },
         "parameters_social_network":{  
@@ -91,7 +94,7 @@ if __name__ == "__main__":
             "omega": 2,
             "delta": 0.01,
             "kappa": 1,
-            "gamma": 0.1
+            "gamma": 0.1,
         }
     }
     
