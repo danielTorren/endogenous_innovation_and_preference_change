@@ -95,7 +95,7 @@ class Controller:
 
     def next_step(self):
         self.t_controller+=1
-        print("self.t_controller", self.t_controller)
+        #print("self.t_controller", self.t_controller)
         self.carbon_price = self.update_carbon_price()
         # Update firms based on the social network and market conditions
         cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.controller_low_carbon_preference_arr)

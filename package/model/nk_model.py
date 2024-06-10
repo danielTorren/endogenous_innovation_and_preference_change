@@ -58,6 +58,7 @@ class NKModel:
         - fitness (numpy.ndarray): 1D array representing the fitness vector of the design.
                                     Shape: (self.A,)
         """
+        
         fitness = np.zeros(self.A)
         for a in range(self.A):
             for n in range(self.N):

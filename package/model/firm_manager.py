@@ -40,6 +40,7 @@ class Firm_Manager:
         self.segement_preference_bounds = np.linspace(0, 1, self.segment_number+1) 
         self.width_segment = self.segement_preference_bounds[1] - self.segement_preference_bounds[0]
         self.segement_preference = np.arange(self.width_segment/2, 1, self.width_segment)   #      np.linspace(0, 1, self.segment_number+1) #the plus 1 is so that theere are that number of divisions in the space
+        self.segment_preference_reshaped = self.segement_preference[:, np.newaxis]
 
         #GEN INIT TECH
         np.random.seed(self.init_tech_seed)#set seed for numpy
@@ -107,13 +108,20 @@ class Firm_Manager:
         return firms_list
 
     def utility_buy_matrix(self, car_attributes_matrix):
-        #IDEA IS TO DO THIS ALL IN ONE GO, ALL SEGMENTS AND ALL CARTIONS
-
-        utilities = np.zeros_like(car_attributes_matrix)
-        for i, pref in enumerate(self.segement_preference):
-            utilities[:,i] = pref*car_attributes_matrix[:,1] + (1 -  pref) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) *( (1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
-        return utilities
+        utilities = self.segment_preference_reshaped*car_attributes_matrix[:,1] + (1 -   self.segment_preference_reshaped) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) *( (1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+        return utilities.T
     
+    """
+    def calculate_firm_tech_utility(self):
+        
+        alternatives_attributes_list = []
+        for firm in self.firms_list:
+            alternatives_attributes_list.extend(firm.alternatives_attributes_matrix)
+        alternatives_attributes_all_matrix = np.asarray(alternatives_attributes_list)
+        utilities_memeory_matrix = self.utility_buy_matrix(alternatives_attributes_all_matrix)   
+    """   
+
+
     def update_firms(self, segment_consumer_count):
         
         car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
@@ -151,6 +159,8 @@ class Firm_Manager:
         self.carbon_price = carbon_price
 
         self.segment_consumer_count, __ = np.histogram(low_carbon_preference_arr, bins = self.segement_preference_bounds)
+
+        self.calculate_firm_tech_utility()
 
         self.update_firms(self.segment_consumer_count)
         

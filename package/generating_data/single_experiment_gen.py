@@ -22,7 +22,7 @@ def main(
     pyperclip.copy(fileName)
     print("fileName:", fileName)
 
-    controller = generate_data(base_params)  # run the simulation 
+    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
 
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
