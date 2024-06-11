@@ -641,7 +641,7 @@ def weighted_bought_average_plots(fileName,data_social_network,data_firm_manager
 
 def weighted_owned_average_plots(fileName,data_social_network):
 
-    time_series_cars = data_social_network.history_car_owned_list
+    time_series_cars = data_social_network.history_car_owned_vec
 
     # Initialize data structures to hold weighted averages over time
     weighted_averages = {
@@ -696,7 +696,8 @@ def weighted_owned_average_plots(fileName,data_social_network):
 
 
 def scatter_trace_plots(fileName, data_social_network, x_param, y_param):
-    time_series_cars = data_social_network.history_car_owned_list
+
+    time_series_cars = data_social_network.history_car_owned_vec
 
     # Initialize lists to hold values over time
     time_points = []
@@ -715,7 +716,7 @@ def scatter_trace_plots(fileName, data_social_network, x_param, y_param):
     elif y_param == "emissions":
         y_param_index = 1
     elif y_param == "quality": 
-        t_param_index = 2
+        y_param_index = 2
 
     for t, snapshot in enumerate(time_series_cars):
         for car in snapshot:
@@ -730,18 +731,20 @@ def scatter_trace_plots(fileName, data_social_network, x_param, y_param):
         'x': x_values,
         'y': y_values
     })
+    #print(df['x'])
+    #quit()
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    scatter = ax.scatter(df['x'], df['y'], c=df['time'], cmap='viridis', alpha=0.6, edgecolors='w', linewidth=0.5)
+    scatter = ax.scatter(df['x'], df['y'], c=df['time'], cmap='viridis', alpha=1, edgecolors='b', linewidth=0.4)
     ax.set_xlabel(x_param.capitalize())
     ax.set_ylabel(y_param.capitalize())
     ax.set_title(f'{x_param.capitalize()} vs {y_param.capitalize()} Over Time')
     ax.grid(True)
 
     # Add colorbar to show the time evolution
-    cbar = plt.colorbar(scatter, ax=ax)
+    cbar = fig.colorbar(scatter, ax=ax)
     cbar.set_label('Time')
 
     # Adjust layout and show plot
@@ -751,7 +754,7 @@ def scatter_trace_plots(fileName, data_social_network, x_param, y_param):
     f = plotName + f"/scatter_{x_param}_vs_{y_param}"
     fig.savefig(f + ".png", dpi=600, format="png")
 
-    plt.show()
+    #plt.show()
 
 def scatter_trace_plots_offered(fileName, data_firm_manager, x_param, y_param):
     time_series_cars = data_firm_manager.history_cars_on_sale_all_firms
@@ -815,8 +818,8 @@ def main(
     firm_plots = 1
     ) -> None: 
 
-    #social_plots = 0
-    #firm_plots = 0
+    social_plots = 1
+    firm_plots = 1
 
     data_controller= load_object(fileName + "/Data", "controller")
     data_social_network = data_controller.social_network
@@ -827,18 +830,18 @@ def main(
         plot_low_carbon_preference(fileName, data_social_network)
         #plot_car_utility(fileName, data_social_network)
         #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        #weighted_owned_average_plots(fileName, data_social_network)
-        #scatter_trace_plots(fileName, data_social_network, 'emissions', 'cost')
+        weighted_owned_average_plots(fileName, data_social_network)
+        scatter_trace_plots(fileName, data_social_network, 'emissions', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'emissions', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
         
     #print(len(list(mlines.Line2D.markers.keys())))
     #quit()
 
-    #if firm_plots:
+    if firm_plots:
         ##FIRM PLOTS
-        #plot_firm_count(fileName, data_social_network)
-        #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
+        plot_firm_count(fileName, data_social_network)
+        weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
         """THIS DOESNT QUITE WORK"""
         #scatter_trace_plots_offered(fileName, data_firm_manager, 'emissions', 'cost')
 
@@ -850,7 +853,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_15_43_31__07_06_2024",
+        fileName = "results/single_experiment_17_34_42__10_06_2024",
     )
 
 

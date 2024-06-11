@@ -46,21 +46,6 @@ class Controller:
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_social_network["kappa"]
-        #FIRM
-        self.parameters_firm = parameters_controller["parameters_firm"]
-        self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
-        self.parameters_firm["compression_factor_state"] = self.compression_factor_state
-        self.parameters_firm["num_individuals"] = self.parameters_social_network["num_individuals"]
-        self.parameters_firm["kappa"] = self.parameters_social_network["kappa"]
-        self.parameters_firm["N"] = self.parameters_firm_manager["N"]
-        self.parameters_firm["K"] = self.parameters_firm_manager["K"]
-        self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
-        self.parameters_firm["compression_factor_state"] = self.compression_factor_state
-        self.parameters_firm["J"] = self.parameters_firm_manager["J"]
-        self.parameters_firm["carbon_price"] = self.carbon_price
-        self.parameters_firm["id_generator"] = self.IDGenerator_firms#pass the genertor on so that it can be used by the technology generation at the firm level
-        self.parameters_firm["gamma"] = self.parameters_firm_manager["gamma"]
-        self.parameters_firm["markup"] = self.parameters_firm_manager["markup"]
 
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state

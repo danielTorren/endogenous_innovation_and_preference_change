@@ -39,7 +39,7 @@ if __name__ == "__main__":
         "duration_OD_stock_no_policy": 450,
         "duration_OD_stock_policy": 450,
         "save_timeseries_data_state": 1,
-        "compression_factor_state": 1,
+        "compression_factor_state": 10,
         "parameters_carbon_policy":{
             "carbon_price": 0.3,
             "carbon_price_state": "flat",
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         "parameters_firm_manager": {
             "J": 30,
             "N": 8,
-            "K": 4,
+            "K": 3,
             "alpha":1,
             "rho":[0,0.5],#enviromnet not correlated to cost but quality is correlated to cost
             "init_tech_seed": 10,
@@ -58,13 +58,7 @@ if __name__ == "__main__":
             "static_tech_state": 0,
             "memory_cap": 30,
             "segment_number": 3,
-            "rank_number": 100
-        },
-        "parameters_firm": {#NO LONGER NEEDED
-            "static_tech_state": 0,
-            "memory_cap": 30,
-            "segment_number": 3,
-            "rank_number": 100
+            "rank_number": 5
         },
         "parameters_social_network":{  
             "fixed_preferences_state": 0,
@@ -85,7 +79,7 @@ if __name__ == "__main__":
             "b_preferences": 10,
             "clipping_epsilon": 1e-5, 
             "preference_drift_std": 0.001, 
-            "confirmation_bias": 20,
+            "confirmation_bias": 5,
             "emissions_max": 1e5,
             "upsilon": 0.05,
             "upsilon_E": 0.02,
