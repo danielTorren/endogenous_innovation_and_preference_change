@@ -1039,7 +1039,21 @@ def plot_emissions_stock(fileName, data_social_network):
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
+def plot_public_transport_count(fileName, data_social_network):
 
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(data_social_network.history_time_social_network, data_social_network.history_public_transport_prop)
+
+    #ax.legend()          
+    #ax.tight_layout()
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"Public transport usage proportion")
+
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/public_trans"
+    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
 
 
 def main(
@@ -1067,6 +1081,7 @@ def main(
         scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
+        plot_public_transport_count(fileName, data_social_network)
         
     #print(len(list(mlines.Line2D.markers.keys())))
     #quit()

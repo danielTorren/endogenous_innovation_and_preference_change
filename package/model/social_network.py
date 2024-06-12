@@ -375,6 +375,8 @@ class Social_Network:
             # Find the index of the maximum utility along the first axis (i.e., across the rows)
             chosen_option_indices = np.argmax(utilities, axis=0)
 
+            self.public_transport_prop = np.sum(chosen_option_indices == 0)/self.num_individuals#RECORD NUM PEOPLE PUBLIC TRANPORT
+
             # Determine the new boolean vector
             new_car_bool_vec = (chosen_option_indices == 1)  # 1 corresponds to new car
 
@@ -434,6 +436,8 @@ class Social_Network:
         self.history_firm_count = [self.firm_count]
         self.history_car_owned_vec = [self.car_owned_vec]
         self.histor_raw_utility_buy_0 = [np.asarray([0]*30)]
+        if self.init_public_transport_state:
+            self.history_public_transport_prop = [self.public_transport_prop]
     
 
     def save_timeseries_data_social_network(self):
@@ -456,6 +460,8 @@ class Social_Network:
         self.history_firm_count.append(self.firm_count)
         self.history_car_owned_vec.append(self.car_owned_vec)
         self.histor_raw_utility_buy_0.append(self.raw_utility_buy_0)
+        if self.init_public_transport_state:
+            self.history_public_transport_prop.append(self.public_transport_prop)
 
     def next_step(self, carbon_price, cars_on_sale_all_firms):
         """
