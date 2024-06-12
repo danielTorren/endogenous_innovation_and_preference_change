@@ -9,6 +9,7 @@ import networkx as nx
 import numpy.typing as npt
 from collections import defaultdict
 from copy import deepcopy
+from package.model.public_transport import Public_transport
 # modules
 
 # Define the default factory function outside the method
@@ -138,7 +139,7 @@ class Social_Network:
 
         #CARS
         self.car_age_vec = np.zeros(self.num_individuals)
-        self.car_owned_vec = np.asarray([None]*self.num_individuals)
+        
         self.gamma = parameters_social_network["gamma"]  # weight for car quality
         self.markup = parameters_social_network["markup"]  # industry mark-up on production costs
         self.delta =  parameters_social_network["delta"]  # depreciation rate
@@ -146,11 +147,26 @@ class Social_Network:
         self.init_car_vec = parameters_social_network["init_car_vec"]
         self.utility_boost_const = parameters_social_network["utility_boost_const"]
 
+        self.init_public_transport_state = parameters_social_network["init_public_transport_state"]
+        if self.init_public_transport_state:
+            self.public_transport_attributes = np.asarray(parameters_social_network["public_transport_attributes"])
+            self.public_matrix = np.asarray([self.public_transport_attributes])
+            self.public_option = Public_transport(self.public_transport_attributes)
+            self.car_owned_vec = np.asarray([self.public_option]*self.num_individuals)
+            
+            #replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
+            self.new_car_bool_vec = self.decide_purchase(self.init_car_vec)
+            #self.new_car_bool_vec = np.ones(self.num_individuals)
+            #self.car_owned_vec = replacement_candidate_vec
+            #self.car_age_vec = np.zeros(self.num_individuals)   
+        else:
+            self.car_owned_vec = np.asarray([None]*self.num_individuals)
+            replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
+            self.new_car_bool_vec = np.ones(self.num_individuals)
+            self.car_owned_vec = replacement_candidate_vec
+            self.car_age_vec = np.zeros(self.num_individuals)   
         #calc consumption quantities
-        replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
-        self.new_car_bool_vec = np.ones(self.num_individuals)
-        self.car_owned_vec = replacement_candidate_vec
-        self.car_age_vec = np.zeros(self.num_individuals)   
+
         
         self.firm_count = self.calc_bought_firm_car_count()
 
@@ -255,7 +271,7 @@ class Social_Network:
 ##################################################################################################################
 
     def calc_total_emissions(self) -> int:
-        total_network_emissions = sum([(1-car.emissions) for car in self.car_owned_vec])
+        total_network_emissions = sum([(1-car.environmental_score) for car in self.car_owned_vec])
         return total_network_emissions
 
     def calc_bought_firm_car_count(self):
@@ -275,6 +291,11 @@ class Social_Network:
     def utility_buy_matrix(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+        return utilities + self.utility_boost_const
+
+    def utility_buy_vec(self, car_attributes_matrix):
+        low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * (self.gamma * car_attributes_matrix[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1]))
         return utilities + self.utility_boost_const
     
     def utility_keep(self, cars_owned_attributes_matrix):
@@ -326,18 +347,72 @@ class Social_Network:
 
         replacement_candidate_vec, utility_replacement_vec = self.choose_replacement_candidate(cars)
         # Create utility_old_vec based on whether omega is None or not
-        has_car_mask = np.asarray([car is not None for car in self.car_owned_vec])
-        cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec[has_car_mask]])
+        #print("TIME",self.t_social_network)
+        if self.init_public_transport_state:
+            has_car_mask = np.asarray([car is not self.public_option for car in self.car_owned_vec])
+            #print(len(has_car_mask))
+            #print(len(self.car_owned_vec))
+            #print(len(self.car_owned_vec[has_car_mask]))#loses about 50 people who bought cars
+            cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec])#calc extra utility but throw it away
+            #print(len(cars_owned_attributes_matrix))
+            utility_old_vec = np.zeros(self.num_individuals)
 
-        utility_old_vec = np.zeros(self.num_individuals)
+            #print(has_car_mask)
+            if self.t_social_network > 0:
+                utility_old_vec[has_car_mask] = self.utility_keep(cars_owned_attributes_matrix)[has_car_mask] 
+            
+            self.owned_car_utility_vec = utility_old_vec
 
-        utility_old_vec[has_car_mask] = self.utility_keep(cars_owned_attributes_matrix[has_car_mask])
-        
-        self.owned_car_utility_vec = utility_old_vec
+            #NEED TO CALCULATE THE UTILITY OF PUBLIC TRANSPORT HERE
+            
+            utility_public = np.squeeze(self.utility_buy_vec(self.public_transport_attributes))
+            #print(utility_public)
+            #print(utility_public.shape, utility_replacement_vec.shape, utility_old_vec.shape)
+            #quit()
+            # Stack the utility vectors into a single 2D array
+            utilities = np.vstack([utility_public, utility_replacement_vec, utility_old_vec])
 
-        new_car_bool_vec = utility_replacement_vec > utility_old_vec
-        self.car_owned_vec = np.where(new_car_bool_vec, replacement_candidate_vec, self.car_owned_vec)
-        self.car_age_vec = np.where(new_car_bool_vec, 0, self.car_age_vec + 1)
+            # Find the index of the maximum utility along the first axis (i.e., across the rows)
+            chosen_option_indices = np.argmax(utilities, axis=0)
+
+            # Determine the new boolean vector
+            new_car_bool_vec = (chosen_option_indices == 1)  # 1 corresponds to new car
+
+            # Update the car_owned_vec based on the chosen options
+            self.car_owned_vec = np.where(
+                chosen_option_indices == 0,  # 0 corresponds to public transport
+                self.public_option,
+                np.where(
+                    chosen_option_indices == 1,  # 1 corresponds to new car
+                    replacement_candidate_vec,
+                    self.car_owned_vec
+                )
+            )
+
+            # Update the car_age_vec based on the chosen options
+            self.car_age_vec = np.where(
+                chosen_option_indices == 0,  # Reset age for public transport
+                0,
+                np.where(
+                    chosen_option_indices == 1,  # Reset age for new car
+                    0,
+                    self.car_age_vec + 1  # Increment age for keeping old car
+                )
+            )
+
+            #NEED TO SORT OUT THE BOOL 
+        else:
+            has_car_mask = np.asarray([car is not None for car in self.car_owned_vec])
+            cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec[has_car_mask]])
+
+            utility_old_vec = np.zeros(self.num_individuals)
+
+            utility_old_vec[has_car_mask] = self.utility_keep(cars_owned_attributes_matrix[has_car_mask])
+            
+            self.owned_car_utility_vec = utility_old_vec
+            new_car_bool_vec = utility_replacement_vec > utility_old_vec
+            self.car_owned_vec = np.where(new_car_bool_vec, replacement_candidate_vec, self.car_owned_vec)
+            self.car_age_vec = np.where(new_car_bool_vec, 0, self.car_age_vec + 1)
 
         
         return new_car_bool_vec

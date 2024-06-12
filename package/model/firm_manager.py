@@ -1,3 +1,4 @@
+from re import S
 import numpy as np
 import random
 from package.model.cars import Car
@@ -37,6 +38,7 @@ class Firm_Manager:
         self.segment_preference_reshaped = self.segment_preference[:, np.newaxis]
 
         self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
+        self.max_profitability = (1/self.J)*self.markup*self.num_individuals# what if everyone bought your tech, but also everyone else has the tech too? idunno just need it to be smaller
 
         np.random.seed(self.init_tech_seed)
         random.seed(self.init_tech_seed)
@@ -46,9 +48,11 @@ class Firm_Manager:
 
         self.init_firms()
 
-        #self.list_reserach_tech = []#JUST IN CASE
+        #self.list_research_tech = []#JUST IN CASE
         #Set up the data saving
         if self.save_timeseries_data_state:
+            self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
+            self.len_alt = [0 for firm in self.firms]
             self.set_up_time_series_firm_manager()
 
     ####################################################################################################
@@ -84,14 +88,11 @@ class Firm_Manager:
         for tech in self.init_tech_list:
             self.update_firm_manager_tech_list(tech)
 
-        #@print("ADDED DATA TO GLOBAL")
-        #print(self.discovered_tech, self.global_neighbouring_technologies)
-
-
         #Create the firms, these store the data but dont do anything otherwise
         self.firms = [Firm(j, self.init_tech_list[j]) for j in range(self.J)]
 
         #calculate the inital attributes of all the cars on sale
+        
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
 
@@ -103,27 +104,7 @@ class Firm_Manager:
         utilities = self.segment_preference_reshaped * car_attributes_vec[1] + (1 - self.segment_preference_reshaped) * (self.gamma * car_attributes_vec[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_vec[0] + self.carbon_price * car_attributes_vec[1]))
         return utilities.T + self.utility_boost_const
 
-    def update_memory(self, firm):
-        #set the technology to be used as true or 1
-        for car in firm.list_technology_memory:
-            car.choosen_tech_bool = 1 if car in firm.cars_on_sale else 0
-
-        #change the timer for the techs that are not the ones being used
-        for technology in firm.list_technology_memory:
-            technology.update_timer()
-
-        #is the memory list is too long then remove data
-        if len(firm.list_technology_memory) > self.memory_cap:
-            tech_to_remove = max((tech for tech in firm.list_technology_memory if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
-            index_to_remove = firm.list_technology_memory.index(tech_to_remove)
-            
-            del firm.list_technology_memory_strings[index_to_remove]
-            firm.memory_attributes_matrix = np.delete(firm.memory_attributes_matrix, index_to_remove, axis=0)
-            firm.decimal_values_memory = np.delete(firm.decimal_values_memory, index_to_remove, axis=0)
-            firm.list_technology_memory.remove(tech_to_remove)#last thing is remove the item
-
     def calculate_profitability_neighbouring_technologies(self, firm, utilities_competitors):
-
         unique_neighbouring_technologies_attributes = np.array([self.discovered_tech[key] for key in firm.unique_neighbouring_technologies_strings])#GRAB IT FROM THE GLOBAL LIST
 
         utilities_neighbour = self.utility_buy_matrix(unique_neighbouring_technologies_attributes) 
@@ -158,9 +139,12 @@ class Firm_Manager:
 
     def rank_options(self, firm):
         firm.ranked_alternatives = []
+        #print("firm.expected_profit_research_alternatives", firm.expected_profit_research_alternatives)
+        
         for tech, profitability in zip(firm.unique_neighbouring_technologies_strings, firm.expected_profit_research_alternatives):
             rank = 0
             for r in range(0, self.rank_number + 1):
+                #print("(self.max_profitability * r / self.rank_number)",profitability, (self.max_profitability * r / self.rank_number), r)
                 if profitability < (self.max_profitability * r / self.rank_number):
                     rank = r
                     break
@@ -177,30 +161,36 @@ class Firm_Manager:
     ###############################################################################
     #DEADLING WITH GLOBAL MEMEORY AND CREATIGN TUMOURS!
     def update_firm_manager_tech_list(self, chosen_technology):
-        if chosen_technology.component_string not in self.global_neighbouring_technologies:
-            print("ADDED TO GLOBAL", chosen_technology.component_string)
+
+        """       
+        #TRY THIS AGAIN, buyt using keys now
+        if chosen_technology.component_string not in self.global_neighbouring_technologies.keys():
+            #print("ADDED TO GLOBAL", chosen_technology.component_string)
             self.global_neighbouring_technologies[chosen_technology.component_string] = chosen_technology.inverted_tech_strings
-        
-        if chosen_technology.component_string not in self.discovered_tech:
+        #print(self.global_neighbouring_technologies[chosen_technology.component_string])
+
+        if chosen_technology.component_string not in self.discovered_tech.keys():
             #print(self.t_firm_manager,"TECH ADDED", chosen_technology.component_string)
             self.discovered_tech[chosen_technology.component_string] = chosen_technology.attributes_fitness
+            #print(chosen_technology.inverted_tech_strings)
             for i, string in enumerate(chosen_technology.inverted_tech_strings):
                 #print("string", string)
-                if string not in self.discovered_tech:#ADDED THE NEIGHBOURS TOO
-                    self.discovered_tech[string] = chosen_technology.inverted_tech_fitness[i]
-            
+                if string not in self.discovered_tech.keys():#ADDED THE NEIGHBOURS TOO
+                    #print(chosen_technology.inverted_tech_fitness)
+                    #quit()
+                    self.discovered_tech[chosen_technology.inverted_tech_strings[i]] = chosen_technology.inverted_tech_fitness[i]
+        """
+        self.global_neighbouring_technologies[chosen_technology.component_string] = chosen_technology.inverted_tech_strings
+        self.discovered_tech[chosen_technology.component_string] = chosen_technology.attributes_fitness
+        for i, string in enumerate(chosen_technology.inverted_tech_strings):
+            self.discovered_tech[string] = chosen_technology.inverted_tech_fitness[i]
+    
     def generate_neighbouring_technologies(self, firm):
         #I want to
         unique_neighbouring_technologies_strings = set() 
-        print("GENERRATE NEIGHBOURS!")
-        #print(self.discovered_tech.keys())
-        #print(self.global_neighbouring_technologies.keys())
 
         for string in firm.list_technology_memory_strings: 
-            print("string", string)
-            print(self.discovered_tech[string])
-            print(self.global_neighbouring_technologies[string])
-            #quit()
+
             inverted_values = self.global_neighbouring_technologies[string]
             inverted_values_not_in_memory = [value for value in inverted_values if value not in firm.list_technology_memory_strings]
             if inverted_values_not_in_memory:
@@ -208,6 +198,25 @@ class Firm_Manager:
 
         return unique_neighbouring_technologies_strings
     #################################################################################
+    #MEMORY 
+    def update_memory(self, firm):
+        #set the technology to be used as true or 1
+        for car in firm.list_technology_memory:
+            car.choosen_tech_bool = 1 if car in firm.cars_on_sale else 0
+
+        #change the timer for the techs that are not the ones being used
+        for technology in firm.list_technology_memory:
+            technology.update_timer()
+
+        #is the memory list is too long then remove data
+        if len(firm.list_technology_memory) > self.memory_cap:
+            tech_to_remove = max((tech for tech in firm.list_technology_memory if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
+            index_to_remove = firm.list_technology_memory.index(tech_to_remove)
+            
+            del firm.list_technology_memory_strings[index_to_remove]
+            firm.memory_attributes_matrix = np.delete(firm.memory_attributes_matrix, index_to_remove, axis=0)
+            firm.decimal_values_memory = np.delete(firm.decimal_values_memory, index_to_remove, axis=0)
+            firm.list_technology_memory.remove(tech_to_remove)#last thing is remove the item
 
     def add_new_tech_memory(self, firm, chosen_technology):      
         firm.list_technology_memory.append(chosen_technology)
@@ -221,22 +230,30 @@ class Firm_Manager:
         attribute_selected_tech = self.nk_model.calculate_fitness(selected_technology_string)
         researched_technology = Car(unique_tech_id, firm.firm_id, selected_technology_string, attribute_selected_tech, choosen_tech_bool=0, N = self.N, nk_landscape= self.nk_model)
         return researched_technology
+    
+    #################################################################################################################
 
     def select_alternative_technology(self, firm):
-        tech_alternative_options = [tech for tech, rank in firm.ranked_alternatives if rank >= firm.last_tech_rank]
-        print("START FIRM TIM STEPS")
-        if tech_alternative_options:
-            print(self.t_firm_manager, firm.firm_id, "NEW TECH ADDED!")
-            selected_technology_string = random.choice(tech_alternative_options)
+        #print("firm.last_tech_rank", firm.last_tech_rank)
+        #print("firm.ranked_alternatives", firm.ranked_alternatives)
+        #if self.t_firm_manager == 30:
+        #    quit()
+        firm.tech_alternative_options = [tech for tech, rank in firm.ranked_alternatives if rank >= firm.last_tech_rank]
+        #print("options, self.t_firm_manager, firm.firm_id", self.t_firm_manager, firm.firm_id, tech_alternative_options)
+        #print("START FIRM TIM STEPS", self.t_firm_manager, firm.firm_id)
+        if firm.tech_alternative_options:
+            #print(self.t_firm_manager, firm.firm_id, "NEW TECH ADDED!")
+            selected_technology_string = random.choice(firm.tech_alternative_options)
             researched_technology = self.gen_new_technology_memory(firm,selected_technology_string)
+            #print("NEW TECH, tiem, firm id", self.t_firm_manager, firm.firm_id, researched_technology)
             self.last_tech_researched = researched_technology#MAKE THE NEW TECH DISCOVERED THE LAST TECH RESEARCHED
             
-            print("BEFORE", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
+            #print("BEFORE", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
             self.update_firm_manager_tech_list(researched_technology)#THIS HAPPENDS BEFORE THE NEIGHBOURING TECHNOLOGIES ARE CREATED
-            print("MID", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
+            #print("MID", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
             self.add_new_tech_memory(firm, researched_technology)
-            print("AFTER", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
-            self.list_reserach_tech.append(researched_technology)
+            #print("AFTER", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
+            #self.list_research_tech.append(researched_technology)
 
     def research_technology(self, firm, utilities_competitors):
         self.calculate_profitability_neighbouring_technologies(firm, utilities_competitors)
@@ -244,27 +261,13 @@ class Firm_Manager:
         self.rank_options(firm)
         self.rank_last_tech(firm)
         self.select_alternative_technology(firm)
-        self.update_memory(firm)
-        firm.unique_neighbouring_technologies_strings = self.generate_neighbouring_technologies(firm)
 
-        #######################################################################################################################################
-        #######################################################################################################################################
-        #CHECK IF NEIGHBOURS ARE IN DISCOVERED TECH
-        # Extract the keys from the dictionary
-        dict_keys_set = set(self.discovered_tech.keys())
-        # Check if the set is a subset of the dictionary's keys set
-        print("dict_keys_set", dict_keys_set)
-        print("firm.unique_neighbouring_technologies_strings", firm.unique_neighbouring_technologies_strings)
-        are_all_items_keys = firm.unique_neighbouring_technologies_strings.issubset(dict_keys_set)
-        print("ARE KEYS THERE",self.t_firm_manager, firm.firm_id, are_all_items_keys)  # This will print True if all items in items_set are keys i
-        #######################################################################################################################################
-        #######################################################################################################################################
+
 
     ############################################################################
     #MEMORY STUFF
 
     def calculate_profitability_memory_segments(self, firm, utilities_competitors):
-
         utilities_memory = self.utility_buy_matrix(firm.memory_attributes_matrix)
         market_options_utilities = np.concatenate((utilities_memory, utilities_competitors), axis=0)
         utilities_memory[utilities_memory < 0] = 0
@@ -295,11 +298,15 @@ class Firm_Manager:
 
     def set_up_time_series_firm_manager(self):
         self.history_cars_on_sale_all_firms = [self.cars_on_sale_all_firms]
-        self.history_researched_tech = [self.cars_on_sale_all_firms]
+        #self.history_researched_tech = [self.cars_on_sale_all_firms]#
+        self.history_len_n = [self.len_n]
+        self.history_len_alt = [self.len_alt]
 
     def save_timeseries_data_firm_manager(self):
         self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
-        self.history_researched_tech.append(self.list_reserach_tech)
+        #self.history_researched_tech.append(self.list_research_tech)
+        self.history_len_n.append(self.len_n)
+        self.history_len_alt.append(self.len_alt)
 
     def generate_cars_on_sale_all_firms(self):
         cars_on_sale_all_firms = []
@@ -311,21 +318,29 @@ class Firm_Manager:
     def next_step(self, carbon_price, low_carbon_preference_arr):
         self.t_firm_manager += 1
 
-        self.list_reserach_tech = []
+        #print("STEP", self.t_firm_manager)
+        self.list_research_tech = []
         self.carbon_price = carbon_price
         self.segment_consumer_count, __ = np.histogram(low_carbon_preference_arr, bins = self.segment_preference_bounds)
         
         utilities_competitors =  self.utility_buy_matrix(self.car_attributes_matrix)
         
         for firm in self.firms:
+            
             if not self.static_tech_state:
-                self.research_technology(firm, utilities_competitors)
+                #print("firm.unique_neighbouring_technologies_strings", firm.unique_neighbouring_technologies_strings)
+                if firm.unique_neighbouring_technologies_strings:#ONLY DO RESERACH IF THERE IS ACTUALLY A TECH that can be researeched
+                    self.research_technology(firm, utilities_competitors)
+                self.update_memory(firm)#EVEN IF NOT TECH IS RESEARCH STILL NEED TO UPDATE AGE OF TECHNOLOGIES    
+                firm.unique_neighbouring_technologies_strings = self.generate_neighbouring_technologies(firm)
             self.choose_technologies(firm, utilities_competitors)
 
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
         
         if self.save_timeseries_data_state and (self.t_firm_manager % self.compression_factor_state == 0):
+            self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
+            self.len_alt = [len(firm.tech_alternative_options) for firm in self.firms]
             self.save_timeseries_data_firm_manager()
 
 

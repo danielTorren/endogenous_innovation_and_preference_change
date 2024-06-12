@@ -12,7 +12,7 @@ class Car:
         self.decimal_value = int(component_string, 2)
         self.inverted_tech_strings = self.invert_bits_one_at_a_time()
         
-        self.cost, self.emissions, self.quality = attributes_fitness#THE ORDER HAS TO BE CORRECT!!
+        self.cost, self.environmental_score, self.quality = attributes_fitness#THE ORDER HAS TO BE CORRECT!!
         self.choosen_tech_bool = choosen_tech_bool#NEED TO FIND ANOTHER SOLUTION TO THIS CANT HAVE IT BE SHARE BY ALL THE FIRMS
         self.timer = 0
 
