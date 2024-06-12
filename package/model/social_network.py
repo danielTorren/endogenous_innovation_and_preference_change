@@ -8,7 +8,7 @@ import numpy as np
 import networkx as nx
 import numpy.typing as npt
 from collections import defaultdict
-
+from copy import deepcopy
 # modules
 
 # Define the default factory function outside the method
@@ -144,6 +144,7 @@ class Social_Network:
         self.delta =  parameters_social_network["delta"]  # depreciation rate
         self.kappa = parameters_social_network["kappa"]  # parameter indicating consumers' ability to make rational choices
         self.init_car_vec = parameters_social_network["init_car_vec"]
+        self.utility_boost_const = parameters_social_network["utility_boost_const"]
 
         #calc consumption quantities
         replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
@@ -262,10 +263,6 @@ class Social_Network:
         # Initialize a defaultdict for counting car purchases by firm
         firm_car_count = defaultdict(nested_defaultdict)
 
-        # Iterate over the agents and update the purchase counts
-        #print(self.new_car_bool_vec, self.car_owned_vec)
-        #print(self.new_car_bool_vec.shape, self.car_owned_vec.shape)
-        #quit()
         for bought_new, car in zip(self.new_car_bool_vec, self.car_owned_vec):
             if bought_new:
                 firm_car_count[car.firm_id][car.id] += 1
@@ -278,16 +275,19 @@ class Social_Network:
     def utility_buy_matrix(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
-        return utilities
+        return utilities + self.utility_boost_const
     
     def utility_keep(self, cars_owned_attributes_matrix):
         utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + (1 - self.low_carbon_preference_arr) * cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
-        return utilities
+        return utilities + self.utility_boost_const
 
     def choose_replacement_candidate(self, cars):
         car_attributes_matrix = np.asarray([x.attributes_fitness for x in cars])  # ARRAY OF ALL THE CARS
         
         utilities_matrix = self.utility_buy_matrix(car_attributes_matrix)  # FOR EACH INDIVIDUAL WHAT IS THE UTILITY OF THE DIFFERENT CARS
+
+        self.raw_utility_buy_0 = deepcopy(utilities_matrix[0])
+
         utilities_matrix[utilities_matrix < 0] = 0  # IF NEGATIVE UTILITY PUT IT AT 0
         
         # Calculate the denominator vector
@@ -328,15 +328,9 @@ class Social_Network:
         # Create utility_old_vec based on whether omega is None or not
         has_car_mask = np.asarray([car is not None for car in self.car_owned_vec])
         cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec[has_car_mask]])
-        #print("cars_owned_attributes_matrix",cars_owned_attributes_matrix)
+
         utility_old_vec = np.zeros(self.num_individuals)
-        #print(self.t_social_network, has_car_mask)
-        #print(cars_owned_attributes_matrix)
-        #a = cars_owned_attributes_matrix[has_car_mask]
-        #print(a)
-        #util_car_kept = self.utility_keep(cars_owned_attributes_matrix[has_car_mask])
-        #print(util_car_kept.shape)
-        #print("DONE")
+
         utility_old_vec[has_car_mask] = self.utility_keep(cars_owned_attributes_matrix[has_car_mask])
         
         self.owned_car_utility_vec = utility_old_vec
@@ -344,6 +338,7 @@ class Social_Network:
         new_car_bool_vec = utility_replacement_vec > utility_old_vec
         self.car_owned_vec = np.where(new_car_bool_vec, replacement_candidate_vec, self.car_owned_vec)
         self.car_age_vec = np.where(new_car_bool_vec, 0, self.car_age_vec + 1)
+
         
         return new_car_bool_vec
 
@@ -357,11 +352,14 @@ class Social_Network:
 
     def set_up_time_series_social_network(self):
         self.history_preference_list = [self.low_carbon_preference_arr]
+        self.history_utility_vec = [np.asarray([0]*self.num_individuals)]
         self.history_flow_carbon_emissions = [self.total_carbon_emissions_flow]
         self.history_cumulative_carbon_emissions = [self.total_carbon_emissions_cumulative]#FIX
         self.history_time_social_network = [self.t_social_network]
         self.history_firm_count = [self.firm_count]
         self.history_car_owned_vec = [self.car_owned_vec]
+        self.histor_raw_utility_buy_0 = [np.asarray([0]*30)]
+    
 
     def save_timeseries_data_social_network(self):
         """
@@ -375,12 +373,14 @@ class Social_Network:
         -------
         None
         """
-        self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED
+        self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED#
+        self.history_utility_vec.append(self.owned_car_utility_vec)
         self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
         self.history_preference_list.append(self.low_carbon_preference_arr)
         self.history_time_social_network.append(self.t_social_network)
         self.history_firm_count.append(self.firm_count)
         self.history_car_owned_vec.append(self.car_owned_vec)
+        self.histor_raw_utility_buy_0.append(self.raw_utility_buy_0)
 
     def next_step(self, carbon_price, cars_on_sale_all_firms):
         """

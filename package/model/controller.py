@@ -6,7 +6,7 @@ Created: 22/12/2023
 
 from package.model.social_network import Social_Network
 #from package.model.gpt_firm_manager import Firm_Manager 
-from package.model.GPT2_Firm_manager import Firm_Manager 
+from package.model.firm_manager import Firm_Manager 
 from package.model.centralized_ID_generator import IDGenerator
 
 class Controller:
@@ -20,6 +20,7 @@ class Controller:
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
+        self.utility_boost_const = parameters_controller["utility_boost_const"]
 
         #TIME STUFF
         self.duration_no_OD_no_stock_no_policy = parameters_controller["duration_no_OD_no_stock_no_policy"] 
@@ -46,6 +47,7 @@ class Controller:
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_social_network["kappa"]
+        self.parameters_firm_manager["utility_boost_const"] = self.utility_boost_const
 
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -58,7 +60,7 @@ class Controller:
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
         self.parameters_social_network["markup"] = self.parameters_firm_manager["markup"]
-
+        self.parameters_social_network["utility_boost_const"] = self.utility_boost_const
         #CREATE FIRMS    
         #self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
         self.firm_manager = Firm_Manager(self.parameters_firm_manager)

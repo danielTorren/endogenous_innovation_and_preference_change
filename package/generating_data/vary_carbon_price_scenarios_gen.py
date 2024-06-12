@@ -7,7 +7,6 @@ Created: 10/10/2022
 
 # imports
 import time
-from copy import deepcopy
 import json
 from package.resources.utility import createFolder, produce_name_datetime, save_object
 from package.resources.run import emissions_intensities_parallel_run

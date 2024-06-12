@@ -3,6 +3,7 @@
 Created: 10/10/2022
 """
 # imports
+
 import matplotlib.animation as animation 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
@@ -116,9 +117,8 @@ def plot_car_utility(fileName, data):
     fig, ax = plt.subplots(figsize=(10, 6))
     
     #burn_in(ax,data)
-
-    for v in range(data.num_individuals):
-        data_indivdiual = np.asarray(data.agent_list[v].history_car_utility)
+    data_t = np.asarray(data.history_utility_vec).T
+    for data_indivdiual in data_t:
         ax.plot(data.history_time_social_network,data_indivdiual)
 
     #ax.legend()          
@@ -667,21 +667,21 @@ def weighted_owned_average_plots(fileName,data_social_network):
     subfig3 = axes[2]
 
     # Subfigure for emissions
-    subfig1.scatter(df_weighted_averages.index, df_weighted_averages['emissions'], marker='o')
+    subfig1.scatter(data_social_network.history_time_social_network, df_weighted_averages['emissions'], marker='o')
     subfig1.set_xlabel('Time')
     subfig1.set_ylabel('Weighted Average Emissions - Owned')
     subfig1.set_title('Emissions')
     subfig1.grid(True)
 
     # Subfigure for cost
-    subfig2.scatter(df_weighted_averages.index, df_weighted_averages['cost'], marker='*')
+    subfig2.scatter(data_social_network.history_time_social_network, df_weighted_averages['cost'], marker='*')
     subfig2.set_xlabel('Time')
     subfig2.set_ylabel('Weighted Average Cost - Owned')
     subfig2.set_title('Cost')
     subfig2.grid(True)
 
     # Subfigure for quality
-    subfig3.scatter(df_weighted_averages.index, df_weighted_averages['quality'], marker='x')
+    subfig3.scatter(data_social_network.history_time_social_network, df_weighted_averages['quality'], marker='x')
     subfig3.set_xlabel('Time')
     subfig3.set_ylabel('Weighted Average Quality - Owned')
     subfig3.set_title('Quality')
@@ -692,6 +692,131 @@ def weighted_owned_average_plots(fileName,data_social_network):
 
     plotName = fileName + "/Plots"
     f = plotName + "/owned_weighted_vals"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def offered_plots(fileName,data_firm_manager, data_social_network):
+
+    time_series_cars = data_firm_manager.history_cars_on_sale_all_firms
+
+    # Initialize data structures to hold weighted averages over time
+    weighted_averages_em = []
+    weighted_averages_cost = []
+    weighted_averages_quality = []
+    for snapshot in time_series_cars:
+        attributes_matrix = np.asarray([car.attributes_fitness  for car in snapshot])
+        weighted_averages_em.append(attributes_matrix[:,1])
+        weighted_averages_cost.append(attributes_matrix[:,0])
+        weighted_averages_quality.append(attributes_matrix[:,2])
+
+    arr_e = np.asarray(weighted_averages_em).T
+    arr_c = np.asarray(weighted_averages_cost).T
+    arr_q = np.asarray(weighted_averages_quality).T
+
+    # Plot the data using subfigures
+    fig, axes = plt.subplots(nrows= 1, ncols = 3,figsize=(10,6)) 
+
+    subfig1 = axes[0]
+    subfig2 = axes[1]
+    subfig3 = axes[2]
+
+    for i, vec_e  in enumerate(arr_e):
+        # Subfigure for emissions
+        subfig1.scatter(data_social_network.history_time_social_network, arr_e[i], marker='o')
+        subfig1.set_xlabel('Time')
+        subfig1.set_ylabel('Emissions - Offered')
+        subfig1.set_title('Emissions')
+        subfig1.grid(True)
+
+        # Subfigure for cost
+        subfig2.scatter(data_social_network.history_time_social_network, arr_c[i], marker='*')
+        subfig2.set_xlabel('Time')
+        subfig2.set_ylabel('Average Cost - Offered')
+        subfig2.set_title('Cost')
+        subfig2.grid(True)
+
+        # Subfigure for quality
+        subfig3.scatter(data_social_network.history_time_social_network, arr_q[i], marker='x')
+        subfig3.set_xlabel('Time')
+        subfig3.set_ylabel(' Average Quality - Offered')
+        subfig3.set_title('Quality')
+        subfig3.grid(True)
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/offered_vals"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def researched_tech(fileName,data_firm_manager, data_social_network):
+
+    time_series_cars = data_firm_manager.history_researched_tech
+
+    # Initialize data structures to hold weighted averages over time
+    weighted_averages_em = []
+    weighted_averages_cost = []
+    weighted_averages_quality = []
+
+    for snapshot in time_series_cars:
+        row_e = []
+        row_c = []
+        row_q = []
+        for car in snapshot:
+            attributes_matrix = car.attributes_fitness
+            print()
+            #print("attributes_matrix", attributes_matrix)
+            row_e.append(attributes_matrix[1])
+            row_c.append(attributes_matrix[0])
+            row_q.append(attributes_matrix[2])
+        if len(snapshot) < data_firm_manager.J:
+            row_e.extend([None]*(data_firm_manager.J - len(snapshot)))
+            row_c.extend([None]*(data_firm_manager.J - len(snapshot)))
+            row_q.extend([None]*(data_firm_manager.J - len(snapshot)))
+        #print(len(row_e))
+        weighted_averages_em.append(row_e)
+        weighted_averages_cost.append(row_c)
+        weighted_averages_quality.append(row_q)
+
+
+    arr_e = np.asarray(weighted_averages_em).T
+    arr_c = np.asarray(weighted_averages_cost).T
+    arr_q = np.asarray(weighted_averages_quality).T
+    print(arr_e.shape)
+
+    # Plot the data using subfigures
+    fig, axes = plt.subplots(nrows= 1, ncols = 3,figsize=(10,6)) 
+
+    subfig1 = axes[0]
+    subfig2 = axes[1]
+    subfig3 = axes[2]
+
+    for i, vec_e  in enumerate(arr_e):
+        # Subfigure for emissions
+        subfig1.scatter(data_social_network.history_time_social_network, arr_e[i], marker='o')
+        subfig1.set_xlabel('Time')
+        subfig1.set_ylabel('Emissions - Researched')
+        subfig1.set_title('Emissions')
+        subfig1.grid(True)
+
+        # Subfigure for cost
+        subfig2.scatter(data_social_network.history_time_social_network, arr_c[i], marker='*')
+        subfig2.set_xlabel('Time')
+        subfig2.set_ylabel('Average Cost - Researched')
+        subfig2.set_title('Cost')
+        subfig2.grid(True)
+
+        # Subfigure for quality
+        subfig3.scatter(data_social_network.history_time_social_network, arr_q[i], marker='x')
+        subfig3.set_xlabel('Time')
+        subfig3.set_ylabel(' Average Quality - Researched')
+        subfig3.set_title('Quality')
+        subfig3.grid(True)
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/reserach_tech"
     fig.savefig(f + ".png", dpi=600, format="png")
 
 
@@ -811,6 +936,29 @@ def scatter_trace_plots_offered(fileName, data_firm_manager, x_param, y_param):
     f = plotName + f"/scatter_{x_param}_vs_{y_param}_offered"
     fig.savefig(f + ".png", dpi=600, format="png")
 
+
+def plot_raw_util(fileName, data):
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    #burn_in(ax,data)
+    data_t = np.asarray(data.histor_raw_utility_buy_0).T
+    for data_indivdiual in data_t:
+        ax.plot(data.history_time_social_network,data_indivdiual)
+
+    #ax.legend()          
+    #ax.tight_layout()
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"Raw Utility")
+    ax.set_title("Utility of different offered cars from 0th individuals")
+
+    plotName = fileName + "/Plots"
+
+    f = plotName + "/raw_util"
+    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
@@ -818,8 +966,8 @@ def main(
     firm_plots = 1
     ) -> None: 
 
-    social_plots = 1
-    firm_plots = 1
+    social_plots = 0
+    #firm_plots = 1
 
     data_controller= load_object(fileName + "/Data", "controller")
     data_social_network = data_controller.social_network
@@ -828,10 +976,11 @@ def main(
     if social_plots:
         ###SOCIAL NETWORK PLOTS
         plot_low_carbon_preference(fileName, data_social_network)
-        #plot_car_utility(fileName, data_social_network)
-        #plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        weighted_owned_average_plots(fileName, data_social_network)
-        scatter_trace_plots(fileName, data_social_network, 'emissions', 'cost')
+        plot_raw_util(fileName, data_social_network)
+        plot_car_utility(fileName, data_social_network)
+        plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
+        #weighted_owned_average_plots(fileName, data_social_network)
+        #scatter_trace_plots(fileName, data_social_network, 'emissions', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'emissions', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
         
@@ -840,10 +989,15 @@ def main(
 
     if firm_plots:
         ##FIRM PLOTS
-        plot_firm_count(fileName, data_social_network)
-        weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
+        #plot_firm_count(fileName, data_social_network)
+        #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
         """THIS DOESNT QUITE WORK"""
         #scatter_trace_plots_offered(fileName, data_firm_manager, 'emissions', 'cost')
+        #offered_average_plots(fileName,data_firm_manager, data_social_network)#FIX THIS PLOT
+        #offered_properties(fileName,data_firm_manager, data_social_network)
+        offered_plots(fileName,data_firm_manager, data_social_network)
+        researched_tech(fileName,data_firm_manager, data_social_network)
+
 
     #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
     #final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
@@ -853,7 +1007,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_17_34_42__10_06_2024",
+        fileName = "results/single_experiment_15_02_42__12_06_2024",
     )
 
 
