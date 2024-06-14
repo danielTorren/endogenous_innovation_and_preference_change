@@ -11,9 +11,9 @@ class Firm_Manager:
 
         self.landscape_seed = parameters_firm_manager["landscape_seed"]
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
-        self.J = parameters_firm_manager["J"]
-        self.N = parameters_firm_manager["N"]
-        self.K = parameters_firm_manager["K"]
+        self.J = int(round(parameters_firm_manager["J"]))
+        self.N = int(round(parameters_firm_manager["N"]))
+        self.K = int(round(parameters_firm_manager["K"]))
         self.A = parameters_firm_manager["A"]
         self.rho = parameters_firm_manager["rho"]
         self.save_timeseries_data_state = parameters_firm_manager["save_timeseries_data_state"]
