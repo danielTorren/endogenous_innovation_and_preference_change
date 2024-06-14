@@ -46,10 +46,14 @@ class Firm_Manager:
         #Create NK model
         self.nk_model = NKModel(self.N, self.K, self.A, self.rho, self.landscape_seed)
 
+
+        self.green_research_bools = np.asarray([None]*self.J)
+
         self.init_firms()
 
         #self.list_research_tech = []#JUST IN CASE
         #Set up the data saving
+        
         if self.save_timeseries_data_state:
             self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
             self.len_alt = [0 for firm in self.firms]
@@ -97,11 +101,11 @@ class Firm_Manager:
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
 
     def utility_buy_matrix(self, car_attributes_matrix):
-        utilities = self.segment_preference_reshaped * car_attributes_matrix[:, 1] + (1 - self.segment_preference_reshaped) * (self.gamma * car_attributes_matrix[:, 2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:, 0] + self.carbon_price * car_attributes_matrix[:, 1]))
+        utilities = self.segment_preference_reshaped * car_attributes_matrix[:, 1] + (1 - self.segment_preference_reshaped) * self.gamma * car_attributes_matrix[:, 2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:, 0] + self.carbon_price * car_attributes_matrix[:, 1])
         return utilities.T + self.utility_boost_const
     
     def utility_buy_vec(self, car_attributes_vec):
-        utilities = self.segment_preference_reshaped * car_attributes_vec[1] + (1 - self.segment_preference_reshaped) * (self.gamma * car_attributes_vec[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_vec[0] + self.carbon_price * car_attributes_vec[1]))
+        utilities = self.segment_preference_reshaped * car_attributes_vec[1] + (1 - self.segment_preference_reshaped) * self.gamma * car_attributes_vec[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_vec[0] + self.carbon_price * car_attributes_vec[1])
         return utilities.T + self.utility_boost_const
 
     def calculate_profitability_neighbouring_technologies(self, firm, utilities_competitors):
@@ -244,9 +248,14 @@ class Firm_Manager:
             #print(self.t_firm_manager, firm.firm_id, "NEW TECH ADDED!")
             selected_technology_string = random.choice(firm.tech_alternative_options)
             researched_technology = self.gen_new_technology_memory(firm,selected_technology_string)
+
+            
             #print("NEW TECH, tiem, firm id", self.t_firm_manager, firm.firm_id, researched_technology)
             self.last_tech_researched = researched_technology#MAKE THE NEW TECH DISCOVERED THE LAST TECH RESEARCHED
-            
+            if researched_technology.environmental_score > 0.7:
+                self.green_research_bools[firm.firm_id] = 1
+            else:
+                self.green_research_bools[firm.firm_id] = 0
             #print("BEFORE", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
             self.update_firm_manager_tech_list(researched_technology)#THIS HAPPENDS BEFORE THE NEIGHBOURING TECHNOLOGIES ARE CREATED
             #print("MID", len(self.global_neighbouring_technologies), len(firm.list_technology_memory_strings))
@@ -298,14 +307,16 @@ class Firm_Manager:
     def set_up_time_series_firm_manager(self):
         self.history_cars_on_sale_all_firms = [self.cars_on_sale_all_firms]
         #self.history_researched_tech = [self.cars_on_sale_all_firms]#
-        self.history_len_n = [self.len_n]
-        self.history_len_alt = [self.len_alt]
+        #self.history_len_n = [self.len_n]
+        #self.history_len_alt = [self.len_alt]
+        self.history_green_research_bools = [self.green_research_bools]
 
     def save_timeseries_data_firm_manager(self):
         self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.history_researched_tech.append(self.list_research_tech)
-        self.history_len_n.append(self.len_n)
-        self.history_len_alt.append(self.len_alt)
+        #self.history_len_n.append(self.len_n)
+        #self.history_len_alt.append(self.len_alt)
+        self.history_green_research_bools.append(self.green_research_bools)
 
     def generate_cars_on_sale_all_firms(self):
         cars_on_sale_all_firms = []
@@ -324,11 +335,12 @@ class Firm_Manager:
         
         utilities_competitors =  self.utility_buy_matrix(self.car_attributes_matrix)
         
+        self.green_research_bools = np.asarray([None]*self.J)
+
         for firm in self.firms:
-            
             if not self.static_tech_state:
                 #print("firm.unique_neighbouring_technologies_strings", firm.unique_neighbouring_technologies_strings)
-                if firm.unique_neighbouring_technologies_strings:#ONLY DO RESERACH IF THERE IS ACTUALLY A TECH that can be researeched
+                if firm.unique_neighbouring_technologies_strings and (self.t_firm_manager % 12 == 0):#ONLY DO RESERACH IF THERE IS ACTUALLY A TECH that can be researeched
                     self.research_technology(firm, utilities_competitors)
                 self.update_memory(firm)#EVEN IF NOT TECH IS RESEARCH STILL NEED TO UPDATE AGE OF TECHNOLOGIES    
                 firm.unique_neighbouring_technologies_strings = self.generate_neighbouring_technologies(firm)
@@ -338,8 +350,8 @@ class Firm_Manager:
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
         
         if self.save_timeseries_data_state and (self.t_firm_manager % self.compression_factor_state == 0):
-            self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
-            self.len_alt = [len(firm.tech_alternative_options) for firm in self.firms]
+            #self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
+            #self.len_alt = [len(firm.tech_alternative_options) for firm in self.firms]
             self.save_timeseries_data_firm_manager()
 
 

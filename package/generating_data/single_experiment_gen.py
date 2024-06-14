@@ -34,16 +34,16 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_OD_no_stock_no_policy": 50,
-        "duration_OD_no_stock_no_policy": 250,
-        "duration_OD_stock_no_policy": 500,
-        "duration_OD_stock_policy": 500,
+        "duration_no_OD_no_stock_no_policy": 0,
+        "duration_OD_no_stock_no_policy": 0,
+        "duration_OD_stock_no_policy": 240,
+        "duration_OD_stock_policy": 360,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
-        "utility_boost_const": 1,
         "parameters_carbon_policy":{
-            "carbon_price": 0,
-            "carbon_price_state": "flat",
+            "carbon_price_init": 0.5,
+            "carbon_price": 0.7,
+            "carbon_price_state": "linear",
         },
         "parameters_firm_manager": {
             "static_tech_state": 0,
@@ -57,7 +57,7 @@ if __name__ == "__main__":
             "landscape_seed": 6,
             "A": 3,
             "markup": 0.1,
-            "memory_cap": 100,#30,
+            "memory_cap": 1000,#30,
             "segment_number": 3,
             "rank_number": 30
         },
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             "omega": 2,
             "delta": 0.01,
             "kappa": 2,
-            "gamma": 0.3,
+            "gamma": 0.1,
             "lambda_poisson_gamma": 0.5,
             "public_transport_attributes": [0.3,0.7,0.1]
         }

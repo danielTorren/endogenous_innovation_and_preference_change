@@ -505,6 +505,66 @@ def ani_scatter_price_EI(fileName, data, dpi_save):
     #plt.close()
     return ani
     
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def plot_firm_count_and_market_concentration(fileName, data_social_network):
+    # Initialize a dictionary to store the data
+    data = {}
+
+    # Extract data
+    for time_point, snapshot in enumerate(data_social_network.history_firm_count):
+        for firm, cars in snapshot.items():
+            if firm not in data:
+                data[firm] = []
+            total_cars_sold = sum(cars.values())
+            data[firm].append((time_point, total_cars_sold))
+
+    # Convert to a DataFrame
+    df = pd.DataFrame()
+    for firm, sales in data.items():
+        times, car_sales = zip(*sales)
+        df[firm] = pd.Series(car_sales, index=times)
+
+    # Fill missing values with 0 (if any firm didn't sell cars at some time points)
+    df = df.fillna(0)
+
+    # Calculate market concentration (Herfindahl-Hirschman Index)
+    market_concentration = []
+    for time_point in df.index:
+        total_cars = df.loc[time_point].sum()
+        if total_cars > 0:
+            market_shares = df.loc[time_point] / total_cars
+            concentration = (market_shares ** 2).sum()
+        else:
+            concentration = np.nan
+        market_concentration.append(concentration)
+
+    # Plot the number of cars sold by each firm over time
+    fig, ax1 = plt.subplots(figsize=(10, 6)) 
+
+    for firm in df.columns:
+        ax1.scatter(df.index, df[firm], marker='o', label=firm)
+
+    ax1.set_xlabel('Time')
+    ax1.set_ylabel('Number of Cars Sold')
+    ax1.set_title('Number of Cars Sold by Each Firm Over Time')
+    ax1.grid(True)
+    ax1.legend()
+
+    # Plot the market concentration on a secondary y-axis
+    ax2 = ax1.twinx()
+    ax2.plot(df.index, market_concentration, color='red', marker='x', linestyle='-', linewidth=2, label='Market Concentration')
+    ax2.set_ylabel('Market Concentration (HHI)')
+    ax2.legend(loc='upper right')
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/firm_count_and_market_concentration"
+    fig.savefig(f + ".png", dpi=600, format="png")
 
 # Example usage:
 # final_scatter_price_EI("path_to_save", your_data_object, 100)
@@ -692,6 +752,70 @@ def weighted_owned_average_plots(fileName,data_social_network):
 
     plotName = fileName + "/Plots"
     f = plotName + "/owned_weighted_vals"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def weighted_owned_average_plots_no_public(fileName, data_social_network):
+
+    time_series_cars = data_social_network.history_car_owned_vec
+
+    # Initialize data structures to hold weighted averages over time
+    weighted_averages = {
+        'environmental_score': [],
+        'cost': [],
+        'quality': []
+    }
+
+    for snapshot in time_series_cars:
+        # Filter out None values
+        valid_cars = [car for car in snapshot if car is not None]
+        
+        if valid_cars:
+            attributes_matrix = np.asarray([car.attributes_fitness for car in valid_cars])
+            weighted_averages['environmental_score'].append(np.mean(attributes_matrix[:, 1]))
+            weighted_averages['cost'].append(np.mean(attributes_matrix[:, 0]))
+            weighted_averages['quality'].append(np.mean(attributes_matrix[:, 2]))
+        else:
+            # If no valid cars in snapshot, append NaN to maintain the time series length
+            weighted_averages['environmental_score'].append(np.nan)
+            weighted_averages['cost'].append(np.nan)
+            weighted_averages['quality'].append(np.nan)
+
+    # Convert to DataFrame for easier plotting
+    df_weighted_averages = pd.DataFrame(weighted_averages)
+
+    # Plot the data using subfigures
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 6))
+
+    subfig1 = axes[0]
+    subfig2 = axes[1]
+    subfig3 = axes[2]
+
+    # Subfigure for emissions
+    subfig1.scatter(data_social_network.history_time_social_network, df_weighted_averages['environmental_score'], marker='o')
+    subfig1.set_xlabel('Time')
+    subfig1.set_ylabel('Weighted Average Emissions - Owned')
+    subfig1.set_title('Emissions')
+    subfig1.grid(True)
+
+    # Subfigure for cost
+    subfig2.scatter(data_social_network.history_time_social_network, df_weighted_averages['cost'], marker='*')
+    subfig2.set_xlabel('Time')
+    subfig2.set_ylabel('Weighted Average Cost - Owned')
+    subfig2.set_title('Cost')
+    subfig2.grid(True)
+
+    # Subfigure for quality
+    subfig3.scatter(data_social_network.history_time_social_network, df_weighted_averages['quality'], marker='x')
+    subfig3.set_xlabel('Time')
+    subfig3.set_ylabel('Weighted Average Quality - Owned')
+    subfig3.set_title('Quality')
+    subfig3.grid(True)
+
+    # Adjust layout and show plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/owned_weighted_vals_NO_PUBLIC"
     fig.savefig(f + ".png", dpi=600, format="png")
 
 def offered_plots(fileName,data_firm_manager, data_social_network):
@@ -1055,6 +1179,7 @@ def plot_public_transport_count(fileName, data_social_network):
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
+
 def plot_research_clean_count(fileName, data_firm_manager):
     
     time_series =  data_firm_manager.history_green_research_bools
@@ -1090,190 +1215,6 @@ def plot_research_clean_count(fileName, data_firm_manager):
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
-def weighted_owned_average_plots_no_public(fileName, data_social_network):
-
-    time_series_cars = data_social_network.history_car_owned_vec
-
-    # Initialize data structures to hold weighted averages over time
-    weighted_averages = {
-        'environmental_score': [],
-        'cost': [],
-        'quality': []
-    }
-
-    for snapshot in time_series_cars:
-        # Filter out None values
-        valid_cars = [car for car in snapshot if car is not None]
-        
-        if valid_cars:
-            attributes_matrix = np.asarray([car.attributes_fitness for car in valid_cars])
-            weighted_averages['environmental_score'].append(np.mean(attributes_matrix[:, 1]))
-            weighted_averages['cost'].append(np.mean(attributes_matrix[:, 0]))
-            weighted_averages['quality'].append(np.mean(attributes_matrix[:, 2]))
-        else:
-            # If no valid cars in snapshot, append NaN to maintain the time series length
-            weighted_averages['environmental_score'].append(np.nan)
-            weighted_averages['cost'].append(np.nan)
-            weighted_averages['quality'].append(np.nan)
-
-    # Convert to DataFrame for easier plotting
-    df_weighted_averages = pd.DataFrame(weighted_averages)
-
-    # Plot the data using subfigures
-    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 6))
-
-    subfig1 = axes[0]
-    subfig2 = axes[1]
-    subfig3 = axes[2]
-
-    # Subfigure for emissions
-    subfig1.scatter(data_social_network.history_time_social_network, df_weighted_averages['environmental_score'], marker='o')
-    subfig1.set_xlabel('Time')
-    subfig1.set_ylabel('Weighted Average Emissions - Owned - No public')
-    subfig1.set_title('Emissions')
-    subfig1.grid(True)
-
-    # Subfigure for cost
-    subfig2.scatter(data_social_network.history_time_social_network, df_weighted_averages['cost'], marker='*')
-    subfig2.set_xlabel('Time')
-    subfig2.set_ylabel('Weighted Average Cost - Owned - No public')
-    subfig2.set_title('Cost')
-    subfig2.grid(True)
-
-    # Subfigure for quality
-    subfig3.scatter(data_social_network.history_time_social_network, df_weighted_averages['quality'], marker='x')
-    subfig3.set_xlabel('Time')
-    subfig3.set_ylabel('Weighted Average Quality - Owned - No public')
-    subfig3.set_title('Quality')
-    subfig3.grid(True)
-
-    # Adjust layout and show plot
-    fig.tight_layout()
-
-    plotName = fileName + "/Plots"
-    f = plotName + "/owned_weighted_vals_NO_PUBLIC"
-    fig.savefig(f + ".png", dpi=600, format="png")
-
-def plot_firm_count_and_market_concentration(fileName, data_social_network):
-    # Initialize a dictionary to store the data
-    data = {}
-
-    # Extract data
-    for time_point, snapshot in enumerate(data_social_network.history_firm_count):
-        for firm, cars in snapshot.items():
-            if firm not in data:
-                data[firm] = []
-            total_cars_sold = sum(cars.values())
-            data[firm].append((time_point, total_cars_sold))
-
-    # Convert to a DataFrame
-    df = pd.DataFrame()
-    for firm, sales in data.items():
-        times, car_sales = zip(*sales)
-        df[firm] = pd.Series(car_sales, index=times)
-
-    # Fill missing values with 0 (if any firm didn't sell cars at some time points)
-    df = df.fillna(np.nan)
-
-    # Calculate market concentration (Herfindahl-Hirschman Index)
-    market_concentration = []
-    for time_point in df.index:
-        total_cars = df.loc[time_point].sum()
-        if total_cars > 0:
-            market_shares = df.loc[time_point] / total_cars
-            concentration = (market_shares ** 2).sum()
-        else:
-            concentration = np.nan
-        market_concentration.append(concentration)
-
-    # Plot the number of cars sold by each firm over time
-    fig, ax1 = plt.subplots(figsize=(10, 6)) 
-
-    #for firm in df.columns:
-    #    ax1.scatter(df.index, df[firm], marker='o', label=firm)
-
-    #ax1.set_xlabel('Time')
-    #ax1.set_ylabel('Number of Cars Sold')
-    #ax1.set_title('Number of Cars Sold by Each Firm Over Time')
-    #ax1.grid(True)
-    #ax1.legend()
-
-    # Plot the market concentration on a secondary y-axis
-    #ax2 = ax1.twinx()
-    ax1.plot(df.index, market_concentration, color='red', marker='x', linestyle='-', linewidth=2, label='Market Concentration')
-    ax1.set_ylabel('Market Concentration (HHI)')
-    #ax1.legend(loc='upper right')
-
-    # Adjust layout and show plot
-    fig.tight_layout()
-
-    plotName = fileName + "/Plots"
-    f = plotName + "/firm_count_and_market_concentration"
-    fig.savefig(f + ".png", dpi=600, format="png")
-
-import matplotlib.pyplot as plt
-
-def plot_research_clean_count(fileName, data_firm_manager):
-    time_series = data_firm_manager.history_green_research_bools
-    
-    # Initialize lists to store counts
-    green_counts = []
-    dirty_counts = []
-    time_steps = range(len(time_series))
-
-    # Count the number of 1s and 0s at each time step
-    for snapshot in time_series:
-        green_count = sum(1 for x in snapshot if x == 1)
-        dirty_count = sum(1 for x in snapshot if x == 0)
-        
-        if green_count == 0 and dirty_count == 0:
-            green_counts.append(None)
-            dirty_counts.append(None)
-        else:
-            green_counts.append(green_count)
-            dirty_counts.append(dirty_count)
-
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(time_steps, green_counts, label='Green', marker='o', color='g')
-    ax.scatter(time_steps, dirty_counts, label='Dirty', marker='x', color='r')
-
-    # Labeling the plot
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Count')
-    ax.set_title('Count of Green and Dirty Over Time')
-    ax.legend()
-    ax.grid(True)
-
-    # Show the plot
-    fig.tight_layout()
-
-    plotName = fileName + "/Plots"
-    f = plotName + "/count_green"
-    # fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
-    fig.savefig(f + ".png", dpi=600, format="png")
-
-
-def plot_carbon_price(fileName, data_controller):
-    time_series = data_controller.history_carbon_price
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(range(len(time_series)), time_series)
-
-    # Labeling the plot
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Carbon price')
-
-    ax.grid(True)
-
-    # Show the plot
-    fig.tight_layout()
-
-    plotName = fileName + "/Plots"
-    f = plotName + "/carbon_price"
-    # fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
-    fig.savefig(f + ".png", dpi=600, format="png")
-
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
@@ -1287,8 +1228,6 @@ def main(
     data_controller= load_object(fileName + "/Data", "controller")
     data_social_network = data_controller.social_network
     data_firm_manager = data_controller.firm_manager
-
-    plot_carbon_price(fileName,data_controller)
 
     if social_plots:
         ###SOCIAL NETWORK PLOTS
@@ -1320,16 +1259,11 @@ def main(
         #plot_len_n(fileName,data_firm_manager, data_social_network)
         #plot_len_alt(fileName,data_firm_manager, data_social_network)
 
-
-    #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
-    #final_scatter_price_EI_alt(fileName, data_firm_manager, dpi_save)
-    #ani_1 = ani_scatter_price_EI(fileName, data_firm_manager, dpi_save)
-
     plt.show()
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_15_42_44__13_06_2024",
+        fileName = "results/single_experiment_13_14_04__14_06_2024",
     )
 
 

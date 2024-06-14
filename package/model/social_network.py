@@ -4,6 +4,7 @@ Created: 10/10/2022
 """
 
 # imports
+from ctypes import util
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
@@ -292,13 +293,24 @@ class Social_Network:
     def utility_buy_matrix(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
-        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * (gamma_vals_matrix * car_attributes_matrix[:,2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[:,2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1])
+        
+        """
+        if self.t_social_network > 300:
+            print("total", utilities)
+            print("1st",low_carbon_preference_matrix*car_attributes_matrix[:,1])
+            print("2nd", (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[:,2])
+            print("third", - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+            print("tax", self.carbon_price*car_attributes_matrix[:,1])
+            print("pure cost", (1 + self.markup) * car_attributes_matrix[:,0])
+            quit()
+        """
         return utilities + self.utility_boost_const
 
     def utility_buy_vec(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
-        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * (gamma_vals_matrix * car_attributes_matrix[2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1]))
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1])
         return utilities + self.utility_boost_const
     
     def utility_keep(self, cars_owned_attributes_matrix):
@@ -396,6 +408,15 @@ class Social_Network:
                     self.car_owned_vec
                 )
             )
+            self.car_owned_vec_no_public = np.where(
+                chosen_option_indices == 0,  # 0 corresponds to public transport
+                None,
+                np.where(
+                    chosen_option_indices == 1,  # 1 corresponds to new car
+                    replacement_candidate_vec,
+                    self.car_owned_vec
+                )
+            )
 
             # Update the car_age_vec based on the chosen options
             self.car_age_vec = np.where(
@@ -441,9 +462,11 @@ class Social_Network:
         self.history_time_social_network = [self.t_social_network]
         self.history_firm_count = [self.firm_count]
         self.history_car_owned_vec = [self.car_owned_vec]
+        
         #self.histor_raw_utility_buy_0 = [np.asarray([0]*30)]
         if self.init_public_transport_state:
             self.history_public_transport_prop = [self.public_transport_prop]
+            self.history_car_owned_vec_no_public = [self.car_owned_vec_no_public]
     
 
     def save_timeseries_data_social_network(self):
@@ -468,6 +491,7 @@ class Social_Network:
         #self.histor_raw_utility_buy_0.append(self.raw_utility_buy_0)
         if self.init_public_transport_state:
             self.history_public_transport_prop.append(self.public_transport_prop)
+            self.history_car_owned_vec_no_public.append(self.car_owned_vec_no_public)
 
     def next_step(self, carbon_price, cars_on_sale_all_firms):
         """

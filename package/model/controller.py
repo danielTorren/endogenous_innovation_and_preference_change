@@ -21,7 +21,7 @@ class Controller:
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
-        self.utility_boost_const = parameters_controller["utility_boost_const"]
+        
 
         #TIME STUFF
         self.duration_no_OD_no_stock_no_policy = parameters_controller["duration_no_OD_no_stock_no_policy"] 
@@ -32,9 +32,14 @@ class Controller:
         self.policy_start_time = self.duration_no_OD_no_stock_no_policy + self.duration_OD_no_stock_no_policy + self.duration_OD_stock_no_policy
         
         #CARBON PRICE
+
         self.carbon_price_state = self.parameters_carbon_policy["carbon_price_state"]
         self.carbon_price_policy = self.parameters_carbon_policy["carbon_price"]
-        self.carbon_price = self.update_carbon_price()
+        if self.carbon_price_state == "linear":
+            self.carbon_price_init = self.parameters_carbon_policy["carbon_price_init"]
+            self.carbon_price_policy_gradient = (self.carbon_price_policy - self.carbon_price_init) /self.duration_OD_stock_policy
+        
+        self.update_carbon_price()
 
         # CREATE ID GENERATOR FOR FIRMS
         self.IDGenerator_firms = IDGenerator()
@@ -48,7 +53,7 @@ class Controller:
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_social_network["kappa"]
-        self.parameters_firm_manager["utility_boost_const"] = self.utility_boost_const
+        
 
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -61,6 +66,10 @@ class Controller:
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
         self.parameters_social_network["markup"] = self.parameters_firm_manager["markup"]
+
+
+        self.utility_boost_const = self.parameters_firm_manager["markup"] + 1 + self.parameters_carbon_policy["carbon_price"] + 0.1#JUST TO BE SAFE
+        self.parameters_firm_manager["utility_boost_const"] = self.utility_boost_const
         self.parameters_social_network["utility_boost_const"] = self.utility_boost_const
 
         ##################################
@@ -87,6 +96,8 @@ class Controller:
         
         #update values for the next step
         self.controller_low_carbon_preference_arr = self.social_network.low_carbon_preference_arr
+
+        self.history_carbon_price = [self.carbon_price]
 
     def generate_gamma_values(self, min_value, lambda_poisson, num_individuals):
         """
@@ -120,18 +131,26 @@ class Controller:
 
 
     def update_carbon_price(self):
-        if self.t_controller == self.policy_start_time:
+        if self.t_controller < self.policy_start_time:
+            self.carbon_price = 0
+        elif self.t_controller == self.policy_start_time:
             if self.carbon_price_state == "flat":
-                carbon_price = self.carbon_price_policy
-        else:
-            carbon_price = 0 
+                self.carbon_price = self.carbon_price_policy
+            elif self.carbon_price_state == "linear":
+                self.carbon_price = self.carbon_price_init
+        elif self.t_controller > self.policy_start_time:
+            if self.carbon_price_state == "linear":
+                self.carbon_price += self.carbon_price_policy_gradient
+            else:
+                self.carbon_price = self.carbon_price_policy
 
-        return carbon_price
 
     def next_step(self):
         self.t_controller+=1
         #print("self.t_controller", self.t_controller)
-        self.carbon_price = self.update_carbon_price()
+        self.update_carbon_price()
+
+        self.history_carbon_price.append(self.carbon_price)
         # Update firms based on the social network and market conditions
         cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.controller_low_carbon_preference_arr)
 
