@@ -612,7 +612,7 @@ def weighted_bought_average_plots(fileName,data_social_network,data_firm_manager
     subfig1.scatter(df_weighted_averages.index, df_weighted_averages['environmental_score'], marker='o')
     subfig1.set_xlabel('Time')
     subfig1.set_ylabel('Weighted Average Emissions - Bought')
-    subfig1.set_title('Emissions')
+    subfig1.set_title('Environmental Score')
     subfig1.grid(True)
     #subfig1.set_xlim(0,1000)
 
@@ -1076,9 +1076,9 @@ def main(
         #plot_raw_util(fileName, data_social_network)
         plot_car_utility(fileName, data_social_network)
         plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
-        plot_emissions_stock(fileName, data_social_network)
+        #plot_emissions_stock(fileName, data_social_network)
         #weighted_owned_average_plots(fileName, data_social_network)
-        scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
+        #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
         plot_public_transport_count(fileName, data_social_network)
@@ -1089,7 +1089,7 @@ def main(
     if firm_plots:
         ##FIRM PLOTS
         plot_firm_count(fileName, data_social_network)
-        weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
+        #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
         """THIS DOESNT QUITE WORK"""
         #scatter_trace_plots_offered(fileName, data_firm_manager, 'environmental_score', 'cost')
         #offered_average_plots(fileName,data_firm_manager, data_social_network)#FIX THIS PLOT
@@ -1108,7 +1108,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_22_36_16__12_06_2024",
+        fileName = "results/single_experiment_15_42_44__13_06_2024",
     )
 
 

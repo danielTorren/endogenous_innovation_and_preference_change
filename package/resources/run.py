@@ -68,3 +68,14 @@ def emissions_intensities_parallel_run(
         *res
     )
     return np.asarray(emissions_list), np.asarray(emissions_intensities_list)
+
+######################################################################################
+
+def parallel_run_multi_run(
+        params_dict: list[dict]
+) -> npt.NDArray:
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_emissions_intensities(i) for i in params_dict]
+    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_data)(i) for i in params_dict)
+
+    return res

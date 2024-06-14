@@ -95,6 +95,9 @@ class Social_Network:
         self.K_social_network = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
         self.prob_rewire = parameters_social_network["prob_rewire"]
 
+        #GAMMA
+        self.gamma_vals =  parameters_social_network["gamma_vals"]
+
         # social learning and bias
         self.upsilon = parameters_social_network["upsilon"]
         
@@ -139,8 +142,7 @@ class Social_Network:
 
         #CARS
         self.car_age_vec = np.zeros(self.num_individuals)
-        
-        self.gamma = parameters_social_network["gamma"]  # weight for car quality
+
         self.markup = parameters_social_network["markup"]  # industry mark-up on production costs
         self.delta =  parameters_social_network["delta"]  # depreciation rate
         self.kappa = parameters_social_network["kappa"]  # parameter indicating consumers' ability to make rational choices
@@ -233,7 +235,6 @@ class Social_Network:
         low_carbon_preference_arr = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
         return low_carbon_preference_arr
 
-
 ##################################################################################################################
     #IMPORTED FROM PAPER 2 VECTORISED SO IT WILL RUN FAST!
     #UPDATE PREFERENCES
@@ -290,12 +291,14 @@ class Social_Network:
     #CHAT GPT ATTEMPT AT CONSUMPTION
     def utility_buy_matrix(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
-        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * (self.gamma * car_attributes_matrix[:,2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
+        gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * (gamma_vals_matrix * car_attributes_matrix[:,2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
         return utilities + self.utility_boost_const
 
     def utility_buy_vec(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
-        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * (self.gamma * car_attributes_matrix[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1]))
+        gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * (gamma_vals_matrix * car_attributes_matrix[2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1]))
         return utilities + self.utility_boost_const
     
     def utility_keep(self, cars_owned_attributes_matrix):
@@ -307,7 +310,7 @@ class Social_Network:
         
         utilities_matrix = self.utility_buy_matrix(car_attributes_matrix)  # FOR EACH INDIVIDUAL WHAT IS THE UTILITY OF THE DIFFERENT CARS
 
-        self.raw_utility_buy_0 = deepcopy(utilities_matrix[0])
+        #self.raw_utility_buy_0 = deepcopy(utilities_matrix[0])
 
         utilities_matrix[utilities_matrix < 0] = 0  # IF NEGATIVE UTILITY PUT IT AT 0
         
@@ -350,31 +353,34 @@ class Social_Network:
         #print("TIME",self.t_social_network)
         if self.init_public_transport_state:
             has_car_mask = np.asarray([car is not self.public_option for car in self.car_owned_vec])
-            #print(len(has_car_mask))
-            #print(len(self.car_owned_vec))
-            #print(len(self.car_owned_vec[has_car_mask]))#loses about 50 people who bought cars
             cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec])#calc extra utility but throw it away
-            #print(len(cars_owned_attributes_matrix))
+            
             utility_old_vec = np.zeros(self.num_individuals)
 
             #print(has_car_mask)
             if self.t_social_network > 0:
                 utility_old_vec[has_car_mask] = self.utility_keep(cars_owned_attributes_matrix)[has_car_mask] 
             
-            self.owned_car_utility_vec = utility_old_vec
+            #self.owned_car_utility_vec = utility_old_vec
 
             #NEED TO CALCULATE THE UTILITY OF PUBLIC TRANSPORT HERE
             
             utility_public = np.squeeze(self.utility_buy_vec(self.public_transport_attributes))
-            #print(utility_public)
-            #print(utility_public.shape, utility_replacement_vec.shape, utility_old_vec.shape)
-            #quit()
             # Stack the utility vectors into a single 2D array
             utilities = np.vstack([utility_public, utility_replacement_vec, utility_old_vec])
 
+
             # Find the index of the maximum utility along the first axis (i.e., across the rows)
             chosen_option_indices = np.argmax(utilities, axis=0)
-
+            #print(chosen_option_indices)
+            row_indices = np.arange(self.num_individuals)
+            #print(utilities.shape)
+            #quit()
+            utilities_trans = utilities.T
+            self.owned_car_utility_vec = utilities_trans[row_indices, chosen_option_indices]
+            #print("self.owned_car_utility_vec", self.owned_car_utility_vec)
+            #print(self.owned_car_utility_vec.shape)
+            #quit()
             self.public_transport_prop = np.sum(chosen_option_indices == 0)/self.num_individuals#RECORD NUM PEOPLE PUBLIC TRANPORT
 
             # Determine the new boolean vector
@@ -435,7 +441,7 @@ class Social_Network:
         self.history_time_social_network = [self.t_social_network]
         self.history_firm_count = [self.firm_count]
         self.history_car_owned_vec = [self.car_owned_vec]
-        self.histor_raw_utility_buy_0 = [np.asarray([0]*30)]
+        #self.histor_raw_utility_buy_0 = [np.asarray([0]*30)]
         if self.init_public_transport_state:
             self.history_public_transport_prop = [self.public_transport_prop]
     
@@ -459,7 +465,7 @@ class Social_Network:
         self.history_time_social_network.append(self.t_social_network)
         self.history_firm_count.append(self.firm_count)
         self.history_car_owned_vec.append(self.car_owned_vec)
-        self.histor_raw_utility_buy_0.append(self.raw_utility_buy_0)
+        #self.histor_raw_utility_buy_0.append(self.raw_utility_buy_0)
         if self.init_public_transport_state:
             self.history_public_transport_prop.append(self.public_transport_prop)
 

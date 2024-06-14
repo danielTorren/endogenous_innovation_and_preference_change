@@ -42,22 +42,22 @@ if __name__ == "__main__":
         "compression_factor_state": 1,
         "utility_boost_const": 1,
         "parameters_carbon_policy":{
-            "carbon_price": 1,
+            "carbon_price": 0,
             "carbon_price_state": "flat",
         },
         "parameters_firm_manager": {
             "static_tech_state": 0,
             "init_tech_heterogenous_state": 1,
             "J": 30,
-            "N": 8,
-            "K": 3,
+            "N": 15,
+            "K": 2,
             "alpha":1,
             "rho":[0,0.5],#enviromnet not correlated to cost but quality is correlated to cost
             "init_tech_seed": 10,
             "landscape_seed": 6,
             "A": 3,
             "markup": 0.1,
-            "memory_cap": 30,#30,
+            "memory_cap": 100,#30,
             "segment_number": 3,
             "rank_number": 30
         },
@@ -69,6 +69,7 @@ if __name__ == "__main__":
             "heterogenous_init_preferences": 0,
             "cumulative_emissions_preference_state":1,
             "heterogenous_reaction_cumulative_emissions_state":1,
+            "heterogenous_gamma_state": 1,
             "init_public_transport_state": 1,
             "network_structure_seed": 8, 
             "init_vals_seed": 8, 
@@ -80,17 +81,18 @@ if __name__ == "__main__":
             "a_preferences": 1, 
             "b_preferences": 10,
             "clipping_epsilon": 1e-5, 
-            "preference_drift_std": 0.005, 
+            "preference_drift_std": 0.001, 
             "confirmation_bias": 5,
             "emissions_max": 1.5e5,
             "upsilon": 0.05,
-            "upsilon_E": 0.02,
+            "upsilon_E": 0.01,
             "upsilon_E_std": 0.1,
             "omega": 2,
             "delta": 0.01,
             "kappa": 2,
             "gamma": 0.3,
-            "public_transport_attributes": [0.4,0.9,0.1]
+            "lambda_poisson_gamma": 0.5,
+            "public_transport_attributes": [0.3,0.7,0.1]
         }
     }
     

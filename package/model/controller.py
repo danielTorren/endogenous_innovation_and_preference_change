@@ -8,6 +8,7 @@ from package.model.social_network import Social_Network
 #from package.model.gpt_firm_manager import Firm_Manager 
 from package.model.firm_manager import Firm_Manager 
 from package.model.centralized_ID_generator import IDGenerator
+import numpy as np
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -43,7 +44,7 @@ class Controller:
         self.parameters_firm_manager["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm_manager["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
-        self.parameters_firm_manager["gamma"] = self.parameters_social_network["gamma"] 
+        #self.parameters_firm_manager["gamma"] = self.parameters_social_network["gamma"] 
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_social_network["kappa"]
@@ -61,6 +62,20 @@ class Controller:
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
         self.parameters_social_network["markup"] = self.parameters_firm_manager["markup"]
         self.parameters_social_network["utility_boost_const"] = self.utility_boost_const
+
+        ##################################
+        #HET GAMMA
+        self.heterogenous_gamma_state = self.parameters_social_network["heterogenous_gamma_state"]
+        if self.heterogenous_gamma_state:
+            self.min_value_gamma = self.parameters_social_network["gamma"] 
+            self.lambda_poisson_gamma = self.parameters_social_network["lambda_poisson_gamma"]
+            self.gamma_vals = self.generate_gamma_values(self.min_value_gamma, self.lambda_poisson_gamma, self.parameters_social_network["num_individuals"])
+        else:
+            self.gamma_vals = np.asarray([self.parameters_social_network["gamma"]]*self.parameters_social_network["num_individuals"])  # weight for car quality
+
+        self.parameters_social_network["gamma_vals"] = self.gamma_vals
+        self.parameters_firm_manager["gamma"] = np.median(self.gamma_vals)#TAKE THE MEDIAN OF VALS
+
         #CREATE FIRMS    
         #self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm)
         self.firm_manager = Firm_Manager(self.parameters_firm_manager)
@@ -72,6 +87,37 @@ class Controller:
         
         #update values for the next step
         self.controller_low_carbon_preference_arr = self.social_network.low_carbon_preference_arr
+
+    def generate_gamma_values(self, min_value, lambda_poisson, num_individuals):
+        """
+        Generates heterogeneous gamma values for n agents, constrained between min_value and 1,
+        using a Poisson-like distribution.
+
+        Parameters:
+        n (int): Number of agents.
+        min_value (float): Minimum value for gamma (0 < min_value < 1).
+        lambda_poisson (float): Lambda parameter for the Poisson distribution.
+
+        Returns:
+        np.ndarray: Array of gamma values for n agents.
+        """
+        if min_value <= 0 or min_value >= 1:
+            raise ValueError("min_value must be between 0 and 1.")
+        
+        # Generate Poisson-like distributed values
+        poisson_values = np.random.poisson(lambda_poisson, num_individuals)
+        
+        # Normalize the Poisson values to fit between min_value and 1
+        max_poisson_value = np.max(poisson_values)
+        normalized_values = poisson_values / max_poisson_value
+        
+        # Scale normalized values to fit within the range [min_value, 1]
+        gamma_values = min_value + (1 - min_value) * normalized_values
+
+        #print("GAMAM VALS",gamma_values)
+
+        return gamma_values
+
 
     def update_carbon_price(self):
         if self.t_controller == self.policy_start_time:

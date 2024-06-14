@@ -37,7 +37,7 @@ class Firm_Manager:
         self.segment_preference = np.arange(self.width_segment / 2, 1, self.width_segment)
         self.segment_preference_reshaped = self.segment_preference[:, np.newaxis]
 
-        self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
+        #self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
         self.max_profitability = (1/self.J)*self.markup*self.num_individuals# what if everyone bought your tech, but also everyone else has the tech too? idunno just need it to be smaller
 
         np.random.seed(self.init_tech_seed)
@@ -139,8 +139,7 @@ class Firm_Manager:
 
     def rank_options(self, firm):
         firm.ranked_alternatives = []
-        #print("firm.expected_profit_research_alternatives", firm.expected_profit_research_alternatives)
-        
+
         for tech, profitability in zip(firm.unique_neighbouring_technologies_strings, firm.expected_profit_research_alternatives):
             rank = 0
             for r in range(0, self.rank_number + 1):
