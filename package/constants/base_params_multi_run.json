@@ -1,8 +1,8 @@
 {
-    "duration_no_OD_no_stock_no_policy": 50,
-    "duration_OD_no_stock_no_policy": 250,
-    "duration_OD_stock_no_policy": 500,
-    "duration_OD_stock_policy": 500,
+    "duration_no_OD_no_stock_no_policy": 0,
+    "duration_OD_no_stock_no_policy": 0,
+    "duration_OD_stock_no_policy": 240,
+    "duration_OD_stock_policy": 360,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "utility_boost_const": 1,
