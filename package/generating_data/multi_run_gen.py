@@ -180,7 +180,7 @@ def main(
 
 if __name__ == '__main__':
     fileName_Figure_6 = main(
-    N_samples = 8,
+    N_samples = 3,
     BASE_PARAMS_LOAD = "package/constants/base_params_multi_run.json",
     VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_multi_run.json"
     )
