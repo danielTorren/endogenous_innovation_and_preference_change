@@ -21,7 +21,7 @@
         "init_tech_seed": 10,
         "landscape_seed": 6,
         "A": 3,
-        "markup": 0.1,
+        "markup": 0.2,
         "memory_cap": 100,
         "segment_number": 3,
         "rank_number": 30

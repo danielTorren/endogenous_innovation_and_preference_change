@@ -1,7 +1,8 @@
 {
-    "gamma": {"property":"gamma", "section": "parameters_social_network","min":0,"max": 1.0, "round":0},
+    "emissions_max": {"property":"emissions_max", "section":"parameters_social_network","min":1e4,"max": 1e6, "round":0},
+    "lambda_poisson_gamma": {"property":"lambda_poisson_gamma", "section": "parameters_social_network","min":0.1,"max": 0.5, "round":0},
     "confirmation_bias": {"property":"confirmation_bias", "section": "parameters_social_network","min":0,"max": 50, "round":0},
     "upsilon_E": {"property":"upsilon_E", "section": "parameters_social_network","min":0,"max": 1, "round":0},
     "carbon_price": {"property":"carbon_price", "section":"parameters_carbon_policy","min":0,"max": 1, "round":0},
-    "markup": {"property":"markup", "section":"parameters_firm_manager","min":0,"max": 1, "round":0}
+    "K": {"property":"K", "section":"parameters_firm_manager","min":1,"max": 5, "round":1}
 }
