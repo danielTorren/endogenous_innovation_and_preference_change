@@ -53,7 +53,7 @@ class Controller:
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_social_network["kappa"]
-        
+        self.parameters_firm_manager["price_constant"] = self.parameters_social_network["price_constant"]
 
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -68,7 +68,7 @@ class Controller:
         self.parameters_social_network["markup"] = self.parameters_firm_manager["markup"]
 
 
-        self.utility_boost_const = self.parameters_firm_manager["markup"] + 1 + self.parameters_carbon_policy["carbon_price"] + 0.1#JUST TO BE SAFE
+        self.utility_boost_const = 2#self.parameters_firm_manager["markup"] + 1 + self.parameters_carbon_policy["carbon_price"] + 0.1#JUST TO BE SAFE
         self.parameters_firm_manager["utility_boost_const"] = self.utility_boost_const
         self.parameters_social_network["utility_boost_const"] = self.utility_boost_const
 

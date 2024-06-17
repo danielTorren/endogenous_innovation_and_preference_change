@@ -149,6 +149,7 @@ class Social_Network:
         self.kappa = parameters_social_network["kappa"]  # parameter indicating consumers' ability to make rational choices
         self.init_car_vec = parameters_social_network["init_car_vec"]
         self.utility_boost_const = parameters_social_network["utility_boost_const"]
+        self.price_constant = parameters_social_network["price_constant"]
 
         self.init_public_transport_state = parameters_social_network["init_public_transport_state"]
         if self.init_public_transport_state:
@@ -293,7 +294,14 @@ class Social_Network:
     def utility_buy_matrix(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
-        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[:,2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1])
+        price = (1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*(1-car_attributes_matrix[:,1])
+        #print("price comp",(1 + self.markup) * car_attributes_matrix[0] , self.carbon_price*(1-car_attributes_matrix[1]))
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + gamma_vals_matrix*car_attributes_matrix[:,2] - self.price_constant * price
+        #print("self.utility_boost_const", self.utility_boost_const)
+        #print("utilties buy", np.min(utilities), np.max(utilities))
+        #quit()
+        #OLD
+        #utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[:,2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1])
         
         """
         if self.t_social_network > 300:
@@ -310,18 +318,34 @@ class Social_Network:
     def utility_buy_vec(self, car_attributes_matrix):
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
-        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1])
+        price = (1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*(1-car_attributes_matrix[1])
+        utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + gamma_vals_matrix * car_attributes_matrix[2] - self.price_constant * price
+        #old
+        #utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1])
+        
+        #quit()
         return utilities + self.utility_boost_const
     
     def utility_keep(self, cars_owned_attributes_matrix):
-        utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + (1 - self.low_carbon_preference_arr) * cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
-        return utilities + self.utility_boost_const
+        #print(self.car_age_vec)
+        
+        utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + self.gamma_vals*cars_owned_attributes_matrix[:,2] + self.utility_boost_const)*(1 - self.delta) ** self.car_age_vec
+        #OLD BOOST OUTSIDE
+        #utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + self.gamma_vals*cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
+        #return utilities + self.utility_boost_const
+        #print(self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] ,self.gamma_vals*cars_owned_attributes_matrix[:,2], self.utility_boost_const , (1 - self.delta) ** self.car_age_vec)
+        #print("KEEP", utilities)
+        #quit()
+        #OLD
+        #utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + (1 - self.low_carbon_preference_arr) * cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
+        return utilities 
 
     def choose_replacement_candidate(self, cars):
         car_attributes_matrix = np.asarray([x.attributes_fitness for x in cars])  # ARRAY OF ALL THE CARS
         
         utilities_matrix = self.utility_buy_matrix(car_attributes_matrix)  # FOR EACH INDIVIDUAL WHAT IS THE UTILITY OF THE DIFFERENT CARS
-
+        #print("utilities_matrix", utilities_matrix)
+        #quit()
         #self.raw_utility_buy_0 = deepcopy(utilities_matrix[0])
 
         utilities_matrix[utilities_matrix < 0] = 0  # IF NEGATIVE UTILITY PUT IT AT 0
@@ -361,6 +385,8 @@ class Social_Network:
     def decide_purchase(self, cars):
 
         replacement_candidate_vec, utility_replacement_vec = self.choose_replacement_candidate(cars)
+
+       # print(utility_replacement_vec)
         # Create utility_old_vec based on whether omega is None or not
         #print("TIME",self.t_social_network)
         if self.init_public_transport_state:
@@ -443,7 +469,6 @@ class Social_Network:
             self.car_owned_vec = np.where(new_car_bool_vec, replacement_candidate_vec, self.car_owned_vec)
             self.car_age_vec = np.where(new_car_bool_vec, 0, self.car_age_vec + 1)
 
-        
         return new_car_bool_vec
 
     def update_burn_in_state(self):

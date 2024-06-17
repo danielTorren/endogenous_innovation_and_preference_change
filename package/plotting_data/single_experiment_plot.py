@@ -15,8 +15,6 @@ from package.resources.utility import (
 )
 import pandas as pd
 from package.resources.plot import (
-    plot_low_carbon_preferences_timeseries,
-    plot_total_flow_carbon_emissions_timeseries,
     plot_network_timeseries
 )
 import matplotlib.lines as mlines
@@ -27,6 +25,12 @@ def burn_in(ax,data):
     
     if data.duration_OD_no_stock_no_policy > 0:
         ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy),ls="--",  color="black")#OD
+
+    if data.duration_OD_stock_no_policy > 0:
+        ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy + data.duration_OD_stock_no_policy),ls="--",  color="black")#OD
+    
+    #if data.duration_OD_stock_policy > 0:
+    #    ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy + data.duration_OD_stock_no_policy + data.duration_OD_stock_policy ),ls="--",  color="black")#OD
 
 def plot_emissions_individuals(fileName, data, dpi_save):
 
@@ -96,7 +100,7 @@ def plot_low_carbon_preferences_timeseries(
 
 def plot_low_carbon_preference(fileName, data):
     fig, ax = plt.subplots(figsize=(10, 6))
-    
+    burn_in(ax,data)
     #burn_in(ax,data)
     data_t = np.asarray(data.history_preference_list).T
     for data_indivdiual in data_t:
@@ -987,7 +991,7 @@ def plot_raw_util(fileName, data):
 
 def plot_len_n(fileName, data_firm_manager, data_social_network):
     fig, ax = plt.subplots(figsize=(10, 6))
-    
+    burn_in(ax, data_social_network)
     #burn_in(ax,data)
     data_t = np.asarray(data_firm_manager.history_len_n).T
     for data_indivdiual in data_t:
@@ -1007,7 +1011,8 @@ def plot_len_n(fileName, data_firm_manager, data_social_network):
 def plot_len_alt(fileName, data_firm_manager, data_social_network):
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    #burn_in(ax,data)
+    burn_in(ax,data_social_network)
+
     data_t = np.asarray(data_firm_manager.history_len_alt).T
     for data_indivdiual in data_t:
         ax.plot(data_social_network.history_time_social_network,data_indivdiual)
@@ -1042,6 +1047,7 @@ def plot_emissions_stock(fileName, data_social_network):
 def plot_public_transport_count(fileName, data_social_network):
 
     fig, ax = plt.subplots(figsize=(10, 6))
+    burn_in(ax,data_social_network)
     ax.plot(data_social_network.history_time_social_network, data_social_network.history_public_transport_prop)
 
     #ax.legend()          
@@ -1052,41 +1058,6 @@ def plot_public_transport_count(fileName, data_social_network):
     plotName = fileName + "/Plots"
 
     f = plotName + "/public_trans"
-    #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
-    fig.savefig(f + ".png", dpi=600, format="png")
-
-def plot_research_clean_count(fileName, data_firm_manager):
-    
-    time_series =  data_firm_manager.history_green_research_bools
-    # Initialize lists to store counts
-    green_counts = []
-    dirty_counts = []
-    time_steps = range(len(time_series))
-
-    # Count the number of 1s and 0s at each time step
-    for snapshot in time_series:
-        green_count = sum(1 for x in snapshot if x == 1)
-        dirty_count = sum(1 for x in snapshot if x == 0)
-        green_counts.append(green_count)
-        dirty_counts.append(dirty_count)
-
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_steps, green_counts, label='Green', marker='o', color='g')
-    ax.plot(time_steps, dirty_counts, label='Dirty', marker='x', color='r')
-
-    # Labeling the plot
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Count')
-    ax.set_title('Count of Green and Dirty Over Time')
-    ax.legend()
-    ax.grid(True)
-
-    # Show the plot
-    fig.tight_layout()
-
-    plotName = fileName + "/Plots"
-    f = plotName + "/count_green"
     #fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
@@ -1126,6 +1097,10 @@ def weighted_owned_average_plots_no_public(fileName, data_social_network):
     subfig2 = axes[1]
     subfig3 = axes[2]
 
+    burn_in(subfig1,data_social_network)
+    burn_in(subfig2,data_social_network)
+    burn_in(subfig3,data_social_network)
+
     # Subfigure for emissions
     subfig1.scatter(data_social_network.history_time_social_network, df_weighted_averages['environmental_score'], marker='o')
     subfig1.set_xlabel('Time')
@@ -1158,6 +1133,8 @@ def plot_firm_count_and_market_concentration(fileName, data_social_network):
     # Initialize a dictionary to store the data
     data = {}
 
+    
+
     # Extract data
     for time_point, snapshot in enumerate(data_social_network.history_firm_count):
         for firm, cars in snapshot.items():
@@ -1189,6 +1166,7 @@ def plot_firm_count_and_market_concentration(fileName, data_social_network):
     # Plot the number of cars sold by each firm over time
     fig, ax1 = plt.subplots(figsize=(10, 6)) 
 
+    burn_in(ax1,data_social_network)
     #for firm in df.columns:
     #    ax1.scatter(df.index, df[firm], marker='o', label=firm)
 
@@ -1211,9 +1189,7 @@ def plot_firm_count_and_market_concentration(fileName, data_social_network):
     f = plotName + "/firm_count_and_market_concentration"
     fig.savefig(f + ".png", dpi=600, format="png")
 
-import matplotlib.pyplot as plt
-
-def plot_research_clean_count(fileName, data_firm_manager):
+def plot_research_clean_count(fileName, data_firm_manager,data_social_network):
     time_series = data_firm_manager.history_green_research_bools
     
     # Initialize lists to store counts
@@ -1235,6 +1211,7 @@ def plot_research_clean_count(fileName, data_firm_manager):
 
     # Create the plot
     fig, ax = plt.subplots(figsize=(10, 6))
+    burn_in(ax,data_social_network)
     ax.scatter(time_steps, green_counts, label='Green', marker='o', color='g')
     ax.scatter(time_steps, dirty_counts, label='Dirty', marker='x', color='r')
 
@@ -1274,6 +1251,27 @@ def plot_carbon_price(fileName, data_controller):
     # fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
+
+def plot_em_flow(fileName, data_social_network):
+    time_series = data_social_network.history_flow_carbon_emissions
+    fig, ax = plt.subplots(figsize=(10, 6))
+    burn_in(ax,data_social_network)
+    ax.plot(range(len(time_series)), time_series)
+
+    # Labeling the plot
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Emission flow, $E_F$')
+
+    ax.grid(True)
+
+    # Show the plot
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/em_flow"
+    # fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
+    fig.savefig(f + ".png", dpi=600, format="png")
+
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
@@ -1284,6 +1282,7 @@ def main(
     social_plots = 1
     firm_plots = 1
 
+    base_params = load_object(fileName + "/Data", "base_params")
     data_controller= load_object(fileName + "/Data", "controller")
     data_social_network = data_controller.social_network
     data_firm_manager = data_controller.firm_manager
@@ -1293,14 +1292,15 @@ def main(
     if social_plots:
         ###SOCIAL NETWORK PLOTS
         plot_low_carbon_preference(fileName, data_social_network)
-        plot_total_flow_carbon_emissions_timeseries(fileName, data_social_network, dpi_save)
+        plot_em_flow(fileName, data_social_network)
         #plot_emissions_stock(fileName, data_social_network)
         weighted_owned_average_plots_no_public(fileName, data_social_network)
         #weighted_owned_average_plots(fileName, data_social_network)
         #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
-        plot_public_transport_count(fileName, data_social_network)
+        if base_params["parameters_social_network"]["init_public_transport_state"]:
+            plot_public_transport_count(fileName, data_social_network)
         
     #print(len(list(mlines.Line2D.markers.keys())))
     #quit()
@@ -1308,8 +1308,8 @@ def main(
     if firm_plots:
         ##FIRM PLOTS
         #plot_firm_count(fileName, data_social_network)
-        plot_firm_count_and_market_concentration(fileName, data_social_network)
-        plot_research_clean_count(fileName, data_firm_manager)
+        #plot_firm_count_and_market_concentration(fileName, data_social_network)
+        plot_research_clean_count(fileName, data_firm_manager,data_social_network)
         #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
         """THIS DOESNT QUITE WORK"""
         #scatter_trace_plots_offered(fileName, data_firm_manager, 'environmental_score', 'cost')
@@ -1317,8 +1317,8 @@ def main(
         #offered_properties(fileName,data_firm_manager, data_social_network)
         #offered_plots(fileName,data_firm_manager, data_social_network)
         #researched_tech(fileName,data_firm_manager, data_social_network)
-        #plot_len_n(fileName,data_firm_manager, data_social_network)
-        #plot_len_alt(fileName,data_firm_manager, data_social_network)
+        plot_len_n(fileName,data_firm_manager, data_social_network)
+        plot_len_alt(fileName,data_firm_manager, data_social_network)
 
 
     #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)

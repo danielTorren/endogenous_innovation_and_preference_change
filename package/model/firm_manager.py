@@ -29,6 +29,7 @@ class Firm_Manager:
         self.memory_cap = parameters_firm_manager["memory_cap"]
         self.static_tech_state = parameters_firm_manager["static_tech_state"]
         self.utility_boost_const = parameters_firm_manager["utility_boost_const"]
+        self.price_constant = parameters_firm_manager["price_constant"]
 
         self.segment_number = int(parameters_firm_manager["segment_number"])
         self.expected_segment_share = [1 / self.segment_number] * self.segment_number
@@ -37,8 +38,8 @@ class Firm_Manager:
         self.segment_preference = np.arange(self.width_segment / 2, 1, self.width_segment)
         self.segment_preference_reshaped = self.segment_preference[:, np.newaxis]
 
-        #self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
-        self.max_profitability = (1/self.J)*self.markup*self.num_individuals# what if everyone bought your tech, but also everyone else has the tech too? idunno just need it to be smaller
+        self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
+        #self.max_profitability = (1/self.J)*self.markup*self.num_individuals# what if everyone bought your tech, but also everyone else has the tech too? idunno just need it to be smaller
 
         np.random.seed(self.init_tech_seed)
         random.seed(self.init_tech_seed)
@@ -101,17 +102,24 @@ class Firm_Manager:
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
 
     def utility_buy_matrix(self, car_attributes_matrix):
-        utilities = self.segment_preference_reshaped * car_attributes_matrix[:, 1] + (1 - self.segment_preference_reshaped) * self.gamma * car_attributes_matrix[:, 2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:, 0] + self.carbon_price * car_attributes_matrix[:, 1])
+        price = (1 + self.markup) * car_attributes_matrix[:, 0] + self.carbon_price * (1-car_attributes_matrix[:, 1])
+        utilities = self.segment_preference_reshaped * car_attributes_matrix[:, 1] + self.gamma * car_attributes_matrix[:, 2] - self.price_constant * price
+        #old
+        #utilities = self.segment_preference_reshaped * car_attributes_matrix[:, 1] + (1 - self.segment_preference_reshaped) * self.gamma * car_attributes_matrix[:, 2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_matrix[:, 0] + self.carbon_price * car_attributes_matrix[:, 1])
         return utilities.T + self.utility_boost_const
     
     def utility_buy_vec(self, car_attributes_vec):
-        utilities = self.segment_preference_reshaped * car_attributes_vec[1] + (1 - self.segment_preference_reshaped) * self.gamma * car_attributes_vec[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_vec[0] + self.carbon_price * car_attributes_vec[1])
+        price = (1 + self.markup) * car_attributes_vec[0] + self.carbon_price * (1-car_attributes_vec[1])
+        utilities = self.segment_preference_reshaped * car_attributes_vec[1] +  self.gamma * car_attributes_vec[2] - self.price_constant * price
+        #old
+        #utilities = self.segment_preference_reshaped * car_attributes_vec[1] + (1 - self.segment_preference_reshaped) * self.gamma * car_attributes_vec[2] - (1 - self.gamma) * ((1 + self.markup) * car_attributes_vec[0] + self.carbon_price * car_attributes_vec[1])
+        
         return utilities.T + self.utility_boost_const
 
     def calculate_profitability_neighbouring_technologies(self, firm, utilities_competitors):
         unique_neighbouring_technologies_attributes = np.array([self.discovered_tech[key] for key in firm.unique_neighbouring_technologies_strings])#GRAB IT FROM THE GLOBAL LIST
-
         utilities_neighbour = self.utility_buy_matrix(unique_neighbouring_technologies_attributes) 
+        #print("utilities_neighbour",utilities_neighbour)
         market_options_utilities = np.concatenate((utilities_neighbour, utilities_competitors), axis=0)
         market_options_utilities[market_options_utilities < 0] = 0
         denominators = np.sum(market_options_utilities ** self.kappa, axis=0)
@@ -122,11 +130,15 @@ class Firm_Manager:
             non_zero_mask = denominators != 0
             alternatives_probability_buy_car[:, non_zero_mask] = (utilities_neighbour[:, non_zero_mask] ** self.kappa) / denominators[non_zero_mask]
         expected_number_customer = self.segment_consumer_count * alternatives_probability_buy_car
+        
+        #print("expected_number_customer", expected_number_customer)
         firm.expected_profit_research_alternatives = self.markup * utilities_neighbour[:,0] * np.sum(expected_number_customer, axis=1)
+        #print("firm.expected_profit_research_alternatives",firm.expected_profit_research_alternatives)
 
     def last_tech_profitability(self, firm, utilities_competitors):
         last_tech_fitness_arr = np.asarray(firm.last_tech_researched.attributes_fitness)
         utility_last_tech = self.utility_buy_vec(last_tech_fitness_arr)
+        #print("utility_last_tech",utility_last_tech)
         last_tech_market_options_utilities = np.concatenate((utility_last_tech, utilities_competitors), axis=0)
         last_tech_market_options_utilities[last_tech_market_options_utilities < 0] = 0
         denominators = np.sum(last_tech_market_options_utilities ** self.kappa, axis=0)
@@ -141,25 +153,36 @@ class Firm_Manager:
         else:
             firm.last_tech_expected_profit = 0
 
+        #print("firm.last_tech_expected_profit", firm.last_tech_expected_profit)
+
     def rank_options(self, firm):
         firm.ranked_alternatives = []
 
         for tech, profitability in zip(firm.unique_neighbouring_technologies_strings, firm.expected_profit_research_alternatives):
             rank = 0
             for r in range(0, self.rank_number + 1):
+                #print("ALT tech",tech, r, firm.last_tech_expected_profit , (self.max_profitability * r / self.rank_number))
                 #print("(self.max_profitability * r / self.rank_number)",profitability, (self.max_profitability * r / self.rank_number), r)
                 if profitability < (self.max_profitability * r / self.rank_number):
                     rank = r
                     break
+            if r >= self.rank_number - 1:#MAX RANK
+                rank = self.rank_number - 1
             firm.ranked_alternatives.append((tech, rank))
+            
+
 
     def rank_last_tech(self, firm):
         rank= 0
-        for r in range(1, self.rank_number + 1):
-            if firm.last_tech_expected_profit < self.max_profitability * (r / self.rank_number):
+        for r in range(0, self.rank_number + 1):
+            #print("last tech", r, firm.last_tech_expected_profit , (self.max_profitability * r / self.rank_number))
+            if firm.last_tech_expected_profit < (self.max_profitability * r / self.rank_number):
                 rank = r
                 break
+        if r >= self.rank_number - 1:#MAX RANK
+            rank = self.rank_number - 1
         firm.last_tech_rank = rank
+        #quit()
 
     ###############################################################################
     #DEADLING WITH GLOBAL MEMEORY AND CREATIGN TUMOURS!
@@ -237,13 +260,11 @@ class Firm_Manager:
     #################################################################################################################
 
     def select_alternative_technology(self, firm):
-        #print("firm.last_tech_rank", firm.last_tech_rank)
-        #print("firm.ranked_alternatives", firm.ranked_alternatives)
-        #if self.t_firm_manager == 30:
-        #    quit()
+
         firm.tech_alternative_options = [tech for tech, rank in firm.ranked_alternatives if rank >= firm.last_tech_rank]
-        #print("options, self.t_firm_manager, firm.firm_id", self.t_firm_manager, firm.firm_id, tech_alternative_options)
-        #print("START FIRM TIM STEPS", self.t_firm_manager, firm.firm_id)
+
+        #print(firm.ranked_alternatives, firm.last_tech_rank)
+        #quit()
         if firm.tech_alternative_options:
             #print(self.t_firm_manager, firm.firm_id, "NEW TECH ADDED!")
             selected_technology_string = random.choice(firm.tech_alternative_options)
@@ -307,15 +328,15 @@ class Firm_Manager:
     def set_up_time_series_firm_manager(self):
         self.history_cars_on_sale_all_firms = [self.cars_on_sale_all_firms]
         #self.history_researched_tech = [self.cars_on_sale_all_firms]#
-        #self.history_len_n = [self.len_n]
-        #self.history_len_alt = [self.len_alt]
+        self.history_len_n = [self.len_n]
+        self.history_len_alt = [self.len_alt]
         self.history_green_research_bools = [self.green_research_bools]
 
     def save_timeseries_data_firm_manager(self):
         self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.history_researched_tech.append(self.list_research_tech)
-        #self.history_len_n.append(self.len_n)
-        #self.history_len_alt.append(self.len_alt)
+        self.history_len_n.append(self.len_n)
+        self.history_len_alt.append(self.len_alt)
         self.history_green_research_bools.append(self.green_research_bools)
 
     def generate_cars_on_sale_all_firms(self):
@@ -350,8 +371,8 @@ class Firm_Manager:
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
         
         if self.save_timeseries_data_state and (self.t_firm_manager % self.compression_factor_state == 0):
-            #self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
-            #self.len_alt = [len(firm.tech_alternative_options) for firm in self.firms]
+            self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
+            self.len_alt = [len(firm.tech_alternative_options) for firm in self.firms]
             self.save_timeseries_data_firm_manager()
 
 

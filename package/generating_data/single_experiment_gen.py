@@ -36,13 +36,13 @@ if __name__ == "__main__":
     base_params = {
         "duration_no_OD_no_stock_no_policy": 0,
         "duration_OD_no_stock_no_policy": 0,
-        "duration_OD_stock_no_policy": 240,
+        "duration_OD_stock_no_policy":240,
         "duration_OD_stock_policy": 360,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "parameters_carbon_policy":{
             "carbon_price_init": 0.5,
-            "carbon_price": 0.7,
+            "carbon_price": 1,
             "carbon_price_state": "linear",
         },
         "parameters_firm_manager": {
@@ -57,9 +57,9 @@ if __name__ == "__main__":
             "landscape_seed": 6,
             "A": 3,
             "markup": 0.1,
-            "memory_cap": 1000,#30,
+            "memory_cap": 30,#30,
             "segment_number": 3,
-            "rank_number": 30
+            "rank_number": 10
         },
         "parameters_social_network":{  
             "fixed_preferences_state": 0,
@@ -68,9 +68,9 @@ if __name__ == "__main__":
             "preference_drift_state": 1,
             "heterogenous_init_preferences": 0,
             "cumulative_emissions_preference_state":1,
-            "heterogenous_reaction_cumulative_emissions_state":1,
+            "heterogenous_reaction_cumulative_emissions_state":0,
             "heterogenous_gamma_state": 1,
-            "init_public_transport_state": 1,
+            "init_public_transport_state": 0,
             "network_structure_seed": 8, 
             "init_vals_seed": 8, 
             "preference_drift_seed": 4, 
@@ -83,16 +83,17 @@ if __name__ == "__main__":
             "clipping_epsilon": 1e-5, 
             "preference_drift_std": 0.001, 
             "confirmation_bias": 5,
-            "emissions_max": 1.5e5,
+            "emissions_max": 1e7,#1.5e5,
             "upsilon": 0.05,
             "upsilon_E": 0.01,
             "upsilon_E_std": 0.1,
             "omega": 2,
             "delta": 0.01,
             "kappa": 2,
-            "gamma": 0.1,
+            "gamma": 0.5,
             "lambda_poisson_gamma": 0.5,
-            "public_transport_attributes": [0.3,0.7,0.1]
+            "public_transport_attributes": [0.3,0.7,0.1],
+            "price_constant": 0.5
         }
     }
     

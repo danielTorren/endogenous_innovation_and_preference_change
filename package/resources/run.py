@@ -55,19 +55,16 @@ def generate_data(parameters: dict,print_simu = 0):
 #multi-run
 def generate_emissions_intensities(params):
     data = generate_data(params)
-    return data.social_network.total_carbon_emissions_cumulative, data.firm_manager.weighted_emissions
+    return data.social_network.total_carbon_emissions_cumulative
 
 def emissions_intensities_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
     num_cores = multiprocessing.cpu_count()
     #res = [generate_emissions_intensities(i) for i in params_dict]
-    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions_intensities)(i) for i in params_dict)
+    emissions_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions_intensities)(i) for i in params_dict)
 
-    emissions_list, emissions_intensities_list = zip(
-        *res
-    )
-    return np.asarray(emissions_list), np.asarray(emissions_intensities_list)
+    return np.asarray(emissions_list)
 
 ######################################################################################
 

@@ -16,4 +16,4 @@ class Firm:
         self.ranked_alternatives = []
         self.last_tech_rank = None
         self.unique_neighbouring_technologies_strings = set(init_tech.inverted_tech_strings)#GENERATE IT AT THE START
-        
+        self.tech_alternative_options = []

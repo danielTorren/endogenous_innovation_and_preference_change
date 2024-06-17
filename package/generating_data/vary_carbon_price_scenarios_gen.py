@@ -35,7 +35,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     if 1 in scenarios:
         base_params_copy_1 = deepcopy(base_params_copy)
         base_params_copy_1["parameters_social_network"]["fixed_preferences_state"] = 0
-        base_params_copy_1["parameters_firm"]["static_tech_state"] = 1
+        base_params_copy_1["parameters_firm_manager"]["static_tech_state"] = 1
         #print(" base_params_copy_1", base_params_copy_1)
         #quit()
         params_sub_list_1 = produce_param_list_scenarios(base_params_copy_1, carbon_tax_vals,property_varied, property_section)
@@ -45,7 +45,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     if 2 in scenarios:
         base_params_copy_2 = deepcopy(base_params_copy)
         base_params_copy_2["parameters_social_network"]["fixed_preferences_state"] = 0
-        base_params_copy_2["parameters_firm"]["static_tech_state"] = 1
+        base_params_copy_2["parameters_firm_manager"]["static_tech_state"] = 1
         #print(" base_params_copy_2", base_params_copy_2)
         params_sub_list_2 = produce_param_list_scenarios(base_params_copy_2, carbon_tax_vals,property_varied,property_section)
         params_list.extend(params_sub_list_2)
@@ -54,7 +54,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     if 3 in scenarios:
         base_params_copy_3 = deepcopy(base_params_copy)
         base_params_copy_3["parameters_social_network"]["fixed_preferences_state"] =  1
-        base_params_copy_3["parameters_firm"]["static_tech_state"] = 0
+        base_params_copy_3["parameters_firm_manager"]["static_tech_state"] = 0
         #print(" base_params_copy_3", base_params_copy_3)
         params_sub_list_3 = produce_param_list_scenarios(base_params_copy_3, carbon_tax_vals,property_varied,property_section)
         params_list.extend(params_sub_list_3)
@@ -63,13 +63,13 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     if 4 in scenarios:
         base_params_copy_4 = deepcopy(base_params_copy)
         base_params_copy_4["parameters_social_network"]["fixed_preferences_state"] = 0
-        base_params_copy_4["parameters_firm"]["static_tech_state"] = 0
+        base_params_copy_4["parameters_firm_manager"]["static_tech_state"] = 0
         #print(" base_params_copy_4", base_params_copy_4)
         params_sub_list_4 = produce_param_list_scenarios(base_params_copy_4, carbon_tax_vals,property_varied,property_section)
         params_list.extend(params_sub_list_4)
     #quit()
     #for i in params_list:
-    #    print(i["parameters_social_network"]["fixed_preferences_state"],i["parameters_firm"]["static_tech_state"],i["parameters_social_network"]["carbon_price"], i["parameters_firm_manager"]["landscape_seed"])
+    #    print(i["parameters_social_network"]["fixed_preferences_state"],i["parameters_firm_manager"]["static_tech_state"],i["parameters_social_network"]["carbon_price"], i["parameters_firm_manager"]["landscape_seed"])
     #quit()
     return params_list
 
@@ -115,11 +115,10 @@ def main(
     print("Total runs: ",len(params_list))
     
     #RESULTS
-    emissions_cumulative_flat, weighted_emissions_intensities_flat = emissions_intensities_parallel_run(params_list)
+    emissions_cumulative_flat = emissions_intensities_parallel_run(params_list)
 
     #unpack_results into scenarios and seeds
     emissions_cumulative = emissions_cumulative_flat.reshape(scenario_reps,property_reps,params["seed_reps"])
-    weighted_emissions_intensities = weighted_emissions_intensities_flat.reshape(scenario_reps,property_reps,params["seed_reps"])
 
     if print_simu:
         print(
@@ -134,7 +133,6 @@ def main(
     createFolder(fileName)
 
     save_object(emissions_cumulative, fileName + "/Data", "emissions_cumulative")
-    save_object(weighted_emissions_intensities, fileName + "/Data", "weighted_emissions_intensities")
     save_object(params, fileName + "/Data", "base_params")
     save_object(property_varied, fileName + "/Data", "property_varied")
     save_object(property_varied_title, fileName + "/Data", "property_varied_title")
@@ -144,7 +142,6 @@ def main(
     #############################
     #SAVE AS CSV for miquel
     save_data_csv_2D(emissions_cumulative, fileName + "/Data", "emissions_cumulative")
-    save_data_csv_2D(weighted_emissions_intensities, fileName + "/Data", "weighted_emissions_intensities")
 
     return fileName
 
