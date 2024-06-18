@@ -127,8 +127,8 @@ def main(
     seed_reps = base_params["seed_reps"]
     #emissions plot
     plot_emissions_lines(fileName, emissions_cumulative, scenarios_titles ,property_values_list,"Cumulative carbon emissions, E", "carbon_emissions")
-    #plot_scatter_end_points_emissions_scatter(fileName, emissions_cumulative, scenarios_titles ,property_values_list, "Cumulative carbon emissions, E", "carbon_emissions")
-    #plot_means_end_points_emissions(fileName, emissions_cumulative, scenarios_titles ,property_values_list,"Cumulative carbon emissions, E", "carbon_emissions")
+    plot_scatter_end_points_emissions_scatter(fileName, emissions_cumulative, scenarios_titles ,property_values_list, "Cumulative carbon emissions, E", "carbon_emissions")
+    plot_means_end_points_emissions(fileName, emissions_cumulative, scenarios_titles ,property_values_list,"Cumulative carbon emissions, E", "carbon_emissions")
 
     #
     #plot_scatter_end_points_emissions_scatter(fileName, weighted_emissions_intensities, scenarios_titles ,property_values_list,"Weighted emissions intensities, EI", "weighted_emissions_intensities")
@@ -137,5 +137,5 @@ def main(
     plt.show()
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/tax_sweep_00_11_55__18_06_2024",
+        fileName = "results/tax_sweep_10_02_33__18_06_2024",
     )
