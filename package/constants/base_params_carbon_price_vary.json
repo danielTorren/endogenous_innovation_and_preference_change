@@ -1,5 +1,5 @@
 {
-    "seed_reps":100,
+    "seed_reps":30,
     "duration_no_OD_no_stock_no_policy": 0,
     "duration_OD_no_stock_no_policy": 0,
     "duration_OD_stock_no_policy":240,

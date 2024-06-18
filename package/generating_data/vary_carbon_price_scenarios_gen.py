@@ -34,7 +34,7 @@ def arrange_scenarios_tax(base_params, carbon_tax_vals,scenarios,property_varied
     # 1. Run with no preference change, no innovation
     if 1 in scenarios:
         base_params_copy_1 = deepcopy(base_params_copy)
-        base_params_copy_1["parameters_social_network"]["fixed_preferences_state"] = 0
+        base_params_copy_1["parameters_social_network"]["fixed_preferences_state"] = 1
         base_params_copy_1["parameters_firm_manager"]["static_tech_state"] = 1
         #print(" base_params_copy_1", base_params_copy_1)
         #quit()
