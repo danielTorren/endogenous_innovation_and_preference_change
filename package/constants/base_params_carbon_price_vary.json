@@ -47,7 +47,7 @@
         "clipping_epsilon": 1e-5, 
         "preference_drift_std": 0.001, 
         "confirmation_bias": 5,
-        "emissions_max": 1.5e5,
+        "emissions_max": 1.5e8,
         "upsilon": 0.05,
         "upsilon_E": 0.01,
         "upsilon_E_std": 0.1,
