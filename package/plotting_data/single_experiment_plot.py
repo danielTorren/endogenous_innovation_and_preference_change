@@ -1132,9 +1132,7 @@ def weighted_owned_average_plots_no_public(fileName, data_social_network):
 def plot_firm_count_and_market_concentration(fileName, data_social_network):
     # Initialize a dictionary to store the data
     data = {}
-
     
-
     # Extract data
     for time_point, snapshot in enumerate(data_social_network.history_firm_count):
         for firm, cars in snapshot.items():
