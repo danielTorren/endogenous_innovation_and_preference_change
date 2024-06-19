@@ -130,10 +130,6 @@ def main(
     plot_scatter_end_points_emissions_scatter(fileName, emissions_cumulative, scenarios_titles ,property_values_list, "Cumulative carbon emissions, E", "carbon_emissions")
     plot_means_end_points_emissions(fileName, emissions_cumulative, scenarios_titles ,property_values_list,"Cumulative carbon emissions, E", "carbon_emissions")
 
-    #
-    #plot_scatter_end_points_emissions_scatter(fileName, weighted_emissions_intensities, scenarios_titles ,property_values_list,"Weighted emissions intensities, EI", "weighted_emissions_intensities")
-    #plot_means_end_points_emissions(fileName, weighted_emissions_intensities, scenarios_titles ,property_values_list,"Weighted emissions intensities, EI", "weighted_emissions_intensities")
-
     plt.show()
 if __name__ == "__main__":
     plots = main(

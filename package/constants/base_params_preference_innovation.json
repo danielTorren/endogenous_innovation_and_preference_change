@@ -1,43 +1,8 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
-# imports
-from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    save_data_csv_firms,
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
-
-def main(
-    base_params
-) -> str: 
-
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
-    print("fileName:", fileName)
-
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    print("Emmissions = ",controller.social_network.total_carbon_emissions_cumulative)
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-
-    return fileName
-
-if __name__ == "__main__":
-
-    base_params = {
-    "seed_reps":400,
+{
+    "seed_reps":50,
     "duration_no_OD_no_stock_no_policy": 0,
     "duration_OD_no_stock_no_policy": 0,
-    "duration_OD_stock_no_policy":240,
+    "duration_OD_stock_no_policy": 240,
     "duration_OD_stock_policy": 360,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
@@ -95,19 +60,5 @@ if __name__ == "__main__":
         "lambda_poisson_gamma": 0.5,
         "public_transport_attributes": [0.3,0.7,0.1],
         "price_constant": 0.5
-        }
     }
-
-    
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
-
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 1
-    social_plots = 1
-    firm_plots = 1
-
-    if RUN_PLOT:
-        plotting_main(fileName = fileName, social_plots = social_plots, firm_plots = firm_plots)
+}

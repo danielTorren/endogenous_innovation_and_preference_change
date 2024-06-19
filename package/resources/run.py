@@ -65,6 +65,20 @@ def emissions_intensities_parallel_run(
     emissions_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions_intensities)(i) for i in params_dict)
 
     return np.asarray(emissions_list)
+#########################################################################################
+#multi-run
+def generate_preferences(params):
+    data = generate_data(params)
+    return data.social_network.low_carbon_preference_arr
+
+def preferences_parallel_run(
+        params_dict: list[dict]
+) -> npt.NDArray:
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_emissions_intensities(i) for i in params_dict]
+    preferences_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_preferences)(i) for i in params_dict)
+
+    return np.asarray(preferences_list)
 
 ######################################################################################
 

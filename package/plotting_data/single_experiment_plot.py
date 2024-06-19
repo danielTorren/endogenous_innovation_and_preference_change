@@ -1279,7 +1279,7 @@ def main(
     firm_plots = 1
     ) -> None: 
 
-    social_plots = 1
+    social_plots = 0
     firm_plots = 1
 
     base_params = load_object(fileName + "/Data", "base_params")
@@ -1308,8 +1308,8 @@ def main(
     if firm_plots:
         ##FIRM PLOTS
         #plot_firm_count(fileName, data_social_network)
-        #plot_firm_count_and_market_concentration(fileName, data_social_network)
-        plot_research_clean_count(fileName, data_firm_manager,data_social_network)
+        plot_firm_count_and_market_concentration(fileName, data_social_network)
+        #plot_research_clean_count(fileName, data_firm_manager,data_social_network)
         #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
         """THIS DOESNT QUITE WORK"""
         #scatter_trace_plots_offered(fileName, data_firm_manager, 'environmental_score', 'cost')
@@ -1317,8 +1317,8 @@ def main(
         #offered_properties(fileName,data_firm_manager, data_social_network)
         #offered_plots(fileName,data_firm_manager, data_social_network)
         #researched_tech(fileName,data_firm_manager, data_social_network)
-        plot_len_n(fileName,data_firm_manager, data_social_network)
-        plot_len_alt(fileName,data_firm_manager, data_social_network)
+        #plot_len_n(fileName,data_firm_manager, data_social_network)
+        #plot_len_alt(fileName,data_firm_manager, data_social_network)
 
 
     #final_scatter_price_EI(fileName, data_firm_manager, dpi_save)
@@ -1329,7 +1329,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_15_42_44__13_06_2024",
+        fileName = "results/single_experiment_15_25_43__19_06_2024",
     )
 
 
