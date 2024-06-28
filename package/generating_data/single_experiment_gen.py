@@ -34,17 +34,26 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_reps":400,
+    #"seed_reps":1,
     "duration_no_OD_no_stock_no_policy": 0,
     "duration_OD_no_stock_no_policy": 0,
     "duration_OD_stock_no_policy":240,
     "duration_OD_stock_policy": 360,
+    "duration_future":360,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "parameters_carbon_policy":{
         "carbon_price_init": 0,
         "carbon_price": 1,
         "carbon_price_state": "linear"
+    },
+    "parameters_future_carbon_policy":{
+        "carbon_price_init": 1,
+        "carbon_price": 0,
+        "carbon_price_state": "linear"
+    },
+    "parameters_future_information_provision_policy":{
+
     },
     "parameters_firm_manager": {
         "static_tech_state": 0,
@@ -66,12 +75,13 @@ if __name__ == "__main__":
         "fixed_preferences_state":0,  
         "redistribution_state": 1,      
         "save_timeseries_data_state": 1,
-        "preference_drift_state": 1,
+        "preference_drift_state": 0,
         "heterogenous_init_preferences": 0,
         "cumulative_emissions_preference_state":1,
         "heterogenous_reaction_cumulative_emissions_state":1,
         "heterogenous_gamma_state": 1,
         "init_public_transport_state": 0,
+        "consumption_imitation_state":1,
         "network_structure_seed": 8, 
         "init_vals_seed": 8, 
         "preference_drift_seed": 4, 
@@ -84,9 +94,9 @@ if __name__ == "__main__":
         "clipping_epsilon": 1e-5, 
         "preference_drift_std": 0.001, 
         "confirmation_bias": 20,
-        "emissions_max": 1.5e5,
-        "upsilon": 0.05,
-        "upsilon_E": 0.01,
+        "emissions_max": 10000,
+        "upsilon": 0.02,
+        "upsilon_E": 0.0,
         "upsilon_E_std": 0.1,
         "omega": 2,
         "delta": 0.01,

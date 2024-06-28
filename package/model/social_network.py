@@ -101,6 +101,7 @@ class Social_Network:
 
         # social learning and bias
         self.upsilon = parameters_social_network["upsilon"]
+        self.consumption_imitation_state = parameters_social_network["consumption_imitation_state"]
         
         self.confirmation_bias = parameters_social_network["confirmation_bias"]
         if self.preference_drift_state:
@@ -242,11 +243,21 @@ class Social_Network:
     #UPDATE PREFERENCES
 
     def update_preferences(self):
-        social_influence = np.matmul(self.weighting_matrix, self.low_carbon_preference_arr)
+
+        if self.consumption_imitation_state:
+            environmental_score_vec = np.asarray([car.environmental_score for car in self.car_owned_vec])
+            on_sale_environmental_score_vec = np.asarray([car.environmental_score for car in self.cars_on_sale_all_firms])
+            min_env = min(on_sale_environmental_score_vec)
+            max_env = 
+            alt_env_score = self.normalize_vector_sum(environmental_score_vec)
+            social_influence = np.matmul(self.weighting_matrix, alt_env_score)
+        else:
+            social_influence = np.matmul(self.weighting_matrix, self.low_carbon_preference_arr)
 
         #idea is that noise is constant proportion of signal over timer
         if self.cumulative_emissions_preference_state_instant:
-            cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
+            cumulative_emissions_influence = self.total_carbon_emissions_flow/self.emissions_max
+            #cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
             low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*((1 - self.upsilon_E) * social_influence + self.upsilon_E*cumulative_emissions_influence) + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
         else:
             low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*social_influence + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise

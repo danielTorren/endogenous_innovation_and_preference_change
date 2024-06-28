@@ -17,29 +17,40 @@ class Controller:
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
         self.parameters_carbon_policy = parameters_controller["parameters_carbon_policy"]
+        self.parameters_future_carbon_policy = parameters_controller["parameters_future_carbon_policy"]
+        self.parameters_future_information_provision_policy = parameters_controller["parameters_future_information_provision_policy"]
 
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
-        
+        self.time_steps_max = parameters_controller["time_steps_max"]
 
         #TIME STUFF
         self.duration_no_OD_no_stock_no_policy = parameters_controller["duration_no_OD_no_stock_no_policy"] 
         self.duration_OD_no_stock_no_policy = parameters_controller["duration_OD_no_stock_no_policy"] 
         self.duration_OD_stock_no_policy = parameters_controller["duration_OD_stock_no_policy"] 
         self.duration_OD_stock_policy = parameters_controller["duration_OD_stock_policy"]
+        self.duration_future = parameters_controller["duration_future"]
 
         self.policy_start_time = self.duration_no_OD_no_stock_no_policy + self.duration_OD_no_stock_no_policy + self.duration_OD_stock_no_policy
-        
-        #CARBON PRICE
+        self.future_policy_start_time = self.policy_start_time + self.duration_OD_stock_policy
 
+        #CARBON PRICE - PAST
         self.carbon_price_state = self.parameters_carbon_policy["carbon_price_state"]
         self.carbon_price_policy = self.parameters_carbon_policy["carbon_price"]
         if self.carbon_price_state == "linear":
             self.carbon_price_init = self.parameters_carbon_policy["carbon_price_init"]
             self.carbon_price_policy_gradient = (self.carbon_price_policy - self.carbon_price_init) /self.duration_OD_stock_policy
         
-        self.update_carbon_price()
+        #CARBON PRICE - FUTURE
+        self.future_carbon_price_state = self.parameters_future_carbon_policy["carbon_price_state"]
+        self.future_carbon_price_policy = self.parameters_future_carbon_policy["carbon_price"]
+        if self.future_carbon_price_state == "linear":
+            self.future_carbon_price_init = self.parameters_future_carbon_policy["carbon_price_init"]
+            self.future_carbon_price_policy_gradient = (self.future_carbon_price_policy - self.future_carbon_price_init)/self.duration_future
+        
+        self.carbon_price_time_series = self.calculate_carbon_price_time_series()
+        self.carbon_price = self.carbon_price_time_series[0]
 
         # CREATE ID GENERATOR FOR FIRMS
         self.IDGenerator_firms = IDGenerator()
@@ -129,26 +140,46 @@ class Controller:
 
         return gamma_values
 
-
-    def update_carbon_price(self):
-        if self.t_controller < self.policy_start_time:
-            self.carbon_price = 0
-        elif self.t_controller == self.policy_start_time:
+    def assign_carbon_price(self, time, carbon_price):
+        if time < self.policy_start_time:
+            carbon_price = 0
+        elif time == self.policy_start_time:
             if self.carbon_price_state == "flat":
-                self.carbon_price = self.carbon_price_policy
+                carbon_price = self.carbon_price_policy
             elif self.carbon_price_state == "linear":
-                self.carbon_price = self.carbon_price_init
-        elif self.t_controller > self.policy_start_time:
+                carbon_price = self.carbon_price_init
+        elif (time > self.policy_start_time) and (time < self.future_policy_start_time):
             if self.carbon_price_state == "linear":
-                self.carbon_price += self.carbon_price_policy_gradient
+                carbon_price += self.carbon_price_policy_gradient
             else:
-                self.carbon_price = self.carbon_price_policy
+                carbon_price = self.carbon_price_policy
+        elif time == self.future_policy_start_time:
+            if self.future_carbon_price_state == "flat":
+                carbon_price = self.future_carbon_price_policy
+            elif self.future_carbon_price_state == "linear":
+                carbon_price = self.future_carbon_price_init
+        elif time > self.future_policy_start_time:
+            if self.future_carbon_price_state == "linear":
+                carbon_price += self.future_carbon_price_policy_gradient
+            else:
+                carbon_price = self.future_carbon_price_policy
+        return carbon_price
+    
+    def calculate_carbon_price_time_series(self):
+        time_series = np.arange(self.time_steps_max)
+        carbon_price  = 0
+        carbon_price_series = [carbon_price]
+        for t in time_series:
+            carbon_price = self.assign_carbon_price(t, carbon_price)
+            carbon_price_series.append(carbon_price)
+        return carbon_price_series
 
 
     def next_step(self):
         self.t_controller+=1
         #print("self.t_controller", self.t_controller)
-        self.update_carbon_price()
+        #self.update_carbon_price()
+        self.carbon_price = self.carbon_price_time_series[self.t_controller]
 
         self.history_carbon_price.append(self.carbon_price)
         # Update firms based on the social network and market conditions

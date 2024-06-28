@@ -29,8 +29,8 @@ def burn_in(ax,data):
     if data.duration_OD_stock_no_policy > 0:
         ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy + data.duration_OD_stock_no_policy),ls="--",  color="black")#OD
     
-    #if data.duration_OD_stock_policy > 0:
-    #    ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy + data.duration_OD_stock_no_policy + data.duration_OD_stock_policy ),ls="--",  color="black")#OD
+    if data.duration_OD_stock_policy > 0:
+        ax.axvline(x = (data.duration_no_OD_no_stock_no_policy+data.duration_OD_no_stock_no_policy + data.duration_OD_stock_no_policy + data.duration_OD_stock_policy ),ls="--",  color="black")#OD
 
 def plot_emissions_individuals(fileName, data, dpi_save):
 
@@ -1231,10 +1231,10 @@ def plot_research_clean_count(fileName, data_firm_manager,data_social_network):
 
 def plot_carbon_price(fileName, data_controller):
     time_series = data_controller.history_carbon_price
-    
+    data_social_network = data_controller.social_network
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(range(len(time_series)), time_series)
-
+    burn_in(ax,data_social_network)
     # Labeling the plot
     ax.set_xlabel('Time')
     ax.set_ylabel('Carbon price')
@@ -1277,7 +1277,7 @@ def main(
     firm_plots = 1
     ) -> None: 
 
-    social_plots = 0
+    social_plots = 1
     firm_plots = 1
 
     base_params = load_object(fileName + "/Data", "base_params")
@@ -1292,9 +1292,9 @@ def main(
         plot_low_carbon_preference(fileName, data_social_network)
         plot_em_flow(fileName, data_social_network)
         #plot_emissions_stock(fileName, data_social_network)
-        weighted_owned_average_plots_no_public(fileName, data_social_network)
-        #weighted_owned_average_plots(fileName, data_social_network)
-        #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
+        #weighted_owned_average_plots_no_public(fileName, data_social_network)
+        weighted_owned_average_plots(fileName, data_social_network)
+        scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
         if base_params["parameters_social_network"]["init_public_transport_state"]:
@@ -1307,7 +1307,7 @@ def main(
         ##FIRM PLOTS
         #plot_firm_count(fileName, data_social_network)
         plot_firm_count_and_market_concentration(fileName, data_social_network)
-        #plot_research_clean_count(fileName, data_firm_manager,data_social_network)
+        plot_research_clean_count(fileName, data_firm_manager,data_social_network)
         #weighted_bought_average_plots(fileName, data_social_network, data_firm_manager)
         """THIS DOESNT QUITE WORK"""
         #scatter_trace_plots_offered(fileName, data_firm_manager, 'environmental_score', 'cost')
@@ -1327,7 +1327,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_15_25_43__19_06_2024",
+        fileName = "results/single_experiment_14_58_41__28_06_2024",
     )
 
 

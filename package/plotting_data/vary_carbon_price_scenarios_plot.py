@@ -119,6 +119,7 @@ def main(
 
     property_values_list = load_object(fileName + "/Data", "property_values_list")       
     base_params = load_object(fileName + "/Data", "base_params") 
+    print(base_params)
     scenarios = [1,2]#load_object(fileName + "/Data", "scenarios")
     #print(scenarios)
 
@@ -137,5 +138,5 @@ def main(
     plt.show()
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/tax_sweep_00_29_03__19_06_2024",
+        fileName = "results/tax_sweep_00_32_24__19_06_2024",
     )
