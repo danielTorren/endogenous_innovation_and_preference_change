@@ -20,6 +20,7 @@ from package.resources.plot import (
     plot_network_timeseries
 )
 import matplotlib.lines as mlines
+from scipy.stats import sem
 
 def burn_in(ax,data):
     if data.duration_no_OD_no_stock_no_policy > 0:
@@ -92,11 +93,6 @@ def plot_firm_count_and_market_concentration(fileName, data_social_network_list)
     plotName = fileName + "/Plots"
     f = plotName + "/list_firm_count_and_market_concentration"
     fig.savefig(f + ".png", dpi=600, format="png")
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import sem
 
 def plot_mean_market_concentration(fileName, data_social_network_list):
     # Initialize a list to store the market concentration for all networks
@@ -303,11 +299,6 @@ def plot_em_flow(fileName, data_social_network_list):
     f = plotName + "/em_flow"
     fig.savefig(f + ".png", dpi=600, format="png")
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-
 def list_scatter_trace_plots_offered(fileName, data_firm_manager_list, x_param, y_param):
     # Initialize lists to hold values over time for all firm managers
     all_time_points = []
@@ -373,6 +364,41 @@ def list_scatter_trace_plots_offered(fileName, data_firm_manager_list, x_param, 
     f = plotName + f"/scatter_{x_param}_vs_{y_param}_offered"
     fig.savefig(f + ".png", dpi=600, format="png")
 
+
+def plot_mean_preference(fileName, data_social_network_list):
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    mean_identity_series_list = []
+    for sn in data_social_network_list:
+        # Calculate mean of the identity time series for each individual
+        mean_identity_series = np.mean(sn.history_preference_list, axis=1)
+        mean_identity_series_list.append(mean_identity_series)
+    
+    mean_identity_series_arr = np.asarray(mean_identity_series_list)
+    
+    # Calculate mean and standard error of the mean (SEM) for each time point
+    mean_emission = mean_identity_series_arr.mean(axis=0)
+    sem_emission = sem(mean_identity_series_arr, axis=0, nan_policy='omit')
+
+    # Calculate the 95% confidence interval
+    ci_upper = mean_emission + 1.96 * sem_emission
+    ci_lower = mean_emission - 1.96 * sem_emission
+
+    time_points = data_social_network_list[0].history_time_social_network
+    
+    ax.plot(time_points, mean_emission, color='blue', linestyle='-', linewidth=2, label='Mean Environmental Preference')
+    ax.fill_between(time_points, ci_lower, ci_upper, color='blue', alpha=0.2, label='95% CI')
+
+    ax.set_xlabel(r"Time")
+    ax.set_ylabel(r"Environmental preference")
+    #ax.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/timeseries_preference_MEAN"
+    fig.savefig(f + ".png", dpi=600, format="png")
+    plt.show()
+
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     ) -> None: 
@@ -380,17 +406,18 @@ def main(
     data_controller_list = load_object(fileName + "/Data", "data_list")
     data_social_network_list = [data_controller.social_network for data_controller in data_controller_list]
     data_firm_manager_list = [data_controller.firm_manager for data_controller in data_controller_list]
+    
     #plot_firm_count_and_market_concentration(fileName, data_social_network_list)
-    #plot_mean_market_concentration(fileName, data_social_network_list)
-    #list_weighted_owned_average_plots_no_public(fileName, data_social_network_list)
-    #plot_em_flow(fileName, data_social_network_list)
-    list_scatter_trace_plots_offered(fileName, data_firm_manager_list, "cost", "environmental_score")
-
+    plot_mean_market_concentration(fileName, data_social_network_list)
+    list_weighted_owned_average_plots_no_public(fileName, data_social_network_list)
+    plot_em_flow(fileName, data_social_network_list)
+    #list_scatter_trace_plots_offered(fileName, data_firm_manager_list, "cost", "environmental_score")
+    plot_mean_preference(fileName, data_social_network_list)
     plt.show()
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/stochastic_runs_16_52_02__19_06_2024",
+        fileName = "results/stochastic_runs_15_11_15__16_07_2024",
     )
 
 

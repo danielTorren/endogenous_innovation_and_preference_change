@@ -38,14 +38,14 @@ class Controller:
         #CARBON PRICE - PAST
         self.carbon_price_state = self.parameters_carbon_policy["carbon_price_state"]
         self.carbon_price_policy = self.parameters_carbon_policy["carbon_price"]
-        if self.carbon_price_state == "linear":
+        if self.carbon_price_state == "linear" and self.duration_OD_stock_policy > 0:
             self.carbon_price_init = self.parameters_carbon_policy["carbon_price_init"]
             self.carbon_price_policy_gradient = (self.carbon_price_policy - self.carbon_price_init) /self.duration_OD_stock_policy
         
         #CARBON PRICE - FUTURE
         self.future_carbon_price_state = self.parameters_future_carbon_policy["carbon_price_state"]
         self.future_carbon_price_policy = self.parameters_future_carbon_policy["carbon_price"]
-        if self.future_carbon_price_state == "linear":
+        if self.future_carbon_price_state == "linear" and self.duration_future > 0:
             self.future_carbon_price_init = self.parameters_future_carbon_policy["carbon_price_init"]
             self.future_carbon_price_policy_gradient = (self.future_carbon_price_policy - self.future_carbon_price_init)/self.duration_future
         

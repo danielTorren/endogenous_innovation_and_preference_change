@@ -43,7 +43,7 @@ class Social_Network:
         self.preference_drift_state = parameters_social_network["preference_drift_state"]
         self.fixed_preferences_state = parameters_social_network["fixed_preferences_state"]#DEAL WITH BURN IN
         self.heterogenous_init_preferences = parameters_social_network["heterogenous_init_preferences"]
-        
+        self.emissions_flow_social_influence_state = parameters_social_network["emissions_flow_social_influence_state"]
         self.num_individuals = int(round(parameters_social_network["num_individuals"]))
         
         #FIXED PREFERENCES
@@ -247,8 +247,8 @@ class Social_Network:
         if self.consumption_imitation_state:
             environmental_score_vec = np.asarray([car.environmental_score for car in self.car_owned_vec])
             on_sale_environmental_score_vec = np.asarray([car.environmental_score for car in self.cars_on_sale_all_firms])
-            min_env = min(on_sale_environmental_score_vec)
-            max_env = 
+            min_env = min(min(on_sale_environmental_score_vec), min(environmental_score_vec))
+            max_env = max(max(on_sale_environmental_score_vec), max(environmental_score_vec))#FINISH THIS, NEED to normalize against the largest and smallest in both the owned and the available set.
             alt_env_score = self.normalize_vector_sum(environmental_score_vec)
             social_influence = np.matmul(self.weighting_matrix, alt_env_score)
         else:
@@ -256,8 +256,10 @@ class Social_Network:
 
         #idea is that noise is constant proportion of signal over timer
         if self.cumulative_emissions_preference_state_instant:
-            cumulative_emissions_influence = self.total_carbon_emissions_flow/self.emissions_max
-            #cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
+            if self.emissions_flow_social_influence_state:
+                cumulative_emissions_influence = self.total_carbon_emissions_flow/self.emissions_max
+            else:
+                cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
             low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*((1 - self.upsilon_E) * social_influence + self.upsilon_E*cumulative_emissions_influence) + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
         else:
             low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*social_influence + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
