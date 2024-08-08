@@ -1270,6 +1270,109 @@ def plot_em_flow(fileName, data_social_network):
     # fig.savefig(f + ".eps", dpi=dpi_save, format="eps")
     fig.savefig(f + ".png", dpi=600, format="png")
 
+def plot_proportion_environmental_score_thresholds(fileName, data_social_network, thresholds):
+    time_series_cars = data_social_network.history_car_owned_vec
+    time_series = data_social_network.history_time_social_network
+
+    proportions = {threshold: [] for threshold in thresholds}
+
+    for snapshot in time_series_cars:
+        valid_cars = [car for car in snapshot if car is not None]
+        
+        if valid_cars:
+            attributes_matrix = np.asarray([car.attributes_fitness for car in valid_cars])
+            environmental_scores = attributes_matrix[:, 1]
+            
+            for threshold in thresholds:
+                proportion_above_threshold = np.mean(environmental_scores >= threshold)
+                proportions[threshold].append(proportion_above_threshold)
+        else:
+            for threshold in thresholds:
+                proportions[threshold].append(np.nan)
+
+    # Convert to DataFrame for easier plotting
+    df_proportions = pd.DataFrame(proportions)
+    df_proportions['time'] = time_series
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for threshold in thresholds:
+        ax.plot(df_proportions['time'], df_proportions[threshold], label=f'Threshold {threshold}')
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Proportion of Owned Cars')
+    #ax.set_title('Proportion of Owned Cars Meeting Environmental Score Thresholds')
+    ax.legend(title='Environmental Score Thresholds')
+    ax.grid(True)
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/proportion_environmental_scores_thresholds"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+def plot_emissions_impact_effect(fileName, data_social_network):
+
+    em_arry = np.asarray(data_social_network.history_cumulative_carbon_emissions)
+    #print("em:arry",em_arry.shape )
+    emisisons_ratio_timeseries = em_arry/data_social_network.emissions_max
+    #print("emisisons_ratio_timeseries", emisisons_ratio_timeseries.shape)
+    #print("upsilon_E", data_social_network.upsilon_E.shape)
+    #quit()
+    #emissions_effect = data_social_network.upsilon*data_social_network.upsilon_E*emisisons_ratio_timeseries
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for up_e in data_social_network.upsilon_E:
+        em_series = data_social_network.upsilon*up_e*emisisons_ratio_timeseries
+        em_series_cum = np.cumsum(em_series)
+        ax.plot(data_social_network.history_time_social_network,em_series_cum)
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel("Cumulative effect on preferences due to cumulative emissions")
+    #ax.set_title('Proportion of Owned Cars Meeting Environmental Score Thresholds')
+    #ax.legend(title='Environmental Score Thresholds')
+    ax.grid(True)
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/cumu_e_effect"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
+
+def plot_difference_emissions_impact_effect(fileName, data_social_network):
+
+    em_arry = np.asarray(data_social_network.history_cumulative_carbon_emissions)
+    #print("em:arry",em_arry.shape )
+    emisisons_ratio_timeseries = em_arry/data_social_network.emissions_max
+    #print("emisisons_ratio_timeseries", emisisons_ratio_timeseries.shape)
+    #print("upsilon_E", data_social_network.upsilon_E.shape)
+    #quit()
+    #emissions_effect = data_social_network.upsilon*data_social_network.upsilon_E*emisisons_ratio_timeseries
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    data_t = np.asarray(data_social_network.history_preference_list).T
+    for i, up_e in enumerate(data_social_network.upsilon_E):
+        em_series = data_social_network.upsilon*up_e*emisisons_ratio_timeseries
+        em_series_cum = np.cumsum(em_series)
+
+        diff_data = data_t[i] - em_series_cum
+
+        ax.plot(data_social_network.history_time_social_network, diff_data)
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel("Difference in preferences and eumulative effect on preferences due to cumulative emissions")
+    #ax.set_title('Proportion of Owned Cars Meeting Environmental Score Thresholds')
+    #ax.legend(title='Environmental Score Thresholds')
+    ax.grid(True)
+    fig.tight_layout()
+
+    plotName = fileName + "/Plots"
+    f = plotName + "/diff_cumu_e_effect"
+    fig.savefig(f + ".png", dpi=600, format="png")
+
 def main(
     fileName = "results/single_experiment_15_05_51__26_02_2024",
     dpi_save = 600,
@@ -1278,23 +1381,27 @@ def main(
     ) -> None: 
 
     social_plots = 1
-    firm_plots = 1
+    firm_plots = 0
 
     base_params = load_object(fileName + "/Data", "base_params")
     data_controller= load_object(fileName + "/Data", "controller")
     data_social_network = data_controller.social_network
     data_firm_manager = data_controller.firm_manager
 
-    plot_carbon_price(fileName,data_controller)
+    #plot_carbon_price(fileName,data_controller)
 
     if social_plots:
         ###SOCIAL NETWORK PLOTS
+        plot_emissions_impact_effect(fileName, data_social_network)
+        plot_difference_emissions_impact_effect(fileName, data_social_network)
         plot_low_carbon_preference(fileName, data_social_network)
         plot_em_flow(fileName, data_social_network)
         #plot_emissions_stock(fileName, data_social_network)
         #weighted_owned_average_plots_no_public(fileName, data_social_network)
         weighted_owned_average_plots(fileName, data_social_network)
-        scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
+        thresholds_score = np.linspace(0.4,0.6,5)
+        plot_proportion_environmental_score_thresholds(fileName, data_social_network, thresholds_score)
+        #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'cost')
         #scatter_trace_plots(fileName, data_social_network, 'environmental_score', 'quality')
         #scatter_trace_plots(fileName, data_social_network, 'quality', 'cost')
         if base_params["parameters_social_network"]["init_public_transport_state"]:
@@ -1327,7 +1434,7 @@ def main(
 
 if __name__ == "__main__":
     plots = main(
-        fileName = "results/single_experiment_14_58_41__28_06_2024",
+        fileName = "results/single_experiment_12_44_02__17_07_2024",
     )
 
 

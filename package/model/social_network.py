@@ -11,6 +11,7 @@ import numpy.typing as npt
 from collections import defaultdict
 from copy import deepcopy
 from package.model.public_transport import Public_transport
+import scipy.sparse as sp
 # modules
 
 # Define the default factory function outside the method
@@ -222,16 +223,20 @@ class Social_Network:
             a networkx watts strogatz small world graph
         """
 
-        G = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
+        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
-        weighting_matrix = nx.to_numpy_array(G)
+        adjacency_matrix = nx.to_numpy_array(self.network)
+        self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
+        # Get the non-zero indices of the adjacency matrix
+        self.row_indices_sparse, self.col_indices_sparse = self.sparse_adjacency_matrix.nonzero()
 
-        norm_weighting_matrix = self.normlize_matrix(weighting_matrix)
-
+        #SCIPY ALT
+        norm_weighting_matrix = self.normlize_matrix(self.sparse_adjacency_matrix)
+        self.network_density = nx.density(self.network)
         return (
-            weighting_matrix,
+            adjacency_matrix,
             norm_weighting_matrix,
-            G,
+            network,
         )
         
     def generate_init_data_preferences(self) -> tuple[npt.NDArray, npt.NDArray]:
@@ -269,19 +274,32 @@ class Social_Network:
         return low_carbon_preferences
 
     #UPDATE WEIGHTING
-    def update_weightings(self):
+   
+    def normlize_sparse_matrix(self, matrix: sp.csr_matrix) -> sp.csr_matrix:
+        # Normalize the matrix row-wise
+        row_sums = np.array(matrix.sum(axis=1)).flatten()
+        row_sums[row_sums == 0] = 1  # Avoid division by zero
+        inv_row_sums = 1.0 / row_sums
+        # Create a diagonal matrix for normalization
+        diagonal_matrix = sp.diags(inv_row_sums)
+        # Multiply to normalize
+        norm_matrix = diagonal_matrix.dot(matrix)
 
-        difference_matrix = np.subtract.outer(self.low_carbon_preference_arr, self.low_carbon_preference_arr) 
-        alpha_numerator = np.exp(-np.multiply(self.confirmation_bias, np.abs(difference_matrix)))
-
-        non_diagonal_weighting_matrix = (
-            self.adjacency_matrix*alpha_numerator
-        )  # We want onlythose values that have network connections
-
-        norm_weighting_matrix = self.normlize_matrix(
-            non_diagonal_weighting_matrix
-        )  # normalize the matrix row wise
+        return norm_matrix
     
+    def update_weightings(self):
+        # Compute the differences only for the non-zero entries
+        differences = self.low_carbon_preference_arr[self.row_indices_sparse] - self.low_carbon_preference_arr[self.col_indices_sparse]
+        # Compute the weighting values only for the non-zero entries
+        weights = np.exp(-self.confirmation_bias * np.abs(differences))
+        # Create a sparse matrix with the same structure as the adjacency matrix
+        non_diagonal_weighting_matrix = sp.csr_matrix(
+            (weights, (self.row_indices_sparse, self.col_indices_sparse)),
+            shape=self.adjacency_matrix.shape
+        )
+        # Normalize the matrix row-wise
+        norm_weighting_matrix = self.normlize_sparse_matrix(non_diagonal_weighting_matrix)
+
         return norm_weighting_matrix
     
 ##################################################################################################################
