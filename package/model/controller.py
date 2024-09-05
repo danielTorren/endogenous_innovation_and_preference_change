@@ -106,7 +106,9 @@ class Controller:
         self.social_network = Social_Network(self.parameters_social_network)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
         
         #update values for the next step
-        self.controller_low_carbon_preference_arr = self.social_network.low_carbon_preference_arr
+        self.controller_ev_adoption_state_arr = self.social_network.ev_adoption_state_arr
+        self.controller_environmental_preference_arr =  self.social_network.environmental_preference_arr
+        self.controller_price_preference_arr = self.social_network.price_preference_arr
 
         self.history_carbon_price = [self.carbon_price]
 
@@ -177,19 +179,18 @@ class Controller:
 
     def next_step(self):
         self.t_controller+=1
-        #print("self.t_controller", self.t_controller)
-        #self.update_carbon_price()
+
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
 
         self.history_carbon_price.append(self.carbon_price)
+        
         # Update firms based on the social network and market conditions
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.controller_low_carbon_preference_arr)
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.ev_adoption_state_arr, self.environmental_preference_arr, self.price_preference_arr)
 
         # Update social network based on firm preferences
-        controller_low_carbon_preference_arr = self.social_network.next_step(self.carbon_price, cars_on_sale_all_firms)
+        self.controller_ev_adoption_state_arr, self.controller_environmental_preference_arr, self.controller_price_preference_arr = self.social_network.next_step(self.carbon_price, cars_on_sale_all_firms)
+        self.cars_on_sale_all_firms  = cars_on_sale_all_firms
 
-        self.cars_on_sale_all_firms  = cars_on_sale_all_firms#
-        self.controller_low_carbon_preference_arr = controller_low_carbon_preference_arr
 
 
 

@@ -31,12 +31,30 @@ class Firm_Manager:
         self.utility_boost_const = parameters_firm_manager["utility_boost_const"]
         self.price_constant = parameters_firm_manager["price_constant"]
 
-        self.segment_number = int(parameters_firm_manager["segment_number"])
-        self.expected_segment_share = [1 / self.segment_number] * self.segment_number
-        self.segment_preference_bounds = np.linspace(0, 1, self.segment_number + 1)
-        self.width_segment = self.segment_preference_bounds[1] - self.segment_preference_bounds[0]
-        self.segment_preference = np.arange(self.width_segment / 2, 1, self.width_segment)
-        self.segment_preference_reshaped = self.segment_preference[:, np.newaxis]
+
+        #PRICE
+        self.segment_number_price_preference = int(parameters_firm_manager["segment_number_price_preference"])
+        self.expected_segment_share_price_preference = [1 / self.segment_number_price_preference] * self.segment_number_price_preference
+        self.segment_price_preference_bounds = np.linspace(0, 1, self.segment_number_price_preference + 1)
+        self.width_price_segment = self.segment_price_preference_bounds[1] - self.segment_price_preference_bounds[0]
+        self.segment_price_preference = np.arange(self.width_price_segment / 2, 1, self.width_price_segment)
+        self.segment_price_reshaped = self.segment_price_preference[:, np.newaxis]
+
+        #INNOVATIVENESS
+        self.segment_number_innovation_preference = int(parameters_firm_manager["segment_number_innovation_preference"])
+        self.expected_segment_share_innovation_preference = [1 / self.segment_number_innovation_preference] * self.segment_number_innovation_preference
+        self.segment_innovation_preference_bounds = np.linspace(0, 1, self.segment_number_innovation_preference + 1)
+        self.width_innovation_segment = self.segment_innovation_preference_bounds[1] - self.segment_innovation_preference_bounds[0]
+        self.segment_innovation_preference = np.arange(self.width_innovation_segment / 2, 1, self.width_innovation_segment)
+        self.segment_innovation_reshaped = self.segment_innovation_preference[:, np.newaxis]
+
+        # ENVIRONMENTAL PREFERENCE
+        self.segment_number_environemental_preference = int(parameters_firm_manager["segment_number_environemental_preference"])
+        self.expected_segment_share_environemental_preference = [1 / self.segment_number_environemental_preference] * self.segment_number_environemental_preference
+        self.segment_environemental_preference_bounds = np.linspace(0, 1, self.segment_number_environemental_preference + 1)
+        self.width_environemental_segment = self.segment_environemental_preference_bounds[1] - self.segment_environemental_preference_bounds[0]
+        self.segment_environemental_preference = np.arange(self.width_environemental_segment / 2, 1, self.width_environemental_segment)
+        self.segment_environemental_reshaped = self.segment_environemental_preference[:, np.newaxis]
 
         self.max_profitability = self.markup*self.num_individuals#What if everyone bought your car then this is how much you would make
         #self.max_profitability = (1/self.J)*self.markup*self.num_individuals# what if everyone bought your tech, but also everyone else has the tech too? idunno just need it to be smaller
@@ -345,15 +363,21 @@ class Firm_Manager:
 
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return np.asarray(cars_on_sale_all_firms)
-    
-    def next_step(self, carbon_price, low_carbon_preference_arr):
+
+    def update_segement_count(self, ev_adoption_state_arr, environmental_preference_arr, price_preference_arr):
+        self.segment_ev_adoption_state_count, __ = np.histogram(ev_adoption_state_arr, bins = self.segment_innovation_preference_bounds)
+        #ONLY CALC THE FOLLOWING IF THEY ACUTALLY CHANGE OVER TIME
+        self.segment_environmental_consumer_count, __ = np.histogram(environmental_preference_arr, bins = self.segment_environemental_preference_bounds)
+        self.segment_price_consumer_count, __ = np.histogram(price_preference_arr, bins = self.segment_price_preference_bounds)
+
+    def next_step(self, carbon_price, ev_adoption_state_arr, environmental_preference_arr, price_preference_arr):
         self.t_firm_manager += 1
 
         #print("STEP", self.t_firm_manager)
         self.list_research_tech = []
         self.carbon_price = carbon_price
-        self.segment_consumer_count, __ = np.histogram(low_carbon_preference_arr, bins = self.segment_preference_bounds)
-        
+
+        self.update_segement_count(ev_adoption_state_arr, environmental_preference_arr, price_preference_arr)
         utilities_competitors =  self.utility_buy_matrix(self.car_attributes_matrix)
         
         self.green_research_bools = np.asarray([None]*self.J)

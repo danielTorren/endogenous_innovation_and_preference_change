@@ -5,6 +5,7 @@ Created: 10/10/2022
 
 # imports
 from ctypes import util
+import bleach
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
@@ -113,32 +114,35 @@ class Social_Network:
             self.clipping_epsilon = 0     
         
         # create network
-        (
-            self.adjacency_matrix,
-            self.weighting_matrix,
-            self.network,
-        ) = self.create_weighting_matrix()
+        self.adjacency_matrix, self.network = self.create_network()
 
         self.network_density = nx.density(self.network)
 
-        if self.heterogenous_init_preferences:
-            self.a_preferences = parameters_social_network["a_preferences"]
-            self.b_preferences = parameters_social_network["b_preferences"]
-            (
-                self.low_carbon_preference_arr_init
-            ) = self.generate_init_data_preferences()
-        else:
-            self.low_carbon_preference_arr_init = np.asarray([self.clipping_epsilon]*self.num_individuals)
+        ###############################################################################
+
+        #GENERATE ENVIRONMENTAL PREFERENCE - EXGENOUS AND FIXED
+        self.a_preferences = parameters_social_network["a_preferences"]
+        self.b_preferences = parameters_social_network["b_preferences"]
+        self.environmental_preference_arr = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
         
+        ################################################################################
+        
+        #GENERATE INNOVATIVENESS PREFERERNCES 
 
-        #NOW SET SEED FOR THE IMPERFECT LEARNING
-        np.random.seed(self.preference_drift_seed)
+        self.a_innovativeness = parameters_social_network["a_innovativeness"]
+        self.b_innovativeness = parameters_social_network["b_innovativeness"]
+        self.innovativeness_arr_init = np.random.beta( self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
+        self.ev_adoption_state_arr = np.zeros(self.num_individuals)
 
-        self.low_carbon_preference_arr = self.low_carbon_preference_arr_init
-        self.low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
+        ################################################################################
+        
+        #GENERATE QUALITY PREFERERNCES 
 
-        if not self.fixed_preferences_state_instant:
-            self.weighting_matrix = self.update_weightings()
+        self.a_price = parameters_social_network["a_price"]
+        self.b_price = parameters_social_network["b_price"]
+        self.price_preference_arr = np.random.beta( self.a_price, self.b_price, size=self.num_individuals)
+
+        #HOW DO I START OFF THE SIMUALTION? ASSUME THERE ARE NO EVs!
 
         #FIX
         self.total_carbon_emissions_cumulative = 0#this are for post tax
@@ -159,20 +163,14 @@ class Social_Network:
             self.public_matrix = np.asarray([self.public_transport_attributes])
             self.public_option = Public_transport(self.public_transport_attributes)
             self.car_owned_vec = np.asarray([self.public_option]*self.num_individuals)
-            
-            #replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
             self.new_car_bool_vec = self.decide_purchase(self.init_car_vec)
-            #self.new_car_bool_vec = np.ones(self.num_individuals)
-            #self.car_owned_vec = replacement_candidate_vec
-            #self.car_age_vec = np.zeros(self.num_individuals)   
+
         else:
             self.car_owned_vec = np.asarray([None]*self.num_individuals)
             replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
             self.new_car_bool_vec = np.ones(self.num_individuals)
             self.car_owned_vec = replacement_candidate_vec
             self.car_age_vec = np.zeros(self.num_individuals)   
-        #calc consumption quantities
-
         
         self.firm_count = self.calc_bought_firm_car_count()
 
@@ -184,27 +182,8 @@ class Social_Network:
     
     def normalize_vector_sum(self, vec):
         return vec/sum(vec)
-    
-    def normlize_matrix(self, matrix: npt.NDArray) -> npt.NDArray:
-        """
-        Row normalize an array
 
-        parameters_social_network
-        ----------
-        matrix: npt.NDArrayf
-            array to be row normalized
-
-        Returns
-        -------
-        norm_matrix: npt.NDArray
-            row normalized array
-        """
-        row_sums = matrix.sum(axis=1)
-        norm_matrix = matrix / row_sums[:, np.newaxis]
-
-        return norm_matrix
-
-    def create_weighting_matrix(self) -> tuple[npt.NDArray, npt.NDArray, nx.Graph]:
+    def create_network(self) -> tuple[npt.NDArray, npt.NDArray, nx.Graph]:
         """
         Create watts-strogatz small world graph using Networkx library
 
@@ -230,79 +209,8 @@ class Social_Network:
         # Get the non-zero indices of the adjacency matrix
         self.row_indices_sparse, self.col_indices_sparse = self.sparse_adjacency_matrix.nonzero()
 
-        #SCIPY ALT
-        norm_weighting_matrix = self.normlize_matrix(self.sparse_adjacency_matrix)
         self.network_density = nx.density(self.network)
-        return (
-            adjacency_matrix,
-            norm_weighting_matrix,
-            network,
-        )
-        
-    def generate_init_data_preferences(self) -> tuple[npt.NDArray, npt.NDArray]:
-        low_carbon_preference_arr = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
-        return low_carbon_preference_arr
-
-##################################################################################################################
-    #IMPORTED FROM PAPER 2 VECTORISED SO IT WILL RUN FAST!
-    #UPDATE PREFERENCES
-
-    def update_preferences(self):
-
-        if self.consumption_imitation_state:
-            environmental_score_vec = np.asarray([car.environmental_score for car in self.car_owned_vec])
-            on_sale_environmental_score_vec = np.asarray([car.environmental_score for car in self.cars_on_sale_all_firms])
-            min_env = min(min(on_sale_environmental_score_vec), min(environmental_score_vec))
-            max_env = max(max(on_sale_environmental_score_vec), max(environmental_score_vec))#FINISH THIS, NEED to normalize against the largest and smallest in both the owned and the available set.
-            alt_env_score = self.normalize_vector_sum(environmental_score_vec)
-            social_influence = np.matmul(self.weighting_matrix, alt_env_score)
-        else:
-            social_influence = np.matmul(self.weighting_matrix, self.low_carbon_preference_arr)
-
-        #idea is that noise is constant proportion of signal over timer
-        if self.cumulative_emissions_preference_state_instant:
-            if self.emissions_flow_social_influence_state:
-                cumulative_emissions_influence = self.total_carbon_emissions_flow/self.emissions_max
-            else:
-                cumulative_emissions_influence = self.total_carbon_emissions_cumulative/self.emissions_max
-            low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*((1 - self.upsilon_E) * social_influence + self.upsilon_E*cumulative_emissions_influence) + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
-        else:
-            low_carbon_preferences = (1 - self.upsilon)*self.low_carbon_preference_arr + self.upsilon*social_influence + np.random.normal(0, self.preference_drift_std, size=(self.num_individuals))  # Gaussian noise
-        
-        low_carbon_preferences  = np.clip(low_carbon_preferences, 0 + self.clipping_epsilon, 1- self.clipping_epsilon)#this stops the guassian error from causing A to be too large or small thereby producing nans
-        
-        return low_carbon_preferences
-
-    #UPDATE WEIGHTING
-   
-    def normlize_sparse_matrix(self, matrix: sp.csr_matrix) -> sp.csr_matrix:
-        # Normalize the matrix row-wise
-        row_sums = np.array(matrix.sum(axis=1)).flatten()
-        row_sums[row_sums == 0] = 1  # Avoid division by zero
-        inv_row_sums = 1.0 / row_sums
-        # Create a diagonal matrix for normalization
-        diagonal_matrix = sp.diags(inv_row_sums)
-        # Multiply to normalize
-        norm_matrix = diagonal_matrix.dot(matrix)
-
-        return norm_matrix
-    
-    def update_weightings(self):
-        # Compute the differences only for the non-zero entries
-        differences = self.low_carbon_preference_arr[self.row_indices_sparse] - self.low_carbon_preference_arr[self.col_indices_sparse]
-        # Compute the weighting values only for the non-zero entries
-        weights = np.exp(-self.confirmation_bias * np.abs(differences))
-        # Create a sparse matrix with the same structure as the adjacency matrix
-        non_diagonal_weighting_matrix = sp.csr_matrix(
-            (weights, (self.row_indices_sparse, self.col_indices_sparse)),
-            shape=self.adjacency_matrix.shape
-        )
-        # Normalize the matrix row-wise
-        norm_weighting_matrix = self.normlize_sparse_matrix(non_diagonal_weighting_matrix)
-
-        return norm_weighting_matrix
-    
-##################################################################################################################
+        return adjacency_matrix, network
 
     def calc_total_emissions(self) -> int:
         total_network_emissions = sum([(1-car.environmental_score) for car in self.car_owned_vec])
@@ -319,31 +227,16 @@ class Social_Network:
 
         return firm_car_count
 
-
     #########################################################################
     #CHAT GPT ATTEMPT AT CONSUMPTION
     def utility_buy_matrix(self, car_attributes_matrix):
+        """UPDATE THIS TO THE NEW ONE - CAR ATTRIBUTES SHOULD BE ALREADY LIMITED BASED ON THE INNOVATIVENESS OF INDIVIDUAL"""
         low_carbon_preference_matrix = self.low_carbon_preference_arr[:, np.newaxis]
         gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
         price = (1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*(1-car_attributes_matrix[:,1])
         #print("price comp",(1 + self.markup) * car_attributes_matrix[0] , self.carbon_price*(1-car_attributes_matrix[1]))
         utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + gamma_vals_matrix*car_attributes_matrix[:,2] - self.price_constant * price
-        #print("self.utility_boost_const", self.utility_boost_const)
-        #print("utilties buy", np.min(utilities), np.max(utilities))
-        #quit()
-        #OLD
-        #utilities = low_carbon_preference_matrix*car_attributes_matrix[:,1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[:,2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1])
-        
-        """
-        if self.t_social_network > 300:
-            print("total", utilities)
-            print("1st",low_carbon_preference_matrix*car_attributes_matrix[:,1])
-            print("2nd", (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[:,2])
-            print("third", - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[:,0] + self.carbon_price*car_attributes_matrix[:,1]))
-            print("tax", self.carbon_price*car_attributes_matrix[:,1])
-            print("pure cost", (1 + self.markup) * car_attributes_matrix[:,0])
-            quit()
-        """
+
         return utilities + self.utility_boost_const
 
     def utility_buy_vec(self, car_attributes_matrix):
@@ -351,34 +244,17 @@ class Social_Network:
         gamma_vals_matrix = self.gamma_vals[:, np.newaxis]
         price = (1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*(1-car_attributes_matrix[1])
         utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + gamma_vals_matrix * car_attributes_matrix[2] - self.price_constant * price
-        #old
-        #utilities = low_carbon_preference_matrix*car_attributes_matrix[1] + (1 -  low_carbon_preference_matrix) * gamma_vals_matrix * car_attributes_matrix[2] - (1 - gamma_vals_matrix) * ((1 + self.markup) * car_attributes_matrix[0] + self.carbon_price*car_attributes_matrix[1])
-        
-        #quit()
+  
         return utilities + self.utility_boost_const
     
     def utility_keep(self, cars_owned_attributes_matrix):
-        #print(self.car_age_vec)
-        
         utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + self.gamma_vals*cars_owned_attributes_matrix[:,2] + self.utility_boost_const)*(1 - self.delta) ** self.car_age_vec
-        #OLD BOOST OUTSIDE
-        #utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + self.gamma_vals*cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
-        #return utilities + self.utility_boost_const
-        #print(self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] ,self.gamma_vals*cars_owned_attributes_matrix[:,2], self.utility_boost_const , (1 - self.delta) ** self.car_age_vec)
-        #print("KEEP", utilities)
-        #quit()
-        #OLD
-        #utilities = (self.low_carbon_preference_arr*cars_owned_attributes_matrix[:,1] + (1 - self.low_carbon_preference_arr) * cars_owned_attributes_matrix[:,2])*(1 - self.delta) ** self.car_age_vec
         return utilities 
 
     def choose_replacement_candidate(self, cars):
         car_attributes_matrix = np.asarray([x.attributes_fitness for x in cars])  # ARRAY OF ALL THE CARS
         
         utilities_matrix = self.utility_buy_matrix(car_attributes_matrix)  # FOR EACH INDIVIDUAL WHAT IS THE UTILITY OF THE DIFFERENT CARS
-        #print("utilities_matrix", utilities_matrix)
-        #quit()
-        #self.raw_utility_buy_0 = deepcopy(utilities_matrix[0])
-
         utilities_matrix[utilities_matrix < 0] = 0  # IF NEGATIVE UTILITY PUT IT AT 0
         
         # Calculate the denominator vector
@@ -417,9 +293,7 @@ class Social_Network:
 
         replacement_candidate_vec, utility_replacement_vec = self.choose_replacement_candidate(cars)
 
-       # print(utility_replacement_vec)
         # Create utility_old_vec based on whether omega is None or not
-        #print("TIME",self.t_social_network)
         if self.init_public_transport_state:
             has_car_mask = np.asarray([car is not self.public_option for car in self.car_owned_vec])
             cars_owned_attributes_matrix = np.asarray([car.attributes_fitness for car in self.car_owned_vec])#calc extra utility but throw it away
@@ -441,15 +315,9 @@ class Social_Network:
 
             # Find the index of the maximum utility along the first axis (i.e., across the rows)
             chosen_option_indices = np.argmax(utilities, axis=0)
-            #print(chosen_option_indices)
             row_indices = np.arange(self.num_individuals)
-            #print(utilities.shape)
-            #quit()
             utilities_trans = utilities.T
             self.owned_car_utility_vec = utilities_trans[row_indices, chosen_option_indices]
-            #print("self.owned_car_utility_vec", self.owned_car_utility_vec)
-            #print(self.owned_car_utility_vec.shape)
-            #quit()
             self.public_transport_prop = np.sum(chosen_option_indices == 0)/self.num_individuals#RECORD NUM PEOPLE PUBLIC TRANPORT
 
             # Determine the new boolean vector
@@ -511,7 +379,6 @@ class Social_Network:
             self.cumulative_emissions_preference_state_instant = 1
 
     def set_up_time_series_social_network(self):
-        self.history_preference_list = [self.low_carbon_preference_arr]
         self.history_utility_vec = [np.asarray([0]*self.num_individuals)]
         self.history_flow_carbon_emissions = [self.total_carbon_emissions_flow]
         self.history_cumulative_carbon_emissions = [self.total_carbon_emissions_cumulative]#FIX
@@ -540,7 +407,6 @@ class Social_Network:
         self.history_cumulative_carbon_emissions.append(self.total_carbon_emissions_cumulative)#THIS IS FUCKED#
         self.history_utility_vec.append(self.owned_car_utility_vec)
         self.history_flow_carbon_emissions.append(self.total_carbon_emissions_flow)
-        self.history_preference_list.append(self.low_carbon_preference_arr)
         self.history_time_social_network.append(self.t_social_network)
         self.history_firm_count.append(self.firm_count)
         self.history_car_owned_vec.append(self.car_owned_vec)
@@ -572,10 +438,9 @@ class Social_Network:
         #update new tech and prices
         self.cars_on_sale_all_firms = cars_on_sale_all_firms
 
-        #update preferences 
-        if not self.fixed_preferences_state_instant:
-            self.weighting_matrix = self.update_weightings()#UNSURE WHAT THE ORDER SHOULD BE HERE
-            self.low_carbon_preference_arr = self.update_preferences()
+        #update adoption_proportion
+        self.ev_adoption_state_arr = self.update_ev_adoption_proportion()
+        self.cars_on_sale_all_firms_limited = self.select_cars_available()
 
         #decide to buy new cars
         self.new_car_bool = self.decide_purchase(self.cars_on_sale_all_firms)
@@ -590,4 +455,4 @@ class Social_Network:
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.save_timeseries_data_social_network()
 
-        return self.low_carbon_preference_arr
+        return self.ev_adoption_state_arr, self.environmental_preference_arr, self.price_preference_arr
