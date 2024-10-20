@@ -1,8 +1,7 @@
-from re import S
 import numpy as np
 import random
 from package.model.cars import Car
-from package.model.nk_model import NKModel
+
 from package.model.firm import Firm
 
 class Firm_Manager:
@@ -31,6 +30,9 @@ class Firm_Manager:
         self.utility_boost_const = parameters_firm_manager["utility_boost_const"]
         self.price_constant = parameters_firm_manager["price_constant"]
 
+        #landscapes
+        self.landscape_ICE = parameters_firm_manager["landscape_ICE"]
+        self.landscape_EV = parameters_firm_manager["lanscape_EV"]
 
         #PRICE
         self.segment_number_price_preference = int(parameters_firm_manager["segment_number_price_preference"])
@@ -62,20 +64,11 @@ class Firm_Manager:
         np.random.seed(self.init_tech_seed)
         random.seed(self.init_tech_seed)
 
-        #Create NK model
-        self.nk_model = NKModel(self.N, self.K, self.A, self.rho, self.landscape_seed)
-
-
         self.green_research_bools = np.asarray([None]*self.J)
 
         self.init_firms()
-
-        #self.list_research_tech = []#JUST IN CASE
-        #Set up the data saving
         
         if self.save_timeseries_data_state:
-            self.len_n = [len(firm.unique_neighbouring_technologies_strings) for firm in self.firms]
-            self.len_alt = [0 for firm in self.firms]
             self.set_up_time_series_firm_manager()
 
     ####################################################################################################
@@ -91,31 +84,48 @@ class Firm_Manager:
         return inverted_binary_values
     
     def init_firms(self):
+        """
+        Generate a initial ICE and EV TECH TO START WITH 
+        """
         #Pick the initial technology
-        self.init_tech_component_string = f"{random.getrandbits(self.N):0{self.N}b}"
+        self.init_tech_component_string = f"{random.getrandbits(self.N):0{self.N}b}"#CAN USE THE SAME STRING FOR BOTH THE EV AND ICE
+
         #Generate the initial fitness values of the starting tecnology(ies)
         if self.init_tech_heterogenous_state:
             decimal_value = int(self.init_tech_component_string, 2)
             init_tech_component_string_list_N = self.invert_bits_one_at_a_time(decimal_value, len(self.init_tech_component_string))
             init_tech_component_string_list = np.random.choice(init_tech_component_string_list_N, self.J)
-            attributes_fitness_list = [self.nk_model.calculate_fitness(x) for x in init_tech_component_string_list]
-            self.init_tech_list = [Car(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.nk_model) for j in range(self.J)]
+            #handle ICE cars init
+            attributes_fitness_list_ICE = [self.landscape_ICE.calculate_fitness(x) for x in init_tech_component_string_list]
+            self.init_tech_list_ICE = [Car(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list_ICE[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_ICE) for j in range(self.J)]
+            #handle EV cars init - even if not use still need an initial technology
+            attributes_fitness_list_EV = [self.landscape_EV.calculate_fitness(x) for x in init_tech_component_string_list]
+            self.init_tech_list_EV = [Car(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list_EV[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_EV) for j in range(self.J)]
         else:
-            attributes_fitness = self.nk_model.calculate_fitness(self.init_tech_component_string)
+            #ICE
+            attributes_fitness_ICE = self.landscape_ICE.calculate_fitness(self.init_tech_component_string)
+            self.init_tech_list_ICE = [Car(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness_ICE, choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_ICE) for j in range(self.J)]
+            #EV
+            attributes_fitness_EV = self.landscape_EV.calculate_fitness(self.init_tech_component_string)
+            self.init_tech_list_EV = [Car(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness_EV, choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_EV) for j in range(self.J)]
 
-            self.init_tech_list = [Car(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness, choosen_tech_bool=1,N = self.N, nk_landscape=self.nk_model) for j in range(self.J)]
 
-        self.discovered_tech = {}#dictionary which includes an id which is the string and then vlaue is the attributes (PUT NEIGHBOUR IN HERE AS WELL!)
-        self.global_neighbouring_technologies = {}#USED TO STORE THE NEIGHBOURS OF OTHER TECHNOLOGIES
+        self.discovered_tech_ICE = {}#dictionary which includes an id which is the string and then vlaue is the attributes (PUT NEIGHBOUR IN HERE AS WELL!)
+        self.global_neighbouring_technologies_ICE = {}#USED TO STORE THE NEIGHBOURS OF OTHER TECHNOLOGIES
 
-        for tech in self.init_tech_list:
-            self.update_firm_manager_tech_list(tech)
+        self.discovered_tech_EV = {}#dictionary which includes an id which is the string and then vlaue is the attributes (PUT NEIGHBOUR IN HERE AS WELL!)
+        self.global_neighbouring_technologies_EV = {}#USED TO STORE THE NEIGHBOURS OF OTHER TECHNOLOGIES
+
+        for tech_ICE in self.init_tech_list_ICE:
+            self.update_firm_manager_tech_list(tech_ICE, 1)
+
+        for tech_EV in self.init_tech_list_EV:
+            self.update_firm_manager_tech_list(tech_EV, 0)
 
         #Create the firms, these store the data but dont do anything otherwise
-        self.firms = [Firm(j, self.init_tech_list[j]) for j in range(self.J)]
+        self.firms = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j]) for j in range(self.J)]
 
         #calculate the inital attributes of all the cars on sale
-        
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
         self.car_attributes_matrix = np.asarray([x.attributes_fitness for x in self.cars_on_sale_all_firms])
 
@@ -187,8 +197,6 @@ class Firm_Manager:
             if r >= self.rank_number - 1:#MAX RANK
                 rank = self.rank_number - 1
             firm.ranked_alternatives.append((tech, rank))
-            
-
 
     def rank_last_tech(self, firm):
         rank= 0
@@ -204,30 +212,17 @@ class Firm_Manager:
 
     ###############################################################################
     #DEADLING WITH GLOBAL MEMEORY AND CREATIGN TUMOURS!
-    def update_firm_manager_tech_list(self, chosen_technology):
-
-        """       
-        #TRY THIS AGAIN, buyt using keys now
-        if chosen_technology.component_string not in self.global_neighbouring_technologies.keys():
-            #print("ADDED TO GLOBAL", chosen_technology.component_string)
-            self.global_neighbouring_technologies[chosen_technology.component_string] = chosen_technology.inverted_tech_strings
-        #print(self.global_neighbouring_technologies[chosen_technology.component_string])
-
-        if chosen_technology.component_string not in self.discovered_tech.keys():
-            #print(self.t_firm_manager,"TECH ADDED", chosen_technology.component_string)
-            self.discovered_tech[chosen_technology.component_string] = chosen_technology.attributes_fitness
-            #print(chosen_technology.inverted_tech_strings)
+    def update_firm_manager_tech_list(self, chosen_technology, ICE_bool):
+        if ICE_bool:
+            self.global_neighbouring_technologies_ICE[chosen_technology.component_string] = chosen_technology.inverted_tech_strings
+            self.discovered_tech_ICE[chosen_technology.component_string] = chosen_technology.attributes_fitness
             for i, string in enumerate(chosen_technology.inverted_tech_strings):
-                #print("string", string)
-                if string not in self.discovered_tech.keys():#ADDED THE NEIGHBOURS TOO
-                    #print(chosen_technology.inverted_tech_fitness)
-                    #quit()
-                    self.discovered_tech[chosen_technology.inverted_tech_strings[i]] = chosen_technology.inverted_tech_fitness[i]
-        """
-        self.global_neighbouring_technologies[chosen_technology.component_string] = chosen_technology.inverted_tech_strings
-        self.discovered_tech[chosen_technology.component_string] = chosen_technology.attributes_fitness
-        for i, string in enumerate(chosen_technology.inverted_tech_strings):
-            self.discovered_tech[string] = chosen_technology.inverted_tech_fitness[i]
+                self.discovered_tech_ICE[string] = chosen_technology.inverted_tech_fitness[i]
+        else:
+            self.global_neighbouring_technologies_EV[chosen_technology.component_string] = chosen_technology.inverted_tech_strings
+            self.discovered_tech_EV[chosen_technology.component_string] = chosen_technology.attributes_fitness
+            for i, string in enumerate(chosen_technology.inverted_tech_strings):
+                self.discovered_tech_EV[string] = chosen_technology.inverted_tech_fitness[i]
     
     def generate_neighbouring_technologies(self, firm):
         #I want to
@@ -345,9 +340,6 @@ class Firm_Manager:
 
     def set_up_time_series_firm_manager(self):
         self.history_cars_on_sale_all_firms = [self.cars_on_sale_all_firms]
-        #self.history_researched_tech = [self.cars_on_sale_all_firms]#
-        self.history_len_n = [self.len_n]
-        self.history_len_alt = [self.len_alt]
         self.history_green_research_bools = [self.green_research_bools]
 
     def save_timeseries_data_firm_manager(self):
@@ -360,7 +352,6 @@ class Firm_Manager:
     def generate_cars_on_sale_all_firms(self):
         cars_on_sale_all_firms = []
         for firm in self.firms:
-
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return np.asarray(cars_on_sale_all_firms)
 

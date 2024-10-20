@@ -4,14 +4,11 @@ Created: 10/10/2022
 """
 
 # imports
-from ctypes import util
-import bleach
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
 from collections import defaultdict
-from copy import deepcopy
-from package.model.public_transport import Public_transport
+from package.model.rural_public_transport import Public_transport
 import scipy.sparse as sp
 # modules
 
@@ -75,7 +72,6 @@ class Social_Network:
                 self.upsilon_E = np.clip(self.upsilon_E_uncapped, 0, 1)
             else:
                 self.upsilon_E = self.upsilon_E_center
-
 
         self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
@@ -157,6 +153,11 @@ class Social_Network:
         self.utility_boost_const = parameters_social_network["utility_boost_const"]
         self.price_constant = parameters_social_network["price_constant"]
 
+        #PUBLIC TRANSPORT
+        self.rural_public_transport = parameters_social_network["rural_public_transport"]
+        self.urban_public_transport = parameters_social_network["urban_public_transport"]
+
+        #FIX THIS
         self.init_public_transport_state = parameters_social_network["init_public_transport_state"]
         if self.init_public_transport_state:
             self.public_transport_attributes = np.asarray(parameters_social_network["public_transport_attributes"])
@@ -164,7 +165,6 @@ class Social_Network:
             self.public_option = Public_transport(self.public_transport_attributes)
             self.car_owned_vec = np.asarray([self.public_option]*self.num_individuals)
             self.new_car_bool_vec = self.decide_purchase(self.init_car_vec)
-
         else:
             self.car_owned_vec = np.asarray([None]*self.num_individuals)
             replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
