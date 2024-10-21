@@ -8,178 +8,148 @@ import numpy as np
 import networkx as nx
 import numpy.typing as npt
 from collections import defaultdict
-from package.model.rural_public_transport import Public_transport
+#from package.model.public_transport import Rural_Public_Transport, Urban_Public_Transport
 import scipy.sparse as sp
-# modules
 
-# Define the default factory function outside the method
-def nested_defaultdict():
-    return defaultdict(int)
+import numpy as np
+from scipy.spatial import distance_matrix
+
+class SocialNetwork:
+    def __init__(self, users, adjacency_matrix):
+        self.adjacency_matrix = adjacency_matrix  # Small-world network structure (N x N matrix)
+        self.N = len(users)  # Number of users
 
 class Social_Network:
-
-    def __init__(self, parameters_social_network: list):#FEED THE STUFF STRAIGHT THAT ISNT USED BY SOCIAL NETWORK
+    def __init__(self, parameters_social_network: dict):
         """
-        Constructs all the necessary attributes for the Network object.
-
-        parameters_social_network
-        ----------
-        parameters_social_network : dict
-            Dictionary of parameters_social_network used to generate attributes, dict used for readability instead of super long list of input parameters_social_network
-
+        Constructs all the necessary attributes for the Social Network object.
         """
         self.t_social_network = 0
         
-
-        #TIME 
-        self.duration_no_OD_no_stock_no_policy = parameters_social_network["duration_no_OD_no_stock_no_policy"] 
-        self.duration_OD_no_stock_no_policy = parameters_social_network["duration_OD_no_stock_no_policy"] 
-        self.duration_OD_stock_no_policy = parameters_social_network["duration_OD_stock_no_policy"] 
-        self.duration_OD_stock_policy = parameters_social_network["duration_OD_stock_policy"]
-        self.policy_start_time = parameters_social_network["policy_start_time"]  
-
-        #INITAL STATE OF THE SYSTEMS, WHAT ARE THE RUN CONDITIONS
-        self.preference_drift_state = parameters_social_network["preference_drift_state"]
-        self.fixed_preferences_state = parameters_social_network["fixed_preferences_state"]#DEAL WITH BURN IN
-        self.heterogenous_init_preferences = parameters_social_network["heterogenous_init_preferences"]
-        self.emissions_flow_social_influence_state = parameters_social_network["emissions_flow_social_influence_state"]
-        self.num_individuals = int(round(parameters_social_network["num_individuals"]))
+        # Initialize parameters
+        self.init_time_parameters(parameters_social_network)
+        self.init_initial_state(parameters_social_network)
+        self.init_fixed_preferences(parameters_social_network)
+        self.init_cumulative_emissions(parameters_social_network)
+        self.init_network_settings(parameters_social_network)
+        self.init_learning_and_bias(parameters_social_network)
+        self.init_preference_distribution(parameters_social_network)
+        self.init_vehicle_and_transport(parameters_social_network)
         
-        #FIXED PREFERENCES
-        #NOTE THE DIFFERENCE BETWEEN THE STATE AND INSTANT STATE
+        self.createVehicleUsers()
+        
+        # Create network and calculate initial emissions
+        self.adjacency_matrix, self.network = self.create_network()
+        self.network_density = nx.density(self.network)
+        
+        self.extract_VehicleUser_data()
+
+        #record emissions
+        self.total_carbon_emissions_flow = self.calc_total_emissions()
+        self.total_carbon_emissions_cumulative = self.total_carbon_emissions_flow
+        
+        self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
+        if self.save_timeseries_data_state:
+            self.set_up_time_series_social_network()
+
+    def init_time_parameters(self, params):
+        self.duration_no_OD_no_stock_no_policy = params["duration_no_OD_no_stock_no_policy"] 
+        self.duration_OD_no_stock_no_policy = params["duration_OD_no_stock_no_policy"] 
+        self.duration_OD_stock_no_policy = params["duration_OD_stock_no_policy"] 
+        self.duration_OD_stock_policy = params["duration_OD_stock_policy"]
+        self.policy_start_time = params["policy_start_time"]
+
+    def init_initial_state(self, params):
+        self.preference_drift_state = params["preference_drift_state"]
+        self.fixed_preferences_state = params["fixed_preferences_state"]
+        self.heterogenous_init_preferences = params["heterogenous_init_preferences"]
+        self.emissions_flow_social_influence_state = params["emissions_flow_social_influence_state"]
+        self.num_individuals = int(round(params["num_individuals"]))
+
+    def init_fixed_preferences(self):
         if self.fixed_preferences_state: 
             self.fixed_preferences_state_instant = 1
         elif self.t_social_network < self.duration_no_OD_no_stock_no_policy:
             self.fixed_preferences_state_instant = 1
         else:
             self.fixed_preferences_state_instant = 0
-            
-        #CUMULATIVE EMISSIONS
-        #NOTE THE DIFFERENCE BETWEEN STATE AND INSTANT
-        self.cumulative_emissions_preference_state = parameters_social_network["cumulative_emissions_preference_state"]
-        if self.cumulative_emissions_preference_state: 
+
+    def init_cumulative_emissions(self, params):
+        self.cumulative_emissions_preference_state = params["cumulative_emissions_preference_state"]
+        if self.cumulative_emissions_preference_state:
             self.cumulative_emissions_preference_start_time = self.duration_no_OD_no_stock_no_policy + self.duration_OD_no_stock_no_policy
             if self.t_social_network < self.cumulative_emissions_preference_start_time:
                 self.cumulative_emissions_preference_state_instant = 0
             else:
                 self.cumulative_emissions_preference_state_instant = 1
             
-            self.upsilon_E_center = parameters_social_network["upsilon_E"]
-            self.heterogenous_reaction_cumulative_emissions_state  = parameters_social_network["heterogenous_reaction_cumulative_emissions_state"]
-            if self.heterogenous_reaction_cumulative_emissions_state: 
-                self.upsilon_E_std = parameters_social_network["upsilon_E_std"]
+            self.upsilon_E_center = params["upsilon_E"]
+            self.heterogenous_reaction_cumulative_emissions_state = params["heterogenous_reaction_cumulative_emissions_state"]
+            if self.heterogenous_reaction_cumulative_emissions_state:
+                self.upsilon_E_std = params["upsilon_E_std"]
                 self.upsilon_E_uncapped = np.random.normal(self.upsilon_E_center, self.upsilon_E_std, size=(self.num_individuals))
                 self.upsilon_E = np.clip(self.upsilon_E_uncapped, 0, 1)
             else:
                 self.upsilon_E = self.upsilon_E_center
 
-        self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
-        self.compression_factor_state = parameters_social_network["compression_factor_state"]
+    def init_network_settings(self, params):
+        np.random.seed(params["init_vals_seed"])  # Initialize random seed
+        self.network_structure_seed = params["network_structure_seed"]
+        self.init_vals_seed = params["init_vals_seed"]
+        self.preference_drift_seed = int(round(params["preference_drift_seed"]))
+        self.network_density_input = params["network_density"]
+        self.K_social_network = int(round((self.num_individuals - 1) * self.network_density_input))  # Calculate number of links
+        self.prob_rewire = params["prob_rewire"]
 
-        #seeds
-        self.network_structure_seed = parameters_social_network["network_structure_seed"] 
-        self.init_vals_seed = parameters_social_network["init_vals_seed"] 
-        self.preference_drift_seed = int(round(parameters_social_network["preference_drift_seed"]))
-
-        #carbon price
-        self.carbon_price = parameters_social_network["carbon_price"]
-
-        #Emissiosn
-        self.emissions_max = parameters_social_network["emissions_max"]#NEEDS TO BE SET ACCOUNTING FOR THE NUMBER OF TIME STEPS, PEOPLE AND CARBON INTENSITY, MAX = steps*people
-
-        np.random.seed(self.init_vals_seed)#For inital construction set a seed, this is the same for all runs, then later change it to preference_drift_seed
-
-        # network
-        self.network_density_input = parameters_social_network["network_density"]
-        self.K_social_network = int(round((self.num_individuals - 1)*self.network_density_input)) #reverse engineer the links per person using the density  d = 2m/n(n-1) where n is nodes and m number of edges
-        self.prob_rewire = parameters_social_network["prob_rewire"]
-
-        #GAMMA
-        self.gamma_vals =  parameters_social_network["gamma_vals"]
-
-        # social learning and bias
-        self.upsilon = parameters_social_network["upsilon"]
-        self.consumption_imitation_state = parameters_social_network["consumption_imitation_state"]
-        
-        self.confirmation_bias = parameters_social_network["confirmation_bias"]
+    def init_learning_and_bias(self, params):
+        self.upsilon = params["upsilon"]
+        self.consumption_imitation_state = params["consumption_imitation_state"]
+        self.confirmation_bias = params["confirmation_bias"]
         if self.preference_drift_state:
-            self.preference_drift_std = parameters_social_network["preference_drift_std"]
-            self.clipping_epsilon = parameters_social_network["clipping_epsilon"]
+            self.preference_drift_std = params["preference_drift_std"]
+            self.clipping_epsilon = params["clipping_epsilon"]
         else:
             self.preference_drift_std = 0
-            self.clipping_epsilon = 0     
-        
-        # create network
-        self.adjacency_matrix, self.network = self.create_network()
+            self.clipping_epsilon = 0
 
-        self.network_density = nx.density(self.network)
-
-        ###############################################################################
-
-        #GENERATE ENVIRONMENTAL PREFERENCE - EXGENOUS AND FIXED
-        self.a_preferences = parameters_social_network["a_preferences"]
-        self.b_preferences = parameters_social_network["b_preferences"]
-        self.environmental_preference_arr = np.random.beta( self.a_preferences, self.b_preferences, size=self.num_individuals)
-        
-        ################################################################################
-        
-        #GENERATE INNOVATIVENESS PREFERERNCES 
-
-        self.a_innovativeness = parameters_social_network["a_innovativeness"]
-        self.b_innovativeness = parameters_social_network["b_innovativeness"]
-        self.innovativeness_arr_init = np.random.beta( self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
+    def init_preference_distribution(self, params):
+        self.a_preferences = params["a_preferences"]
+        self.b_preferences = params["b_preferences"]
+        self.environmental_preference_arr = np.random.beta(self.a_preferences, self.b_preferences, size=self.num_individuals)
+        self.a_innovativeness = params["a_innovativeness"]
+        self.b_innovativeness = params["b_innovativeness"]
+        self.innovativeness_arr_init = np.random.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
         self.ev_adoption_state_arr = np.zeros(self.num_individuals)
+        self.a_price = params["a_price"]
+        self.b_price = params["b_price"]
+        self.price_preference_arr = np.random.beta(self.a_price, self.b_price, size=self.num_individuals)
 
-        ################################################################################
-        
-        #GENERATE QUALITY PREFERERNCES 
+    def init_vehicle_and_transport(self, params):
+        self.markup = params["markup"]
+        self.delta = params["delta"]
+        self.kappa = params["kappa"]
+        self.init_car_vec = params["init_car_vec"]
+        self.utility_boost_const = params["utility_boost_const"]
+        self.price_constant = params["price_constant"]
+        self.init_public_transport_state = params["init_public_transport_state"]
 
-        self.a_price = parameters_social_network["a_price"]
-        self.b_price = parameters_social_network["b_price"]
-        self.price_preference_arr = np.random.beta( self.a_price, self.b_price, size=self.num_individuals)
+        #Import the already made "cars" for urban and rural public transport
+        self.rural_public_transport = params["rural_public_transport"]
+        self.urban_public_transport = params["urban_public_transport"]
 
-        #HOW DO I START OFF THE SIMUALTION? ASSUME THERE ARE NO EVs!
-
-        #FIX
-        self.total_carbon_emissions_cumulative = 0#this are for post tax
-
-        #CARS
-        self.car_age_vec = np.zeros(self.num_individuals)
-
-        self.markup = parameters_social_network["markup"]  # industry mark-up on production costs
-        self.delta =  parameters_social_network["delta"]  # depreciation rate
-        self.kappa = parameters_social_network["kappa"]  # parameter indicating consumers' ability to make rational choices
-        self.init_car_vec = parameters_social_network["init_car_vec"]
-        self.utility_boost_const = parameters_social_network["utility_boost_const"]
-        self.price_constant = parameters_social_network["price_constant"]
-
-        #PUBLIC TRANSPORT
-        self.rural_public_transport = parameters_social_network["rural_public_transport"]
-        self.urban_public_transport = parameters_social_network["urban_public_transport"]
-
-        #FIX THIS
-        self.init_public_transport_state = parameters_social_network["init_public_transport_state"]
         if self.init_public_transport_state:
-            self.public_transport_attributes = np.asarray(parameters_social_network["public_transport_attributes"])
-            self.public_matrix = np.asarray([self.public_transport_attributes])
-            self.public_option = Public_transport(self.public_transport_attributes)
-            self.car_owned_vec = np.asarray([self.public_option]*self.num_individuals)
+            self.car_owned_vec = np.asarray([self.public_option] * self.num_individuals)
             self.new_car_bool_vec = self.decide_purchase(self.init_car_vec)
         else:
-            self.car_owned_vec = np.asarray([None]*self.num_individuals)
+            self.car_owned_vec = np.asarray([None] * self.num_individuals)
             replacement_candidate_vec, _ = self.choose_replacement_candidate(self.init_car_vec)
             self.new_car_bool_vec = np.ones(self.num_individuals)
             self.car_owned_vec = replacement_candidate_vec
-            self.car_age_vec = np.zeros(self.num_individuals)   
-        
-        self.firm_count = self.calc_bought_firm_car_count()
-
-        self.total_carbon_emissions_flow = self.calc_total_emissions()
-        self.total_carbon_emissions_cumulative = self.total_carbon_emissions_cumulative + self.total_carbon_emissions_flow
-
-        if self.save_timeseries_data_state:
-            self.set_up_time_series_social_network()
+            self.car_age_vec = np.zeros(self.num_individuals)
     
+    def createVehicleUsers(self):
+        self.vehicleUsers_list = users  # List of VehicleUser objects
+             
     def normalize_vector_sum(self, vec):
         return vec/sum(vec)
 
@@ -215,6 +185,39 @@ class Social_Network:
     def calc_total_emissions(self) -> int:
         total_network_emissions = sum([(1-car.environmental_score) for car in self.car_owned_vec])
         return total_network_emissions
+
+    def extract_VehicleUser_data(self):
+        # Extract user attributes into vectors for efficient processing
+        self.chi_vector = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
+        self.gamma_vector = np.array([user.gamma for user in self.vehicleUsers_list])  # Environmental concern
+        self.beta_vector = np.array([user.beta for user in self.vehicleUsers_list])  # Cost sensitivity
+        self.vehicle_type_vector = np.array([user.current_vehicle_type for user in self.vehicleUsers_list])  # Current vehicle types
+        self.origin_vector = np.array([user.origin for user in self.vehicleUsers_list])  # Urban/rural origin
+    
+    def calculate_ev_adoption(self, ev_type=3):
+        # Create a binary matrix where 1 indicates neighbors using EVs
+        ev_adoption_matrix = np.where(self.vehicle_type_vector == ev_type, 1, 0)
+        
+        # Calculate the proportion of neighbors with EVs for each user (matrix multiplication)
+        ev_neighbors = np.dot(self.adjacency_matrix, ev_adoption_matrix)
+        total_neighbors = np.sum(self.adjacency_matrix, axis=1)
+        proportion_ev_neighbors = np.divide(ev_neighbors, total_neighbors, where=total_neighbors != 0)
+
+        # Determine whether each user considers buying an EV (1 if proportion of EVs in neighborhood ≥ chi)
+        consider_ev_matrix = (proportion_ev_neighbors >= self.chi_vector).astype(int)
+        
+        return consider_ev_matrix
+
+    def update_vehicle_choices(self, ev_type=3):
+        # Determine who considers an EV based on their neighbors and chi thresholds
+        consider_ev_matrix = self.calculate_ev_adoption(ev_type=ev_type)
+
+        # Update the vehicle type vector for those considering EVs and switch their vehicle type
+        self.vehicle_type_vector = np.where(consider_ev_matrix == 1, ev_type, self.vehicle_type_vector)
+        
+        # Optionally, update the users' current vehicle types
+        for i, user in enumerate(self.vehicleUsers_list):
+            user.current_vehicle_type = self.vehicle_type_vector[i]
 
     def calc_bought_firm_car_count(self):
 
@@ -287,7 +290,6 @@ class Social_Network:
         utility_replacement_vec = utilities_matrix[np.arange(self.num_individuals), replacement_index_vec]#ADVANCED INDEXING; THE ARANGE LOOPS THROUGH EACH ROW AND THEN PICKS OUT THE COLUMN, SELECTING USING TWO 1D VECTORS DOES STUFF ELEMENT WISE
 
         return replacement_candidate_vec, utility_replacement_vec
-
 
     def decide_purchase(self, cars):
 
@@ -391,7 +393,6 @@ class Social_Network:
             self.history_public_transport_prop = [self.public_transport_prop]
             self.history_car_owned_vec_no_public = [self.car_owned_vec_no_public]
     
-
     def save_timeseries_data_social_network(self):
         """
         Save time series data

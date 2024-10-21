@@ -1,7 +1,6 @@
 import numpy as np
 import random
-from package.model.cars import Car
-
+from package.model.cars import ICE, EV
 from package.model.firm import Firm
 
 class Firm_Manager:
@@ -97,17 +96,17 @@ class Firm_Manager:
             init_tech_component_string_list = np.random.choice(init_tech_component_string_list_N, self.J)
             #handle ICE cars init
             attributes_fitness_list_ICE = [self.landscape_ICE.calculate_fitness(x) for x in init_tech_component_string_list]
-            self.init_tech_list_ICE = [Car(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list_ICE[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_ICE) for j in range(self.J)]
+            self.init_tech_list_ICE = [ICE(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list_ICE[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_ICE) for j in range(self.J)]
             #handle EV cars init - even if not use still need an initial technology
             attributes_fitness_list_EV = [self.landscape_EV.calculate_fitness(x) for x in init_tech_component_string_list]
-            self.init_tech_list_EV = [Car(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list_EV[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_EV) for j in range(self.J)]
+            self.init_tech_list_EV = [EV(self.id_generator.get_new_id(), j, init_tech_component_string_list[j], attributes_fitness_list_EV[j], choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_EV) for j in range(self.J)]
         else:
             #ICE
             attributes_fitness_ICE = self.landscape_ICE.calculate_fitness(self.init_tech_component_string)
-            self.init_tech_list_ICE = [Car(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness_ICE, choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_ICE) for j in range(self.J)]
+            self.init_tech_list_ICE = [ICE(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness_ICE, choosen_tech_bool=1, N = self.N, nk_landscape=self.landscape_ICE) for j in range(self.J)]
             #EV
             attributes_fitness_EV = self.landscape_EV.calculate_fitness(self.init_tech_component_string)
-            self.init_tech_list_EV = [Car(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness_EV, choosen_tech_bool=1,N = self.N, nk_landscape=self.landscape_EV) for j in range(self.J)]
+            self.init_tech_list_EV = [EV(self.id_generator.get_new_id(), j, self.init_tech_component_string, attributes_fitness_EV, choosen_tech_bool=1, N = self.N, nk_landscape=self.landscape_EV) for j in range(self.J)]
 
 
         self.discovered_tech_ICE = {}#dictionary which includes an id which is the string and then vlaue is the attributes (PUT NEIGHBOUR IN HERE AS WELL!)

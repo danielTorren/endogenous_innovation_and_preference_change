@@ -15,7 +15,7 @@ from matplotlib.colors import Normalize, LinearSegmentedColormap, SymLogNorm, Bo
 from matplotlib.cm import get_cmap
 from matplotlib.collections import LineCollection
 from typing import Union
-from package.model.social_network import Social_Network
+from package.model.socialNetwork import Social_Network
 import numpy.typing as npt
 
 

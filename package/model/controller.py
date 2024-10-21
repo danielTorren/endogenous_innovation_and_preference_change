@@ -3,13 +3,13 @@ Created: 22/12/2023
 """
 
 # imports
-from package.model.nk_model import NKModel
-from package.model.social_network import Social_Network
+from package.model.nkModel import NKModel
+from package.model.socialNetwork import Social_Network
 #from package.model.gpt_firm_manager import Firm_Manager 
-from package.model.firm_manager import Firm_Manager 
-from package.model.public_transport import Rural_Public_Transport
-from package.model.public_transport import Urban_Public_Transport
-from package.model.centralized_ID_generator import IDGenerator
+from package.model.firmManager import Firm_Manager 
+from package.model.publicTransport import Rural_Public_Transport
+from package.model.publicTransport import Urban_Public_Transport
+from package.model.centralizedIdGenerator import IDGenerator
 import numpy as np
 
 class Controller:

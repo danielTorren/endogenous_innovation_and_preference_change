@@ -33,3 +33,12 @@ class Car:
     def update_timer(self):
         if ~self.choosen_tech_bool:
             self.timer+=1
+
+class ICE(Car):
+    def __init__(self):
+        self.transportType = 0
+        
+class EV(Car):
+    def __init__(self):
+        self.transportType = 1
+

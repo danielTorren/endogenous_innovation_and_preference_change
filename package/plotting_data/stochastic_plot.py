@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.cm import get_cmap
 import numpy as np
-from package.model.firm_manager import Firm_Manager
+from package.model.firmManager import Firm_Manager
 from package.resources.utility import ( 
     load_object,
 )
