@@ -98,5 +98,5 @@ def main(
 if __name__ == "__main__":
     fileName_Figure_1 = main(
         BASE_PARAMS_LOAD = "package/constants/base_params_preference_innovation.json",
-        VARIABLE_PARAMS_LOAD = "package/constants/oneD_dict_carbon_price_preference_innovation.json"
+        VARIABLE_PARAMS_LOAD = "package/constants/oneD_dict_carbon_price_sensitivity_innovation.json"
     )

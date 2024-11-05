@@ -67,3 +67,12 @@ class NKModel:
 
         return fitness / self.N
 
+    def invert_bits_one_at_a_time(self, decimal_value):
+        """THIS IS ONLY USED ONCE I THINK"""
+        inverted_binary_values = []
+        for bit_position in range(self.N):
+            inverted_value = decimal_value ^ (1 << bit_position)
+            inverted_binary_value = format(inverted_value, f'0{self.N}b')
+            inverted_binary_values.append(inverted_binary_value)
+        return inverted_binary_values
+    
