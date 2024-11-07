@@ -49,7 +49,6 @@ if __name__ == "__main__":
         },
         "parameters_ICE":{
             "landscape_seed": 10, 
-            "J": 30,
             "N": 15,
             "K": 2,
             "A": 3,
@@ -59,7 +58,7 @@ if __name__ == "__main__":
             "nu_z_i_t":0.5,
             "eta":0.5,
             "emissions":0.1,
-            "delta_z":0,
+            "delta_z":0.9,
             "transportType": 2
         },
         "parameters_EV":{
@@ -73,7 +72,7 @@ if __name__ == "__main__":
             "nu_z_i_t":0.5,
             "eta":0.5,
             "emissions":0.1,
-            "delta_z":0,
+            "delta_z":0.8,
             "transportType": 3
         },
         "parameters_urban_public_transport":{
@@ -140,7 +139,6 @@ if __name__ == "__main__":
             "kappa": 2,
             "alpha": 0.8,
             "d_i_min": 1,
-            "delta": 0.5,
             "r": 1,
             "eta": 1,
             "mu": 1

@@ -22,7 +22,6 @@ class VehicleUser:
         self.EV_bool = parameters_vehicle_user["EV_bool"]
         self.kappa = parameters_vehicle_user["kappa"]
         self.alpha = parameters_vehicle_user["alpha"]
-        self.delta = parameters_vehicle_user["delta"]
         self.r = parameters_vehicle_user["r"]
         self.eta = parameters_vehicle_user["eta"]
         self.mu = parameters_vehicle_user["mu"]
@@ -86,7 +85,7 @@ class VehicleUser:
         commuting_util = self.commuting_utility(vehicle, d_i_t, z=2)  # Example z value (should be scenario-specific)
 
         # Closed-form solution for lifetime utility
-        denominator = self.r + (1 - self.delta) / (1 - self.alpha)
+        denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
         if denominator == 0:
             raise ValueError("The denominator is zero, adjust the parameters to avoid division by zero.")
         
@@ -203,7 +202,7 @@ class VehicleUser:
         commuting_util = self.commuting_utility(vehicle, d_i_t, z=2)  # Example z value (should be scenario-specific)
 
         # Closed-form solution for lifetime utility
-        denominator = self.r + (1 - self.delta) / (1 - self.alpha)
+        denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
         if denominator == 0:
             raise ValueError("The denominator is zero, adjust the parameters to avoid division by zero.")
         
