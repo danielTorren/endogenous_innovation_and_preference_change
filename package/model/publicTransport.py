@@ -1,12 +1,17 @@
 class Public_Transport():
-    def __init__(self, attributes_fitness, parameters, price):
+    def __init__(self, parameters):
 
-        self.price = price
+        self.id = parameters["id"]
+        self.firm =  parameters["firm"]
+        self. transportType = parameters["transportType"]
+        self.price =  parameters["price"]
         self.owner_id = -1
         self.scenario = "public_optional"
+
+        self.firm_cars_users = 0 #how many people use the transport!
         
         # Updated Descriptions:
-        self.Q_a_t =  attributes_fitness[0]  # Quality or attraction parameter for transport mode 'a' at time 't'.
+        self.Q_a_t =   parameters["attributes"][0]  # Quality or attraction parameter for transport mode 'a' at time 't'.
                             # Represents the overall perceived attractiveness or utility that individuals derive from using this vehicle type.
 
         self.delta_z = parameters["delta_z"]  # Depreciation or distance-decay factor for the vehicle.
@@ -15,10 +20,10 @@ class Public_Transport():
         self.L_a_t = 0  # Lifetime or longevity parameter of transport mode 'a' at time 't'.
                             # Represents how the utility of the vehicle evolves over time or lifetime, often indicating how wear and tear or aging affects the overall utility.
 
-        self.omega_a_t = attributes_fitness[1]  # Efficiency scaling factor (ratio of kilometers per kilojoules) for transport mode 'a' at time 't'.
+        self.omega_a_t =  parameters["attributes"][1]  # Efficiency scaling factor (ratio of kilometers per kilojoules) for transport mode 'a' at time 't'.
                                     # Represents the energy efficiency of the vehicle, i.e., how far the vehicle can travel per unit of energy consumption.
 
-        self.c_z_t = attributes_fitness[2]  # Cost factor for the vehicle at time 't'.
+        self.c_z_t =  parameters["attributes"][2]  # Cost factor for the vehicle at time 't'.
                             # Represents the financial cost associated with using the vehicle for travel, including fuel, maintenance, and other operating costs.
 
         self.e_z_t = parameters["e_z_t"]  # Effort factor for the vehicle at time 't'.
@@ -32,19 +37,11 @@ class Public_Transport():
 
         self.emissions = parameters["emissions"]  # Emissions factor for the vehicle (E_a_t).
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
-
-class Urban_Public_Transport(Public_Transport):
-    def __init__(self):
-        self.id = -1
-        self.firm_id = -1
-        self.transportType = 0
-        self.component_string = "urbanPublic"
-
-
-class Rural_Public_Transport(Public_Transport):
-    def __init__(self):
-        self.id = -2
-        self.firm_id = -2
-        self.transportType = 1
-        self.component_string = "ruralPublic"
         
+        
+
+    def set_up_time_series_firm(self):
+        self.history_profit = []
+
+    def save_timeseries_data_firm(self):
+        self.history_profit.append(self.firm_cars_users)

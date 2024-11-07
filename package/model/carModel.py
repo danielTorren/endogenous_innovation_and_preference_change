@@ -1,11 +1,15 @@
 import numpy as np
 
 class CarModel:
-    def __init__(self, unique_id, firm_id, component_string, parameters, choosen_tech_bool = False):
+    def __init__(self, unique_id, component_string, nk_landscape , parameters, choosen_tech_bool = False, firm= None):
         self.id = unique_id
-        self.firm_id = firm_id
+        self.firm = firm
+
+        self.owner_id = -5#NEED TO MAKE SURE NO ONE OWNS IT
 
         self.parameters =  parameters
+
+        self.scenario = "private_emissions"
         self.transportType = self.parameters["transportType"]
         self.component_string = component_string
         self.decimal_value = int(component_string, 2)
@@ -16,7 +20,7 @@ class CarModel:
         #self.second_hand_bool = 0
 
         #FITNESS
-        self.nk_landscape = self.parameters["nk_landscape"]
+        self.nk_landscape = nk_landscape
         self.attributes_fitness = self.nk_landscape.calculate_fitness(self.component_string)
 
         self.inverted_tech_strings = self.nk_landscape.invert_bits_one_at_a_time(self.decimal_value)
@@ -26,6 +30,7 @@ class CarModel:
         self.car_utility_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?
         self.car_utility_segments_U = {}  #Capital U
         self.expected_profit_segments = {} 
+        self.car_distance_segments = {}
         self.expected_profit = 0#used by firms to choose cars
         self.actual_profit = 0#used to pick what car to reserach 
 

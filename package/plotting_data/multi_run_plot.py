@@ -649,7 +649,7 @@ def weighted_bought_average_plots(fileName,data_social_network,data_firm_manager
             car_demand = sum(demand_snapshot[firm].get(car.id, 0) for firm in demand_snapshot)
             if car_demand > 0:
                 weighted_emissions_sum += car.environmental_score * car_demand
-                weighted_cost_sum += car.cost * car_demand
+                weighted_cost_sum += car.c_z_t * car_demand
                 weighted_quality_sum += car.quality * car_demand
 
         weighted_averages['environmental_score'].append(weighted_emissions_sum / total_demand)

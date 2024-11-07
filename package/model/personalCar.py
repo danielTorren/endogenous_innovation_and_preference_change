@@ -1,7 +1,7 @@
 class PersonalCar:
-    def __init__(self, unique_id, firm_id, owner_id, component_string, parameters, attributes_fitness, sale_price):
+    def __init__(self, unique_id, firm, owner_id, component_string, parameters, attributes_fitness, sale_price):
         self.id = unique_id
-        self.firm_id = firm_id
+        self.firm_id = firm
         self.owner_id = owner_id
         self.transportType = parameters["transportType"]
         self.component_string = component_string

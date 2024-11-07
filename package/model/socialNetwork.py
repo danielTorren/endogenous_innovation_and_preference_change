@@ -10,13 +10,14 @@ from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
 
 class Social_Network:
-    def __init__(self, parameters_social_network: dict):
+    def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
         Constructs all the necessary attributes for the Social Network object.
         """
         self.t_social_network = 0
         
         # Initialize parameters
+        self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
         self.init_network_settings(parameters_social_network)
         self.init_preference_distribution(parameters_social_network)
@@ -33,6 +34,10 @@ class Social_Network:
         #individual choose their vehicle in the zeroth step
         vehicles_chosen_list = self.update_VehicleUsers()
 
+        self.chi_vector = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
+        self.vehicle_type_vector = np.array([user.current_vehicle_type for user in self.vehicleUsers_list])
+        self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
+
         self.extract_VehicleUser_data()
 
     ###############################################################################################################################################################
@@ -41,9 +46,10 @@ class Social_Network:
 
     def init_initial_state(self, parameters_social_network):
         self.num_individuals = int(round(parameters_social_network["num_individuals"]))
-        self.time_sensitivity = parameters_social_network["time_sensitivity"]
         self.id_generator = parameters_social_network["IDGenerator_firms"]
         self.second_hand_merchant = parameters_social_network["second_hand_merchant"]
+        #self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
+        #self.compression_factor_state = parameters_social_network["compression_factor_state"]
 
     def init_network_settings(self, parameters_social_network):
         self.network_structure_seed = parameters_social_network["network_structure_seed"]
@@ -52,20 +58,30 @@ class Social_Network:
         self.prob_rewire = parameters_social_network["prob_rewire"]
 
     def init_preference_distribution(self, parameters_social_network):
-        self.a_preferences = parameters_social_network["a_preferences"]
-        self.b_preferences = parameters_social_network["b_preferences"]
+        #GAMMA
+        self.a_environment = parameters_social_network["a_environment"]
+        self.b_environment = parameters_social_network["b_environment"]
         np.random.seed(parameters_social_network["init_vals_environmental_seed"])  # Initialize random seed
-        self.environmental_awareness_vec = np.random.beta(self.a_preferences, self.b_preferences, size=self.num_individuals)
+        self.environmental_awareness_vec = np.random.beta(self.a_environment, self.b_environment, size=self.num_individuals)
+
+        #CHI
         self.a_innovativeness = parameters_social_network["a_innovativeness"]
         self.b_innovativeness = parameters_social_network["b_innovativeness"]
         np.random.seed(parameters_social_network["init_vals_innovative_seed"])  # Initialize random seed
         self.innovativeness_vec_init = np.random.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
+
+        #BETA
         self.a_price = parameters_social_network["a_price"]
         self.b_price = parameters_social_network["b_price"]
         np.random.seed(parameters_social_network["init_vals_price_seed"])  # Initialize random seed
         self.price_sensitivity_vec = np.random.beta(self.a_price, self.b_price, size=self.num_individuals)
+        
+        #origin
         self.origin_vec = np.asarray([0]*(int(round(self.num_individuals/2))) + [0]*(int(round(self.num_individuals/2))))#THIS IS A PLACE HOLDER NEED TO DISCUSS THE DISTRIBUTION OF INDIVIDUALS
+
+        #d min
+        self.d_i_min_vec = np.random.uniform(size = self.num_individuals)
 
     def extract_VehicleUser_data(self):
         # Extract user attributes into vectors for efficient processing
@@ -81,8 +97,9 @@ class Social_Network:
 
     def createVehicleUsers(self):
         self.vehicleUsers_list = []
+        self.parameters_vehicle_user["vehicles_available"] = self.cars_on_sale_all_firms
         for i in range(self.num_individuals):
-            self.vehicleUsers_list.append(VehicleUser(id = i, chi = self.innovativeness_vec_init[i], gamma = self.environmental_awareness_vec[i], beta = self.price_sensitivity_vec[i], nu = self.time_sensitivity, origin = self.origin_vec[i], vehicles_available = self.cars_on_sale_all_firms, EV_bool = 0))
+            self.vehicleUsers_list.append(VehicleUser(user_id = i, chi = self.innovativeness_vec_init[i], gamma = self.environmental_awareness_vec[i], beta = self.price_sensitivity_vec[i], origin = self.origin_vec[i], d_i_min = self.d_i_min_vec[i], parameters_vehicle_user=self.parameters_vehicle_user))
              
     def normalize_vector_sum(self, vec):
         return vec/sum(vec)
@@ -108,12 +125,12 @@ class Social_Network:
 
         network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
-        adjacency_matrix = nx.to_numpy_array(self.network)
+        adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
         # Get the non-zero indices of the adjacency matrix
         self.row_indices_sparse, self.col_indices_sparse = self.sparse_adjacency_matrix.nonzero()
 
-        self.network_density = nx.density(self.network)
+        self.network_density = nx.density(network)
         return adjacency_matrix, network
 
     ###############################################################################################################################################################
@@ -126,8 +143,8 @@ class Social_Network:
         # Calculate the proportion of neighbors with EVs for each user (matrix multiplication)
         ev_neighbors = np.dot(self.adjacency_matrix, ev_adoption_vec)
         total_neighbors = np.sum(self.adjacency_matrix, axis=1)
-        proportion_ev_neighbors = np.divide(ev_neighbors, total_neighbors, where=total_neighbors != 0)
-
+        #proportion_ev_neighbors = np.divide(ev_neighbors, total_neighbors, where=total_neighbors != 0)
+        proportion_ev_neighbors = np.round(np.divide(ev_neighbors, total_neighbors, where=total_neighbors != 0),2)
         # Determine whether each user considers buying an EV (1 if proportion of EVs in neighborhood ≥ chi)
         consider_ev_vec = (proportion_ev_neighbors >= self.chi_vector).astype(int)
         
@@ -135,8 +152,15 @@ class Social_Network:
 
     def update_VehicleUsers(self):
         vehicle_chosen_list = []
+
+        #variable to track
+        self.total_driving_emissions = 0
+        self.total_production_emissions = 0
+        self.total_utility = 0
+        self.total_distance_travelled = 0
+
         for i, user in enumerate(self.vehicleUsers_list):
-            # For each user, determine the available vehicles based on their preferences.
+            # For each user, determine the available vehicles based on their environment.
             if self.consider_ev_vec[i]:
                 available_vehicles = self.cars_on_sale_all_firms
             else:
@@ -144,7 +168,14 @@ class Social_Network:
                 available_vehicles = [vehicle for vehicle in self.cars_on_sale_all_firms if vehicle.transportType != 3]
 
             # Get the user's decision on the next vehicle
-            vehicle_choosen = user.next_step(available_vehicles)
+            #vehicle_chosen, self.driving_emissions, self.production_emissions, self.driven_distance
+            vehicle_chosen, driving_emissions, production_emissions, utility, distance_driven = user.next_step(available_vehicles)
+
+            #ADD TOTAL EMISSIONS
+            self.total_driving_emissions += driving_emissions
+            self.total_production_emissions += production_emissions
+            self.total_utility += utility 
+            self.total_distance_travelled += distance_driven
 
             """
             Cases:
@@ -160,7 +191,7 @@ class Social_Network:
             #NOW DEAL WITH THE CONSEQUENCES
 
 
-            if user.id != vehicle_choosen.owner_id:#ITS NOT YOUR CURRENT CAR
+            if user.user_id != vehicle_chosen.owner_id:#ITS NOT YOUR CURRENT CAR
                 #MOVE CAR THAT YOU OWN AWAY TO SECOND HAND MAN
                 if user.vehicle is PersonalCar:
                     user.vehicle.owner_id = self.second_hand_merchant.id#transfer ownsership of CURRENT CAR to the second hand shop!
@@ -168,21 +199,37 @@ class Social_Network:
                     user.vehicle = None#For an instance you have nothing
 
                 #SAY YOU BUY A SECOND HAND CAR
-                if vehicle_choosen is PersonalCar:# THESE ARE SECOND HAND CARS OR THE ONE YOU PERSONALLY OWN
-                    vehicle_choosen.owner_id = user.id#transfer ownership, hand keys to the new person!
-                    vehicle_choosen.scenario = "current_car"#the state of the car becomes yours!
-                    user.vehicle = vehicle_choosen
-                    self.second_hand_merchant.remove_car(vehicle_choosen)
-                    self.cars_on_sale_all_firms.remove(vehicle_choosen)#remove from currenly available in this timestep
-                elif vehicle_choosen is CarModel:#BRAND NEW CAR #make the theoretical model into an acutal car 
+                if vehicle_chosen is PersonalCar:# THESE ARE SECOND HAND CARS OR THE ONE YOU PERSONALLY OWN
+                    vehicle_chosen.owner_id = user.user_id#transfer ownership, hand keys to the new person!
+                    vehicle_chosen.scenario = "current_car"#the state of the car becomes yours!
+                    user.vehicle = vehicle_chosen
+                    self.second_hand_merchant.remove_car(vehicle_chosen)
+                    self.cars_on_sale_all_firms.remove(vehicle_chosen)#remove from currenly available in this timestep
+                elif vehicle_chosen is CarModel:#BRAND NEW CAR #make the theoretical model into an acutal car 
                     personalCar_id = self.id_generator.get_new_id()
-                    user.vehicle = PersonalCar(personalCar_id, vehicle_choosen.firm_id, user.user_id, vehicle_choosen.component_string, vehicle_choosen.parameters, vehicle_choosen.attributes_fitness, vehicle_choosen.price)
+                    user.vehicle = PersonalCar(personalCar_id,vehicle_chosen.firm, user.user_id, vehicle_chosen.component_string, vehicle_chosen.parameters, vehicle_chosen.attributes_fitness, vehicle_chosen.price)
                 else:#PUBLIC TRANSPORT
-                    user.vehicle = vehicle_choosen
+                    user.vehicle = vehicle_chosen
                 
-            vehicle_chosen_list.append(vehicle_choosen)
+            vehicle_chosen_list.append(vehicle_chosen)
 
         return vehicle_chosen_list
+    
+    ####################################################################################################################   
+    def set_up_time_series_social_network(self):
+        self.history_driving_emissions = []
+        self.history_production_emissions = []
+        self.history_total_utility = []
+        self.history_total_distance_driven = []
+        self.history_ev_adoption_rate = []
+
+    def save_timeseries_data_social_network(self):
+
+        self.history_driving_emissions.append(self.total_driving_emissions)
+        self.history_production_emissions.append(self.total_production_emissions)
+        self.history_total_utility.append(self.total_utility)
+        self.history_total_distance_driven.append(self.total_distance_travelled)
+        self.history_ev_adoption_rate.append(np.mean(self.ev_adoption_vec))
 
     def next_step(self, carbon_price, cars_on_sale_all_firms):
         """
@@ -205,7 +252,8 @@ class Social_Network:
         #update new tech and prices
         self.cars_on_sale_all_firms = cars_on_sale_all_firms
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
-
         vehicles_chosen_list = self.update_VehicleUsers()
 
-        return self.ev_adoption_state_vec, vehicles_chosen_list
+        #DO FIRMS CONSIDER WHO WILL PURCHASE AN EV OR WHO HAS PURCHASED AN EV
+        #return self.ev_adoption_state_vec, vehicles_chosen_list
+        return self.consider_ev_vec, vehicles_chosen_list
