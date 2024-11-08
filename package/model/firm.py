@@ -1,4 +1,3 @@
-from networkx import general_random_intersection_graph
 import numpy as np
 from package.model.carModel import CarModel
 
@@ -48,6 +47,8 @@ class Firm:
         #ALL TYPES
         self.cars_on_sale = [init_tech_ICE, init_tech_EV]
         self.set_car_init_price_and_U()
+
+        np.random.seed(parameters_firm["innovation_seed"])
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
@@ -221,6 +222,13 @@ class Firm:
         
         cars_selected = self.select_car_lambda_production(expected_profits)#pick the cars for each car
 
+        #DO THIS FASTER
+        for car in cars_selected:
+            if car in cars_selected:
+                car.choosen_tech_bool = 1 
+            else:
+                car.choosen_tech_bool = 0
+
         return cars_selected
 
 
@@ -318,7 +326,6 @@ class Firm:
 
         return vehicles_selected
 
-
     def add_new_vehicle(self, vehicle_model_research):
 
         #add the vehicle
@@ -330,13 +337,13 @@ class Firm:
                 self.list_technology_memory_ICE.append(vehicle_model_research)
 
     def update_memory_timer(self):
-
         #change the timer for the techs that are not the ones being used
         for technology in self.list_technology_memory:
             technology.update_timer()
 
     def update_memory_len(self):
         #is the memory list is too long then remove data
+        #print(len(self.list_technology_memory))
         if len(self.list_technology_memory) > self.memory_cap:
             tech_to_remove = max((tech for tech in self.list_technology_memory if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
             self.list_technology_memory.remove(tech_to_remove)#last thing is remove the item
@@ -360,15 +367,17 @@ class Firm:
         # calc the predicted profits of cars
         expected_profits_segments = self.calc_predicted_profit_segments(market_data, unique_neighbouring_technologies)
         # select the car to innovate
-        vehicle_model_research = self.select_car_lambda_research(expected_profits_segments)
+        self.vehicle_model_research = self.select_car_lambda_research(expected_profits_segments)
 
-        if vehicle_model_research.transportType == 3:#EV
-            self.last_researched_car_EV = vehicle_model_research
+        #print("vehicle_model_research",self.firm_id, vehicle_model_research.component_string)
+
+        if self.vehicle_model_research.transportType == 3:#EV
+            self.last_researched_car_EV = self.vehicle_model_research
         else:
-            self.last_researched_car_ICE = vehicle_model_research
+            self.last_researched_car_ICE = self.vehicle_model_research
 
         #add vehicle to memory, MAKE THE MEMORY INTO A CAR HERE?
-        self.add_new_vehicle(vehicle_model_research)
+        self.add_new_vehicle(self.vehicle_model_research)
 
         # adjust memory bank
         self.update_memory_timer()
@@ -419,10 +428,12 @@ class Firm:
     def set_up_time_series_firm(self):
         self.history_profit = []
         self.history_firm_cars_users = []
+        self.history_attributes_researched = []
 
     def save_timeseries_data_firm(self):
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
+        self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
 
     def next_step(self, market_data):
         self.t_firm += 1
@@ -431,8 +442,9 @@ class Firm:
         self.cars_on_sale = self.choose_cars_segments(market_data)
 
         #decide whether to innovate
-        if np.random.rand() < self.prob_innovate:
-            self.innovate(market_data)
+        #if np.random.rand() < self.prob_innovate:
+            #print("HIGH", self.firm_id, self.t_firm)
+        self.innovate(market_data)
 
         if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()

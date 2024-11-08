@@ -10,6 +10,7 @@ import numpy.typing as npt
 from joblib import Parallel, delayed
 import multiprocessing
 from package.model.controller import Controller
+#from package.model.combinedController import CombinedController
 
 
 
@@ -36,6 +37,8 @@ def generate_data(parameters: dict,print_simu = 0):
 
     #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
     controller = Controller(parameters)
+    #controller = CombinedController(parameters)
+    
 
     #### RUN TIME STEPS
     while controller.t_controller < parameters["time_steps_max"]:

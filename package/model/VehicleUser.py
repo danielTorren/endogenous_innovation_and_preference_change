@@ -182,33 +182,8 @@ class VehicleUser:
         """
         optimal_d = self.optimal_distance(vehicle)
         return max(self.d_i_min, optimal_d)
-
+    
     def calculate_utility(self, vehicle):
-        """
-        Calculate the lifetime utility using the closed-form solution based on different conditions.
-
-        Parameters:
-        vehicle (Vehicle): The vehicle for which the utility is being calculated.
-        scenario (str): The scenario to determine how the utility is adjusted.
-
-        Returns:
-        float: The calculated lifetime utility U_{a,i,t}.
-        """
-
-        scenario = vehicle.scenario#is it second hand, first hand or public transport.
-
-        # Calculate distance and commuting utility
-        d_i_t = self.actual_distance(vehicle)
-        commuting_util = self.commuting_utility(vehicle, d_i_t, z=2)  # Example z value (should be scenario-specific)
-
-        # Closed-form solution for lifetime utility
-        denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
-        if denominator == 0:
-            raise ValueError("The denominator is zero, adjust the parameters to avoid division by zero.")
-        
-        # Calculate the base lifetime utility using the closed form
-        base_utility = commuting_util / denominator
-
         """
         Cases:
         1. buy brand new car and you have no old car (could be literally no car or that you use public transport)
@@ -219,22 +194,30 @@ class VehicleUser:
         6. you choose public tranpsort and you have no old car (could be literally no car or that you use public transport)
         7. you own car and you keep the same car
         """
-        
+        # Avoid recalculating the same values for commuting utility or actual distance
+        d_i_t = self.actual_distance(vehicle)
+        commuting_util = self.commuting_utility(vehicle, d_i_t, z=2)
 
-        # Adjust the lifetime utility based on the scenario
-        if self.vehicle.transportType > 0:#YOU OWN A CAR
-            if scenario == "current_car":#CASE 7
+        denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
+        if denominator == 0:
+            raise ValueError("The denominator is zero, adjust parameters to avoid division by zero.")
+
+        base_utility = commuting_util / denominator
+        scenario = vehicle.scenario
+
+        if self.vehicle.transportType > 0:
+            if scenario == "current_car":
                 U_a_i_t = base_utility
-            elif scenario == ("public_optional" or "private_unassigned"):# CASE 4 and 5, PUBLIC TRANSPORT or second hand car, whilst owning a second hand car!
-                U_a_i_t = base_utility - self.beta * (vehicle.price -  self.vehicle.price/(1+self.mu))
-            elif scenario == "private_emissions":#CASE 2, you buy a new car and you own one
-                U_a_i_t = base_utility - self.beta * (vehicle.price - self.vehicle.price/(1+self.mu)) - self.gamma * vehicle.emissions
+            elif scenario in ["public_optional", "private_unassigned"]:
+                U_a_i_t = base_utility - self.beta * (vehicle.price - self.vehicle.price / (1 + self.mu))
+            elif scenario == "private_emissions":
+                U_a_i_t = base_utility - self.beta * (vehicle.price - self.vehicle.price / (1 + self.mu)) - self.gamma * vehicle.emissions
             else:
                 raise ValueError("Invalid scenario specified. Owns second hand car")
-        else:#you dont own a car!
-            if scenario == ("public_optional" or "private_unassigned"):#Cases 3 and 6, choosing PUBLIC TRANSPORT or second hand car without owning a second hand car due to public tranport or no car
+        else:
+            if scenario in ["public_optional", "private_unassigned"]:
                 U_a_i_t = base_utility - self.beta * vehicle.price
-            elif scenario == "private_emissions":#CASE 1, buyign new without owning a second hand car
+            elif scenario == "private_emissions":
                 U_a_i_t = base_utility - self.beta * vehicle.price - self.gamma * vehicle.emissions
             else:
                 raise ValueError("Invalid scenario specified. No car is owned")
@@ -242,45 +225,29 @@ class VehicleUser:
         return U_a_i_t, d_i_t
 
     def decide_purchase(self, vehicles_available):
-        """
-        Decide whether to purchase a new vehicle or keep the current one.
+            # Calculate utility and distance for the current vehicle once, avoiding redundant calls
+            current_utility, d_i_t_current_vehicle = self.calculate_utility(self.vehicle)
+            
+            # List comprehensions for utilities and distances
+            utilities_list = [current_utility]
+            vehicles_distance = [d_i_t_current_vehicle]
 
-        Parameters:
-        vehicles_available (list): List of available vehicles to consider for purchase.
+            for vehicle in vehicles_available:
+                util_vehicle, d_i_t_vehicle = self.calculate_utility(vehicle)
+                utilities_list.append(util_vehicle)
+                vehicles_distance.append(d_i_t_vehicle)
 
-        Returns:
-        Vehicle: The chosen vehicle.
-        """
-        # Calculate current vehicle utility
-        current_utility, d_i_t_current_vehicle = self.calculate_utility(self.vehicle)
+            # Using NumPy array for utility and distance calculations for potential speedup
+            utilities = np.array(utilities_list)
 
-        # Calculate utility for each available vehicle
-        utilities_list = [current_utility]
-        vehicles_distance = [d_i_t_current_vehicle]
+            # Optimizing the probability calculation
+            utilities_kappa = np.power(utilities, self.kappa)
+            probability_choose = utilities_kappa / utilities_kappa.sum()
 
-        for vehicle in vehicles_available:
-            util_vehicle, d_i_t_vehicle =  self.calculate_utility(vehicle)
-            utilities_list.append(util_vehicle)  # Example scenario for new vehicles
-            vehicles_distance.append(d_i_t_vehicle)
- 
+            all_vehicles = [self.vehicle] + vehicles_available
+            choice_index = np.random.choice(range(len(all_vehicles)), p=probability_choose)
 
-        # Combine current vehicle utility with new vehicles
-        utilities = np.array(utilities_list)
-
-        # Calculate the probabilities of choosing each vehicle
-        sum_utilities = np.sum(utilities ** self.kappa)
-        probability_choose = (utilities ** self.kappa) / sum_utilities
-
-        # Include current vehicle in the list of all vehicles
-        all_vehicles =  [self.vehicle] + vehicles_available#NEED TO HAVE THIS ORDER FOR INDEX TO MATCH WITH THE OTHERS
-
-        # Choose a vehicle based on the calculated probabilities
-        choice_index = np.random.choice(range(len(all_vehicles)), size=1, p=probability_choose)[0]
-        chosen_vehicle = all_vehicles[choice_index]
-        driven_distance =  vehicles_distance[choice_index]
-        utility = utilities[choice_index]
-
-        return chosen_vehicle, driven_distance, utility# Can be the same as the previous vehicle
+            return all_vehicles[choice_index], vehicles_distance[choice_index], utilities[choice_index]
 
     def calc_emissions(self,vehicle_chosen, driven_distance):
 

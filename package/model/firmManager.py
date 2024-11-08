@@ -69,12 +69,14 @@ class Firm_Manager:
         Generate a initial ICE and EV TECH TO START WITH 
         """
         #Pick the initial technology
+        random.seed(self.init_tech_seed)
         self.init_tech_component_string = f"{random.getrandbits(self.N):0{self.N}b}"#CAN USE THE SAME STRING FOR BOTH THE EV AND ICE
 
         #Generate the initial fitness values of the starting tecnology(ies)
 
         decimal_value = int(self.init_tech_component_string, 2)
         init_tech_component_string_list_N = self.invert_bits_one_at_a_time(decimal_value, len(self.init_tech_component_string))
+        np.random.seed(self.init_tech_seed) 
         init_tech_component_string_list = np.random.choice(init_tech_component_string_list_N, self.J)
         
         self.init_tech_list_ICE = [CarModel(self.id_generator.get_new_id(), init_tech_component_string_list[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
@@ -100,9 +102,9 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return cars_on_sale_all_firms
 
-    def input_social_network_data(self, beta_vector, origin_vector, environmental_awareness_vec,consider_ev_vec):
-        self.beta_vec = beta_vector
-        self.origin_vec = origin_vector
+    def input_social_network_data(self, beta_vec, origin_vec, environmental_awareness_vec,consider_ev_vec):
+        self.beta_vec = beta_vec
+        self.origin_vec = origin_vec
         self.gamma_vec = environmental_awareness_vec
         self.consider_ev_vec = consider_ev_vec
 
@@ -170,7 +172,7 @@ class Firm_Manager:
     def update_market_data(self, sums_U_segment):
         """Update market data with segment counts and sums U for each segment"""
 
-        # Calculate segment codes based on the provided binary vectors
+        # Calculate segment codes based on the provided binary vecs
         segment_codes = (self.beta_binary << 3) | (self.gamma_binary << 2) | (self.consider_ev_vec << 1) | self.origin_vec
         
         # Calculate segment counts
@@ -244,12 +246,12 @@ class Firm_Manager:
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
-        total_profit = self.calc_total_profits(self.past_chosen_vehicles)
-        HHI = self. calculate_market_concentration(self.past_chosen_vehicles)
+        self.total_profit = self.calc_total_profits(self.past_chosen_vehicles)
+        self.HHI = self. calculate_market_concentration(self.past_chosen_vehicles)
         self.calc_vehicles_chosen_list(self.past_chosen_vehicles)
 
-        self.history_total_profit.append(total_profit)
-        self.history_market_concentration.append(HHI)
+        self.history_total_profit.append(self.total_profit)
+        self.history_market_concentration.append(self.HHI)
 
     def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles):
         

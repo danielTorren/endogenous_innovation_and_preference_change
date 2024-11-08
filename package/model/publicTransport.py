@@ -20,18 +20,13 @@ class Public_Transport():
         self.L_a_t = 0  # Lifetime or longevity parameter of transport mode 'a' at time 't'.
                             # Represents how the utility of the vehicle evolves over time or lifetime, often indicating how wear and tear or aging affects the overall utility.
 
-        self.omega_a_t =  parameters["attributes"][1]  # Efficiency scaling factor (ratio of kilometers per kilojoules) for transport mode 'a' at time 't'.
-                                    # Represents the energy efficiency of the vehicle, i.e., how far the vehicle can travel per unit of energy consumption.
-
-        self.c_z_t =  parameters["attributes"][2]  # Cost factor for the vehicle at time 't'.
-                            # Represents the financial cost associated with using the vehicle for travel, including fuel, maintenance, and other operating costs.
+        self.omega_a_t =  parameters["attributes"][1]  #FUEL EFFICIENCY km per kilojoules
+        self.c_z_t =  parameters["attributes"][2]  #PRODUCTION COST
 
         self.e_z_t = parameters["e_z_t"]  # Effort factor for the vehicle at time 't'.
                             # Represents the effort required to use the vehicle, which can include physical, cognitive, or time-related efforts associated with traveling using this mode of transportation.
 
-        self.nu_z_i_t = parameters["nu_z_i_t"]  # User-specific utility adjustment factor for vehicle 'a' for individual 'i' at time 't'.
-                                  # Represents a factor that adjusts utility based on personal preferences or circumstances of the user, such as preference for comfort, convenience, or other subjective factors.
-
+        self.nu_z_i_t = parameters["nu_z_i_t"]  #AVEAGE time to do a km, worse for public transport
         self.eta = parameters["eta"]  # Scaling constant affecting perceived utility.
                         # Represents a scaling factor used to adjust the overall utility calculation, typically to normalize or emphasize particular components in the utility function.
 

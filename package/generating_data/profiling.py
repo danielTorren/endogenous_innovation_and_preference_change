@@ -1,49 +1,20 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
 # imports
 from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
+import cProfile
+import pstats
 
-def main(
-    base_params
-) -> str: 
+def main(base_params): 
+    Data = generate_data(base_params)  # run the simulation
 
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
-    print("fileName:", fileName)
+if __name__ == '__main__':
 
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    print(
-        "emisisons driving final", 
-        controller.social_network.total_driving_emissions,
-        controller.social_network.total_utility,
-        controller.social_network.total_distance_travelled
-        )
-
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-    return fileName
-
-if __name__ == "__main__":
-
+    ###################################################################
     base_params = {
-        "duration_no_carbon_price":20,
+        "duration_no_carbon_price":30,
         "duration_small_carbon_price":0,
         "duration_large_carbon_price":0,
-        "save_timeseries_data_state": 1,
+        "save_timeseries_data_state": 0,
         "compression_factor_state": 1,
-        "choice_seed": 3,
         "parameters_carbon_policy":{
             "carbon_price_init": 0,
             "carbon_price": 0.3,
@@ -60,14 +31,13 @@ if __name__ == "__main__":
             "K": 2,
             "A": 3,
             "rho":[0,0.5],
-            "e_z_t":0.01,
+            "alpha":0.3,
+            "e_z_t":0.5,
             "nu_z_i_t":0.5,
+            "eta":0.5,
             "emissions":0.1,
-            "delta_z":0.05,
-            "transportType": 2,
-            "min_max_Quality": [50,200],
-            "min_max_Efficiency": [1,5],
-            "min_max_Cost": [10,50],
+            "delta_z":0.9,
+            "transportType": 2
         },
         "parameters_EV":{
             "landscape_seed": 20,
@@ -75,64 +45,66 @@ if __name__ == "__main__":
             "K": 2,
             "A": 3,
             "rho":[0,0.5],
-            "e_z_t":0.005,
+            "alpha":0.3,
+            "e_z_t":0.5,
             "nu_z_i_t":0.5,
-            "emissions":0.2,
-            "delta_z":0.05,
-            "transportType": 3,
-            "min_max_Quality": [50,200],
-            "min_max_Efficiency": [1,5],
-            "min_max_Cost": [10,50],
+            "eta":0.5,
+            "emissions":0.1,
+            "delta_z":0.8,
+            "transportType": 3
         },
         "parameters_urban_public_transport":{
-            "attributes": [10,1,10],
+            "attributes": [0.5,0.5,0.5],
             "price": 0.1,
             "id": -1, 
             "firm" : -1, 
             "transportType" : 0,
-            "e_z_t":0.001,
-            "nu_z_i_t":0.8,
-            "emissions":0.01,
+            "e_z_t":0.5,
+            "nu_z_i_t":0.5,
+            "eta":0.5,
+            "emissions":0.1,
             "delta_z":0
         },
         "parameters_rural_public_transport":{
-            "attributes": [10,1,10],
-            "price": 0.1,
+            "attributes": [0.5,0.5,0.5],
+            "price": 0.3,
             "id" : -2, 
             "firm" : -2,
             "transportType" : 1,
-            "e_z_t":0.001,
-            "nu_z_i_t":1,
-            "emissions":0.01,
+            "e_z_t":0.5,
+            "nu_z_i_t":0.5,
+            "eta":0.5,
+            "emissions":0.1,
             "delta_z":0
         },
         "parameters_firm_manager": {
             "init_tech_seed": 20,
-            "J": 10
+            "J": 30
         },
         "parameters_firm":{
+            "alpha":0.3,
+            "r": 1,
+            "eta":1,
             "memory_cap": 30,
-            "prob_innovate": 0.3,
+            "prob_innovate": 0.1,
             "lambda_pow": 2,
-            "init_price": 0.8,
-            "innovation_seed": 66
+            "init_price": 0.8
         },
         "parameters_social_network":{
-            "num_individuals": 40,
+            "num_individuals": 1000,
             "save_timeseries_data_state": 1,
             "emissions_flow_social_influence_state": 0,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
             "init_vals_innovative_seed":99, 
             "init_vals_price_seed": 8, 
-            "d_min_seed": 45,
             "network_density": 0.05, 
             "prob_rewire": 0.1,
             "homophily": 0,
             "a_environment": 1, 
             "b_environment": 1,
-            "a_innovativeness": 0.5,
-            "b_innovativeness": 4,
+            "a_innovativeness": 1,
+            "b_innovativeness": 1,
             "a_price": 1,
             "b_price": 1,
             "clipping_epsilon": 1e-5, 
@@ -142,7 +114,7 @@ if __name__ == "__main__":
             "nu": 1,
             "vehicles_available": 1,
             "EV_bool": 0,
-            "kappa": 10,
+            "kappa": 2,
             "alpha": 0.8,
             "d_i_min": 1,
             "r": 1,
@@ -152,13 +124,24 @@ if __name__ == "__main__":
     }
 
     
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
+    # Create a profiler object
+    pr = cProfile.Profile()
 
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 1
+    # Start profiling
+    pr.enable()
 
-    if RUN_PLOT:
-        plotting_main(fileName = fileName)
+    # Run your model code here
+    main(base_params)
+
+    # Stop profiling
+    pr.disable()
+
+    # Save profiling results to a file
+    pr.dump_stats('profile_results.prof')
+
+    # Analyze the profiling results
+    p = pstats.Stats('profile_results.prof')
+    p.sort_stats('cumulative').print_stats(10)
+
+    # Visualize with snakeviz
+    # Run in terminal: snakeviz profile_results.prof

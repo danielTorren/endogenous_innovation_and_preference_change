@@ -1,7 +1,7 @@
 import numpy as np
 
 class NKModel:
-    def __init__(self, N, K, A, rho , landscape_seed):
+    def __init__(self, parameters):
         """
         Initialize the NKModel.
 
@@ -11,13 +11,20 @@ class NKModel:
         - A (int): Number of attributes influencing the fitness.
         - rho (list): List of length A containing correlation coefficients.
         """
-        self.N = N
-        self.K = K
-        self.A = A
-        self.rho = [1] + rho  # Adding 1 as the first correlation coefficient
-        self.landscape_seed = landscape_seed
+        self.N = parameters["N"]
+        self.K = parameters["K"]
+        self.A = parameters["A"]
+        self.rho = [1] + parameters["rho"]  # Adding 1 as the first correlation coefficient
+        self.landscape_seed = parameters["landscape_seed"]
         np.random.seed(self.landscape_seed)#set seed for numpy
 
+        self.min_max_Quality = parameters["min_max_Quality"]
+        self.min_max_Efficiency = parameters["min_max_Efficiency"]
+        self.min_max_Cost = parameters["min_max_Cost"]
+
+        self.min_vec = np.asarray([self.min_max_Quality[0],self.min_max_Efficiency[0], self.min_max_Cost[0]])
+        self.max_vec = np.asarray([self.min_max_Quality[1],self.min_max_Efficiency[1], self.min_max_Cost[1]])
+        
         self.fitness_landscapes = self.generate_fitness_landscapes()
 
     def generate_fitness_landscapes(self):
@@ -32,7 +39,7 @@ class NKModel:
         #CHECK SEED STUFF FOR REPRODUCIBILITY 
 
         L = np.random.rand(2**(self.K+1), self.N, self.A)
-        
+
         # Iterate over each attribute starting from the second one
         for a in range(1, self.A):
             Q_a_size = int(abs(self.rho[a]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
@@ -55,7 +62,7 @@ class NKModel:
                                       Shape: (2**(self.K+1), self.N, self.A)
 
         Returns:
-        - fitness (numpy.ndarray): 1D array representing the fitness vector of the design.
+        - fitness (numpy.ndarray): 1D array representing the fitness vec of the design.
                                     Shape: (self.A,)
         """
         
@@ -65,7 +72,9 @@ class NKModel:
                 k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2) #REVIST THIS AND UNDERSTAND WHAT IS GOING ON BETTER
                 fitness[a] +=  self.fitness_landscapes[k, n, a]
 
-        return fitness / self.N
+        average_fitness_components = fitness / self.N
+        fitness_scaled = self.min_vec + ((average_fitness_components*self.max_vec-self.min_vec)/(self.max_vec - self.min_vec))
+        return fitness_scaled
 
     def invert_bits_one_at_a_time(self, decimal_value):
         """THIS IS ONLY USED ONCE I THINK"""
