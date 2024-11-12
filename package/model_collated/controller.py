@@ -3,15 +3,15 @@ Created: 22/12/2023
 """
 
 # imports
-from package.model.nkModel import NKModel
-from package.model.combinedClass import VehicleNetworkModel
-from package.model.firmManager import Firm_Manager 
-from package.model.publicTransport import Public_Transport
-from package.model.centralizedIdGenerator import IDGenerator
-from package.model.secondHandMerchant import SecondHandMerchant
+from package.model_collated.nkModel import NKModel
+from package.model_collated.socialNetworkUsers import SocialNetworkUsers
+from package.model_collated.firmManager import Firm_Manager 
+from package.model_collated.publicTransport import Public_Transport
+from package.model_collated.centralizedIdGenerator import IDGenerator
+from package.model_collated.secondHandMerchant import SecondHandMerchant
 import numpy as np
 
-class CombinedController:
+class Controller:
     def __init__(self, parameters_controller):
 
         self.unpack_controller_parameters(parameters_controller)
@@ -27,7 +27,6 @@ class CombinedController:
         self.setup_urban_public_transport(self.parameters_urban_public_transport)
         self.setup_rural_public_transport(self.parameters_rural_public_transport)
         
-
         #create firms and social networks
         self.setup_firm_manager_parameters()
         self.setup_firm_parameters()
@@ -44,15 +43,17 @@ class CombinedController:
         self.gen_social_network()#users have chosen a vehicle
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
-        self.vehicles_chosen_list = self.social_network.vehicles_chosen
+        self.vehicles_chosen_list = [vehicle for vehicle in self.social_network.available_vehicles if vehicle.id in self.social_network.vehicle_id_vec]
 
         #pass information across one time
         self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.origin_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
 
+        np.random.seed(parameters_controller["choice_seed"])#SET ONCE ALL SET UP HAS BEEN DONE
+
         if self.save_timeseries_data_state:
-            #self.social_network.set_up_time_series_social_network()
+            self.social_network.set_up_time_series_social_network()
             self.firm_manager.set_up_time_series_firm_manager()
             self.rural_public_tranport.set_up_time_series_firm()
             self.urban_public_tranport.set_up_time_series_firm()
@@ -77,6 +78,8 @@ class CombinedController:
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
         
+        self.age_limit_second_hand = parameters_controller["age_limit_second_hand"]
+
         #TIME STUFF
         self.duration_no_carbon_price = parameters_controller["duration_no_carbon_price"] 
         self.duration_small_carbon_price = parameters_controller["duration_small_carbon_price"] 
@@ -154,22 +157,6 @@ class CombinedController:
     def setup_id_gen(self):
         self.IDGenerator_firms = IDGenerator()# CREATE ID GENERATOR FOR FIRMS
 
-    def setup_ICE_parameters(self):
-        #Create NK model
-        self.landscape_seed_ICE= self.parameters_ICE["landscape_seed"]
-        self.N_ICE = int(round(self.parameters_ICE["N"]))
-        self.K_ICE = int(round(self.parameters_ICE["K"]))
-        self.A_ICE = self.parameters_ICE["A"]
-        self.rho_ICE = self.parameters_ICE["rho"]
-
-    def setup_EV_parameters(self):
-        #Create NK model
-        self.landscape_seed_EV= self.parameters_EV["landscape_seed"]
-        self.N_EV = int(round(self.parameters_EV["N"]))
-        self.K_EV = int(round(self.parameters_EV["K"]))
-        self.A_EV = self.parameters_EV["A"]
-        self.rho_EV = self.parameters_EV["rho"]
-
     def setup_firm_manager_parameters(self):
         #TRANSFERING COMMON INFORMATION
         #FIRM MANAGER
@@ -186,8 +173,11 @@ class CombinedController:
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm["kappa"] = self.parameters_vehicle_user["kappa"]
+        self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape
+        self.parameters_firm["eta"] = self.parameters_vehicle_user["eta"]
+        self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
 
     def setup_social_network_parameters(self):
         #create social network
@@ -199,31 +189,37 @@ class CombinedController:
         self.parameters_social_network["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_social_network["second_hand_merchant"] = self.second_hand_merchant
 
+
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_vehicle_user["compression_factor_state"] = self.compression_factor_state
 
     def setup_ICE_landscape(self, parameters_ICE):    
-        self.ICE_landscape = NKModel(parameters_ICE["N"], parameters_ICE["K"], parameters_ICE["A"], parameters_ICE["rho"], parameters_ICE["landscape_seed"])
+        self.ICE_landscape = NKModel(parameters_ICE)
 
     def setup_EV_landscape(self, parameters_EV):
-        self.EV_landscape = NKModel(parameters_EV["N"], parameters_EV["K"], parameters_EV["A"], parameters_EV["rho"], parameters_EV["landscape_seed"])
+        self.EV_landscape = NKModel(parameters_EV)
 
     def setup_urban_public_transport(self, parameters_urban_public_transport):
+        parameters_urban_public_transport["eta"] = self.parameters_vehicle_user["eta"]
         self.urban_public_tranport = Public_Transport(parameters=parameters_urban_public_transport)
 
     def setup_rural_public_transport(self, parameters_rural_public_transport):
+        parameters_rural_public_transport["eta"] = self.parameters_vehicle_user["eta"]
         self.rural_public_tranport = Public_Transport(parameters=parameters_rural_public_transport)
 
     def setup_second_hand_market(self):
-        self.second_hand_merchant = SecondHandMerchant(unique_id = -3)
+        self.second_hand_merchant = SecondHandMerchant(unique_id = -3, age_limit_second_hand = self.age_limit_second_hand)
     
     def gen_firms(self):
         #CREATE FIRMS    
+        self.parameters_ICE["eta"] = self.parameters_vehicle_user["eta"]
+        self.parameters_EV["eta"] = self.parameters_vehicle_user["eta"]
+
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
     def gen_social_network(self):
-        self.social_network = VehicleNetworkModel(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
+        self.social_network = SocialNetworkUsers(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
 
     def update_carbon_price(self):
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
@@ -241,12 +237,16 @@ class CombinedController:
     def update_public_transport(self):
         #DO it hear to avoid having to record the time in the subobjects
         if self.save_timeseries_data_state and (self.t_controller % self.compression_factor_state == 0):
-            #self.social_network.save_timeseries_data_social_network()
+            self.social_network.save_timeseries_data_social_network()
             self.firm_manager.save_timeseries_data_firm_manager()
             self.rural_public_tranport.save_timeseries_data_firm()
             self.urban_public_tranport.save_timeseries_data_firm()
+            self.second_hand_merchant.save_timeseries_second_hand_merchant()
 
     def get_second_hand_cars(self):
+
+        self.second_hand_merchant.next_step()
+
         return self.second_hand_merchant.cars_on_sale
     
     def mix_in_vehicles(self):
@@ -265,6 +265,7 @@ class CombinedController:
         self.cars_on_sale_all_firms = self.update_firms()
         vehicles_available = self.mix_in_vehicles()
         self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network(vehicles_available)
+
         self.update_public_transport()
 
 

@@ -1,9 +1,5 @@
 import numpy as np
 
-"""
-
-At the moment this cannot deal with public transport, i think this should be the last modelling step to add that in
-"""
 class VehicleUser:
     def __init__(self, user_id, chi, gamma, beta, origin, d_i_min, parameters_vehicle_user):
         self.t_vehicle_user = 0
@@ -17,16 +13,14 @@ class VehicleUser:
 
         self.save_timeseries_data_state = parameters_vehicle_user["save_timeseries_data_state"]
         self.compression_factor_state = parameters_vehicle_user["compression_factor_state"]
-        self.nu = parameters_vehicle_user["nu"]
         self.vehicles_available = parameters_vehicle_user["vehicles_available"]
-        self.EV_bool = parameters_vehicle_user["EV_bool"]
         self.kappa = parameters_vehicle_user["kappa"]
         self.alpha = parameters_vehicle_user["alpha"]
         self.r = parameters_vehicle_user["r"]
         self.eta = parameters_vehicle_user["eta"]
         self.mu = parameters_vehicle_user["mu"]
 
-        self.vehicle = self.decide_purchase_init(self.vehicles_available)  # Initial vehicle decision
+        self.vehicle = self.decide_vehicle_init(self.vehicles_available)  # Initial vehicle decision
         self.current_vehicle_type = self.vehicle.transportType
 
         if self.save_timeseries_data_state:
@@ -36,7 +30,7 @@ class VehicleUser:
     ###############################################################################################################################
     #INIT
 
-    def decide_purchase_init(self, vehicles_available):
+    def decide_vehicle_init(self, vehicles_available):
         """
         Decide whether to purchase a new vehicle or keep the current one.
 
@@ -82,7 +76,7 @@ class VehicleUser:
 
         # Calculate distance and commuting utility
         d_i_t = self.actual_distance(vehicle)
-        commuting_util = self.commuting_utility(vehicle, d_i_t, z=2)  # Example z value (should be scenario-specific)
+        commuting_util = self.commuting_utility(vehicle, d_i_t)  # Example z value (should be scenario-specific)
 
         # Closed-form solution for lifetime utility
         denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
@@ -104,9 +98,9 @@ class VehicleUser:
         """
         
         # Adjust the lifetime utility based on the scenario
-        if scenario == ("public_optional" or "private_unassigned"):#Cases 3 and 6, choosing PUBLIC TRANSPORT or second hand car without owning a second hand car due to public tranport or no car
+        if scenario in ["public_transport", "second_hand"]:#Cases 3 and 6, choosing PUBLIC TRANSPORT or second hand car without owning a second hand car due to public tranport or no car
             U_a_i_t = base_utility - self.beta * vehicle.price
-        elif scenario == "private_emissions":#CASE 1, buyign new without owning a second hand car
+        elif scenario == "new_car":#CASE 1, buyign new without owning a second hand car
             U_a_i_t = base_utility - self.beta * vehicle.price - self.gamma * vehicle.emissions
         else:
             raise ValueError("Invalid scenario specified. No car is owned")
@@ -114,7 +108,7 @@ class VehicleUser:
         return U_a_i_t
 
     ###################################################################################################################################
-    def commuting_utility(self, vehicle, d_i_t, z):
+    def commuting_utility(self, vehicle, d_i_t):
         """
         Calculate the commuting utility based on different conditions.
 
@@ -126,22 +120,23 @@ class VehicleUser:
         Returns:
         float: The calculated commuting utility u_{a,i,t}.
         """
-        Q_a_t = vehicle.Q_a_t
+        Quality_a_t = vehicle.Quality_a_t
         delta_z = vehicle.delta_z
         L_a_t = vehicle.L_a_t
-        omega_a_t = vehicle.omega_a_t
-        c_z_t = vehicle.c_z_t
+        Eff_omega_a_t = vehicle.Eff_omega_a_t
+        fuel_cost_c_z = vehicle.fuel_cost_c_z
         e_z_t = vehicle.e_z_t
         nu_z_i_t = vehicle.nu_z_i_t
+        z = vehicle.transportType
 
         # Calculate commuting utility based on conditions for z
         if z > 1:
             # If z' > 1, include all cost components
-            cost_component = self.beta * (1 / omega_a_t) * c_z_t + self.gamma * (1 / omega_a_t) * e_z_t + self.eta * nu_z_i_t
-            utility = Q_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
+            cost_component = self.beta * (1 / Eff_omega_a_t) * fuel_cost_c_z + self.gamma * (1 / Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
+            utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
         else:
             # If z' <= 1, include only the eta * nu component
-            utility = Q_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * (self.eta * nu_z_i_t)
+            utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * (self.eta * nu_z_i_t)
 
         # Ensure utility is non-negative
         utility = max(0, utility)
@@ -158,9 +153,9 @@ class VehicleUser:
         Returns:
         float: The calculated optimal distance, d^*_{a,i,t}.
         """
-        numerator = self.alpha * vehicle.Q_a_t * (1 - vehicle.delta_z) ** vehicle.L_a_t
-        denominator = (self.beta * vehicle.omega_a_t ** -1 * vehicle.c_z_t +
-                       self.gamma * vehicle.omega_a_t ** -1 * vehicle.e_z_t +
+        numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta_z) ** vehicle.L_a_t
+        denominator = (self.beta * vehicle.Eff_omega_a_t ** -1 * vehicle.fuel_cost_c_z +
+                       self.gamma * vehicle.Eff_omega_a_t ** -1 * vehicle.e_z_t +
                        vehicle.eta * vehicle.nu_z_i_t)
 
         # Compute optimal distance
@@ -196,7 +191,7 @@ class VehicleUser:
         """
         # Avoid recalculating the same values for commuting utility or actual distance
         d_i_t = self.actual_distance(vehicle)
-        commuting_util = self.commuting_utility(vehicle, d_i_t, z=2)
+        commuting_util = self.commuting_utility(vehicle, d_i_t)
 
         denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
         if denominator == 0:
@@ -205,26 +200,26 @@ class VehicleUser:
         base_utility = commuting_util / denominator
         scenario = vehicle.scenario
 
-        if self.vehicle.transportType > 0:
-            if scenario == "current_car":
+        if self.vehicle.transportType > 1:#you own a car currently
+            if scenario == "current_car":#you own a car and keep the car there is no change case 7
                 U_a_i_t = base_utility
-            elif scenario in ["public_optional", "private_unassigned"]:
+            elif scenario in ["public_transport", "second_hand"]:#you own a car and now are going to pick a second hand car or public transport
                 U_a_i_t = base_utility - self.beta * (vehicle.price - self.vehicle.price / (1 + self.mu))
-            elif scenario == "private_emissions":
+            elif scenario == "new_car":#you own a car and now are going to buy a new car
                 U_a_i_t = base_utility - self.beta * (vehicle.price - self.vehicle.price / (1 + self.mu)) - self.gamma * vehicle.emissions
             else:
                 raise ValueError("Invalid scenario specified. Owns second hand car")
-        else:
-            if scenario in ["public_optional", "private_unassigned"]:
+        else:#you dont own a car
+            if scenario in ["public_transport", "second_hand"]:#dont own car (currently choose public tranport or second hand car) and will now choose public tranport or second hand car
                 U_a_i_t = base_utility - self.beta * vehicle.price
-            elif scenario == "private_emissions":
+            elif scenario == "new_car":#dont own car (currently choose public tranport or second hand car), will buy new car
                 U_a_i_t = base_utility - self.beta * vehicle.price - self.gamma * vehicle.emissions
             else:
                 raise ValueError("Invalid scenario specified. No car is owned")
 
         return U_a_i_t, d_i_t
 
-    def decide_purchase(self, vehicles_available):
+    def decide_vehicle(self, vehicles_available):
             # Calculate utility and distance for the current vehicle once, avoiding redundant calls
             current_utility, d_i_t_current_vehicle = self.calculate_utility(self.vehicle)
             
@@ -251,8 +246,8 @@ class VehicleUser:
 
     def calc_emissions(self,vehicle_chosen, driven_distance):
 
-        driving_emissions =  driven_distance*(vehicle_chosen.omega_a_t**-1)*vehicle_chosen.e_z_t 
-        if vehicle_chosen.scenario == "private_emissions":  
+        driving_emissions =  driven_distance*(vehicle_chosen.Eff_omega_a_t**-1)*vehicle_chosen.e_z_t 
+        if vehicle_chosen.scenario == "new_car":  
             production_emissions = vehicle_chosen.emissions
         else:
             production_emissions = 0
@@ -280,7 +275,7 @@ class VehicleUser:
         """
         self.t_vehicle_user += 1
 
-        vehicle_chosen, self.driven_distance, self.utility = self.decide_purchase(vehicles_available)
+        vehicle_chosen, self.driven_distance, self.utility = self.decide_vehicle(vehicles_available)
         self.current_vehicle_type = vehicle_chosen.transportType
         self.driving_emissions, self.production_emissions = self.calc_emissions(vehicle_chosen, self.driven_distance)
         

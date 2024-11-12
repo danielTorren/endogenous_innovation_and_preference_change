@@ -1,8 +1,7 @@
-from math import gamma
 import numpy as np
 import random
-from package.model.carModel import CarModel
-from package.model.firm import Firm
+from package.model_collated.carModel import CarModel
+from package.model_collated.firm import Firm
 from collections import defaultdict
 
 class Firm_Manager:
@@ -90,22 +89,31 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return cars_on_sale_all_firms
 
-    def input_social_network_data(self, beta_vec, origin_vec, environmental_awareness_vec,consider_ev_vec):
+    def input_social_network_data(self, beta_vec, origin_vec, gamma_vec,consider_ev_vec):
         self.beta_vec = beta_vec
         self.origin_vec = origin_vec
-        self.gamma_vec = environmental_awareness_vec
+        self.gamma_vec = gamma_vec
         self.consider_ev_vec = consider_ev_vec
+
+        #print(self.consider_ev_vec)
 
         # Convert beta and gamma arrays to binary based on threshold values
         self.beta_binary = (self.beta_vec > self.beta_threshold).astype(int)
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
-
+        #print("self.beta_binary", self.beta_binary)
+        #print("self.gamma_binary", self.gamma_binary)
+        #quit()
         #print("STATE: ",np.mean(self.beta_binary), np.mean(self.gamma_binary), np.mean(self.consider_ev_vec),np.mean(self.origin_vec))
+
+        #quit()
 
     def generate_market_data(self):
         """Used once at the start of model run, need to generate the counts then the market data without U then calc U and add it in!"""
 
+        #print(self.beta_binary.shape, self.gamma_binary.shape, self.consider_ev_vec.shape, self.origin_vec.shape )
+        #quit()
         segment_codes = (self.beta_binary << 3) | (self.gamma_binary << 2) | (self.consider_ev_vec << 1) | self.origin_vec
+        #print(segment_codes)
         segment_counts = np.bincount(segment_codes, minlength=16)
         # Store the counts for each of the segments as binary strings ('0000' to '1111')
         self.market_data = {format(i, '04b'): {"I_s_t":segment_counts[i]} for i in range(16)}

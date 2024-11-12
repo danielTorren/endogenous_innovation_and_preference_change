@@ -28,7 +28,6 @@ class Controller:
         self.setup_urban_public_transport(self.parameters_urban_public_transport)
         self.setup_rural_public_transport(self.parameters_rural_public_transport)
         
-
         #create firms and social networks
         self.setup_firm_manager_parameters()
         self.setup_firm_parameters()
@@ -80,6 +79,8 @@ class Controller:
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
         
+        self.age_limit_second_hand = parameters_controller["age_limit_second_hand"]
+
         #TIME STUFF
         self.duration_no_carbon_price = parameters_controller["duration_no_carbon_price"] 
         self.duration_small_carbon_price = parameters_controller["duration_small_carbon_price"] 
@@ -157,23 +158,6 @@ class Controller:
     def setup_id_gen(self):
         self.IDGenerator_firms = IDGenerator()# CREATE ID GENERATOR FOR FIRMS
 
-    def setup_ICE_parameters(self):
-        #Create NK model
-        self.landscape_seed_ICE= self.parameters_ICE["landscape_seed"]
-        self.N_ICE = int(round(self.parameters_ICE["N"]))
-        self.K_ICE = int(round(self.parameters_ICE["K"]))
-        self.A_ICE = self.parameters_ICE["A"]
-        self.rho_ICE = self.parameters_ICE["rho"]
-
-    def setup_EV_parameters(self):
-        #Create NK model
-        self.landscape_seed_EV= self.parameters_EV["landscape_seed"]
-        self.N_EV = int(round(self.parameters_EV["N"]))
-        self.K_EV = int(round(self.parameters_EV["K"]))
-        self.A_EV = self.parameters_EV["A"]
-        self.rho_EV = self.parameters_EV["rho"]
-
-
     def setup_firm_manager_parameters(self):
         #TRANSFERING COMMON INFORMATION
         #FIRM MANAGER
@@ -226,7 +210,7 @@ class Controller:
         self.rural_public_tranport = Public_Transport(parameters=parameters_rural_public_transport)
 
     def setup_second_hand_market(self):
-        self.second_hand_merchant = SecondHandMerchant(unique_id = -3)
+        self.second_hand_merchant = SecondHandMerchant(unique_id = -3, age_limit_second_hand = self.age_limit_second_hand)
     
     def gen_firms(self):
         #CREATE FIRMS    
@@ -258,8 +242,12 @@ class Controller:
             self.firm_manager.save_timeseries_data_firm_manager()
             self.rural_public_tranport.save_timeseries_data_firm()
             self.urban_public_tranport.save_timeseries_data_firm()
+            self.second_hand_merchant.save_timeseries_second_hand_merchant()
 
     def get_second_hand_cars(self):
+
+        self.second_hand_merchant.next_step()
+
         return self.second_hand_merchant.cars_on_sale
     
     def mix_in_vehicles(self):
