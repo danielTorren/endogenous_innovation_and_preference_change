@@ -1,8 +1,7 @@
 import numpy as np
 
 class CarModel:
-    def __init__(self, unique_id, component_string, nk_landscape , parameters, choosen_tech_bool = False, firm= None):
-        self.id = unique_id
+    def __init__(self, component_string, nk_landscape , parameters, choosen_tech_bool = False, firm = None):
         self.firm = firm
 
         self.owner_id = -5#NEED TO MAKE SURE NO ONE OWNS IT

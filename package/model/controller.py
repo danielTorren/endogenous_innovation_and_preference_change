@@ -3,10 +3,7 @@ Created: 22/12/2023
 """
 
 # imports
-
-from package.model import socialNetwork
 from package.model.nkModel import NKModel
-from package.model.socialNetwork import Social_Network
 from package.model.firmManager import Firm_Manager 
 from package.model.publicTransport import Public_Transport
 from package.model.centralizedIdGenerator import IDGenerator

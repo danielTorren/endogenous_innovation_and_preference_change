@@ -28,13 +28,11 @@ class Social_Network:
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
         self.kappa = parameters_vehicle_user["kappa"]
-        
-        self.createVehicleUsers()
-        # Extract user attributes into vecs for efficient processing
-        #self.chi_vec = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
-        #self.gamma_vec = np.array([user.gamma for user in self.vehicleUsers_list])  # Environmental concern
-        #self.beta_vec = np.array([user.beta for user in self.vehicleUsers_list])  # Cost sensitivity
-        #self.origin_vec = np.array([user.origin for user in self.vehicleUsers_list])  # Urban/rural origin
+
+        self.num_PT_options = 2
+        # Efficient user list creation with list comprehension
+        self.vehicleUsers_list = [VehicleUser(user_id=i) for i in range(self.num_individuals)]
+
 
         # Create network and calculate initial emissions
         self.adjacency_matrix, self.network = self.create_network()
@@ -46,13 +44,8 @@ class Social_Network:
 
         self.current_vehicles = self.update_VehicleUsers()
 
-        self.chi_vec = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
-        self.vehicle_type_vec = np.array([user.current_vehicle_type for user in self.vehicleUsers_list])
+        #self.chi_vec = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
-
-
-        self.vehicle_type_vec = np.array([user.current_vehicle_type for user in self.vehicleUsers_list])  # Current vehicle types
-        self.ev_adoption_state_vec = np.array([user.origin for user in self.vehicleUsers_list])#EV ADOPTION STATE
 
     ###############################################################################################################################################################
     ###############################################################################################################################################################
@@ -106,12 +99,6 @@ class Social_Network:
         self.new_cars = parameters_social_network["init_car_options"]
 
         self.cars_on_sale_all_firms = self.second_hand_cars + self.public_transport_options + self.new_cars
-
-    def createVehicleUsers(self):
-        self.vehicleUsers_list = []
-        self.parameters_vehicle_user["vehicles_available"] = self.cars_on_sale_all_firms
-        for i in range(self.num_individuals):
-            self.vehicleUsers_list.append(VehicleUser(user_id = i, chi = self.chi_vec[i], gamma = self.gamma_vec[i], beta = self.beta_vec[i], origin = self.origin_vec[i], d_i_min = self.d_i_min_vec[i], parameters_vehicle_user=self.parameters_vehicle_user))
         
     def normalize_vec_sum(self, vec):
         return vec/sum(vec)
@@ -157,7 +144,7 @@ class Social_Network:
         and determine EV adoption consideration.
         """
         
-        self.vehicle_type_vec = np.array([user.current_vehicle_type for user in self.vehicleUsers_list])  # Current vehicle types
+        self.vehicle_type_vec = np.array([user.vehicle.transportType for user in self.vehicleUsers_list])  # Current vehicle types
 
         # Create a binary vec indicating EV users
         ev_adoption_vec = (self.vehicle_type_vec == ev_type).astype(int)
@@ -191,33 +178,49 @@ class Social_Network:
     def update_VehicleUsers(self):
         self.vehicle_chosen_list = []
 
-        if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-            self.prep_counters()
+        if self.t_social_network > 0:
+            # Vectorize current user vehicle attributes
+            self.users_current_vehicle_price_vec = np.asarray([user.vehicle.price for user in self.vehicleUsers_list])
+            self.users_current_vehicle_type_vec = np.asarray([user.vehicle.transportType for user in self.vehicleUsers_list])
 
-        #chosen_vehicle_indices = set()  # Track indices of vehicles already chosen (specifically `PersonalCar`)
-
-
-        self.users_current_vehicle_price_vec = np.asarray([user.vehicle.price for user in self.vehicleUsers_list])
-        self.users_current_vehicle_type_vec = np.asarray([user.vehicle.transportType for user in self.vehicleUsers_list])
-
-        if self.t_social_network > 1:
-            # Generate utilities and get the list of all vehicles
+            # Generate current utilities and vehicles
             utilities_current_matrix, current_vehicles_list, d_current_matrix = self.generate_utilities_current()
-            #print("current_vehicles_list", utilities_current_matrix)
-            """There are some superflous calculations here like EV when you cant and Public transprot when you are already using it. come in later to fix"""
-            utilities_buying_matrix, buying_vehicles_list, d_buying_matrix = self.generate_utilities()  # Shape: (num_individuals, num_vehicles)
+            
+            # Generate buying utilities and vehicles
+            utilities_buying_matrix, buying_vehicles_list, d_buying_matrix = self.generate_utilities()
 
-            self.utilities_matrix = np.hstack((utilities_buying_matrix, utilities_current_matrix))
-            self.d_matrix = np.hstack((d_buying_matrix, d_current_matrix))
+            # Preallocate the final utilities and distance matrices
+            total_columns = utilities_buying_matrix.shape[1] + utilities_current_matrix.shape[1]
+            self.utilities_matrix = np.empty((utilities_buying_matrix.shape[0], total_columns), dtype=utilities_buying_matrix.dtype)
+            self.d_matrix = np.empty((d_buying_matrix.shape[0], total_columns), dtype=d_buying_matrix.dtype)
 
-            all_vehicles_list = buying_vehicles_list + current_vehicles_list 
+            # Assign matrices directly
+            self.utilities_matrix[:, :utilities_buying_matrix.shape[1]] = utilities_buying_matrix
+            self.utilities_matrix[:, utilities_buying_matrix.shape[1]:] = utilities_current_matrix
+
+            self.d_matrix[:, :d_buying_matrix.shape[1]] = d_buying_matrix
+            self.d_matrix[:, d_buying_matrix.shape[1]:] = d_current_matrix
+
+            # Combine the list of vehicles
+            all_vehicles_list = buying_vehicles_list + current_vehicles_list
+
         else:
-            self.utilities_matrix, all_vehicles_list, self.d_matrix = self.generate_utilities()  # Shape: (num_individuals, num_vehicles)
-        
+            # Initialize arrays for users without vehicles
+            self.users_current_vehicle_type_vec = np.zeros(self.num_individuals, dtype=np.int8)
+            self.users_current_vehicle_price_vec = np.zeros(self.num_individuals, dtype=np.int8)
+
+            # Generate public transport utility and distance, if applicable
+            self.generate_public_transport_utility_distance()
+
+            # Generate utilities for purchasing vehicles
+            self.utilities_matrix, all_vehicles_list, self.d_matrix = self.generate_utilities()
+
+
         self.utilities_kappa, combined_mask = self.masking_options(self.utilities_matrix, all_vehicles_list)
         self.chosen_already_mask = np.ones(len(all_vehicles_list), dtype= np.int8)
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+            self.prep_counters()
             for i, user in enumerate(self.vehicleUsers_list):
                 vehicle_chosen, vehicle_chosen_index = self.user_chooses(i, user, combined_mask, all_vehicles_list)
                 self.update_counters(i, vehicle_chosen, vehicle_chosen_index)
@@ -267,46 +270,34 @@ class Social_Network:
         else:
             self.EV_users += 1
 
-    def masking_options(self,utilities_matrix, all_vehicles_list):
-        # Define masks for each vehicle based on transport type
-        invert_ev_mask = np.array([0 if vehicle.transportType == 3 else 1 for vehicle in all_vehicles_list])
-        invert_urban_mask = np.array([0 if vehicle.transportType == 0 else 1 for vehicle in all_vehicles_list])
-        invert_rural_mask = np.array([0 if vehicle.transportType == 1 else 1 for vehicle in all_vehicles_list])
 
-        # Expand masks to match the shape of `utilities_matrix` (num_users, num_vehicles)
-        ev_mask_matrix = np.outer(self.consider_ev_vec == 0, invert_ev_mask)  # EV preference per user
-        urban_matrix = np.outer(
-            self.origin_vec_invert, invert_urban_mask
-        )
-        rural_matrix = np.outer(
-            self.origin_vec, invert_rural_mask
-        )
-        origin_mask_matrix = urban_matrix + rural_matrix
-        combined_mask = ev_mask_matrix * origin_mask_matrix 
+    def masking_options(self, utilities_matrix, all_vehicles_list):
+        # Generate individual masks based on vehicle type and user conditions
+        self.invert_ev_mask = np.array([vehicle.transportType != 3 for vehicle in all_vehicles_list])
+        self.invert_urban_mask = np.array([vehicle.transportType != 0 for vehicle in all_vehicles_list])
+        self.invert_rural_mask = np.array([vehicle.transportType != 1 for vehicle in all_vehicles_list])
 
-        # Apply combined mask to utilities matrix
+        ev_mask_matrix = np.outer(self.consider_ev_vec == 0, self.invert_ev_mask)
+        origin_mask_matrix = np.outer(self.origin_vec_invert, self.invert_urban_mask) | np.outer(self.origin_vec, self.invert_rural_mask)
+        combined_mask = ev_mask_matrix & origin_mask_matrix
         utilities_kappa = np.power(utilities_matrix, self.kappa) * combined_mask
-
         return utilities_kappa, combined_mask
 
     def user_chooses(self, i, user, combined_mask, all_vehicles_list):
         # Select individual-specific utilities
-        #invert_own_car_mask = np.asarray([0 if vehicle.owner_id == user.vehicle.owner_id else 1 for vehicle in all_vehicles_list] for user in self.)
-        individual_specific_util = self.utilities_kappa[i]
+        individual_specific_util = self.utilities_kappa[i]        
 
         # Check if all utilities are zero after filtering
         if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
-            #print("NONE")
             bad_options = (combined_mask[i])*self.chosen_already_mask
             #print(bad_options)
             choice_index = np.random.choice(bad_options)
+
         else:
-            #print("ONE ")
             # Calculate the probability of choosing each vehicle
             probability_choose = individual_specific_util / individual_specific_util.sum()
             choice_index = np.random.choice(len(all_vehicles_list), p=probability_choose)
 
-        #print("choice_index", choice_index)
         # Record the chosen vehicle
         vehicle_chosen = all_vehicles_list[choice_index]
         self.vehicle_chosen_list.append(vehicle_chosen)
@@ -364,25 +355,61 @@ class Social_Network:
         d_current_matrix = np.diag(d_current)
 
         return CV_utilities_matrix, self.current_vehicles, d_current_matrix
-    
-    def generate_utilities(self):
 
+    def generate_public_transport_utility_distance(self):
         PT_vehicle_dict_vecs = self.gen_vehicle_dict_vecs(self.public_transport_options)
+        self.PT_utilities, self.d_PT = self.vectorised_calculate_utility(PT_vehicle_dict_vecs, scenario= "public_transport")
+
+    def generate_utilities_alt(self):
+
         NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs(self.new_cars)
-        
-        PT_utilities, d_PT = self.vectorised_calculate_utility(PT_vehicle_dict_vecs, scenario= "public_transport")
         NC_utilities, d_NC = self.vectorised_calculate_utility(NC_vehicle_dict_vecs, scenario= "new_car")
 
         if self.second_hand_cars:
             SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs(self.second_hand_cars)
             SH_utilities, d_SH = self.vectorised_calculate_utility( SH_vehicle_dict_vecs, scenario= "second_hand")
         
-            utilities_matrix = np.hstack((PT_utilities, NC_utilities,SH_utilities))
-            d_matrix = np.hstack((d_PT, d_NC,d_SH))
+            utilities_matrix = np.hstack((self.PT_utilities, NC_utilities,SH_utilities))
+            d_matrix = np.hstack((self.d_PT, d_NC,d_SH))
             car_options =  self.public_transport_options + self.new_cars + self.second_hand_cars
         else:
-            utilities_matrix = np.hstack((PT_utilities, NC_utilities))
-            d_matrix = np.hstack((d_PT, d_NC))
+            utilities_matrix = np.hstack((self.PT_utilities, NC_utilities))
+            d_matrix = np.hstack((self.d_PT, d_NC))
+            car_options = self.public_transport_options + self.new_cars
+
+        return utilities_matrix, car_options, d_matrix
+    
+    def generate_utilities(self):
+        # Generate utilities and distances for new cars
+        NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs(self.new_cars)
+        NC_utilities, d_NC = self.vectorised_calculate_utility(NC_vehicle_dict_vecs, scenario="new_car")
+
+        # Calculate the total columns needed for utilities and distance matrices
+        total_columns = self.num_PT_options + NC_utilities.shape[1]
+        if self.second_hand_cars:
+            SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs(self.second_hand_cars)
+            SH_utilities, d_SH = self.vectorised_calculate_utility(SH_vehicle_dict_vecs, scenario="second_hand")
+            total_columns += SH_utilities.shape[1]
+
+        # Preallocate arrays with the total required columns
+        utilities_matrix = np.empty((self.num_individuals, total_columns))
+        d_matrix = np.empty((self.num_individuals, total_columns))
+
+        # Fill in preallocated arrays with submatrices
+        col_idx = 0#start the counter at zero then increase as you set things up
+        utilities_matrix[:, col_idx:col_idx + self.num_PT_options] = self.PT_utilities
+        d_matrix[:, col_idx:col_idx + self.num_PT_options] = self.d_PT
+        col_idx += self.num_PT_options
+
+        utilities_matrix[:, col_idx:col_idx + NC_utilities.shape[1]] = NC_utilities
+        d_matrix[:, col_idx:col_idx + d_NC.shape[1]] = d_NC
+        col_idx += NC_utilities.shape[1]
+
+        if self.second_hand_cars:
+            utilities_matrix[:, col_idx:col_idx + SH_utilities.shape[1]] = SH_utilities
+            d_matrix[:, col_idx:col_idx + d_SH.shape[1]] = d_SH
+            car_options = self.public_transport_options + self.new_cars + self.second_hand_cars
+        else:
             car_options = self.public_transport_options + self.new_cars
 
         return utilities_matrix, car_options, d_matrix
@@ -429,12 +456,12 @@ class Social_Network:
         """
         #print(self.vectorised_optimal_distance_current(vehicle_dict_vecs))
         # Compute basic utility components common across all scenarios
-        vehicle_dict_vecs["d_i_t"] = np.maximum(
+        d_i_t = np.maximum(
             self.d_i_min_vec,
             self.vectorised_optimal_distance_current(vehicle_dict_vecs)
         )  # Ensuring compatibility for element-wise comparison
 
-        commuting_util_vec = self.vectorised_commuting_utility_current(vehicle_dict_vecs)
+        commuting_util_vec = self.vectorised_commuting_utility_current(vehicle_dict_vecs, d_i_t)
         base_utility_vec = commuting_util_vec / (self.r + (1 - vehicle_dict_vecs["delta_z"]) / (1 - self.alpha))
 
         # Create mask for users who do NOT own a car
@@ -456,37 +483,73 @@ class Social_Network:
             # Initialize utility vec with base utility
             U_a_i_t_vec = base_utility_vec
 
-        return U_a_i_t_vec, vehicle_dict_vecs["d_i_t"]
+        return U_a_i_t_vec, d_i_t
+
 
     def vectorised_calculate_utility(self, vehicle_dict_vecs, scenario):
-        # Compute basic utility components that are common across all scenarios
-        vehicle_dict_vecs["d_i_t"] = np.maximum(self.d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance(vehicle_dict_vecs))#THIS IS A MATRIX I NEED TO BE CAREFUL, added new axis to be able to compare the matrix
+        # Precompute EV consideration mask based on user preference and vehicle type
+        ev_mask = self.consider_ev_vec[:, np.newaxis]  # Shape: (num_individuals, 1)
 
-        commuting_util_matrix = self.vectorised_commuting_utility(vehicle_dict_vecs)
+        # Only calculate for users who consider EVs or vehicles of non-EV type
+        if vehicle_dict_vecs["transportType"][0] == 3:  # Assuming EVs have transportType == 3
+            consider_indices = np.where(ev_mask == 1)
+        else:
+            consider_indices = np.where(ev_mask == 0)
+
+        # Calculate only for relevant individuals
+        d_i_t = np.maximum(self.d_i_min_vec[consider_indices[0], np.newaxis], self.vectorised_optimal_distance(vehicle_dict_vecs)[consider_indices])
+        commuting_util_matrix = self.vectorised_commuting_utility(vehicle_dict_vecs, d_i_t)[consider_indices]
+
         base_utility_matrix = commuting_util_matrix / (self.r + (1 - vehicle_dict_vecs["delta_z"]) / (1 - self.alpha))
 
-        # Create masks for different conditions
-        owns_car_mask = self.users_current_vehicle_type_vec > 1
+        # Avoid redundant calculations for those not owning a car
+        owns_car_mask = self.users_current_vehicle_type_vec[consider_indices[0]] > 1
+        price_difference = vehicle_dict_vecs["price"][consider_indices[1], np.newaxis] - np.where(
+            owns_car_mask,
+            self.users_current_vehicle_price_vec[consider_indices[0]] / (1 + self.mu),
+            0
+        )
 
-        # Calculate the price difference matrix
+        # Calculate price and emissions adjustments
+        price_adjustment = np.multiply(self.beta_vec[consider_indices[0], np.newaxis], price_difference.T, dtype=np.float32)
+
+        # Initialize U_a_i_t_matrix with zeros for all users
+        U_a_i_t_matrix = np.zeros((self.num_individuals, len(vehicle_dict_vecs["price"])), dtype=np.float32)
+        if scenario in ["public_transport", "second_hand"]:
+            U_a_i_t_matrix[consider_indices] = base_utility_matrix - price_adjustment
+        else:
+            emissions_penalty = np.multiply(self.gamma_vec[consider_indices[0], np.newaxis], vehicle_dict_vecs["emissions"][consider_indices[1]], dtype=np.float32)
+            U_a_i_t_matrix[consider_indices] = base_utility_matrix - price_adjustment - emissions_penalty
+
+        return U_a_i_t_matrix, d_i_t
+
+
+    def vectorised_calculate_utility(self, vehicle_dict_vecs, scenario):
+        # Compute shared base utility components
+        d_i_t = np.maximum(self.d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance(vehicle_dict_vecs))
+        
+        commuting_util_matrix = self.vectorised_commuting_utility(vehicle_dict_vecs, d_i_t)
+        base_utility_matrix = commuting_util_matrix / (self.r + (1 - vehicle_dict_vecs["delta_z"]) / (1 - self.alpha))
+        
+        # Avoid redundant calculations
+        owns_car_mask = self.users_current_vehicle_type_vec > 1
         price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - np.where(
             owns_car_mask,
             self.users_current_vehicle_price_vec / (1 + self.mu),
             0
-        )  # Shape: (num_vehicles, num_individuals)
+        )
 
-        # Compute the price adjustment matrix
-        price_adjustment = self.beta_vec[:, np.newaxis] * price_difference.T  # Shape: (num_individuals, num_vehicles)
+        # Calculate price and emissions adjustments once
+        price_adjustment = np.multiply(self.beta_vec[:, np.newaxis], price_difference.T, dtype=np.float32)
+        
+        # Use in-place modification to save memory
+        if scenario in ["public_transport", "second_hand"]:
+            U_a_i_t_matrix = base_utility_matrix - price_adjustment
+        else:
+            emissions_penalty = np.multiply(self.gamma_vec[:, np.newaxis], vehicle_dict_vecs["emissions"], dtype=np.float32)
+            U_a_i_t_matrix = base_utility_matrix - price_adjustment - emissions_penalty
 
-        emissions_penalty = self.gamma_vec[:, np.newaxis] * vehicle_dict_vecs["emissions"][np.newaxis, :] #RESHAPE FOR MULTIPLICATION
-
-        # Calculate utilities for different scenarios
-        U_a_i_t_matrix = np.where(scenario in ["public_transport", "second_hand"],
-                                        base_utility_matrix - price_adjustment,#second hand or public transport
-                                        base_utility_matrix - price_adjustment - emissions_penalty#make new car
-                                )
-
-        return U_a_i_t_matrix, vehicle_dict_vecs["d_i_t"]
+        return U_a_i_t_matrix, d_i_t
 
     def vectorised_optimal_distance_current(self, vehicle_dict_vecs):
         """
@@ -532,13 +595,11 @@ class Social_Network:
 
         return optimal_distance_matrix  # Shape: (num_individuals, num_vehicles)
 
-    def vectorised_commuting_utility_current(self, vehicle_dict_vecs):
+    def vectorised_commuting_utility_current(self, vehicle_dict_vecs, d_i_t):
         """
         Only one car. Calculate the commuting utility for each individual considering only their corresponding vehicle.
         Assumes each individual has one vehicle, aligned by index.
         """
-        # Distance for each individual-vehicle pair
-        d_i_t = vehicle_dict_vecs["d_i_t"]  # Shape: (num_individuals,)
 
         # Compute cost component based on transport type, without broadcasting
         cost_component = np.where(
@@ -558,10 +619,8 @@ class Social_Network:
 
         return commuting_utility_vec  # Shape: (num_individuals,)
 
-    def vectorised_commuting_utility(self, vehicle_dict_vecs):
+    def vectorised_commuting_utility(self, vehicle_dict_vecs, d_i_t):
         """utility of all cars for all agents"""
-        # Prepare individual and vehicle-specific parameters for broadcasting
-        d_i_t = vehicle_dict_vecs["d_i_t"]  # Shape: (num_individuals, num_vehicles)
 
         # Compute cost component based on transport type, with conditional operations
         cost_component = np.where(

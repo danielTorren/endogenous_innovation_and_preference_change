@@ -67,8 +67,14 @@ class Firm_Manager:
         np.random.seed(self.init_tech_seed) 
         init_tech_component_string_list = np.random.choice(init_tech_component_string_list_N, self.J)
         
-        self.init_tech_list_ICE = [CarModel(self.id_generator.get_new_id(), init_tech_component_string_list[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
-        self.init_tech_list_EV = [CarModel(self.id_generator.get_new_id(), init_tech_component_string_list[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
+        self.init_tech_list_ICE = [CarModel(init_tech_component_string_list[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
+        self.init_tech_list_EV = [CarModel(init_tech_component_string_list[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
+
+        #global repo
+        self.universal_model_repo_ICE = {} 
+        self.universal_model_repo_EV = {}
+        self.parameters_firm["universal_model_repo_EV"] = self.universal_model_repo_EV
+        self.parameters_firm["universal_model_repo_ICE"] = self.universal_model_repo_ICE
 
         #Create the firms, these store the data but dont do anything otherwise
         self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV) for j in range(self.J)]
@@ -241,8 +247,8 @@ class Firm_Manager:
         self.history_total_profit = []
         self.history_market_concentration = []
         self.history_segment_count = []
-        self.history_cars_oon_sale_EV_prop = []
-        self.history_cars_oon_sale_ICE_prop = []
+        self.history_cars_on_sale_EV_prop = []
+        self.history_cars_on_sale_ICE_prop = []
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
@@ -257,8 +263,8 @@ class Firm_Manager:
         count_transport_type_2 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 2)
         count_transport_type_3 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 3)
 
-        self.history_cars_oon_sale_ICE_prop.append( count_transport_type_2)
-        self.history_cars_oon_sale_EV_prop.append( count_transport_type_3)
+        self.history_cars_on_sale_ICE_prop.append( count_transport_type_2)
+        self.history_cars_on_sale_EV_prop.append( count_transport_type_3)
 
 
     def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles):

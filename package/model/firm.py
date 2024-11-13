@@ -7,17 +7,20 @@ class Firm:
         self.t_firm = 0
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
+        self.id_generator = parameters_firm["IDGenerator_firms"]    
 
         self.firm_id = firm_id
         #ICE
         self.init_tech_ICE = init_tech_ICE
         self.init_tech_ICE.firm = self
+        self.init_tech_ICE.unique_id = self.id_generator.get_new_id()
         self.list_technology_memory_ICE = [init_tech_ICE]
-
         self.last_researched_car_ICE = self.init_tech_ICE
+
         #EV
         self.init_tech_EV = init_tech_EV
         self.init_tech_EV.firm = self
+        self.init_tech_EV.unique_id = self.id_generator.get_new_id()
         self.list_technology_memory_EV = [init_tech_EV]
         self.last_researched_car_EV = self.init_tech_EV
 
@@ -33,8 +36,11 @@ class Firm:
         self.memory_cap = self.parameters_firm["memory_cap"]
         self.prob_innovate = self.parameters_firm["prob_innovate"]
         self.r = self.parameters_firm["r"]
-        self.id_generator = parameters_firm["IDGenerator_firms"]
+        
         self.lambda_pow = parameters_firm["lambda_pow"]
+
+        self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
+        self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
 
         self.ICE_landscape = self.parameters_firm["ICE_landscape"]
         self.EV_landscape = self.parameters_firm["EV_landscape"]
@@ -364,19 +370,19 @@ class Firm:
                 self.list_technology_memory_ICE.remove(tech_to_remove)
 
     def innovate(self, market_data):
-        # create a list of cars in neighbouring memory space                               #last_researched_car, list_technology_memory, landscape, parameters_car
-        unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV )
-        unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE)
+        # create a list of cars in neighbouring memory space                                #self, last_researched_car,  list_technology_memory,        list_technology_memory_neighbouring, landscape, parameters_car, transportType
+        self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
+        self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 3)
 
-        unique_neighbouring_technologies = unique_neighbouring_technologies_EV + unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
+        self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
 
         # calculate the optimal price of cars in the memory 
-        self.calc_optimal_price_cars(market_data, unique_neighbouring_technologies)
+        self.calc_optimal_price_cars(market_data, self.unique_neighbouring_technologies)
 
         # calculate the utility of car segements
-        self.calc_utility_cars_segments(market_data, unique_neighbouring_technologies)
+        self.calc_utility_cars_segments(market_data, self.unique_neighbouring_technologies)
         # calc the predicted profits of cars
-        expected_profits_segments = self.calc_predicted_profit_segments(market_data, unique_neighbouring_technologies)
+        expected_profits_segments = self.calc_predicted_profit_segments(market_data, self.unique_neighbouring_technologies)
         # select the car to innovate
         self.vehicle_model_research = self.select_car_lambda_research(expected_profits_segments)
 
@@ -396,13 +402,13 @@ class Firm:
 
     ########################################################################################################################################
     #Memory
-    def gen_neighbour_carsModel(self, tech_strings, nk_landscape, parameters_car):
+    def gen_neighbour_carsModel_old(self, tech_strings, nk_landscape, parameters_car):
         # Generate CarModel instances for the unique neighboring technologies
         neighbouring_technologies = []
         for tech_string in  tech_strings:
             # Calculate fitness for the new technology
             unique_tech_id = self.id_generator.get_new_id()
-        
+            
             new_car_model = CarModel(
                 unique_id=unique_tech_id,
                 component_string=tech_string,
@@ -414,6 +420,33 @@ class Firm:
 
         return neighbouring_technologies
 
+    def gen_neighbour_carsModel(self, tech_strings, nk_landscape, parameters_car, transportType):
+        # Generate CarModel instances for the unique neighboring technologies
+        neighbouring_technologies = []
+
+        if transportType == 2:
+            universal_model_repo = self.universal_model_repo_ICE
+        else:
+            universal_model_repo = self.universal_model_repo_EV
+
+        for tech_string in  tech_strings:
+            if tech_string in universal_model_repo.keys():
+                tech_to_add = universal_model_repo[tech_string]
+            else:
+                tech_to_add = CarModel(
+                    component_string=tech_string,
+                    nk_landscape = nk_landscape,
+                    parameters = parameters_car
+                )
+                universal_model_repo[tech_string] = tech_to_add
+
+            unique_tech_id = self.id_generator.get_new_id()
+            tech_to_add.unique_id = unique_tech_id
+            tech_to_add.firm = self
+            neighbouring_technologies.append(tech_to_add)
+
+        return neighbouring_technologies
+    
     def gen_neighbour_strings(self, memory_string_list, last_researched_car):
 
         unique_neighbouring_technologies_strings = set()
@@ -425,15 +458,16 @@ class Firm:
 
         return unique_neighbouring_technologies_strings
 
-    def generate_neighbouring_technologies(self, last_researched_car, list_technology_memory, landscape, parameters_car):
+    def generate_neighbouring_technologies(self, last_researched_car, list_technology_memory, landscape, parameters_car, transportType):
         """Generate neighboring technologies for cars. Roaming point"""
         # Set to track unique neighboring technology strings
 
         string_list = self.gen_neighbour_strings(list_technology_memory, last_researched_car)
+        
         #string_list = self.gen_neighbour_strings_alt(list_technology_memory)
-        neighbouring_technologies= self.gen_neighbour_carsModel(string_list, landscape, parameters_car)
+        self.neighbouring_technologies = self.gen_neighbour_carsModel(string_list, landscape, parameters_car, transportType)
 
-        return neighbouring_technologies
+        return self.neighbouring_technologies
     
     ########################################################################################################################################
     #TUMOR ALTERNATIVE

@@ -123,7 +123,7 @@ if __name__ == "__main__":
             "innovation_seed": 77
         },
         "parameters_social_network":{
-            "num_individuals": 2000,
+            "num_individuals": 200,
             "save_timeseries_data_state": 1,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -135,7 +135,7 @@ if __name__ == "__main__":
             "a_environment": 4,#easy ev adoption 
             "b_environment": 1,
             "a_innovativeness": 1,#easy ev adoption 
-            "b_innovativeness": 1,
+            "b_innovativeness": 4,
             "a_price": 4,#most people price sensitive
             "b_price": 1,
 
