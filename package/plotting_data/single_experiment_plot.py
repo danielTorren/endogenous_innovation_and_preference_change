@@ -408,7 +408,7 @@ def main(
     social_network = data_controller.social_network
     firm_manager = data_controller.firm_manager
     second_hand_merchant = data_controller.second_hand_merchant
-
+    time_series = data_controller.time_series
     
     plot_emissions(social_network, fileName)
     plot_total_utility(social_network, fileName)

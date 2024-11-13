@@ -22,12 +22,12 @@ def main(
     print("fileName:", fileName)
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    print(
-        "emisisons driving final", 
-        controller.social_network.total_driving_emissions,
-        controller.social_network.total_utility,
-        controller.social_network.total_distance_travelled
-        )
+    #print(
+    #    "emisisons driving final", 
+    #    controller.social_network.total_driving_emissions,
+    #    controller.social_network.total_utility,
+    #    controller.social_network.total_distance_travelled
+    #    )
 
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
@@ -38,13 +38,13 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_carbon_price":100,
+        "duration_no_carbon_price":360,
         "duration_small_carbon_price":0,
         "duration_large_carbon_price":0,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
-        "age_limit_second_hand": 3,
+        "age_limit_second_hand": 5,
         "parameters_carbon_policy":{
             "carbon_price_init": 0,
             "carbon_price": 0.3,
@@ -65,7 +65,7 @@ if __name__ == "__main__":
             "e_z_t":0.01,
             "nu_z_i_t":0.5,
             "emissions":0.1,
-            "delta_z":0.05,
+            "delta_z":0.5,
             "transportType": 2,
             "min_max_Quality": [50,100],
             "min_max_Efficiency": [1,5],
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             "e_z_t": 0.01,#0.001,
             "nu_z_i_t":0.5,
             "emissions":0.1,
-            "delta_z":0.05,
+            "delta_z":0.5,
             "transportType": 3,
             "min_max_Quality": [50,100],
             "min_max_Efficiency": [1,20],
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             "innovation_seed": 77
         },
         "parameters_social_network":{
-            "num_individuals": 1000,
+            "num_individuals": 2000,
             "save_timeseries_data_state": 1,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -134,7 +134,7 @@ if __name__ == "__main__":
             "prob_rewire": 0.1,
             "a_environment": 4,#easy ev adoption 
             "b_environment": 1,
-            "a_innovativeness": 4,#easy ev adoption 
+            "a_innovativeness": 1,#easy ev adoption 
             "b_innovativeness": 1,
             "a_price": 4,#most people price sensitive
             "b_price": 1,

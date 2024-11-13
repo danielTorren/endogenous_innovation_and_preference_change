@@ -48,8 +48,8 @@ class Social_Network:
         self.num_individuals = int(round(parameters_social_network["num_individuals"]))
         self.id_generator = parameters_social_network["IDGenerator_firms"]
         self.second_hand_merchant = parameters_social_network["second_hand_merchant"]
-        #self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
-        #self.compression_factor_state = parameters_social_network["compression_factor_state"]
+        self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
+        self.compression_factor_state = parameters_social_network["compression_factor_state"]
 
     def init_network_settings(self, parameters_social_network):
         self.network_structure_seed = parameters_social_network["network_structure_seed"]

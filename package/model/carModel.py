@@ -9,7 +9,7 @@ class CarModel:
 
         self.parameters =  parameters
 
-        self.scenario = "private_emissions"
+        self.scenario = "new_car"
         self.transportType = self.parameters["transportType"]
         self.component_string = component_string
         self.decimal_value = int(component_string, 2)

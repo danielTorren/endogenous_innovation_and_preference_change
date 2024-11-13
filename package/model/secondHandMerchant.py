@@ -27,9 +27,8 @@ class SecondHandMerchant:
     def add_to_stock(self,vehicle):
         #add new car to stock
         vehicle.price = self.calc_price_car(vehicle)
-        vehicle.scenario = "private_unassigned"
+        vehicle.scenario = "second_hand"
         self.cars_on_sale.append(vehicle)
-        #print("HELLOW")
     
     def remove_car(self, vehicle):
         self.cars_on_sale.remove(vehicle)
@@ -43,5 +42,5 @@ class SecondHandMerchant:
     def next_step(self):
         self.update_age_stock()
         self.update_stock_contents()
-
+        #print(len(self.cars_on_sale))
         return self.cars_on_sale

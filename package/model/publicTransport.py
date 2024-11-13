@@ -3,10 +3,10 @@ class Public_Transport():
 
         self.id = parameters["id"]
         self.firm =  parameters["firm"]
-        self. transportType = parameters["transportType"]
+        self.transportType = parameters["transportType"]
         self.price =  parameters["price"]
         self.owner_id = -1
-        self.scenario = "public_optional"
+        self.scenario = "public_transport"
 
         self.firm_cars_users = 0 #how many people use the transport!
         

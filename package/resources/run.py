@@ -9,8 +9,8 @@ import numpy as np
 import numpy.typing as npt
 from joblib import Parallel, delayed
 import multiprocessing
-#from package.model.controller import Controller
-from package.model_collated.controller import Controller
+from package.model.controller import Controller
+#from package.model_collated.controller import Controller
 #from package.model.combinedController import CombinedController
 
 

@@ -23,8 +23,8 @@ class VehicleUser:
         self.vehicle = self.decide_vehicle_init(self.vehicles_available)  # Initial vehicle decision
         self.current_vehicle_type = self.vehicle.transportType
 
-        if self.save_timeseries_data_state:
-            self.set_up_time_series_vehicle_user()
+        #if self.save_timeseries_data_state:
+        #    self.set_up_time_series_vehicle_user()
 
 
     ###############################################################################################################################
@@ -279,7 +279,7 @@ class VehicleUser:
         self.current_vehicle_type = vehicle_chosen.transportType
         self.driving_emissions, self.production_emissions = self.calc_emissions(vehicle_chosen, self.driven_distance)
         
-        if self.save_timeseries_data_state and (self.t_vehicle_user % self.compression_factor_state == 0):
-            self.save_timeseries_data_vehicle_user()
+        #if self.save_timeseries_data_state and (self.t_vehicle_user % self.compression_factor_state == 0):
+        #    self.save_timeseries_data_vehicle_user()
 
         return vehicle_chosen, self.driving_emissions, self.production_emissions, self.utility, self.driven_distance

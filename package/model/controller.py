@@ -3,7 +3,8 @@ Created: 22/12/2023
 """
 
 # imports
-from package.model import firmManager
+
+from package.model import socialNetwork
 from package.model.nkModel import NKModel
 from package.model.socialNetwork import Social_Network
 from package.model.firmManager import Firm_Manager 
@@ -11,6 +12,7 @@ from package.model.publicTransport import Public_Transport
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 import numpy as np
+from package.model.socialNetworkUsers import Social_Network
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -40,14 +42,18 @@ class Controller:
         self.cars_on_sale_all_firms = self.firm_manager.cars_on_sale_all_firms
         self.public_option_list = [self.urban_public_tranport,self.rural_public_tranport]
         self.second_hand_cars = self.get_second_hand_cars()
-        self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
+        
+        self.parameters_social_network["public_transport"] = self.public_option_list
+        self.parameters_social_network["init_car_options"] =  self.cars_on_sale_all_firms 
+
+        #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
-        self.vehicles_chosen_list = [user.vehicle for user in self.social_network.vehicleUsers_list]
+        self.vehicles_chosen_list = self.social_network.current_vehicles
 
         #pass information across one time
-        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.origin_vec, self.social_network.environmental_awareness_vec, self.social_network.consider_ev_vec)
+        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.origin_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
 
@@ -58,6 +64,7 @@ class Controller:
             self.firm_manager.set_up_time_series_firm_manager()
             self.rural_public_tranport.set_up_time_series_firm()
             self.urban_public_tranport.set_up_time_series_firm()
+            self.time_series = []
 
     def unpack_controller_parameters(self,parameters_controller):
         
@@ -182,8 +189,8 @@ class Controller:
 
     def setup_social_network_parameters(self):
         #create social network
-        #self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
-        #self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
+        self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
+        self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
         self.parameters_social_network["policy_start_time"] = self.policy_start_time      
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
@@ -220,6 +227,7 @@ class Controller:
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
     def gen_social_network(self):
+        #self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
         self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
 
     def update_carbon_price(self):
@@ -229,9 +237,9 @@ class Controller:
         cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list)
         return cars_on_sale_all_firms
     
-    def update_social_network(self, vehicles_available):
+    def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price, vehicles_available)
+        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.public_option_list,self.cars_on_sale_all_firms)
 
         return consider_ev_vec, vehicles_chosen_list
     
@@ -243,17 +251,13 @@ class Controller:
             self.rural_public_tranport.save_timeseries_data_firm()
             self.urban_public_tranport.save_timeseries_data_firm()
             self.second_hand_merchant.save_timeseries_second_hand_merchant()
+            self.time_series.append(self.t_controller)
 
     def get_second_hand_cars(self):
 
         self.second_hand_merchant.next_step()
 
         return self.second_hand_merchant.cars_on_sale
-    
-    def mix_in_vehicles(self):
-
-        vehicles_available = self.public_option_list + self.second_hand_cars + self.cars_on_sale_all_firms
-        return vehicles_available
 
     ################################################################################################
 
@@ -264,8 +268,8 @@ class Controller:
         self.update_carbon_price()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()
-        vehicles_available = self.mix_in_vehicles()
-        self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network(vehicles_available)
+        #vehicles_available = self.mix_in_vehicles()
+        self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
 
         self.update_public_transport()
 
