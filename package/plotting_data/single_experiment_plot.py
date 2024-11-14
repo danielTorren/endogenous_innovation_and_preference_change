@@ -69,6 +69,37 @@ def plot_tranport_users(social_network, time_series, fileName, dpi=600):
     format_plot(ax, "Transport Users Over Time", "Time Step", "# Transport Users")
     save_and_show(fig, fileName, "transport_users", dpi)
 
+def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Calculate total users at each time step
+    total_users = (np.array(social_network.history_rural_public_transport_users) +
+                   np.array(social_network.history_urban_public_transport_users) +
+                   np.array(social_network.history_ICE_users) +
+                   np.array(social_network.history_EV_users))
+
+    # Calculate proportions
+    rural_prop = np.array(social_network.history_rural_public_transport_users) / total_users
+    urban_prop = np.array(social_network.history_urban_public_transport_users) / total_users
+    ice_prop = np.array(social_network.history_ICE_users) / total_users
+    ev_prop = np.array(social_network.history_EV_users) / total_users
+
+    # Plot stacked area (continuous stacked bar equivalent)
+    ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,
+                 labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                 alpha=0.8)
+
+    # Set plot labels and limits
+    ax.set_title("Transport Users Over Time (Proportion)")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Proportion of Transport Users")
+    ax.set_ylim(0, 1)  # Proportion range
+    ax.legend(loc="upper left")
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_transport_users_stacked", dpi)
+
+
 def plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi=600):
     fig, axs = plt.subplots(1, 3, figsize=(15, 6))
     attributes = {
@@ -209,16 +240,17 @@ def main(fileName, dpi=600):
     plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
     plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     plot_tranport_users(social_network, time_series, fileName, dpi)
+    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     #plot_research_time_series_multiple_firms([firm_manager.firms_list[0]], fileName, dpi)
     plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
     plot_segment_count_grid(firm_manager, time_series, fileName)
     plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms(social_network, time_series, fileName, dpi)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_05_24__13_11_2024")
+    main("results/single_experiment_19_02_33__14_11_2024")

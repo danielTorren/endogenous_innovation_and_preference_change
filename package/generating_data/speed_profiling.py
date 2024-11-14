@@ -10,7 +10,7 @@ if __name__ == '__main__':
 
     ###################################################################
     base_params = {
-        "duration_no_carbon_price":100,
+        "duration_no_carbon_price":15,
         "duration_small_carbon_price":0,
         "duration_large_carbon_price":0,
         "save_timeseries_data_state": 0,
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         },
         "parameters_firm_manager": {
             "init_tech_seed": 99,
-            "J": 10
+            "J": 20
         },
         "parameters_firm":{
             "memory_cap": 30,
@@ -95,7 +95,7 @@ if __name__ == '__main__':
             "innovation_seed": 77
         },
         "parameters_social_network":{
-            "num_individuals": 1000,
+            "num_individuals": 3000,
             "save_timeseries_data_state": 1,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -118,7 +118,9 @@ if __name__ == '__main__':
             "d_i_min": 0,
             "r": 1,
             "eta": 1,
-            "mu": 1
+            "mu": 0.8,
+            "second_hand_car_max_consider": 20,
+            "new_car_max_consider": 20
         }
     }
 

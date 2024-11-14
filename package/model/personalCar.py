@@ -1,3 +1,4 @@
+import numpy as np
 class PersonalCar:
     def __init__(self, unique_id, firm, owner_id, component_string, parameters, attributes_fitness, sale_price):
         self.id = unique_id
@@ -38,4 +39,4 @@ class PersonalCar:
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
 
     def update_timer(self):
-        self.L_a_t += 1
+        self.L_a_t += 0.5 + np.random.uniform()#THE ADDED AGE RANGES FROM 0.5 to 1.5 to avoid cyclic behaviour of agents

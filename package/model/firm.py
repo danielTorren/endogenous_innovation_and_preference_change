@@ -237,6 +237,8 @@ class Firm:
         market_data: includes data on the population of each of the segments and the differnet values of the preferences/sensitivity of those segments
         """
 
+        self.list_technology_memory = self.list_technology_memory_EV + self.list_technology_memory_ICE
+
         self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
 
         self.calc_utility_cars_segments(market_data, self.list_technology_memory)#utility of all the cars for all the segments
@@ -246,7 +248,13 @@ class Firm:
         cars_selected = self.select_car_lambda_production(expected_profits)#pick the cars for each car
 
         #DO THIS FASTER
-        for car in cars_selected:
+        for car in self.list_technology_memory_EV:
+            if car in cars_selected:
+                car.choosen_tech_bool = 1 
+            else:
+                car.choosen_tech_bool = 0
+
+        for car in self.list_technology_memory_ICE:
             if car in cars_selected:
                 car.choosen_tech_bool = 1 
             else:
@@ -346,13 +354,13 @@ class Firm:
     def add_new_vehicle(self, vehicle_model_research):
 
         #add the vehicle
-        if vehicle_model_research not in self.list_technology_memory:
-            self.list_technology_memory.append(vehicle_model_research)
-            if vehicle_model_research.transportType == 3:
-                self.list_technology_memory_EV.append(vehicle_model_research)
-            else:
+        if vehicle_model_research.transportType == 2:
+            if vehicle_model_research not in self.list_technology_memory_ICE:
                 self.list_technology_memory_ICE.append(vehicle_model_research)
-
+        else:
+            if vehicle_model_research not in self.list_technology_memory_ICE:
+                self.list_technology_memory_EV.append(vehicle_model_research)
+                
     def update_memory_timer(self):
         #change the timer for the techs that are not the ones being used
         for technology in self.list_technology_memory:
@@ -361,9 +369,11 @@ class Firm:
     def update_memory_len(self):
         #is the memory list is too long then remove data
         #print(len(self.list_technology_memory))
+        
         if len(self.list_technology_memory) > self.memory_cap:
+
             tech_to_remove = max((tech for tech in self.list_technology_memory if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
-            self.list_technology_memory.remove(tech_to_remove)#last thing is remove the item
+            
             if tech_to_remove.transportType == 3:
                 self.list_technology_memory_EV.remove(tech_to_remove)
             else:
