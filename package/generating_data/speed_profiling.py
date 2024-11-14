@@ -139,8 +139,8 @@ if __name__ == '__main__':
     pr.dump_stats('profile_results.prof')
 
     # Analyze the profiling results
-    p = pstats.Stats('profile_results.prof')
-    p.sort_stats('cumulative').print_stats(10)
+    #p = pstats.Stats('profile_results.prof')
+    #p.sort_stats('cumulative').print_stats(10)
 
     # Visualize with snakeviz
     # Run in terminal: snakeviz profile_results.prof

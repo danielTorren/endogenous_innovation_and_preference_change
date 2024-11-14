@@ -228,7 +228,8 @@ class Social_Network:
 
         return self.vehicle_chosen_list
 
-    def masking_options(self, utilities_matrix, all_vehicles_list):
+    def gen_mask(self, all_vehicles_list):
+
         # Generate individual masks based on vehicle type and user conditions
         self.invert_ev_mask = np.array([vehicle.transportType != 3 for vehicle in all_vehicles_list])
         self.invert_urban_mask = np.array([vehicle.transportType != 0 for vehicle in all_vehicles_list])
@@ -237,8 +238,21 @@ class Social_Network:
         ev_mask_matrix = np.outer(self.consider_ev_vec == 0, self.invert_ev_mask)
         origin_mask_matrix = np.outer(self.origin_vec_invert, self.invert_urban_mask) | np.outer(self.origin_vec, self.invert_rural_mask)
         combined_mask = ev_mask_matrix & origin_mask_matrix
-        utilities_kappa = np.power(utilities_matrix, self.kappa) * combined_mask
+        return combined_mask
+
+    def calc_util_kappa(self, utilities_matrix, combined_mask):
+        utilities_matrix_masked = utilities_matrix * combined_mask
+        utilities_kappa = np.power(utilities_matrix_masked, self.kappa)
+        return utilities_kappa
+    
+    def masking_options(self, utilities_matrix, all_vehicles_list):
+
+        combined_mask = self.gen_mask(all_vehicles_list)
+
+        utilities_kappa = self.calc_util_kappa(utilities_matrix, combined_mask)
+
         return utilities_kappa, combined_mask
+
 
     def user_chooses(self, i, user, combined_mask, all_vehicles_list):
         # Select individual-specific utilities
@@ -247,7 +261,6 @@ class Social_Network:
         # Check if all utilities are zero after filtering
         if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
             bad_options = (combined_mask[i])*self.chosen_already_mask
-            #print(bad_options)
             choice_index = np.random.choice(bad_options)
 
         else:
