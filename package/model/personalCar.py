@@ -39,4 +39,4 @@ class PersonalCar:
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
 
     def update_timer(self):
-        self.L_a_t += 0.5 + np.random.uniform()#THE ADDED AGE RANGES FROM 0.5 to 1.5 to avoid cyclic behaviour of agents
+        self.L_a_t += 1#0.5 + np.random.uniform()#THE ADDED AGE RANGES FROM 0.5 to 1.5 to avoid cyclic behaviour of agents
