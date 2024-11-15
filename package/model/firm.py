@@ -290,42 +290,58 @@ class Firm:
         - list CarModel: list of vehicles selected for production.
         """
 
-        # List to store all vehicles and their corresponding profits
-        
-        vehicles_selected = []
+        # Dictionary to store the best profit and segment for each vehicle
+        vehicle_best_segment = {}
 
-        # Iterate over all segments and collect profits and vehicles
-        for segement_code, segment_data in expected_profits_segments.items():
-            vehicles = []        
+        for segment_code, segment_data in expected_profits_segments.items():
+            vehicles = []
             profits = []
+            
+            # Extract vehicles and profits for the current segment
             for profit, vehicle in segment_data.items():
                 vehicles.append(vehicle)
                 profits.append(profit)
 
             if len(profits) == 1:
-                #IF there is only one car just pick that one
+                # If there is only one car, select it
                 selected_index = 0
             else:
-                # Convert profits list to numpy array
-                profits = np.array(profits)               
-                # Compute the softmax probabilities
-                profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
+                # Convert profits list to a numpy array
+                profits = np.array(profits)
                 
-                lambda_profits = profits**self.lambda_pow
-                sum_profits = np.sum(lambda_profits)
-                #("profits", profits, sum_profits)
-                if sum_profits ==  0:
-                    #pick random car if non are profitable
-                    selected_index = np.random.choice(len(vehicles))
-                else:
-                    probabilities = lambda_profits / np.sum(lambda_profits)
-                    # Select a vehicle based on the computed probabilities
-                    selected_index = np.random.choice(len(vehicles), p=probabilities)
+                # Replace negative profits with zero (no selection probability)
+                profits[profits < 0] = 0
+                
+                # Select the index of the vehicle with the highest profit
+                selected_index = np.argmax(profits)
 
+            # Select the vehicle based on the index
             selected_vehicle = vehicles[selected_index]
-            #SET PRICE OF CAR TO THAT OF THE SEGMENT ITS CHOSEN FOR
-            selected_vehicle.price = selected_vehicle.optimal_price_segments[segement_code]
-            vehicles_selected.append(selected_vehicle)
+            selected_profit = profits[selected_index]
+
+            # Check if this vehicle is already in the best segment tracker
+            if selected_vehicle in vehicle_best_segment:
+                # If already present, compare profits
+                current_best_profit = vehicle_best_segment[selected_vehicle]['profit']
+                if selected_profit > current_best_profit:
+                    # Update to the segment with the higher profit
+                    vehicle_best_segment[selected_vehicle] = {
+                        'profit': selected_profit,
+                        'segment_code': segment_code
+                    }
+            else:
+                # Add the vehicle to the tracker with its current best segment
+                vehicle_best_segment[selected_vehicle] = {
+                    'profit': selected_profit,
+                    'segment_code': segment_code
+                }
+
+        # Final selection of vehicles with the highest utility prices
+        vehicles_selected = []
+        for vehicle, info in vehicle_best_segment.items():
+            segment_code = info['segment_code']
+            vehicle.price = vehicle.optimal_price_segments[segment_code]
+            vehicles_selected.append(vehicle)
 
         return vehicles_selected
 
@@ -360,7 +376,7 @@ class Firm:
     def innovate(self, market_data):
         # create a list of cars in neighbouring memory space                                #self, last_researched_car,  list_technology_memory,        list_technology_memory_neighbouring, landscape, parameters_car, transportType
         self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
-        self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 3)
+        self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
         self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
 
@@ -390,24 +406,6 @@ class Firm:
 
     ########################################################################################################################################
     #Memory
-    def gen_neighbour_carsModel_old(self, tech_strings, nk_landscape, parameters_car):
-        # Generate CarModel instances for the unique neighboring technologies
-        neighbouring_technologies = []
-        for tech_string in  tech_strings:
-            # Calculate fitness for the new technology
-            unique_tech_id = self.id_generator.get_new_id()
-            
-            new_car_model = CarModel(
-                unique_id=unique_tech_id,
-                component_string=tech_string,
-                nk_landscape = nk_landscape,
-                parameters = parameters_car,
-                firm = self
-            )
-            neighbouring_technologies.append(new_car_model)
-
-        return neighbouring_technologies
-
     def gen_neighbour_carsModel(self, tech_strings, nk_landscape, parameters_car, transportType):
         # Generate CarModel instances for the unique neighboring technologies
         neighbouring_technologies = []
@@ -450,7 +448,8 @@ class Firm:
         """Generate neighboring technologies for cars. Roaming point"""
         # Set to track unique neighboring technology strings
 
-        string_list = self.gen_neighbour_strings(list_technology_memory, last_researched_car)
+        #string_list = self.gen_neighbour_strings(list_technology_memory, last_researched_car)
+        string_list = self.gen_neighbour_strings_tumor(list_technology_memory)
         
         #string_list = self.gen_neighbour_strings_alt(list_technology_memory)
         self.neighbouring_technologies = self.gen_neighbour_carsModel(string_list, landscape, parameters_car, transportType)
@@ -460,7 +459,7 @@ class Firm:
     ########################################################################################################################################
     #TUMOR ALTERNATIVE
     
-    def gen_neighbour_strings_alt(self, list_technology_memory):
+    def gen_neighbour_strings_tumor(self, list_technology_memory):
 
         unique_neighbouring_technologies_strings = set(
             tech_string  # Each individual tech string we want to add to the set

@@ -37,6 +37,11 @@ def main(
 
 if __name__ == "__main__":
 
+    """
+            "min_max_Quality": [40,200],
+            "min_max_Efficiency": [1,60],
+            "min_max_Cost": [10,80],
+    """
     base_params = {
         "duration_no_carbon_price":360,
         "duration_small_carbon_price":0,
@@ -83,7 +88,7 @@ if __name__ == "__main__":
             "emissions":0.1,
             "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
-            "min_max_Quality": [40,200],
+            "min_max_Quality": [50,200],
             "min_max_Efficiency": [1,60],
             "min_max_Cost": [10,80],
 
@@ -114,7 +119,7 @@ if __name__ == "__main__":
         },
         "parameters_firm_manager": {
             "init_tech_seed": 99,
-            "J": 3
+            "J": 10
         },
         "parameters_firm":{
             "memory_cap": 30,
@@ -125,7 +130,7 @@ if __name__ == "__main__":
             "innovation_seed": 77
         },
         "parameters_social_network":{
-            "num_individuals": 200,
+            "num_individuals": 500,
             "save_timeseries_data_state": 1,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -149,8 +154,8 @@ if __name__ == "__main__":
             "r": 1,
             "eta": 1,
             "mu": 1,
-            "second_hand_car_max_consider": 20000,
-            "new_car_max_consider": 20000
+            "second_hand_car_max_consider": 200,
+            "new_car_max_consider": 200
         }
     }
 
