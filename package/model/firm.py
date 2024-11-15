@@ -26,6 +26,7 @@ class Firm:
 
         self.firm_profit = 0
         self.firm_cars_users = 0
+        self.research_bool = 0
 
         self.list_technology_memory = self.list_technology_memory_ICE + self.list_technology_memory_EV 
 
@@ -36,6 +37,7 @@ class Firm:
         self.memory_cap = self.parameters_firm["memory_cap"]
         self.prob_innovate = self.parameters_firm["prob_innovate"]
         self.r = self.parameters_firm["r"]
+        self.delta_z = self.parameters_firm["delta_z"]
         
         self.lambda_pow = parameters_firm["lambda_pow"]
 
@@ -67,7 +69,7 @@ class Firm:
                 segment_code_str = format(segment_code, '04b')
                 # Add data for the segment
                 car.optimal_price_segments[segment_code_str] = self.parameters_firm["init_price"]
-                car.car_utility_segments[segment_code_str] = 0
+                car.car_base_utility_segments[segment_code_str] = self.parameters_firm["init_base_U"]
     
     def optimal_distance(self, vehicle, beta, gamma):
         """
@@ -131,7 +133,7 @@ class Firm:
             for segment_code, segment_data in market_data.items():
                 beta_s = segment_data["beta_s_t"]
                 gamma_s = segment_data["gamma_s_t"]
-
+                U_sum = segment_data["U_sum"]
                 E_m = car.emissions  # Emissions for the current car
                 C_m = car.ProdCost_z_t       # Cost for the current car
 
@@ -139,38 +141,16 @@ class Firm:
                 d_i_t = self.optimal_distance(car, beta_s, gamma_s)
                 car.car_distance_segments[segment_code] = d_i_t  # Save the calculated distance
 
-                # Calculate the utility for the given segment
+                # Calculate the commuting  utility for the given segment
                 utility_segment = self.calc_commuting_utility(car, d_i_t, beta_s, gamma_s)
-                car.car_utility_segments[segment_code] = utility_segment  # Save the utility
-
+                
+                # Save the base utility
+                B = utility_segment/(self.r + (1-self.delta_z)/(1-self.alpha))
+                car.car_base_utility_segments[segment_code] = B
                 # Set the calculated optimal price for the car
-                car.optimal_price_segments[segment_code] = (utility_segment - gamma_s * E_m + beta_s * C_m) / (2 * beta_s)
+                car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )) )/beta_s   )
 
         return car_list
-
-    def calculate_utility(self, vehicle, commuting_util, beta, gamma, price):
-        """
-        Calculate the lifetime utility using the closed-form solution based on different conditions.
-
-        Parameters:
-        vehicle (Vehicle): The vehicle for which the utility is being calculated.
-        scenario (str): The scenario to determine how the utility is adjusted.
-
-        Returns:
-        float: The calculated lifetime utility U_{a,i,t}.
-        """
-        # Closed-form solution for lifetime utility
-        denominator = self.r + (1 - vehicle.delta_z) / (1 - self.alpha)
-        if denominator == 0:
-            raise ValueError("The denominator is zero, adjust the parameters to avoid division by zero.")
-        
-        # Calculate the base lifetime utility using the closed form
-        base_utility = commuting_util / denominator
-
-        # Adjust the lifetime utility based on the scenario
-        U_a_i_t = base_utility - beta *price - gamma * vehicle.emissions
-
-        return U_a_i_t
     
     def calc_utility_cars_segments(self, market_data, vehicle_list):
 
@@ -182,7 +162,7 @@ class Firm:
             for car in vehicle_list:
                 price_s = car.optimal_price_segments[segment_code]#price for that specific segment
                 if  car.transportType == 2 or all((segment_code[-1] == str(1), car.transportType == 3)):#THE EV ADOPTION BIT GOES LAST
-                    utility_segment_U  = self.calculate_utility(car, car.car_utility_segments[segment_code], beta_s, gamma_s, price_s)
+                    utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
                 else:
                     car.car_utility_segments_U[segment_code] = 0 
@@ -211,14 +191,12 @@ class Firm:
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
                 if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
                     # Calculate profit for this vehicle and segment
-                    profit = vehicle.optimal_price_segments[segment_code] - vehicle.ProdCost_z_t
+                    profit_per_sale = vehicle.optimal_price_segments[segment_code] - vehicle.ProdCost_z_t
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
-                    sum_U_kappa = segment_data["sum_U_kappa"]
+                    U_sum = segment_data["U_sum"]
                     
                     # Expected profit calculation
-                    expected_profit = (
-                        profit * I_s_t * (vehicle.car_utility_segments_U[segment_code] ** self.kappa) / sum_U_kappa
-                    )
+                    expected_profit = profit_per_sale * I_s_t * (max(0,vehicle.car_utility_segments_U[segment_code])**self.kappa)/(U_sum + vehicle.car_utility_segments_U[segment_code])**self.kappa
                     
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit
@@ -507,14 +485,17 @@ class Firm:
     def save_timeseries_data_firm(self):
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
-        self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
-        if self.vehicle_model_research.transportType == 3:
-            EVbool_res = 1
+        if self.research_bool == 1:
+            self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
+            if self.vehicle_model_research.transportType == 3:
+                EVbool_res = 1
+            else:
+                EVbool_res = 0
+            self.history_research_type.append(EVbool_res)
         else:
-            EVbool_res = 0
+            self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
+            self.history_research_type.append(np.nan)
         
-        self.history_research_type.append(EVbool_res)
-
     def next_step(self, market_data):
         self.t_firm += 1
 
@@ -522,13 +503,14 @@ class Firm:
         self.cars_on_sale = self.choose_cars_segments(market_data)
 
         #decide whether to innovate
-        #if np.random.rand() < self.prob_innovate:
+        if np.random.rand() < self.prob_innovate:
             #print("HIGH", self.firm_id, self.t_firm)
-        
-        self.innovate(market_data)
+            self.innovate(market_data)
+            self.research_bool = 1
 
         if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()
-        
+            self.research_bool = 0
+
         return self.cars_on_sale
 

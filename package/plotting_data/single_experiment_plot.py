@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import sem
+from scipy.stats import sem, t
 from package.resources.utility import load_object
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
@@ -73,10 +73,7 @@ def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600)
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Calculate total users at each time step
-    total_users = (np.array(social_network.history_rural_public_transport_users) +
-                   np.array(social_network.history_urban_public_transport_users) +
-                   np.array(social_network.history_ICE_users) +
-                   np.array(social_network.history_EV_users))
+    total_users = social_network.num_individuals
 
     # Calculate proportions
     rural_prop = np.array(social_network.history_rural_public_transport_users) / total_users
@@ -167,29 +164,110 @@ def plot_sale_EV_prop(firm_manager, time_series, fileName, dpi=600):
 def plot_history_research_type(firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     data = np.asarray([firm.history_research_type for firm in firm_manager.firms_list])
-    ax.plot(time_series, np.mean(data, axis=0), marker='o')
+    for firm_data in data:
+        ax.plot(time_series,firm_data, marker='o')
     format_plot(ax, "EV Research Proportion Over Time", "Time Step", "Proportion Research EV", legend=False)
     save_and_show(fig, fileName, "history_research_type", dpi)
 
 def plot_history_attributes_cars_on_sale_all_firms(social_network, time_series, fileName, dpi=600):
     fig, axs = plt.subplots(1, 3, figsize=(15, 6))
+
     data_EV = social_network.history_attributes_EV_cars_on_sale_all_firms
     data_ICE = social_network.history_attributes_ICE_cars_on_sale_all_firms
 
     max_len_EV = max(len(step) for step in data_EV)
     max_len_ICE = max(len(step) for step in data_ICE)
+
+    # Pad the data to ensure consistent length
     data_EV_padded = [step + [[np.nan] * 3] * (max_len_EV - len(step)) for step in data_EV]
     data_ICE_padded = [step + [[np.nan] * 3] * (max_len_ICE - len(step)) for step in data_ICE]
-    data_EV_array, data_ICE_array = np.asarray(data_EV_padded), np.asarray(data_ICE_padded)
+
+    # Convert to arrays
+    data_EV_array = np.asarray(data_EV_padded)
+    data_ICE_array = np.asarray(data_ICE_padded)
+
+    # Ensure time series length matches the data
+    time_series = np.asarray(time_series)
 
     for i, attribute_name in enumerate(["Attribute 1", "Attribute 2", "Attribute 3"]):
-        axs[i].scatter(time_series, data_EV_array[:, :, i].flatten(), color="green", alpha=0.2, s=10, label="EV Data")
-        axs[i].scatter(time_series, data_ICE_array[:, :, i].flatten(), color="blue", alpha=0.2, s=10, label="ICE Data")
+        # Extract attribute data for EV and ICE
+        ev_values = data_EV_array[:, :, i]
+        ice_values = data_ICE_array[:, :, i]
+
+        # Ensure consistent shapes for plotting
+        for t in range(len(time_series)):
+            axs[i].scatter(
+                [time_series[t]] * ev_values.shape[1], ev_values[t], color="green", alpha=0.2, s=10, label="EV Data" if t == 0 else ""
+            )
+            axs[i].scatter(
+                [time_series[t]] * ice_values.shape[1], ice_values[t], color="blue", alpha=0.2, s=10, label="ICE Data" if t == 0 else ""
+            )
         axs[i].set_title(f"{attribute_name} Over Time")
         axs[i].set_xlabel("Time Steps")
+        axs[i].legend()
 
     fig.suptitle("Attributes of Cars on Sale Over Time")
     save_and_show(fig, fileName, "history_attributes_cars_on_sale_all_firms", dpi)
+
+
+def plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi=600):
+    """
+    Plots history attributes of cars on sale for all firms, separating EV and ICE cars over two rows.
+    
+    Args:
+    - social_network: An object containing history attributes of EV and ICE cars.
+    - time_series: A list of time steps corresponding to the data.
+    - fileName: The name of the file to save the plot.
+    - dpi: Resolution for saving the plot.
+    """
+    fig, axs = plt.subplots(2, 3, figsize=(10, 8), sharex=True)
+
+    # Extract data
+    data_EV = social_network.history_attributes_EV_cars_on_sale_all_firms
+    data_ICE = social_network.history_attributes_ICE_cars_on_sale_all_firms
+
+    # Calculate the maximum lengths for padding
+    max_len_EV = max(len(step) for step in data_EV)
+    max_len_ICE = max(len(step) for step in data_ICE)
+
+    # Pad the data to ensure consistent length
+    data_EV_padded = [step + [[np.nan] * 3] * (max_len_EV - len(step)) for step in data_EV]
+    data_ICE_padded = [step + [[np.nan] * 3] * (max_len_ICE - len(step)) for step in data_ICE]
+
+    # Convert to arrays
+    data_EV_array = np.asarray(data_EV_padded)
+    data_ICE_array = np.asarray(data_ICE_padded)
+
+    # Ensure time series length matches the data
+    time_series = np.asarray(time_series)
+
+    for i, attribute_name in enumerate(["Attribute 1", "Attribute 2", "Attribute 3"]):
+        # EV Data Plot (Top Row)
+        ev_values = data_EV_array[:, :, i]
+        for t in range(len(time_series)):
+            axs[0, i].scatter(
+                [time_series[t]] * ev_values.shape[1], ev_values[t], color="green", alpha=0.2, s=10, label="EV Data" if t == 0 else ""
+            )
+        axs[0, i].set_title(f"EV - {attribute_name} Over Time")
+        axs[0, i].set_xlabel("Time Steps")
+        axs[0, i].legend()
+
+        # ICE Data Plot (Bottom Row)
+        ice_values = data_ICE_array[:, :, i]
+        for t in range(len(time_series)):
+            axs[1, i].scatter(
+                [time_series[t]] * ice_values.shape[1], ice_values[t], color="blue", alpha=0.2, s=10, label="ICE Data" if t == 0 else ""
+            )
+        axs[1, i].set_title(f"ICE - {attribute_name} Over Time")
+        axs[1, i].set_xlabel("Time Steps")
+        axs[1, i].legend()
+
+    # Set common titles and layout
+    fig.suptitle("Attributes of Cars on Sale Over Time (EV and ICE)", fontsize=16)
+    fig.tight_layout(pad=3.0)
+
+    # Save and display the plot
+    save_and_show(fig, fileName, "atributeshistory.png", 600) 
 
 def plot_segment_count_grid(firm_manager,time_series, fileName):
     fig, axes = plt.subplots(4, 4, figsize=(10, 10), sharex=True, sharey=True)
@@ -217,7 +295,87 @@ def plot_segment_count_grid(firm_manager,time_series, fileName):
     # Save the figure with a new name
     save_path = os.path.join(fileName, "Plots")
     ensure_directory_exists(save_path)
-    fig.savefig(f"{save_path}/segment_count_grid.png", dpi=600, format="png")
+    save_and_show(fig, fileName, "segment_count_grid.png", 600)    
+
+
+def plot_car_sale_prop(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    #print(social_network.history_second_hand_bought)
+    #quit()
+    ax.plot(time_series, social_network.history_second_hand_bought, marker='o')
+    ax.plot(time_series, social_network.history_new_car_bought, marker='o')
+    format_plot(ax, "New versus Second hand cars", "Time Step", "# Cars bought", legend=False)
+    save_and_show(fig, fileName, "num_cars_bought_type", dpi)      
+
+import matplotlib.pyplot as plt
+
+def plot_price_history(firm_manager, time_series, fileName, dpi=600):
+    """
+    Plots the price history of cars on sale over time.
+
+    Args:
+    - firm_manager: An object with `history_cars_on_sale_price` attribute, 
+      a list of lists representing car prices at each time step.
+    - time_series: A list of time steps corresponding to the data in `history_cars_on_sale_price`.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Dots per inch (resolution) for the saved plot.
+    """
+    # Flatten the data
+    time_points = []
+    prices = []
+    
+    for i, price_list in enumerate(firm_manager.history_cars_on_sale_price):
+        time_points.extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+        prices.extend(price_list)  # Add all prices for the current time step
+    
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(time_points, prices, marker='o', alpha=0.7)
+    ax.set_title("Price History of Cars on Sale")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Price")
+    ax.grid(True)
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "price_cars_sale", dpi)   
+  
+def plot_history_car_age(social_network,time_series, fileName, dpi):
+    """
+    Plots the mean and 95% confidence interval for a time series of ages.
+    
+    Args:
+    - time_series: A list of time steps.
+    - ages_list: A list of lists, where each inner list contains ages at a given time step.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Resolution for the saved plot.
+    """
+    # Calculate mean and confidence interval
+    means = []
+    lower_bounds = []
+    upper_bounds = []
+    ages_list = social_network.history_car_age
+    for ages in ages_list:
+        ages = np.array(ages)
+        valid_ages = ages[~np.isnan(ages)]  # Exclude NaNs from calculations
+        mean = np.mean(valid_ages)
+        confidence = t.ppf(0.975, len(valid_ages)-1) * sem(valid_ages)
+        
+        means.append(mean)
+        lower_bounds.append(mean - confidence)
+        upper_bounds.append(mean + confidence)
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, means, label="Mean Age", color='blue')
+    ax.fill_between(time_series, lower_bounds, upper_bounds, color='blue', alpha=0.2, label="95% Confidence Interval")
+    ax.set_title("Mean Age and 95% Confidence Interval Over Time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Age")
+    ax.legend()
+    ax.grid(True)
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "car age owned", dpi)   
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -234,23 +392,26 @@ def main(fileName, dpi=600):
     time_series = data_controller.time_series
 
     # All plot function calls
-    plot_emissions(social_network, time_series, fileName, dpi)
-    plot_total_utility(social_network, time_series, fileName, dpi)
-    plot_total_distance(social_network, time_series, fileName, dpi)
+    #plot_emissions(social_network, time_series, fileName, dpi)
+    #plot_total_utility(social_network, time_series, fileName, dpi)
+    #plot_total_distance(social_network, time_series, fileName, dpi)
     plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    plot_tranport_users(social_network, time_series, fileName, dpi)
+    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    #plot_tranport_users(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     #plot_research_time_series_multiple_firms([firm_manager.firms_list[0]], fileName, dpi)
-    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
-    plot_segment_count_grid(firm_manager, time_series, fileName)
+    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    #plot_segment_count_grid(firm_manager, time_series, fileName)
     plot_preferences(social_network, fileName, dpi)
-    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_history_attributes_cars_on_sale_all_firms(social_network, time_series, fileName, dpi)
-
+    #plot_car_sale_prop(social_network, fileName, dpi)
+    plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
+    #plot_price_history(firm_manager, time_series, fileName, dpi)
+    plot_history_car_age(social_network, time_series,fileName, dpi)
+    
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_20_31_10__14_11_2024")
+    main("results/single_experiment_15_32_13__15_11_2024")

@@ -26,14 +26,12 @@ class CarModel:
         self.inverted_tech_fitness = np.asarray([self.nk_landscape.calculate_fitness(inverted_string) for inverted_string in self.inverted_tech_strings])
 
         self.optimal_price_segments = {} 
-        self.car_utility_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?
+        self.car_base_utility_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?
         self.car_utility_segments_U = {}  #Capital U
         self.expected_profit_segments = {} 
         self.car_distance_segments = {}
         self.expected_profit = 0#used by firms to choose cars
         self.actual_profit = 0#used to pick what car to reserach 
-
-        """NOT sure these have been done correctly"""
         
         # Updated Descriptions:
         self.Quality_a_t =  self.attributes_fitness[0]  # Quality or attraction parameter for transport mode 'a' at time 't'.

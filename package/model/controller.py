@@ -183,6 +183,8 @@ class Controller:
         self.parameters_firm["EV_landscape"] = self.EV_landscape
         self.parameters_firm["eta"] = self.parameters_vehicle_user["eta"]
         self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
+        self.parameters_firm["delta_z"] = self.parameters_ICE["delta_z"]#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+        
 
     def setup_social_network_parameters(self):
         #create social network
@@ -193,7 +195,8 @@ class Controller:
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
         self.parameters_social_network["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_social_network["second_hand_merchant"] = self.second_hand_merchant
-
+        self.parameters_social_network["urban_public_transport_emissions"] = self.parameters_urban_public_transport["emissions"]
+        self.parameters_social_network["rural_public_transport_emissions"] = self.parameters_rural_public_transport["emissions"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state

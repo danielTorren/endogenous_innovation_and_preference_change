@@ -10,8 +10,6 @@ class Firm_Manager:
         self.t_firm_manager = 0
 
         self.parameters_firm = parameters_firm
-        #print(self.parameters_firm)
-        #quit()
 
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
         self.J = int(round(parameters_firm_manager["J"]))
@@ -106,8 +104,6 @@ class Firm_Manager:
         self.beta_binary = (self.beta_vec > self.beta_threshold).astype(int)
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
-        #print("STATE: ",np.mean(self.beta_binary), np.mean(self.gamma_binary), np.mean(self.consider_ev_vec),np.mean(self.origin_vec))
-
     def generate_market_data(self):
         """Used once at the start of model run, need to generate the counts then the market data without U then calc U and add it in!"""
 
@@ -150,11 +146,11 @@ class Firm_Manager:
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
-                    segment_U_sums[segment] += (U ** self.kappa)
+                    segment_U_sums[segment] += U 
 
         #ADD IN THE U SUM DATA
         for segment_code in self.market_data.keys():
-            self.market_data[segment_code]["sum_U_kappa"] =  segment_U_sums[segment_code]
+            self.market_data[segment_code]["U_sum"] =  segment_U_sums[segment_code]
         
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
@@ -168,8 +164,7 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
-                    segment_U_sums[segment] += U ** self.kappa
-
+                    segment_U_sums[segment] += U
         return cars_on_sale_all_firms, segment_U_sums
 
     def update_market_data(self, sums_U_segment):
@@ -186,6 +181,7 @@ class Firm_Manager:
             segment_code = format(i, '04b')
             self.market_data[segment_code]["I_s_t"] = segment_counts[i]
             self.market_data[segment_code]["sum_U_kappa"] = sums_U_segment[segment_code]
+            self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
 
     ######################################################################################################################
 
@@ -194,14 +190,12 @@ class Firm_Manager:
         total_profit_all_firms = 0         
         for car in self.cars_on_sale_all_firms:
             num_vehicle_sold = past_chosen_vehicles.count(car)
-            #print(num_vehicle_sold)
+
             profit = (car.price - car.ProdCost_z_t)
             total_profit = num_vehicle_sold*profit
-            #print(total_profit)
-            #car.total_profit = total_profit
             car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
             total_profit_all_firms += total_profit
-        #quit()
+
         return total_profit_all_firms
 
     def calculate_market_share(self, firm, past_chosen_vehicles, total_sales):
@@ -249,12 +243,14 @@ class Firm_Manager:
         self.history_segment_count = []
         self.history_cars_on_sale_EV_prop = []
         self.history_cars_on_sale_ICE_prop = []
+        self.history_cars_on_sale_price = []
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         self.total_profit = self.calc_total_profits(self.past_chosen_vehicles)
         self.HHI = self. calculate_market_concentration(self.past_chosen_vehicles)
         self.calc_vehicles_chosen_list(self.past_chosen_vehicles)
+        self.history_cars_on_sale_price.append([car.price for car in self.cars_on_sale_all_firms])
 
         self.history_total_profit.append(self.total_profit)
         self.history_market_concentration.append(self.HHI)
@@ -263,8 +259,8 @@ class Firm_Manager:
         count_transport_type_2 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 2)
         count_transport_type_3 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 3)
 
-        self.history_cars_on_sale_ICE_prop.append( count_transport_type_2)
-        self.history_cars_on_sale_EV_prop.append( count_transport_type_3)
+        self.history_cars_on_sale_ICE_prop.append(count_transport_type_2)
+        self.history_cars_on_sale_EV_prop.append(count_transport_type_3)
 
 
     def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles):
