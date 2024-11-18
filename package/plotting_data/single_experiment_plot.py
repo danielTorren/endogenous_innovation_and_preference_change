@@ -5,6 +5,8 @@ from scipy.stats import sem, t
 from package.resources.utility import load_object
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+from matplotlib.cm import ScalarMappable
+
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -140,6 +142,60 @@ def plot_research_time_series_multiple_firms(firms, fileName, dpi=600):
     plt.colorbar(cm.ScalarMappable(cmap='viridis', norm=mcolors.Normalize(vmin=min(color_vals), vmax=max(color_vals))), label="Production Cost")
     save_and_show(fig, fileName, "research_time_series_multiple_firms", dpi)
 
+def plot_scatter_research_time_series_multiple_firms(firms, fileName, dpi=600) -> None:
+    """
+    Plots scatter plots for research attributes (quality vs. efficiency and quality vs. cost) 
+    over time for multiple firms. Color indicates the time step.
+
+    Parameters:
+        firms: list
+            List of firm objects containing historical research attributes.
+        fileName: str
+            Directory or file name to save the plots.
+        dpi: int
+            DPI for the saved plots.
+    """
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+
+    # Subplot 1: Efficiency vs. Quality
+    ax1 = axes[0]
+    for firm in firms:
+        x_vals = [attr[0] for attr in firm.history_attributes_researched]  # Quality
+        y_vals = [attr[1] for attr in firm.history_attributes_researched]  # Efficiency
+        time_steps = range(len(firm.history_attributes_researched))  # Time steps
+        
+        sc = ax1.scatter(x_vals, y_vals, c=time_steps, cmap='viridis', edgecolor='black', s=50)
+
+    ax1.set_xlabel("Quality (First Attribute)")
+    ax1.set_ylabel("Efficiency (Second Attribute)")
+    ax1.grid()
+
+    # Subplot 2: Cost vs. Quality
+    ax2 = axes[1]
+    for firm in firms:
+        x_vals = [attr[0] for attr in firm.history_attributes_researched]  # Quality
+        y_vals = [attr[2] for attr in firm.history_attributes_researched]  # Production Cost
+        time_steps = range(len(firm.history_attributes_researched))  # Time steps
+
+        sc = ax2.scatter(x_vals, y_vals, c=time_steps, cmap='viridis', edgecolor='black', s=50)
+
+    ax2.set_xlabel("Quality (First Attribute)")
+    ax2.set_ylabel("Production Cost (Third Attribute)")
+    ax2.grid()
+
+    fig.suptitle("Evolution of firm reserach attributes")
+    # Add a colorbar for time steps
+    cbar = fig.colorbar(
+        ScalarMappable(cmap='viridis', norm=mcolors.Normalize(vmin=0, vmax=max(len(firm.history_attributes_researched) for firm in firms))),
+        ax=ax2, orientation='vertical', label="Time Step"
+    )
+
+    # Save and show the plots
+    plt.tight_layout()
+    save_and_show(fig, fileName, "research_scatter_time_series_multiple_firms", dpi)
+
+
 def plot_second_hand_market_len(market, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, market.history_num_second_hand, marker='o')
@@ -189,7 +245,7 @@ def plot_history_attributes_cars_on_sale_all_firms(social_network, time_series, 
     # Ensure time series length matches the data
     time_series = np.asarray(time_series)
 
-    for i, attribute_name in enumerate(["Attribute 1", "Attribute 2", "Attribute 3"]):
+    for i, attribute_name in enumerate(["Quality", "Efficiency", "Production Cost"]):
         # Extract attribute data for EV and ICE
         ev_values = data_EV_array[:, :, i]
         ice_values = data_ICE_array[:, :, i]
@@ -241,7 +297,7 @@ def plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_seri
     # Ensure time series length matches the data
     time_series = np.asarray(time_series)
 
-    for i, attribute_name in enumerate(["Attribute 1", "Attribute 2", "Attribute 3"]):
+    for i, attribute_name in enumerate(["Quality", "Efficiency", "Production Cost"]):
         # EV Data Plot (Top Row)
         ev_values = data_EV_array[:, :, i]
         for t in range(len(time_series)):
@@ -378,6 +434,84 @@ def plot_history_car_age(social_network,time_series, fileName, dpi):
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned", dpi)   
 
+def plot_transport_composition_segments(firm_manager, time_series, fileName):
+    """
+    Plots the transport composition (ICE and EV proportions) for each segment over time.
+    
+    Parameters:
+        firm_manager: Firm_Manager
+            The firm manager object containing the historical market data.
+        time_series: list or array
+            The time steps to plot on the x-axis.
+        fileName: str
+            Directory or file name to save the plot.
+    """
+    fig, axes = plt.subplots(4, 4, figsize=(12, 12), sharex=True, sharey=True)
+
+    # Limit to the first 16 segments (assuming binary codes from "0000" to "1111")
+    segment_codes = [format(i, '04b') for i in range(16)]
+
+    for i, segment_code in enumerate(segment_codes):
+        row, col = divmod(i, 4)
+        ax = axes[row, col]
+
+        # Extract ICE and EV counts over time for the current segment
+        ice_counts = np.array([data[segment_code]["ICE"] for data in firm_manager.history_market_data])
+        ev_counts = np.array([data[segment_code]["EV"] for data in firm_manager.history_market_data])
+        total_counts = ice_counts + ev_counts
+
+        # Avoid division by zero
+        ice_prop = np.divide(ice_counts, total_counts, where=total_counts > 0)
+        ev_prop = np.divide(ev_counts, total_counts, where=total_counts > 0)
+
+        # Plot stacked proportions
+        ax.stackplot(time_series, ice_prop, ev_prop, labels=['ICE', 'EV'], alpha=0.8)
+        ax.set_title(f"Segment {segment_code}")
+        ax.grid()
+    
+
+    fig.supxlabel("Time Step")
+    fig.supylabel("Proportion of Transport Type")
+
+    # Add a single legend outside the grid
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    fig.legend(handles, labels, title="Firms", loc="upper center", bbox_to_anchor=(0.5, 1.02))
+    plt.tight_layout()
+    save_and_show(fig, fileName, "transport_composition_segments.png", 600)
+
+def plot_u_sum_segments(firm_manager, time_series, fileName):
+    """
+    Plots the market concentration (HHI) per segment across time steps.
+    
+    Parameters:
+        firm_manager: Firm_Manager
+            The firm manager object containing historical market data.
+        time_series: list or array
+            The time steps to plot on the x-axis.
+        fileName: str
+            Directory or file name to save the plot.
+    """
+    fig, axes = plt.subplots(4, 4, figsize=(12, 12), sharex=True, sharey=True)
+
+    segment_codes = [format(i, '04b') for i in range(16)]  # Binary segment codes
+
+    for i, segment_code in enumerate(segment_codes):
+        row, col = divmod(i, 4)
+        ax = axes[row, col]
+
+        # Extract market concentration (U_sum or HHI) for the segment across all time steps
+        hhi_data = [data[segment_code]["U_sum"] for data in firm_manager.history_market_data]
+
+        ax.plot(time_series, hhi_data, label=f"Segment {segment_code}", color="purple")
+        ax.set_title(f"Segment {segment_code}")
+        ax.grid()
+
+    fig.supxlabel("Time Step")
+    fig.supylabel("U sum")
+    plt.tight_layout()
+    save_and_show(fig, fileName, "u_sum_segments.png", 600)
+
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -392,27 +526,34 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
 
+
+
+
     # All plot function calls
-    #plot_emissions(social_network, time_series, fileName, dpi)
-    #plot_total_utility(social_network, time_series, fileName, dpi)
-    #plot_total_distance(social_network, time_series, fileName, dpi)
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    #plot_tranport_users(social_network, time_series, fileName, dpi)
-    #plot_transport_users_stacked(social_network, time_series, fileName, dpi)
-    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    plot_emissions(social_network, time_series, fileName, dpi)
+    plot_total_utility(social_network, time_series, fileName, dpi)
+    plot_total_distance(social_network, time_series, fileName, dpi)
+    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    plot_tranport_users(social_network, time_series, fileName, dpi)
+    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     #plot_research_time_series_multiple_firms([firm_manager.firms_list[0]], fileName, dpi)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
-    #plot_segment_count_grid(firm_manager, time_series, fileName)
-    #plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+
+    plot_preferences(social_network, fileName, dpi)
+    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    plot_history_research_type(firm_manager, time_series, fileName, dpi)
     plot_car_sale_prop(social_network, time_series, fileName, dpi)
-    #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
-    #plot_price_history(firm_manager, time_series, fileName, dpi)
-    #plot_history_car_age(social_network, time_series,fileName, dpi)
+    plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
+    plot_price_history(firm_manager, time_series, fileName, dpi)
+    plot_history_car_age(social_network, time_series,fileName, dpi)
+
+    #SEGEMENT PLOTS
+    plot_segment_count_grid(firm_manager, time_series, fileName)
     
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_01_33__15_11_2024")
+    main("results/single_experiment_11_07_56__18_11_2024")

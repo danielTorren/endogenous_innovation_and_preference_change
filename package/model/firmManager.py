@@ -1,4 +1,4 @@
-from math import gamma
+import copy
 import numpy as np
 import random
 from package.model.carModel import CarModel
@@ -245,6 +245,8 @@ class Firm_Manager:
         self.history_cars_on_sale_ICE_prop = []
         self.history_cars_on_sale_price = []
 
+        self.history_market_data = []
+
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         self.total_profit = self.calc_total_profits(self.past_chosen_vehicles)
@@ -261,6 +263,10 @@ class Firm_Manager:
 
         self.history_cars_on_sale_ICE_prop.append(count_transport_type_2)
         self.history_cars_on_sale_EV_prop.append(count_transport_type_3)
+
+           
+
+        self.history_market_data.append(copy.deepcopy(self.market_data))
 
 
     def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles):

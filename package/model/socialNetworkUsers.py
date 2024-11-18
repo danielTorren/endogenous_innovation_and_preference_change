@@ -196,6 +196,8 @@ class Social_Network:
         # Generate a single shuffle order
         shuffle_indices = np.random.permutation(self.num_individuals)
 
+        self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
+
         if self.t_social_network > 0:
             # Vectorize current user vehicle attributes
             self.users_current_vehicle_price_vec = np.asarray([user.vehicle.price for user in self.vehicleUsers_list])
@@ -392,6 +394,7 @@ class Social_Network:
 
                 if vehicle_chosen in self.second_hand_merchant.cars_on_sale and vehicle_chosen.owner_id == self.second_hand_merchant.id:
                     self.second_hand_merchant.remove_car(vehicle_chosen)
+                    self.second_hand_bought += 1
 
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
@@ -446,6 +449,7 @@ class Social_Network:
         if self.second_hand_cars:
             SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs(self.second_hand_cars)
             SH_utilities, d_SH = self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs)
+
             total_columns += SH_utilities.shape[1]
 
         # Preallocate arrays with the total required columns
@@ -724,7 +728,6 @@ class Social_Network:
         self.efficiency_vals = []
         self.production_cost_vals = []
         self.new_cars_bought = 0
-        self.second_hand_bought = 0
         self.car_ages = []
     
     def update_counters(self, i, vehicle_chosen, vehicle_chosen_index):
@@ -733,9 +736,6 @@ class Social_Network:
         if vehicle_chosen.scenario == "new_car":  
             self.new_cars_bought +=1
             self.total_production_emissions += vehicle_chosen.emissions
-
-        if vehicle_chosen.scenario == "second_hand":  
-            self.second_hand_bought += 1
         
         if vehicle_chosen.transportType > 1:  
             self.total_driving_emissions += driven_distance*(vehicle_chosen.Eff_omega_a_t**-1)*vehicle_chosen.e_z_t 
