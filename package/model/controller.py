@@ -184,7 +184,7 @@ class Controller:
         self.parameters_firm["eta"] = self.parameters_vehicle_user["eta"]
         self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
         self.parameters_firm["delta_z"] = self.parameters_ICE["delta_z"]#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
-        
+        self.parameters_firm["carbon_price"] = self.carbon_price
 
     def setup_social_network_parameters(self):
         #create social network
@@ -263,7 +263,7 @@ class Controller:
 
     def next_step(self):
         self.t_controller+=1
-        print("TIME STEP", self.t_controller)
+        #print("TIME STEP", self.t_controller)
 
         self.update_carbon_price()
         self.second_hand_cars = self.get_second_hand_cars()

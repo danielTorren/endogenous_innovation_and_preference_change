@@ -39,6 +39,8 @@ class Firm:
         self.r = self.parameters_firm["r"]
         self.delta_z = self.parameters_firm["delta_z"]
         
+        self.carbon_price =  self.parameters_firm["carbon_price"]
+
         self.lambda_pow = parameters_firm["lambda_pow"]
 
         self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
@@ -81,8 +83,9 @@ class Firm:
         Returns:
         float: The calculated optimal distance, d^*_{a,i,t}.
         """
+
         numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta_z) ** vehicle.L_a_t
-        denominator = (beta * vehicle.Eff_omega_a_t ** -1 * vehicle.fuel_cost_c_z +
+        denominator = (beta * vehicle.Eff_omega_a_t ** -1 * (vehicle.fuel_cost_c_z + self.carbon_price*vehicle.e_z_t) +
                        gamma * vehicle.Eff_omega_a_t ** -1 * vehicle.e_z_t +
                        vehicle.eta * vehicle.nu_z_i_t)
 
@@ -111,12 +114,12 @@ class Firm:
         delta_z = vehicle.delta_z
         L_a_t = vehicle.L_a_t
         Eff_omega_a_t = vehicle.Eff_omega_a_t
-        fuel_cost_c_z = vehicle.fuel_cost_c_z
         e_z_t = vehicle.e_z_t
+        fuel_cost_c_z = vehicle.fuel_cost_c_z
         nu_z_i_t = vehicle.nu_z_i_t
 
         # Calculate commuting utility based on conditions for z
-        cost_component = beta_s * (1 / Eff_omega_a_t) * fuel_cost_c_z + gamma_s * (1 / Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
+        cost_component = beta_s * (1 / Eff_omega_a_t) * (fuel_cost_c_z + self.carbon_price*e_z_t) + gamma_s * (1 / Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
         utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
 
         # Ensure utility is non-negative
@@ -135,7 +138,7 @@ class Firm:
                 gamma_s = segment_data["gamma_s_t"]
                 U_sum = segment_data["U_sum"]
                 E_m = car.emissions  # Emissions for the current car
-                C_m = car.ProdCost_z_t       # Cost for the current car
+                C_m = car.ProdCost_z_t  + self.carbon_price*E_m       # Cost for the current car
 
                 # Calculate optimal distance for the given segment
                 d_i_t = self.optimal_distance(car, beta_s, gamma_s)
@@ -191,7 +194,7 @@ class Firm:
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
                 if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
                     # Calculate profit for this vehicle and segment
-                    profit_per_sale = vehicle.optimal_price_segments[segment_code] - vehicle.ProdCost_z_t
+                    profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_z_t  + self.carbon_price*vehicle.emissions) 
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
                     U_sum = segment_data["U_sum"]
                     
@@ -495,9 +498,9 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data):
+    def next_step(self, market_data, carbon_price):
         self.t_firm += 1
-
+        self.carbon_price = carbon_price
         #decide cars to sell
         self.cars_on_sale = self.choose_cars_segments(market_data)
 

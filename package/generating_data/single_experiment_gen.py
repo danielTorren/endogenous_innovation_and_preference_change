@@ -37,26 +37,21 @@ def main(
 
 if __name__ == "__main__":
 
-    """
-            "min_max_Quality": [40,200],
-            "min_max_Efficiency": [1,60],
-            "min_max_Cost": [10,80],
-    """
     base_params = {
-        "duration_no_carbon_price":360,
-        "duration_small_carbon_price":0,
-        "duration_large_carbon_price":0,
+        "duration_no_carbon_price":120,
+        "duration_small_carbon_price":1,
+        "duration_large_carbon_price":240,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
         "age_limit_second_hand": 3,
         "parameters_carbon_policy":{
             "carbon_price_init": 0,
-            "carbon_price": 0.3,
+            "carbon_price": 0,
             "carbon_price_state": "linear"
         },
         "parameters_future_carbon_policy":{
-            "carbon_price_init": 1,
+            "carbon_price_init": 0,
             "carbon_price": 0,
             "carbon_price_state": "linear"
         },
@@ -144,7 +139,7 @@ if __name__ == "__main__":
             "a_environment": 2,#large easy ev adoption 
             "b_environment": 2,
             "a_innovativeness": 1,#low easy ev adoption 
-            "b_innovativeness": 3,
+            "b_innovativeness": 4,
             "a_price": 4,#most people price sensitive
             "b_price": 1,
         },

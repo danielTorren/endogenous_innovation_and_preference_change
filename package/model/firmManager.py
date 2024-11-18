@@ -159,7 +159,7 @@ class Firm_Manager:
         cars_on_sale_all_firms = []
         segment_U_sums = defaultdict(float)
         for firm in self.firms_list:
-            cars_on_sale = firm.next_step(market_data)
+            cars_on_sale = firm.next_step(market_data, self.carbon_price)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:

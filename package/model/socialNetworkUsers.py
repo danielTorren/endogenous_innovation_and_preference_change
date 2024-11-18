@@ -65,6 +65,7 @@ class Social_Network:
         self.second_hand_merchant = parameters_social_network["second_hand_merchant"]
         self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
+        self.carbon_price =  parameters_social_network["carbon_price"]
 
     def init_network_settings(self, parameters_social_network):
         self.network_structure_seed = parameters_social_network["network_structure_seed"]
@@ -608,16 +609,9 @@ class Social_Network:
             (1 - vehicle_dict_vecs["delta_z"]) ** vehicle_dict_vecs["L_a_t"]
         )  # Shape: (num_individuals,)
 
-        # Compute denominator for each individual-vehicle pair without broadcasting
-        denominator = (
-            ((self.beta_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["fuel_cost_c_z"]) +
-            ((self.gamma_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
-            (self.eta * vehicle_dict_vecs["nu_z_i_t"])
-        )  # Shape: (num_individuals,)
-
         denominator = np.where(
             vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_vehicles,)
-            ((self.beta_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["fuel_cost_c_z"]) +
+            ((self.beta_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
             ((self.gamma_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
             (self.eta * vehicle_dict_vecs["nu_z_i_t"]),
             (self.eta * vehicle_dict_vecs["nu_z_i_t"])
@@ -653,12 +647,12 @@ class Social_Network:
         # Compute denominator for all individual-vehicle pairs using broadcasting
         # Reshape self.beta_vec and self.gamma_vec to (num_individuals, 1) for broadcasting across vehicles
         denominator = (
-            ((self.beta_vec[:, np.newaxis]/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["fuel_cost_c_z"]) +
+            ((self.beta_vec[:, np.newaxis]/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
             ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
             (self.eta * vehicle_dict_vecs["nu_z_i_t"])
         )  # Shape: (num_individuals, num_vehicles)
 
-        denominator = ((self.beta_vec[:, np.newaxis]/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["fuel_cost_c_z"]) + ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) + (self.eta * vehicle_dict_vecs["nu_z_i_t"])
+        denominator = ((self.beta_vec[:, np.newaxis]/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) + ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) + (self.eta * vehicle_dict_vecs["nu_z_i_t"])
 
         # Calculate optimal distance matrix for each individual-vehicle pair
         optimal_distance_matrix = (numerator / denominator) ** (1 / (1 - self.alpha))
@@ -674,7 +668,7 @@ class Social_Network:
         # Compute cost component based on transport type, without broadcasting
         cost_component = np.where(
             vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_individuals,)
-            (self.beta_vec * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["fuel_cost_c_z"]) +
+            (self.beta_vec * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
             (self.gamma_vec * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
             (self.eta * vehicle_dict_vecs["nu_z_i_t"]),
             self.eta * vehicle_dict_vecs["nu_z_i_t"]
@@ -696,7 +690,7 @@ class Social_Network:
         # Compute cost component based on transport type, with conditional operations
         cost_component = np.where(
             vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_vehicles,)
-            (self.beta_vec[:, np.newaxis] * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["fuel_cost_c_z"]) +
+            (self.beta_vec[:, np.newaxis] * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
             (self.gamma_vec[:, np.newaxis] * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
             (self.eta * vehicle_dict_vecs["nu_z_i_t"]),
             self.eta * vehicle_dict_vecs["nu_z_i_t"]
