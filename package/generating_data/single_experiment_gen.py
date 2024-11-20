@@ -53,7 +53,7 @@ if __name__ == "__main__":
         },
         "parameters_future_carbon_policy":{
             "carbon_price_init": 0,
-            "carbon_price": 400,
+            "carbon_price": 200,
             "carbon_price_state": "linear"
         },
         "parameters_ICE":{

@@ -189,7 +189,8 @@ class Social_Network:
 #CHECK THE ACTUAL EQUATIONS
 
     def update_VehicleUsers(self):
-
+        
+        self.chosen_vehicles = []
         user_vehicle_list = [None]*self.num_individuals
 
         # Generate a single shuffle order
@@ -364,6 +365,8 @@ class Social_Network:
 
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
+
+        self.chosen_vehicles.append(vehicle_chosen)#DONT NEED TO WORRY ABOUT ORDER
 
         # Handle consequences of the choice
         if user.user_id != vehicle_chosen.owner_id:  # New vehicle, not currently owned
@@ -885,4 +888,4 @@ class Social_Network:
         #if self.t_social_network == 10:
         #    quit()
 
-        return self.consider_ev_vec, self.current_vehicles
+        return self.consider_ev_vec,  self.chosen_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count porfits
