@@ -10,6 +10,8 @@ from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
 
+from collections import Counter
+
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
@@ -50,7 +52,13 @@ class Social_Network:
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
         #individual choose their vehicle in the zeroth step
 
+        self.history_user3 = []
+        self.history_user2 = []
+        self.history_user4 = []
+
         self.current_vehicles = self.update_VehicleUsers()
+        #print("self.current_vehicles", self.current_vehicles)
+        #quit()
 
         #self.chi_vec = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
@@ -177,25 +185,15 @@ class Social_Network:
         return consider_ev_vec, ev_adoption_vec
 
 ##########################################################################################################################################################
-#CALC STUFF RELATED TO CAR
-
-    def calc_emissions(self,vehicle_chosen_dict, driven_distance_vec):
-
-        driving_emissions =  driven_distance_vec*(vehicle_chosen_dict["Eff_omega_a_t"]**-1)*vehicle_chosen_dict["e_z_t"]
-
-        production_emissions = np.where(vehicle_chosen_dict["scenario"] == "current_car",vehicle_chosen_dict["emissions"],0)
-        
-        return driving_emissions, production_emissions
-    
-##########################################################################################################################################################
 #MATRIX CALCULATION
 #CHECK THE ACTUAL EQUATIONS
 
     def update_VehicleUsers(self):
-        self.vehicle_chosen_list = []
+
+        user_vehicle_list = [None]*self.num_individuals
 
         # Generate a single shuffle order
-        shuffle_indices = np.random.permutation(self.num_individuals)
+        shuffle_indices = np.random.permutation(self.num_individuals)##np.random.permutation(self.num_individuals)
 
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
 
@@ -205,11 +203,7 @@ class Social_Network:
             self.users_current_vehicle_type_vec = np.asarray([user.vehicle.transportType for user in self.vehicleUsers_list])#USED TO CHECK IF YOU OWN A CAR
 
             # Generate current utilities and vehicles
-            utilities_current_matrix, current_vehicles_list, d_current_matrix = self.generate_utilities_current()
-            
-            # Apply the shuffle to current cars and their utilities
-            current_vehicles_list = [current_vehicles_list[i] for i in shuffle_indices]
-            utilities_current_matrix = utilities_current_matrix[:, shuffle_indices]
+            utilities_current_matrix, d_current_matrix = self.generate_utilities_current()
 
             # Generate buying utilities and vehicles
             utilities_buying_matrix, buying_vehicles_list, d_buying_matrix = self.generate_utilities()
@@ -227,7 +221,7 @@ class Social_Network:
             self.d_matrix[:, d_buying_matrix.shape[1]:] = d_current_matrix
 
             # Combine the list of vehicles
-            available_and_current_vehicles_list = buying_vehicles_list + current_vehicles_list
+            available_and_current_vehicles_list = buying_vehicles_list + self.current_vehicles
 
         else:
             # Initialize arrays for users without vehicles
@@ -249,23 +243,23 @@ class Social_Network:
 
         self.utilities_matrix[self.utilities_matrix < 0] = 0
 
-        self.utilities_kappa = self.masking_options(self.utilities_matrix, available_and_current_vehicles_list)
-        self.chosen_already_mask = np.ones(len(available_and_current_vehicles_list), dtype=bool)
-
-        #np.random.shuffle(self.user_indices)#shuffle the order of individual indicies, but the actual individuals location in the matrix dont change
+        utilities_kappa = self.masking_options(self.utilities_matrix, available_and_current_vehicles_list)
+        #self.chosen_already_mask = np.ones(len(available_and_current_vehicles_list), dtype=bool)
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
-            for i in shuffle_indices:
-                user = self.vehicleUsers_list[i]
-                vehicle_chosen, vehicle_chosen_index = self.user_chooses(i, user, available_and_current_vehicles_list)
+            for i, person_index in enumerate(shuffle_indices):
+                user = self.vehicleUsers_list[person_index]
+                vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
+                user_vehicle_list[person_index] = user_vehicle
                 self.update_counters(i, vehicle_chosen, vehicle_chosen_index)
         else:
-             for i in shuffle_indices:
-                user = self.vehicleUsers_list[i]
-                vehicle_chosen, vehicle_chosen_index = self.user_chooses(i, user, available_and_current_vehicles_list)
+            for i, person_index in enumerate(shuffle_indices):
+                user = self.vehicleUsers_list[person_index]
+                ____, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
+                user_vehicle_list[person_index] = user_vehicle
 
-        return self.vehicle_chosen_list
+        return user_vehicle_list#self.vehicle_chosen_list
 
     def mask_new_cars(self):
         num_new_cars = len(self.new_cars)
@@ -355,53 +349,42 @@ class Social_Network:
 
         return utilities_kappa
 
-    def user_chooses(self, i, user, available_and_current_vehicles_list):
+    def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa):
         # Select individual-specific utilities
-        individual_specific_util = self.utilities_kappa[i]        
+        individual_specific_util = utilities_kappa[person_index]        
         # Check if all utilities are zero after filtering
         if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
             #keep current car
-            choice_index = self.index_current_cars_start + i #available_and_current_vehicles_list.index(user.vehicle)
-            # Default to public transport based on origin
-
+            choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
         else:
             # Calculate the probability of choosing each vehicle
             sum_prob = np.sum(individual_specific_util)
             probability_choose = individual_specific_util / sum_prob
             choice_index = np.random.choice(len(available_and_current_vehicles_list), p=probability_choose)
-            
+
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
 
-        self.vehicle_chosen_list.append(vehicle_chosen)
-
-        if isinstance(vehicle_chosen, PersonalCar) and (user.user_id != vehicle_chosen.owner_id):
-            # Remove the chosen vehicle's utility from all users for the next round
-            self.utilities_kappa[:, choice_index] = 0
-            self.chosen_already_mask[choice_index] = 0
-
         # Handle consequences of the choice
         if user.user_id != vehicle_chosen.owner_id:  # New vehicle, not currently owned
-            # Transfer the user's current vehicle to the second-hand merchant, if any
             
+            # Transfer the user's current vehicle to the second-hand merchant, if any
             if isinstance(user.vehicle, PersonalCar):
                 user.vehicle.owner_id = self.second_hand_merchant.id
                 self.second_hand_merchant.add_to_stock(user.vehicle)
                 user.vehicle = None
+            
+            if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
 
-            # Buy a second-hand car
-            if isinstance(vehicle_chosen, PersonalCar):  # Second-hand car or user's own
-                # Remove from second-hand stock if still present and owned by merchant
+                #SET THE UTILITY TO 0 of that second hand car
+                utilities_kappa[:, choice_index] = 0
 
-                if vehicle_chosen in self.second_hand_merchant.cars_on_sale and vehicle_chosen.owner_id == self.second_hand_merchant.id:
-                    self.second_hand_merchant.remove_car(vehicle_chosen)
-                    self.second_hand_bought += 1
+                self.second_hand_merchant.remove_car(vehicle_chosen)
+                self.second_hand_bought += 1
 
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
                 user.vehicle = vehicle_chosen
-
-
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
                 personalCar_id = self.id_generator.get_new_id()
                 user.vehicle = PersonalCar(personalCar_id, vehicle_chosen.firm, user.user_id, vehicle_chosen.component_string, vehicle_chosen.parameters, vehicle_chosen.attributes_fitness, vehicle_chosen.price)
@@ -411,8 +394,8 @@ class Social_Network:
         # Update the age or timer of the chosen vehicle
         if isinstance(vehicle_chosen, PersonalCar):
             user.vehicle.update_timer()
-        
-        return vehicle_chosen, choice_index
+
+        return vehicle_chosen, user.vehicle, choice_index, utilities_kappa
 
     def generate_utilities_current(self):
 
@@ -425,7 +408,7 @@ class Social_Network:
         CV_utilities_matrix = np.diag(CV_utilities)
         d_current_matrix = np.diag(d_current)
 
-        return CV_utilities_matrix, self.current_vehicles, d_current_matrix
+        return CV_utilities_matrix, d_current_matrix
 
     def generate_utilities(self):
         #CALC WHO OWNS CAR
@@ -652,8 +635,6 @@ class Social_Network:
             (self.eta * vehicle_dict_vecs["nu_z_i_t"])
         )  # Shape: (num_individuals, num_vehicles)
 
-        denominator = ((self.beta_vec[:, np.newaxis]/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) + ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) + (self.eta * vehicle_dict_vecs["nu_z_i_t"])
-
         # Calculate optimal distance matrix for each individual-vehicle pair
         optimal_distance_matrix = (numerator / denominator) ** (1 / (1 - self.alpha))
 
@@ -668,8 +649,8 @@ class Social_Network:
         # Compute cost component based on transport type, without broadcasting
         cost_component = np.where(
             vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_individuals,)
-            (self.beta_vec * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
-            (self.gamma_vec * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
+            ((self.beta_vec/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
+            ((self.gamma_vec/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
             (self.eta * vehicle_dict_vecs["nu_z_i_t"]),
             self.eta * vehicle_dict_vecs["nu_z_i_t"]
         )  # Shape: (num_individuals,)
@@ -690,8 +671,8 @@ class Social_Network:
         # Compute cost component based on transport type, with conditional operations
         cost_component = np.where(
             vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_vehicles,)
-            (self.beta_vec[:, np.newaxis] * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
-            (self.gamma_vec[:, np.newaxis] * (1 / vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
+            ((self.beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
+            ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
             (self.eta * vehicle_dict_vecs["nu_z_i_t"]),
             self.eta * vehicle_dict_vecs["nu_z_i_t"]
         )  # Resulting shape: (num_individuals, num_vehicles)
@@ -721,26 +702,41 @@ class Social_Network:
         self.quality_vals = []
         self.efficiency_vals = []
         self.production_cost_vals = []
+        self.quality_vals_ICE = []
+        self.efficiency_vals_ICE = []
+        self.production_cost_vals_ICE = []
+        self.quality_vals_EV = []
+        self.efficiency_vals_EV = []
+        self.production_cost_vals_EV = []
         self.new_cars_bought = 0
         self.car_ages = []
     
-    def update_counters(self, i, vehicle_chosen, vehicle_chosen_index):
+    def update_counters(self, person_index, vehicle_chosen, vehicle_chosen_index):
         #ADD TOTAL EMISSIONS
-        driven_distance = self.d_matrix[i][vehicle_chosen_index]           
+        driven_distance = self.d_matrix[person_index][vehicle_chosen_index]           
         if vehicle_chosen.scenario == "new_car":  
             self.new_cars_bought +=1
             self.total_production_emissions += vehicle_chosen.emissions
         
         if vehicle_chosen.transportType > 1:  
-            self.total_driving_emissions += driven_distance*(vehicle_chosen.Eff_omega_a_t**-1)*vehicle_chosen.e_z_t 
+            self.total_driving_emissions += (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_z_t 
             self.car_ages.append(vehicle_chosen.L_a_t)
-        
-        self.total_utility += self.utilities_matrix[i][vehicle_chosen_index]
-        self.total_distance_travelled += driven_distance
+            #print(vehicle_chosen.L_a_t, type(vehicle_chosen))
+            self.quality_vals.append(vehicle_chosen.Quality_a_t)#done here for efficiency
+            self.efficiency_vals.append(vehicle_chosen.Eff_omega_a_t)
+            self.production_cost_vals.append(vehicle_chosen.ProdCost_z_t)
 
-        self.quality_vals.append(vehicle_chosen.Quality_a_t)#done here for efficiency
-        self.efficiency_vals.append(vehicle_chosen.Eff_omega_a_t)
-        self.production_cost_vals.append(vehicle_chosen.ProdCost_z_t)
+            if vehicle_chosen.transportType == 2:#ICE 
+                self.quality_vals_ICE.append(vehicle_chosen.Quality_a_t)#done here for efficiency
+                self.efficiency_vals_ICE.append(vehicle_chosen.Eff_omega_a_t)
+                self.production_cost_vals_ICE.append(vehicle_chosen.ProdCost_z_t)
+            else:
+                self.quality_vals_EV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
+                self.efficiency_vals_EV.append(vehicle_chosen.Eff_omega_a_t)
+                self.production_cost_vals_EV.append(vehicle_chosen.ProdCost_z_t)
+
+        self.total_utility += self.utilities_matrix[person_index][vehicle_chosen_index]
+        self.total_distance_travelled += driven_distance
             
         if isinstance(vehicle_chosen, PersonalCar):
             self.second_hand_users +=1
@@ -776,11 +772,21 @@ class Social_Network:
         self.history_quality = []
         self.history_efficiency = []
         self.history_production_cost = []
+
+        self.history_quality_ICE = []
+        self.history_efficiency_ICE  = []
+        self.history_production_cost_ICE  = []
+
+        self.history_quality_EV = []
+        self.history_efficiency_EV = []
+        self.history_production_cost_EV = []
+
         self.history_attributes_EV_cars_on_sale_all_firms = []
         self.history_attributes_ICE_cars_on_sale_all_firms = []
         self.history_second_hand_bought = []
         self.history_new_car_bought = []
         self.history_car_age = []
+
 
     def save_timeseries_data_social_network(self):
 
@@ -799,19 +805,34 @@ class Social_Network:
         self.history_second_hand_bought.append(self.second_hand_bought)
         self.history_new_car_bought.append(self.new_cars_bought)
 
+        
         self.history_quality.append(self.quality_vals)
         self.history_efficiency.append(self.efficiency_vals)
         self.history_production_cost.append(self.production_cost_vals)
+
+        if self.quality_vals_ICE:
+            self.history_quality_ICE.append(self.quality_vals_ICE)
+            self.history_efficiency_ICE.append(self.efficiency_vals_ICE)
+            self.history_production_cost_ICE.append(self.production_cost_vals_ICE)
+        else:
+            self.history_quality_ICE.append([np.nan])
+            self.history_efficiency_ICE.append([np.nan])
+            self.history_production_cost_ICE.append([np.nan])
+
+        if self.quality_vals_EV:
+            self.history_quality_EV.append(self.quality_vals_EV)
+            self.history_efficiency_EV.append(self.efficiency_vals_EV)
+            self.history_production_cost_EV.append(self.production_cost_vals_EV)
+        else:
+            self.history_quality_EV.append([np.nan])
+            self.history_efficiency_EV.append([np.nan])
+            self.history_production_cost_EV.append([np.nan])
 
         data_ev = [[vehicle.Quality_a_t, vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 3]
         data_ice = [[vehicle.Quality_a_t ,vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 2]
 
         self.history_attributes_EV_cars_on_sale_all_firms.append(data_ev)
         self.history_attributes_ICE_cars_on_sale_all_firms.append(data_ice)
-
-        # Ensure car_ages has the required length by padding with np.nan
-        padded_car_ages = self.car_ages[:self.num_individuals]  # Truncate if longer than required
-        padded_car_ages += [np.nan] * (self.num_individuals - len(padded_car_ages))  # Pad if shorter
 
         self.history_car_age.append(self.car_ages)
 
@@ -840,8 +861,28 @@ class Social_Network:
         self.all_vehicles_available = self.public_transport_options + self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT
 
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
-        #self.current_vehicles = self.update_VehicleUsers()
-        self.current_vehicles = self.update_VehicleUsers()
-        
+ 
+        self.current_vehicles  = self.update_VehicleUsers()
+
+        counter_same = Counter()  # Keeps track of unique vehicle counts
+
+        # Iterate through all vehicles
+        for vehicle in self.current_vehicles:
+            if vehicle.transportType > 1 and isinstance(vehicle, PersonalCar):  # Check the condition
+                # Use a unique identifier for the vehicle, such as a combination of attributes
+                vehicle_id = vehicle.id  # Example attributes
+                counter_same[vehicle_id] += 1
+
+        # Now you have a dictionary-like Counter with each unique vehicle and how many times it appears
+        #for vehicle_id, count in counter_same.items():
+        #    print(f"Vehicle {vehicle_id} is shared by {count} users.")
+
+        #total_shared = sum(counter_same.values())
+        #print(f"Total shared vehicles: {total_shared}")
+
+        #print(f"Number of vehicles with the same condition: {counter_same}")
+
+        #if self.t_social_network == 10:
+        #    quit()
 
         return self.consider_ev_vec, self.current_vehicles

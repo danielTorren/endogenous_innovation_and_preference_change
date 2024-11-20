@@ -24,6 +24,7 @@ class Firm:
         self.list_technology_memory_EV = [init_tech_EV]
         self.last_researched_car_EV = self.init_tech_EV
 
+        self.ev_reserach_bool = False
         self.firm_profit = 0
         self.firm_cars_users = 0
         self.research_bool = 0
@@ -85,8 +86,8 @@ class Firm:
         """
 
         numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta_z) ** vehicle.L_a_t
-        denominator = (beta * vehicle.Eff_omega_a_t ** -1 * (vehicle.fuel_cost_c_z + self.carbon_price*vehicle.e_z_t) +
-                       gamma * vehicle.Eff_omega_a_t ** -1 * vehicle.e_z_t +
+        denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c_z + self.carbon_price*vehicle.e_z_t) +
+                       (gamma/vehicle.Eff_omega_a_t) * vehicle.e_z_t +
                        vehicle.eta * vehicle.nu_z_i_t)
 
         # Compute optimal distance
@@ -119,7 +120,7 @@ class Firm:
         nu_z_i_t = vehicle.nu_z_i_t
 
         # Calculate commuting utility based on conditions for z
-        cost_component = beta_s * (1 / Eff_omega_a_t) * (fuel_cost_c_z + self.carbon_price*e_z_t) + gamma_s * (1 / Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
+        cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c_z + self.carbon_price*e_z_t) + (gamma_s/ Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
         utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
 
         # Ensure utility is non-negative
@@ -378,10 +379,13 @@ class Firm:
 
     def innovate(self, market_data):
         # create a list of cars in neighbouring memory space                                #self, last_researched_car,  list_technology_memory,        list_technology_memory_neighbouring, landscape, parameters_car, transportType
-        self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
         self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
-        self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
+        if self.ev_reserach_bool:
+            self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
+            self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
+        else:
+            self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_ICE + [self.last_researched_car_ICE]
 
         # calculate the optimal price of cars in the memory 
         self.calc_optimal_price_cars(market_data, self.unique_neighbouring_technologies)

@@ -6,7 +6,9 @@ from package.resources.utility import load_object
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
 from matplotlib.cm import ScalarMappable
-
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+import matplotlib.cm as cm
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -43,6 +45,24 @@ def plot_total_utility(social_network, time_series, fileName, dpi=600):
     ax.plot(time_series, social_network.history_total_utility, marker='o')
     format_plot(ax, "Total Utility Over Time", "Time Step", "Total Utility", legend=False)
     save_and_show(fig, fileName, "total_utility", dpi)
+
+def plot_carbon_price(controller, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, controller.carbon_price_time_series[:-1], marker='o')
+    format_plot(ax, "Carbon price Over Time", "Time Step", "Carbon price", legend=False)
+    save_and_show(fig, fileName, "carbon_price", dpi)
+
+def plot_total_profit(firm_manager, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, firm_manager.history_total_profit, marker='o')
+    format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit", legend=False)
+    save_and_show(fig, fileName, "total_profit", dpi)
+
+def plot_market_concentration(firm_manager, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, firm_manager.history_market_concentration, marker='o')
+    format_plot(ax, "Market concentration Over Time", "Time Step", "Market concentration", legend=False)
+    save_and_show(fig, fileName, "market_concentration", dpi)
 
 def plot_total_distance(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -126,6 +146,72 @@ def plot_vehicle_attribute_time_series(social_network, time_series, fileName, dp
     
     fig.suptitle("Vehicle Attributes Over Time")
     save_and_show(fig, fileName, "vehicle_attribute_time_series", dpi)
+
+def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file_name, dpi=600):
+    """
+    Plots time series of Quality, Efficiency, and Production Cost for both ICE and EV vehicles
+    with means and confidence intervals.
+
+    Args:
+        social_network (object): Contains the history of vehicle attributes for ICE and EV.
+        time_series (list): Time steps to plot on the x-axis.
+        file_name (str): Directory or file name to save the plots.
+        dpi (int): Resolution for saving the plots.
+    """
+    # Attributes for ICE and EV
+    attributes = {
+        "Quality": ("history_quality_ICE", "history_quality_EV"),
+        "Efficiency": ("history_efficiency_ICE", "history_efficiency_EV"),
+        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV"),
+    }
+
+    fig, axs = plt.subplots(1, 3, figsize=(18, 6))
+    
+    for i, (attribute_name, (ice_attr, ev_attr)) in enumerate(attributes.items()):
+        ax = axs[i]
+        
+        # Extract histories for ICE and EV
+        ice_history = getattr(social_network, ice_attr, [])
+        ev_history = getattr(social_network, ev_attr, [])
+        
+        # Calculate means and confidence intervals
+        ice_means = [np.mean(values) if values else np.nan for values in ice_history]
+        ice_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ice_history]
+        
+        ev_means = [np.mean(values) if values else np.nan for values in ev_history]
+        ev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ev_history]
+
+        # Plot ICE data
+        ax.plot(time_series, ice_means, label=f"ICE {attribute_name}", color="blue")
+        ax.fill_between(
+            time_series,
+            np.array(ice_means) - np.array(ice_confidence_intervals),
+            np.array(ice_means) + np.array(ice_confidence_intervals),
+            color="blue", alpha=0.2
+        )
+        
+        # Plot EV data
+        ax.plot(time_series, ev_means, label=f"EV {attribute_name}", color="green")
+        ax.fill_between(
+            time_series,
+            np.array(ev_means) - np.array(ev_confidence_intervals),
+            np.array(ev_means) + np.array(ev_confidence_intervals),
+            color="green", alpha=0.2
+        )
+
+        # Set title and labels
+        ax.set_title(f"{attribute_name} Over Time")
+        ax.set_xlabel("Time Step")
+        ax.set_ylabel(attribute_name)
+        ax.legend()
+        ax.grid()
+
+    fig.suptitle("Vehicle Attributes (ICE and EV) Over Time")
+    plt.tight_layout()
+
+    # Save and show the plot
+    save_path = f"{file_name}/vehicle_attribute_time_series_ICE_EV.png"
+    fig.savefig(save_path, dpi=dpi, format="png")
 
 def plot_research_time_series_multiple_firms(firms, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -512,6 +598,52 @@ def plot_u_sum_segments(firm_manager, time_series, fileName):
     save_and_show(fig, fileName, "u_sum_segments.png", 600)
 
 
+
+def plot_total_utility_vs_total_profit(social_network, firm_manager, time_steps, file_name, dpi=600):
+    """
+    Plots a scatter plot of Total Utility vs Total Profit with time as a color bar.
+
+    Args:
+        social_network (object): Contains the history of total utility.
+        firm_manager (object): Contains the history of total profits.
+        time_steps (list): Time steps corresponding to the data points.
+        file_name (str): Directory or file name to save the plot.
+        dpi (int): Resolution for saving the plot.
+    """
+    # Extract data
+    total_utility = social_network.history_total_utility
+    total_profit = firm_manager.history_total_profit
+
+    # Normalize the time values for the color map
+    norm = Normalize(vmin=min(time_steps), vmax=max(time_steps))
+    cmap = cm.viridis
+
+    # Create scatter plot
+    fig, ax = plt.subplots(figsize=(10, 6))
+    scatter = ax.scatter(
+        total_profit,
+        total_utility,
+        c=time_steps,
+        cmap=cmap,
+        edgecolor='k',
+        alpha=0.7
+    )
+
+    # Add color bar
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label("Time Step", rotation=270, labelpad=15)
+
+    # Add labels and title
+    ax.set_title("Total Utility vs Total Profit Over Time")
+    ax.set_xlabel("Total Profit")
+    ax.set_ylabel("Total Utility")
+    ax.grid(True)
+
+    # Save and show the plot
+    save_path = f"{file_name}/total_utility_vs_total_profit.png"
+    fig.savefig(save_path, dpi=dpi, format="png")
+
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -533,27 +665,32 @@ def main(fileName, dpi=600):
     plot_emissions(social_network, time_series, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
     plot_total_distance(social_network, time_series, fileName, dpi)
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    #plot_tranport_users(social_network, time_series, fileName, dpi)
+    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    plot_tranport_users(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
-    #plot_research_time_series_multiple_firms([firm_manager.firms_list[0]], fileName, dpi)
-    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
 
-    #plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
-    #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
-    #plot_price_history(firm_manager, time_series, fileName, dpi)
-    #plot_history_car_age(social_network, time_series,fileName, dpi)
+    plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+
+    plot_preferences(social_network, fileName, dpi)
+    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
+    plot_price_history(firm_manager, time_series, fileName, dpi)
+    plot_history_car_age(social_network, time_series,fileName, dpi)
+    plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    plot_total_profit(firm_manager, time_series, fileName, dpi)
+    plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    plot_carbon_price(data_controller, time_series, fileName)
 
     #SEGEMENT PLOTS
-    #plot_segment_count_grid(firm_manager, time_series, fileName)
+    plot_segment_count_grid(firm_manager, time_series, fileName)
     
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_05_21__18_11_2024")
+    main("results/single_experiment_20_08_45__20_11_2024")

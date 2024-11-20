@@ -1,4 +1,3 @@
-import numpy as np
 class PersonalCar:
     def __init__(self, unique_id, firm, owner_id, component_string, parameters, attributes_fitness, sale_price):
         self.id = unique_id

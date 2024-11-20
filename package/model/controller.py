@@ -76,6 +76,7 @@ class Controller:
         self.parameters_urban_public_transport = parameters_controller["parameters_urban_public_transport"]
         self.parameters_rural_public_transport = parameters_controller["parameters_rural_public_transport"]
 
+    
         self.parameters_carbon_policy = parameters_controller["parameters_carbon_policy"]
         self.parameters_future_carbon_policy = parameters_controller["parameters_future_carbon_policy"]
 
@@ -92,7 +93,10 @@ class Controller:
 
         #self.duration_no_EV = parameters_controller["duration_no_EV"]
         #self.duration_EV = parameters_controller["duration_EV"]
-
+        #############################################################################################################################
+        #DEAL WITH EV RESEARCH
+        self.ev_reserach_start_time = self.parameters_controller["ev_reserach_start_time"]
+        
         self.time_steps_max = parameters_controller["time_steps_max"]
         
     #############################################################################################################################
@@ -157,7 +161,9 @@ class Controller:
                 carbon_price = self.future_carbon_price_policy
         return carbon_price
     
+
     #############################################################################################################################
+
 
     def setup_id_gen(self):
         self.IDGenerator_firms = IDGenerator()# CREATE ID GENERATOR FOR FIRMS
@@ -259,12 +265,17 @@ class Controller:
 
         return self.second_hand_merchant.cars_on_sale
 
+    def update_ev_reserach_state(self):
+        if self.t_controller == self.ev_reserach_start_time:
+            for firm in self.firm_manager.firms_list:
+                firm.ev_reserach_bool = True
     ################################################################################################
 
     def next_step(self):
         self.t_controller+=1
-        #print("TIME STEP", self.t_controller)
+        print("TIME STEP", self.t_controller)
 
+        self.update_ev_reserach_state()
         self.update_carbon_price()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()

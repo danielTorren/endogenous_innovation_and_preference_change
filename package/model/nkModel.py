@@ -15,6 +15,7 @@ class NKModel:
         self.K = parameters["K"]
         self.A = parameters["A"]
         self.rho = [1] + parameters["rho"]  # Adding 1 as the first correlation coefficient
+
         self.landscape_seed = parameters["landscape_seed"]
         np.random.seed(self.landscape_seed)#set seed for numpy
 
@@ -38,17 +39,23 @@ class NKModel:
 
         #CHECK SEED STUFF FOR REPRODUCIBILITY 
 
-        L = np.random.rand(2**(self.K+1), self.N, self.A)
 
+        L = np.random.rand(2**(self.K+1), self.N, self.A)
+        L_efficiency = np.random.rand(2**(self.K+1), self.N, self.A)
+        L_cost = np.random.rand(2**(self.K+1), self.N, self.A)
         # Iterate over each attribute starting from the second one
-        for a in range(1, self.A):
-            Q_a_size = int(abs(self.rho[a]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-            Q_a = np.random.choice(self.N, size=Q_a_size, replace=False)
-            if self.rho[a] > 0:
-                L[:, Q_a, a] = L[:, Q_a, 0]  # Copy fitness contribution from attribute 1
-            else:
-                L[:, Q_a, a] = 1 - L[:, Q_a, 0]  # Copy inverse fitness contribution from attribute 1
         
+        #DONT HAVE TO ANYTHING FOR QUALITY, its the one we base everything off of
+
+        #FOR EFFICIENCY CORRELATION IS 0, so replace that entry
+        L[:, :, 1] = L_efficiency[:, :, 1]
+
+        #FOR COST ITS CORRELATION IS 0.5
+        Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+        #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+        Q_a = np.random.choice(self.N, size=Q_a_size, replace=False)
+        L[:, Q_a, 2] = L_cost[:, Q_a, 2]  # Copy fitness contribution from attribute 1
+
         return L
     
     def calculate_fitness(self, design):

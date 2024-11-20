@@ -38,13 +38,14 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_carbon_price":120,
+        "duration_no_carbon_price":119,
         "duration_small_carbon_price":1,
         "duration_large_carbon_price":240,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
         "age_limit_second_hand": 3,
+        "ev_reserach_start_time": 60,
         "parameters_carbon_policy":{
             "carbon_price_init": 0,
             "carbon_price": 0,
@@ -52,39 +53,39 @@ if __name__ == "__main__":
         },
         "parameters_future_carbon_policy":{
             "carbon_price_init": 0,
-            "carbon_price": 0,
+            "carbon_price": 400,
             "carbon_price_state": "linear"
         },
         "parameters_ICE":{
-            "landscape_seed": 14, 
+            "landscape_seed": 18, 
             "N": 15,
             "K": 3,
             "A": 3,
             "rho":[0,0.5],
             "fuel_cost_c_z": 1,
             "e_z_t":0.01,
-            "nu_z_i_t":0.5,
+            "nu_z_i_t":1,
             "emissions":0.1,
-            "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "delta_z":0,#0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
             "min_max_Quality": [50,200],
             "min_max_Efficiency": [1,10],
             "min_max_Cost": [10,80],
         },
         "parameters_EV":{
-            "landscape_seed": 13,
+            "landscape_seed": 14,
             "N": 15,
             "K": 3,
             "A": 3,
             "rho":[0,0.5],
             "fuel_cost_c_z": 1,#0.01,
-            "e_z_t": 0.01,#0.001,
-            "nu_z_i_t":0.5,
+            "e_z_t": 0.001,#0.001,
+            "nu_z_i_t":1,
             "emissions":0.1,
-            "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "delta_z":0,#0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
             "min_max_Quality": [50,200],
-            "min_max_Efficiency": [1,60],
+            "min_max_Efficiency": [1,10],
             "min_max_Cost": [10,80],
 
         },
@@ -96,7 +97,7 @@ if __name__ == "__main__":
             "transportType" : 0,
             "fuel_cost_c_z": 0,
             "e_z_t":0.001,
-            "nu_z_i_t":0.8,
+            "nu_z_i_t":3,
             "emissions":10000,
             "delta_z":0
         },
@@ -108,7 +109,7 @@ if __name__ == "__main__":
             "transportType" : 1,
             "fuel_cost_c_z": 0,
             "e_z_t":0.001,
-            "nu_z_i_t":1,
+            "nu_z_i_t":4,
             "emissions":10000,
             "delta_z":0
         },
@@ -118,14 +119,14 @@ if __name__ == "__main__":
         },
         "parameters_firm":{
             "memory_cap": 30,
-            "prob_innovate": 0.3,
+            "prob_innovate": 0.08333,
             "lambda_pow": 2,
             "init_price": 1,
             "init_base_U": 10,#JUST NEEDS TO BE BIG ENOGUHT THAT THE INIT UTILITY IS NOT NEGATIVE
             "innovation_seed": 77
         },
         "parameters_social_network":{
-            "num_individuals": 500,
+            "num_individuals": 200,#200,
             "save_timeseries_data_state": 1,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -139,15 +140,15 @@ if __name__ == "__main__":
             "a_environment": 2,#large easy ev adoption 
             "b_environment": 2,
             "a_innovativeness": 1,#low easy ev adoption 
-            "b_innovativeness": 4,
+            "b_innovativeness": 3,
             "a_price": 4,#most people price sensitive
             "b_price": 1,
         },
         "parameters_vehicle_user":{
-            "kappa": 2,
+            "kappa": 5,
             "alpha": 0.8,
             "r": 1,
-            "eta": 1,
+            "eta": 2,
             "mu": 1,
             "second_hand_car_max_consider": 200,
             "new_car_max_consider": 200
