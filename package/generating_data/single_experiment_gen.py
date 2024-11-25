@@ -38,8 +38,8 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_carbon_price":119,
-        "duration_small_carbon_price":1,
+        "duration_no_carbon_price":120,
+        "duration_small_carbon_price":120,
         "duration_large_carbon_price":240,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
@@ -48,25 +48,25 @@ if __name__ == "__main__":
         "ev_reserach_start_time": 60,
         "parameters_carbon_policy":{
             "carbon_price_init": 0,
-            "carbon_price": 0,
+            "carbon_price": 30,
             "carbon_price_state": "linear"
         },
         "parameters_future_carbon_policy":{
-            "carbon_price_init": 0,
-            "carbon_price": 200,
-            "carbon_price_state": "linear"
+            "carbon_price_init": 30,
+            "carbon_price": 100,
+            "carbon_price_state": "exponential"
         },
         "parameters_ICE":{
             "landscape_seed": 18, 
             "N": 15,
-            "K": 3,
+            "K": 2,
             "A": 3,
             "rho":[0,0.5],
             "fuel_cost_c_z": 1,
-            "e_z_t":0.01,
+            "e_z_t":0.1,
             "nu_z_i_t":1,
-            "emissions":0.1,
-            "delta_z":0,#0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "emissions":10,
+            "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
             "min_max_Quality": [50,200],
             "min_max_Efficiency": [1,10],
@@ -75,14 +75,14 @@ if __name__ == "__main__":
         "parameters_EV":{
             "landscape_seed": 14,
             "N": 15,
-            "K": 3,
+            "K": 2,
             "A": 3,
             "rho":[0,0.5],
             "fuel_cost_c_z": 1,#0.01,
             "e_z_t": 0.001,#0.001,
             "nu_z_i_t":1,
-            "emissions":0.1,
-            "delta_z":0,#0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "emissions":10,
+            "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
             "min_max_Quality": [50,200],
             "min_max_Efficiency": [1,10],
@@ -90,19 +90,19 @@ if __name__ == "__main__":
 
         },
         "parameters_urban_public_transport":{
-            "attributes": [160,60,2],
+            "attributes": [100,60,2],
             "price": 0.1,
             "id": -1, 
             "firm" : -1, 
             "transportType" : 0,
             "fuel_cost_c_z": 0,
             "e_z_t":0.001,
-            "nu_z_i_t":3,
-            "emissions":10000,
+            "nu_z_i_t":1,
+            "emissions":10e5,
             "delta_z":0
         },
         "parameters_rural_public_transport":{
-            "attributes": [160,1,2],
+            "attributes": [100,1,2],
             "price": 0.1,
             "id" : -2, 
             "firm" : -2,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
             "fuel_cost_c_z": 0,
             "e_z_t":0.001,
             "nu_z_i_t":4,
-            "emissions":10000,
+            "emissions":10e5,
             "delta_z":0
         },
         "parameters_firm_manager": {
@@ -123,10 +123,11 @@ if __name__ == "__main__":
             "lambda_pow": 2,
             "init_price": 1,
             "init_base_U": 10,#JUST NEEDS TO BE BIG ENOGUHT THAT THE INIT UTILITY IS NOT NEGATIVE
-            "innovation_seed": 77
+            "innovation_seed": 77,
+            "num_cars_production": 2
         },
         "parameters_social_network":{
-            "num_individuals": 200,#200,
+            "num_individuals": 500,#200,
             "save_timeseries_data_state": 1,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -135,21 +136,21 @@ if __name__ == "__main__":
             "d_min_seed": 45,
             "d_i_min": 0,#10e1,
             "network_density": 0.05, #TURNED OFF
-            "K": 30,
+            "K": 20,
             "prob_rewire": 0.1,
-            "a_environment": 2,#large easy ev adoption 
-            "b_environment": 2,
-            "a_innovativeness": 1,#low easy ev adoption 
-            "b_innovativeness": 3,
+            "a_environment": 1,#large easy ev adoption 
+            "b_environment": 1,#2,
+            "a_innovativeness": 0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
+            "b_innovativeness": 1,#2,
             "a_price": 4,#most people price sensitive
-            "b_price": 1,
+            "b_price": 1#1,
         },
         "parameters_vehicle_user":{
-            "kappa": 5,
+            "kappa": 3,
             "alpha": 0.8,
             "r": 1,
             "eta": 2,
-            "mu": 1,
+            "mu": 0.9,
             "second_hand_car_max_consider": 200,
             "new_car_max_consider": 200
         }

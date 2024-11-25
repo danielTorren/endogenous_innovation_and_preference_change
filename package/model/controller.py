@@ -11,6 +11,7 @@ from package.model.secondHandMerchant import SecondHandMerchant
 import numpy as np
 from package.model.socialNetworkUsers import Social_Network
 
+
 class Controller:
     def __init__(self, parameters_controller):
 
@@ -108,58 +109,80 @@ class Controller:
         self.future_policy_start_time = self.policy_start_time + self.duration_small_carbon_price
 
     def manage_carbon_price(self):
-
-        #CARBON PRICE - PAST (this is small fuel tax)
-        self.carbon_price_state = self.parameters_carbon_policy["carbon_price_state"]
+        # Initial setup from parameters
+        self.carbon_price_state = self.parameters_carbon_policy["carbon_price_state"]  # "linear", "quadratic", "exponential", "logarithmic"
+        self.carbon_price_init = self.parameters_carbon_policy.get("carbon_price_init", 0)
         self.carbon_price_policy = self.parameters_carbon_policy["carbon_price"]
-
-        if self.carbon_price_state == "linear" and self.duration_small_carbon_price > 0:
-            self.carbon_price_init = self.parameters_carbon_policy["carbon_price_init"]
-            self.carbon_price_policy_gradient = (self.carbon_price_policy - self.carbon_price_init) /self.duration_small_carbon_price
         
-        #CARBON PRICE - FUTURE
         self.future_carbon_price_state = self.parameters_future_carbon_policy["carbon_price_state"]
+        self.future_carbon_price_init = self.parameters_future_carbon_policy.get("carbon_price_init", 0)
         self.future_carbon_price_policy = self.parameters_future_carbon_policy["carbon_price"]
-        if self.future_carbon_price_state == "linear" and self.duration_large_carbon_price > 0:
-            self.future_carbon_price_init = self.parameters_future_carbon_policy["carbon_price_init"]
-            self.future_carbon_price_policy_gradient = (self.future_carbon_price_policy - self.future_carbon_price_init)/self.duration_large_carbon_price
         
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
         self.carbon_price = self.carbon_price_time_series[0]
 
     def calculate_carbon_price_time_series(self):
-        time_series = np.arange(self.time_steps_max)
-        carbon_price  = 0
-        carbon_price_series = [carbon_price]
+        time_series = np.arange(self.time_steps_max + 1)
+        carbon_price_series = []
+        
         for t in time_series:
-            carbon_price = self.assign_carbon_price(t, carbon_price)
+            carbon_price = self.calculate_price_at_time(t)
             carbon_price_series.append(carbon_price)
+        
         return carbon_price_series
-    
-    def assign_carbon_price(self, time, carbon_price):
-        if time < self.policy_start_time:
-            carbon_price = 0
-        elif time == self.policy_start_time:
-            if self.carbon_price_state == "flat":
-                carbon_price = self.carbon_price_policy
-            elif self.carbon_price_state == "linear":
-                carbon_price = self.carbon_price_init
-        elif (time > self.policy_start_time) and (time < self.future_policy_start_time):
-            if self.carbon_price_state == "linear":
-                carbon_price += self.carbon_price_policy_gradient
-            else:
-                carbon_price = self.carbon_price_policy
-        elif time == self.future_policy_start_time:
-            if self.future_carbon_price_state == "flat":
-                carbon_price = self.future_carbon_price_policy
-            elif self.future_carbon_price_state == "linear":
-                carbon_price = self.future_carbon_price_init
-        elif time > self.future_policy_start_time:
-            if self.future_carbon_price_state == "linear":
-                carbon_price += self.future_carbon_price_policy_gradient
-            else:
-                carbon_price = self.future_carbon_price_policy
-        return carbon_price
+
+    def calculate_price_at_time(self, t):
+        if t < self.policy_start_time:
+            return 0
+            
+        # First policy period
+        if t >= self.policy_start_time and t < self.future_policy_start_time:
+            duration = t - self.policy_start_time
+            total_duration = self.future_policy_start_time - self.policy_start_time
+            return self.calculate_growth(
+                duration, 
+                total_duration,
+                self.carbon_price_init,
+                self.carbon_price_policy,
+                self.carbon_price_state
+            )
+        
+        # Future policy period
+        if t >= self.future_policy_start_time:
+            duration = t - self.future_policy_start_time
+            total_duration = self.time_steps_max - self.future_policy_start_time
+            return self.calculate_growth(
+                duration,
+                total_duration,
+                self.future_carbon_price_init,
+                self.future_carbon_price_policy,
+                self.future_carbon_price_state
+            )
+
+    def calculate_growth(self, t, total_duration, start_price, end_price, growth_type):
+        if growth_type == "flat":
+            return end_price
+            
+        elif growth_type == "linear":
+            slope = (end_price - start_price) / total_duration
+            return start_price + slope * t
+            
+        elif growth_type == "quadratic":
+            a = (end_price - start_price) / (total_duration ** 2)
+            return start_price + a * (t ** 2)
+            
+        elif growth_type == "exponential":
+            r = np.log(end_price / start_price) / total_duration if start_price > 0 else 0
+            return start_price * np.exp(r * t)
+            
+        elif growth_type == "logarithmic":
+            if t == 0:
+                return start_price
+            k = (end_price - start_price) / np.log(total_duration + 1)
+            return start_price + k * np.log(t + 1)
+            
+        else:
+            raise ValueError(f"Unknown growth type: {growth_type}")
     
 
     #############################################################################################################################

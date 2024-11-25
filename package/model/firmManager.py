@@ -56,17 +56,24 @@ class Firm_Manager:
         """
         #Pick the initial technology
         random.seed(self.init_tech_seed)
-        self.init_tech_component_string = f"{random.getrandbits(self.N):0{self.N}b}"#CAN USE THE SAME STRING FOR BOTH THE EV AND ICE
-
+        #self.init_tech_component_string_ICE = f"{random.getrandbits(self.N):0{self.N}b}"#CAN USE THE SAME STRING FOR BOTH THE EV AND ICE
+        #self.init_tech_component_string_EV = f"{random.getrandbits(self.N):0{self.N}b}"
         #Generate the initial fitness values of the starting tecnology(ies)
 
-        decimal_value = int(self.init_tech_component_string, 2)
-        init_tech_component_string_list_N = self.invert_bits_one_at_a_time(decimal_value, len(self.init_tech_component_string))
-        np.random.seed(self.init_tech_seed) 
-        init_tech_component_string_list = np.random.choice(init_tech_component_string_list_N, self.J)
+        self.init_tech_component_string_ICE = self.landscape_ICE.min_fitness_string
+        self.init_tech_component_string_EV = self.landscape_EV.min_fitness_string
+        decimal_value_ICE = int(self.init_tech_component_string_ICE, 2)
+        decimal_value_EV = int(self.init_tech_component_string_EV, 2)
+
+        init_tech_component_string_list_N_ICE = self.invert_bits_one_at_a_time(decimal_value_ICE, len(self.init_tech_component_string_ICE))
+        init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
         
-        self.init_tech_list_ICE = [CarModel(init_tech_component_string_list[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
-        self.init_tech_list_EV = [CarModel(init_tech_component_string_list[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
+        np.random.seed(self.init_tech_seed) 
+        init_tech_component_string_list_ICE= np.random.choice(init_tech_component_string_list_N_ICE, self.J)
+        init_tech_component_string_list_EV = np.random.choice(init_tech_component_string_list_N_EV, self.J)
+        
+        self.init_tech_list_ICE = [CarModel(init_tech_component_string_list_ICE[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
+        self.init_tech_list_EV = [CarModel(init_tech_component_string_list_EV[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
 
         #global repo
         self.universal_model_repo_ICE = {} 

@@ -35,8 +35,9 @@ def save_and_show(fig, fileName, plot_name, dpi=600):
 
 def plot_emissions(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, social_network.history_driving_emissions, label='Driving Emissions', marker='o')
-    ax.plot(time_series, social_network.history_production_emissions, label='Production Emissions', marker='s')
+    ax.plot(time_series, social_network.history_driving_emissions, label='Driving Emissions')
+    ax.plot(time_series, social_network.history_production_emissions, label='Production Emissions')
+    ax.plot(time_series, social_network.history_total_emissions, label='Total Emissions')
     format_plot(ax, "Emissions Over Time", "Time Step", "Emissions")
     save_and_show(fig, fileName, "emissions", dpi)
 
@@ -310,6 +311,14 @@ def plot_history_research_type(firm_manager, time_series, fileName, dpi=600):
         ax.plot(time_series,firm_data, marker='o')
     format_plot(ax, "EV Research Proportion Over Time", "Time Step", "Proportion Research EV", legend=False)
     save_and_show(fig, fileName, "history_research_type", dpi)
+
+def plot_history_num_cars_on_sale(firm_manager, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    data = np.asarray([firm.history_num_cars_on_sale for firm in firm_manager.firms_list])
+    for firm_data in data:
+        ax.plot(time_series,firm_data, marker='o')
+    format_plot(ax, "# cars on_sale", "Time Step", "num cars on sale", legend=False)
+    save_and_show(fig, fileName, "num_cars_on_sale", dpi)
 
 def plot_history_attributes_cars_on_sale_all_firms(social_network, time_series, fileName, dpi=600):
     fig, axs = plt.subplots(1, 3, figsize=(15, 6))
@@ -658,39 +667,37 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
 
-
-
-
     # All plot function calls
     plot_emissions(social_network, time_series, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
     plot_total_distance(social_network, time_series, fileName, dpi)
-    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    plot_tranport_users(social_network, time_series, fileName, dpi)
+    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    #plot_tranport_users(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
 
-    plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
     plot_preferences(social_network, fileName, dpi)
-    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    plot_car_sale_prop(social_network, time_series, fileName, dpi)
-    plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
-    plot_price_history(firm_manager, time_series, fileName, dpi)
+    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
+    #plot_price_history(firm_manager, time_series, fileName, dpi)
     plot_history_car_age(social_network, time_series,fileName, dpi)
-    plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
     plot_carbon_price(data_controller, time_series, fileName)
+    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     #SEGEMENT PLOTS
-    plot_segment_count_grid(firm_manager, time_series, fileName)
+    #plot_segment_count_grid(firm_manager, time_series, fileName)
     
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_20_08_45__20_11_2024")
+    main("results/single_experiment_16_15_56__22_11_2024")

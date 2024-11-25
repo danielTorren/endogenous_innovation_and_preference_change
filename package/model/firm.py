@@ -7,7 +7,9 @@ class Firm:
         self.t_firm = 0
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
-        self.id_generator = parameters_firm["IDGenerator_firms"]    
+        self.id_generator = parameters_firm["IDGenerator_firms"]  
+
+        self.num_cars_production =   parameters_firm["num_cars_production"]  
 
         self.firm_id = firm_id
         #ICE
@@ -270,7 +272,7 @@ class Firm:
         # Convert profits list to numpy array
         profits = np.array(profits)
         profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
-
+        
         # Compute the softmax probabilities
         lambda_profits = profits**self.lambda_pow
         probabilities = lambda_profits / np.sum(lambda_profits)
@@ -296,7 +298,9 @@ class Firm:
 
         # Dictionary to store the best profit and segment for each vehicle
         vehicle_best_segment = {}
-
+        #print(self.t_firm)
+        #print(expected_profits_segments)
+        #quit()
         for segment_code, segment_data in expected_profits_segments.items():
             vehicles = []
             profits = []
@@ -341,12 +345,17 @@ class Firm:
                 }
 
         # Final selection of vehicles with the highest utility prices
-        vehicles_selected = []
+        vehicles_selected_profits = []
         for vehicle, info in vehicle_best_segment.items():
             segment_code = info['segment_code']
             vehicle.price = vehicle.optimal_price_segments[segment_code]
-            vehicles_selected.append(vehicle)
+            vehicles_selected_profits.append((vehicle, info["profit"]))
 
+        #SELECT THE most profitable cars 
+        if len(vehicles_selected_profits) < self.num_cars_production:
+            vehicles_selected = [x[0] for x in vehicles_selected_profits]
+        else:
+            vehicles_selected = [x[0] for x in sorted(vehicles_selected_profits, key=lambda x: x[1], reverse=True)]
         return vehicles_selected
 
     def add_new_vehicle(self, vehicle_model_research):
@@ -487,10 +496,12 @@ class Firm:
         self.history_firm_cars_users = []
         self.history_attributes_researched = []
         self.history_research_type = []
+        self.history_num_cars_on_sale = []
 
     def save_timeseries_data_firm(self):
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
+        self.history_num_cars_on_sale.append(len(self.cars_on_sale))
         if self.research_bool == 1:
             self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
             if self.vehicle_model_research.transportType == 3:

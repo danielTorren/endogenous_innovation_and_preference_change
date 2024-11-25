@@ -26,9 +26,43 @@ class NKModel:
         self.min_vec = np.asarray([self.min_max_Quality[0],self.min_max_Efficiency[0], self.min_max_Cost[0]])
         self.max_vec = np.asarray([self.min_max_Quality[1],self.min_max_Efficiency[1], self.min_max_Cost[1]])
 
-        self.fitness_landscapes = self.generate_fitness_landscapes()
+        self.fitness_landscape = self.generate_fitness_landscape()
+        #print("GEN Landscape")
+        self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string()
+        #print("NUM ENTRIES",len(self.attributes_dict.keys()))
+        #print("CALCED FITNESS")
 
-    def generate_fitness_landscapes(self):
+    def find_min_fitness_string(self):
+        """
+        Finds the minimum fitness string in the NK landscape and stores all fitnesses.
+
+        Args:
+            nk_model: An instance of the NKModel class.
+
+        Returns:
+            min_fitness_string: The binary string corresponding to the minimum fitness.
+            min_fitness: The minimum fitness value.
+            fitness_dict: A dictionary mapping binary strings to their corresponding fitnesses.
+        """
+
+        attributes_dict = {}
+        min_fitness = float('inf')
+        min_fitness_string = None
+
+        for i in range(2**self.N):
+            binary_string = format(i, f'0{self.N}b')
+            design = np.array(list(map(int, binary_string)))
+            attributes = self.calculate_fitness(design)
+            fitness = np.sum(attributes)
+            attributes_dict[binary_string] = attributes
+
+            if fitness < min_fitness:
+                min_fitness = fitness
+                min_fitness_string = binary_string
+
+        return min_fitness_string, min_fitness, attributes_dict
+
+    def generate_fitness_landscape(self):
         """
         Generate fitness landscapes for all attributes.
 
@@ -79,7 +113,7 @@ class NKModel:
         for a in range(self.A):
             for n in range(self.N):
                 k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2) #REVIST THIS AND UNDERSTAND WHAT IS GOING ON BETTER
-                fitness[a] +=  self.fitness_landscapes[k, n, a]
+                fitness[a] +=  self.fitness_landscape[k, n, a]
 
         average_fitness_components = fitness / self.N
         #fitness_scaled = self.min_vec + ((average_fitness_components*self.max_vec-self.min_vec)/(self.max_vec - self.min_vec))

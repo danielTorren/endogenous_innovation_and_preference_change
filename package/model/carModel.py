@@ -20,10 +20,13 @@ class CarModel:
 
         #FITNESS
         self.nk_landscape = nk_landscape
-        self.attributes_fitness = self.nk_landscape.calculate_fitness(self.component_string)
+        #self.attributes_fitness = self.nk_landscape.calculate_fitness(self.component_string)
+        self.attributes_fitness = self.nk_landscape.attributes_dict[self.component_string]
+        
 
         self.inverted_tech_strings = self.nk_landscape.invert_bits_one_at_a_time(self.decimal_value)
-        self.inverted_tech_fitness = np.asarray([self.nk_landscape.calculate_fitness(inverted_string) for inverted_string in self.inverted_tech_strings])
+        #self.inverted_tech_fitness = np.asarray([self.nk_landscape.calculate_fitness(inverted_string) for inverted_string in self.inverted_tech_strings])
+        self.inverted_tech_fitness = np.asarray([self.nk_landscape.attributes_dict[inverted_string] for inverted_string in self.inverted_tech_strings])
 
         self.optimal_price_segments = {} 
         self.car_base_utility_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?

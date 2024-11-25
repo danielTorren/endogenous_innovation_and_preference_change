@@ -762,6 +762,7 @@ class Social_Network:
     def set_up_time_series_social_network(self):
         self.history_driving_emissions = []
         self.history_production_emissions = []
+        self.history_total_emissions = []
         self.history_total_utility = []
         self.history_total_distance_driven = []
         self.history_ev_adoption_rate = []
@@ -795,6 +796,7 @@ class Social_Network:
 
         self.history_driving_emissions.append(self.total_driving_emissions + self.urban_public_transport_emissions + self.rural_public_public_transport_emissions)
         self.history_production_emissions.append(self.total_production_emissions)
+        self.history_total_emissions.append(self.total_production_emissions + self.total_driving_emissions + self.urban_public_transport_emissions + self.rural_public_public_transport_emissions)
         self.history_total_utility.append(self.total_utility)
         self.history_total_distance_driven.append(self.total_distance_travelled)
         self.history_ev_adoption_rate.append(np.mean(self.ev_adoption_vec))
