@@ -56,12 +56,13 @@ def load_in_calibration_data():
     electricity_price_df["Real Dollars per Kilowatt-Hour (City Average)"] = electricity_price_df["Dollars per Kilowatt-Hour (City Average)"]/CPI_california_df["2020 relative Weighted Average"]
 
     #Electricty
-    electricity_emissions_intensity_df = pd.read_csv("package/calibration_data/emissions_intensity_emberChartData.csv") 
+    electricity_emissions_intensity_df = pd.read_csv("package/calibration_data/emissions_intensity_nc_2000_2001_emberChartData.csv") 
     # Ensure the "Date" column is in datetime format (optional, for time-based operations)
     #gco2_per_kwh
     electricity_emissions_intensity_df["Date"] = pd.to_datetime( electricity_emissions_intensity_df["Date"])
     electricity_emissions_intensity_df.set_index('Date', inplace=True)
     electricity_emissions_intensity_df["KgCO2 per Kilowatt-Hour"] = electricity_emissions_intensity_df["emissions_intensity_gco2_per_kwh"]/1000
+
     #NOW - NEED TO GET ALL THE PRICES INTO 2020 DOLLARS BY DIVIDING BY THE CPI 
 
     #Emissions Gasoline - WE 
@@ -93,9 +94,9 @@ def generate_data(parameters: dict,print_simu = 0):
         Social network that has evolved from initial conditions
     """
 
-    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour = load_in_calibration_data()
-    parameters[]["time_steps_max"]
-
+    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
+    parameters["calibration_data"] =  calibration_data
+    parameters["parameters_ICE"]["e_z_t"] = gasoline_Kgco2_per_Kilowatt_Hour
 
     if print_simu:
         start_time = time.time()

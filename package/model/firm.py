@@ -136,14 +136,22 @@ class Firm:
         """Calculate the optimal price for each car in the car list based on market data."""
 
         for car in car_list:
+            E_m = car.emissions  # Emissions for the current car
+            C_m = car.ProdCost_z_t  + self.carbon_price*E_m       # Cost for the current car
+
+            #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
+            if car.transportType == 2:#ICE
+                car.fuel_cost_c_z = self.gas_price
+            else:#EV
+                car.fuel_cost_c_z = self.electricity_price
+                car.e_z_t = self.electricity_emissions_intensity
+
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
                 beta_s = segment_data["beta_s_t"]
                 gamma_s = segment_data["gamma_s_t"]
                 U_sum = segment_data["U_sum"]
-                E_m = car.emissions  # Emissions for the current car
-                C_m = car.ProdCost_z_t  + self.carbon_price*E_m       # Cost for the current car
-
+ 
                 # Calculate optimal distance for the given segment
                 d_i_t = self.optimal_distance(car, beta_s, gamma_s)
                 car.car_distance_segments[segment_code] = d_i_t  # Save the calculated distance
@@ -154,7 +162,6 @@ class Firm:
                 # Save the base utility
                 B = utility_segment/(self.r + (1-self.delta_z)/(1-self.alpha))
                 car.car_base_utility_segments[segment_code] = B
-                # Set the calculated optimal price for the car
                 car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )) )/beta_s   )
 
         return car_list
@@ -273,6 +280,7 @@ class Firm:
 
         # Convert profits list to numpy array
         profits = np.array(profits)
+
         profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
         
         # Compute the softmax probabilities
@@ -513,9 +521,14 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data, carbon_price):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity):
         self.t_firm += 1
+
         self.carbon_price = carbon_price
+        self.gas_price =  gas_price
+        self.electricity_price = electricity_price
+        self.electricity_emissions_intensity = electricity_emissions_intensity
+
         #decide cars to sell
         self.cars_on_sale = self.choose_cars_segments(market_data)
 

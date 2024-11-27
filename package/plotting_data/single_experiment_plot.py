@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
+from package.model import controller
 from package.resources.utility import load_object
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
@@ -690,6 +691,20 @@ def plot_total_utility_vs_total_profit(social_network, firm_manager, time_steps,
     save_path = f"{file_name}/total_utility_vs_total_profit.png"
     fig.savefig(save_path, dpi=dpi, format="png")
 
+def plot_calibration_data(controller, time_series, fileName, dpi=600):
+    fig, axes = plt.subplots(ncols = 3,figsize=(10, 6))
+    #print(social_network.history_second_hand_bought)
+    #quit()
+
+    axes[0].plot( controller.gas_price_california_vec)
+    axes[1].plot(controller.electricity_price_vec)
+    axes[2].plot(controller.electricity_emissions_intensity_vec)
+
+    axes[0].set_ylabel("Gas price california 2000-22 in 2020 Dollars")
+    axes[1].set_ylabel("Electricity price california 2000-22 in 2020 Dollars")
+    axes[2].set_ylabel("Urban Electricity emissions intensity 2000-22 in kgCO2/kWhr")
+    plt.tight_layout()
+    save_and_show(fig, fileName, "plot_calibration_data", dpi)   
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -710,7 +725,7 @@ def main(fileName, dpi=600):
     plot_emissions(social_network, time_series, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
     plot_total_distance(social_network, time_series, fileName, dpi)
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
     #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(social_network, time_series, fileName, dpi)
@@ -721,26 +736,27 @@ def main(fileName, dpi=600):
     #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
     plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
-    plot_price_history(firm_manager, time_series, fileName, dpi)
+    #plot_price_history(firm_manager, time_series, fileName, dpi)
     plot_history_car_age(social_network, time_series,fileName, dpi)
-    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
     plot_carbon_price(data_controller, time_series, fileName)
-    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     #SEGEMENT PLOTS
     plot_segment_count_grid(firm_manager, time_series, fileName)
     #"""
 
+    #plot_calibration_data(data_controller, time_series, fileName)
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_54_06__26_11_2024")
+    main("results/single_experiment_23_56_06__27_11_2024")

@@ -19,6 +19,12 @@ class SecondHandMerchant:
 
     def update_stock_contents(self):
         for vehicle in self.cars_on_sale:
+            if vehicle.transportType == 2:#ICE
+                vehicle.fuel_cost_c_z = self.gas_price
+            else:#EV
+                vehicle.fuel_cost_c_z = self.electricity_price
+                vehicle.e_z_t = self.electricity_emissions_intensity
+        
             if vehicle.L_a_t > self.age_limit_second_hand:
                 self.remove_car(vehicle)
             else:
@@ -39,7 +45,12 @@ class SecondHandMerchant:
     def save_timeseries_second_hand_merchant(self):
         self.history_num_second_hand.append(len(self.cars_on_sale))
 
-    def next_step(self):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity):
+        
+        self.gas_price =  gas_price
+        self.electricity_price = electricity_price
+        self.electricity_emissions_intensity = electricity_emissions_intensity
+    
         self.update_age_stock()
         self.update_stock_contents()
         #print(len(self.cars_on_sale))

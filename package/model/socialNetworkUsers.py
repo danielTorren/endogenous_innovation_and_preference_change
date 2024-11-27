@@ -50,16 +50,9 @@ class Social_Network:
         
         #Assume nobody adopts EV at the start, THIS MAY BE AN ISSUE
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
-        #individual choose their vehicle in the zeroth step
-
-        self.history_user3 = []
-        self.history_user2 = []
 
         self.current_vehicles = self.update_VehicleUsers()
-        #print("self.current_vehicles", self.current_vehicles)
-        #quit()
 
-        #self.chi_vec = np.array([user.chi for user in self.vehicleUsers_list])  # Innovation thresholds
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
     ###############################################################################################################################################################
@@ -84,18 +77,22 @@ class Social_Network:
         self.SBM_network_density_input_inter_block = parameters_social_network["SBM_network_density_input_inter_block"]
 
     def init_preference_distribution(self, parameters_social_network):
+        self.gamma_multiplier = parameters_social_network["gamma_multiplier"]
+        self.chi_multiplier = parameters_social_network["chi_multiplier"]
+        self.beta_multiplier = parameters_social_network["beta_multiplier"]
+
         #GAMMA
         self.a_environment = parameters_social_network["a_environment"]
         self.b_environment = parameters_social_network["b_environment"]
         np.random.seed(parameters_social_network["init_vals_environmental_seed"])  # Initialize random seed
-        self.gamma_vec = np.random.beta(self.a_environment, self.b_environment, size=self.num_individuals)
+        self.gamma_vec = np.random.beta(self.a_environment, self.b_environment, size=self.num_individuals)*self.gamma_multiplier
 
         #CHI
         self.a_innovativeness = parameters_social_network["a_innovativeness"]
         self.b_innovativeness = parameters_social_network["b_innovativeness"]
         np.random.seed(parameters_social_network["init_vals_innovative_seed"])  # Initialize random seed
         innovativeness_vec_init_unrounded = np.random.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
-        self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)
+        self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)*self.chi_multiplier
 
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
@@ -103,7 +100,7 @@ class Social_Network:
         self.a_price = parameters_social_network["a_price"]
         self.b_price = parameters_social_network["b_price"]
         np.random.seed(parameters_social_network["init_vals_price_seed"])  # Initialize random seed
-        self.beta_vec = np.random.beta(self.a_price, self.b_price, size=self.num_individuals)
+        self.beta_vec = np.random.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
 
 
         #origin
@@ -116,7 +113,7 @@ class Social_Network:
         #d min
         np.random.seed(parameters_social_network["d_min_seed"]) 
         d_i_min = parameters_social_network["d_min_seed"]
-        self.d_i_min_vec = np.random.uniform(size = self.num_individuals)*d_i_min
+        self.d_i_min_vec = (np.random.uniform(size = self.num_individuals) + 0.5)*d_i_min#centered about this value, should be dsitributed as income
 
     def set_init_vehicle_options(self, parameters_social_network):
         self.second_hand_cars = []
@@ -899,8 +896,16 @@ class Social_Network:
         self.history_cars_cum_emissions.append(self.cars_cum_emissions)
 
 ########################################################################################################################
+    def update_prices_and_emissions(self):
+        #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
+        for car in self.current_vehicles:
+            if car.transportType == 2:#ICE
+                car.fuel_cost_c_z = self.gas_price
+            elif car.transportType == 3:#EV
+                car.fuel_cost_c_z = self.electricity_price
+                car.e_z_t = self.electricity_emissions_intensity
 
-    def next_step(self, carbon_price, second_hand_cars,public_transport_options,new_cars):
+    def next_step(self, carbon_price, second_hand_cars,public_transport_options,new_cars, gas_price, electricity_price, electricity_emissions_intensity):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -917,9 +922,12 @@ class Social_Network:
         self.t_social_network +=1
 
         self.carbon_price = carbon_price
+        self.gas_price =  gas_price
+        self.electricity_price = electricity_price
+        self.electricity_emissions_intensity = electricity_emissions_intensity
 
         #update new tech and prices
-        self.second_hand_cars,self.public_transport_options,self.new_cars = second_hand_cars, public_transport_options, new_cars
+        self.second_hand_cars, self.public_transport_options, self.new_cars = second_hand_cars, public_transport_options, new_cars
         self.all_vehicles_available = self.public_transport_options + self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT
 
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP

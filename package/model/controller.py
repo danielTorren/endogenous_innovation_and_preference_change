@@ -10,7 +10,7 @@ from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 import numpy as np
 from package.model.socialNetworkUsers import Social_Network
-
+import pandas as pd
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -18,6 +18,7 @@ class Controller:
         self.unpack_controller_parameters(parameters_controller)
         self.manage_time()
         self.manage_carbon_price()
+        self.update_prices_and_emmisions()
         self.setup_id_gen()
 
         #SET UP LANDSCAPES
@@ -68,12 +69,20 @@ class Controller:
         
         #CONTROLLER PARAMETERS:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
+        self.parameters_calibration_data = parameters_controller["calibration_data"]
+        
+        self.gas_price_california_vec = self.parameters_calibration_data["Real Dollars per Kilowatt-Hour"].to_numpy()
+        self.electricity_price_vec = self.parameters_calibration_data["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()
+        self.electricity_emissions_intensity_vec = self.parameters_calibration_data["KgCO2 per Kilowatt-Hour"].to_numpy()
+        self.calibration_time_steps = len(self.electricity_emissions_intensity_vec)
+        
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_vehicle_user = parameters_controller["parameters_vehicle_user"]
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
+
         self.parameters_urban_public_transport = parameters_controller["parameters_urban_public_transport"]
         self.parameters_rural_public_transport = parameters_controller["parameters_rural_public_transport"]
 
@@ -92,8 +101,6 @@ class Controller:
         self.duration_small_carbon_price = parameters_controller["duration_small_carbon_price"] 
         self.duration_large_carbon_price = parameters_controller["duration_large_carbon_price"] 
 
-        #self.duration_no_EV = parameters_controller["duration_no_EV"]
-        #self.duration_EV = parameters_controller["duration_EV"]
         #############################################################################################################################
         #DEAL WITH EV RESEARCH
         self.ev_research_start_time = self.parameters_controller["ev_research_start_time"]
@@ -214,6 +221,9 @@ class Controller:
         self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
         self.parameters_firm["delta_z"] = self.parameters_ICE["delta_z"]#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
         self.parameters_firm["carbon_price"] = self.carbon_price
+        self.parameters_firm["gas_price"] = self.gas_price
+        self.parameters_firm["electricity_price"] = self.electricity_price
+        self.parameters_firm["electricity_emissions_intensity"] = self.electricity_emissions_intensity
 
     def setup_social_network_parameters(self):
         #create social network
@@ -226,6 +236,9 @@ class Controller:
         self.parameters_social_network["second_hand_merchant"] = self.second_hand_merchant
         self.parameters_social_network["urban_public_transport_emissions"] = self.parameters_urban_public_transport["production_emissions"]
         self.parameters_social_network["rural_public_transport_emissions"] = self.parameters_rural_public_transport["production_emissions"]
+        self.parameters_social_network["gas_price"] = self.gas_price
+        self.parameters_social_network["electricity_price"] = self.electricity_price
+        self.parameters_social_network["electricity_emissions_intensity"] = self.electricity_emissions_intensity
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -251,7 +264,12 @@ class Controller:
     def gen_firms(self):
         #CREATE FIRMS    
         self.parameters_ICE["eta"] = self.parameters_vehicle_user["eta"]
+        self.parameters_ICE["fuel_cost_c_z"]  = self.gas_price
+
         self.parameters_EV["eta"] = self.parameters_vehicle_user["eta"]
+        self.parameters_EV["fuel_cost_c_z"] = self.electricity_price 
+        self.parameters_EV["e_z_t"] = self.electricity_emissions_intensity
+
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
     def gen_social_network(self):
@@ -261,13 +279,18 @@ class Controller:
     def update_carbon_price(self):
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
 
+    def update_prices_and_emmisions(self):
+        self.gas_price = self.gas_price_california_vec[self.t_controller]
+        self.electricity_price = self.electricity_price_vec[self.t_controller]
+        self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
+
     def update_firms(self):
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list)
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.public_option_list, self.cars_on_sale_all_firms)
+        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.public_option_list, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity)
 
         return consider_ev_vec, vehicles_chosen_list
     
@@ -283,7 +306,7 @@ class Controller:
 
     def get_second_hand_cars(self):
 
-        self.second_hand_merchant.next_step()
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity)
 
         return self.second_hand_merchant.cars_on_sale
 
@@ -299,6 +322,8 @@ class Controller:
 
         self.update_ev_reserach_state()
         self.update_carbon_price()
+        if self.t_controller < self.calibration_time_steps:
+            self.update_prices_and_emmisions()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()
         #vehicles_available = self.mix_in_vehicles()
