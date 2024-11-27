@@ -30,7 +30,7 @@ class Public_Transport():
         self.eta = parameters["eta"]  # Scaling constant affecting perceived utility.
                         # Represents a scaling factor used to adjust the overall utility calculation, typically to normalize or emphasize particular components in the utility function.
 
-        self.emissions = parameters["emissions"]  # Emissions factor for the vehicle (E_a_t).
+        self.emissions = parameters["production_emissions"]  # Emissions factor for the vehicle (E_a_t).
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
         
         

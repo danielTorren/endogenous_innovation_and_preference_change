@@ -78,8 +78,11 @@ class Social_Network:
     def init_network_settings(self, parameters_social_network):
         self.network_structure_seed = parameters_social_network["network_structure_seed"]
         #self.network_density_input = parameters_social_network["network_density"]
-        self.K_social_network = parameters_social_network["K"]#int(round((self.num_individuals - 1) * self.network_density_input))  # Calculate number of links
-        self.prob_rewire = parameters_social_network["prob_rewire"]
+        #self.K_social_network = parameters_social_network["K"]#int(round((self.num_individuals - 1) * self.network_density_input))  # Calculate number of links
+        #self.prob_rewire = parameters_social_network["prob_rewire"]
+        self.SBM_block_num = int(parameters_social_network["SBM_block_num"])
+        self.SBM_network_density_input_intra_block = parameters_social_network["SBM_network_density_input_intra_block"]
+        self.SBM_network_density_input_inter_block = parameters_social_network["SBM_network_density_input_inter_block"]
 
     def init_preference_distribution(self, parameters_social_network):
         #GAMMA
@@ -106,7 +109,8 @@ class Social_Network:
 
         #origin
         #0 indicates urban and indicates rural
-        self.origin_vec = np.asarray([0]*(int(round(self.num_individuals/2))) + [1]*(int(round(self.num_individuals/2))))#THIS IS A PLACE HOLDER NEED TO DISCUSS THE DISTRIBUTION OF INDIVIDUALS
+        self.prop_urban = parameters_social_network["prop_urban"]
+        self.origin_vec = np.asarray([0]*(int(round(self.num_individuals*self.prop_urban))) + [1]*(int(round(self.num_individuals*(1-self.prop_urban)))))#THIS IS A PLACE HOLDER NEED TO DISCUSS THE DISTRIBUTION OF INDIVIDUALS
 
         self.origin_vec_invert = 1-self.origin_vec
 
@@ -125,6 +129,26 @@ class Social_Network:
     def normalize_vec_sum(self, vec):
         return vec/sum(vec)
 
+    def _split_into_groups(self) -> list:
+        """
+        Split agents into groups for SBM network creation.
+        
+        Returns:
+            list: List of group sizes
+        
+        Raises:
+            ValueError: If SBM_block_num is not positive
+        """
+        if self.SBM_block_num <= 0:
+            raise ValueError("SBM_block_num must be greater than zero.")
+        base_count = self.num_individuals//self.SBM_block_num
+        remainder = self.num_individuals % self.SBM_block_num
+        group_counts = [base_count + 1] * remainder + [base_count] * (self.SBM_block_num - remainder)
+
+        self.origin_vec
+        
+        return group_counts
+    
     def create_network(self) -> tuple[npt.NDArray, npt.NDArray, nx.Graph]:
         """
         Create watts-strogatz small world graph using Networkx library
@@ -144,7 +168,17 @@ class Social_Network:
             a networkx watts strogatz small world graph
         """
 
-        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
+        self.SBM_block_sizes = [self.num_individuals - np.count_nonzero(self.origin_vec), np.count_nonzero(self.origin_vec)]
+
+        block_probs = np.full((self.SBM_block_num, self.SBM_block_num), 
+                                self.SBM_network_density_input_inter_block)
+        np.fill_diagonal(block_probs, self.SBM_network_density_input_intra_block)
+        network = nx.stochastic_block_model(sizes=self.SBM_block_sizes, p=block_probs, 
+                                                   seed=self.network_structure_seed)
+        self.block_id_list = np.asarray([i for i, size in enumerate(self.SBM_block_sizes) 
+                                           for _ in range(size)])
+        
+        #network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
@@ -470,7 +504,7 @@ class Social_Network:
             "Eff_omega_a_t": [], 
             "price": [], 
             "delta_z": [], 
-            "emissions": [],
+            "production_emissions": [],
             "fuel_cost_c_z": [], 
             "e_z_t": [],
             "L_a_t": [],
@@ -484,7 +518,7 @@ class Social_Network:
             vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
             vehicle_dict_vecs["price"].append(vehicle.price)
             vehicle_dict_vecs["delta_z"].append(vehicle.delta_z)
-            vehicle_dict_vecs["emissions"].append(vehicle.emissions)
+            vehicle_dict_vecs["production_emissions"].append(vehicle.emissions)
             vehicle_dict_vecs["fuel_cost_c_z"].append(vehicle.fuel_cost_c_z)
             vehicle_dict_vecs["e_z_t"].append(vehicle.e_z_t)
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
@@ -537,7 +571,7 @@ class Social_Network:
         # Compute shared base utility components
         d_i_t = np.maximum(self.d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance_public_transport(vehicle_dict_vecs))
 
-        base_utility_matrix = self.vectorised_commuting_utility(vehicle_dict_vecs, d_i_t)
+        base_utility_matrix = self.vectorised_commuting_utility_public_transport(vehicle_dict_vecs, d_i_t)
 
         price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec
 
@@ -553,7 +587,7 @@ class Social_Network:
         # Compute shared base utility components
         d_i_t = np.maximum(self.d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance_cars(vehicle_dict_vecs))
 
-        commuting_util_matrix = self.vectorised_commuting_utility(vehicle_dict_vecs, d_i_t)
+        commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t)
         base_utility_matrix = commuting_util_matrix / (self.r + (1 - vehicle_dict_vecs["delta_z"]) / (1 - self.alpha))
 
         price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec
@@ -570,7 +604,7 @@ class Social_Network:
         # Compute shared base utility components
         d_i_t = np.maximum(self.d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance_cars(vehicle_dict_vecs))
         
-        commuting_util_matrix = self.vectorised_commuting_utility(vehicle_dict_vecs, d_i_t)
+        commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t)
 
         base_utility_matrix = commuting_util_matrix / (self.r + ((1 - vehicle_dict_vecs["delta_z"])/(1 - self.alpha)))
         
@@ -580,7 +614,7 @@ class Social_Network:
         price_adjustment = np.multiply(self.beta_vec[:, np.newaxis], price_difference.T)
         
         # Use in-place modification to save memory
-        emissions_penalty = np.multiply(self.gamma_vec[:, np.newaxis], vehicle_dict_vecs["emissions"])
+        emissions_penalty = np.multiply(self.gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"])
         U_a_i_t_matrix = base_utility_matrix - price_adjustment - emissions_penalty
         return U_a_i_t_matrix, d_i_t
     
@@ -667,24 +701,28 @@ class Social_Network:
 
         return commuting_utility_vec  # Shape: (num_individuals,)
 
-    def vectorised_commuting_utility(self, vehicle_dict_vecs, d_i_t):
+    def vectorised_commuting_utility_cars(self, vehicle_dict_vecs, d_i_t):
         """utility of all cars for all agents"""
         # dit Shape: (num_individuals, num_vehicles)
 
         # Compute cost component based on transport type, with conditional operations
-        cost_component = np.where(
-            vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_vehicles,)
-            ((self.beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"])) +
+        cost_component = ((self.beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c_z"] + self.carbon_price*vehicle_dict_vecs["e_z_t"]) +
             ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_z_t"]) +
-            (self.eta * vehicle_dict_vecs["nu_z_i_t"]),
-            self.eta * vehicle_dict_vecs["nu_z_i_t"]
-        )  # Resulting shape: (num_individuals, num_vehicles)
+            (self.eta * vehicle_dict_vecs["nu_z_i_t"]))
 
         # Compute the commuting utility for each individual-vehicle pair
 
         commuting_utility_matrix = np.maximum(
             0,
             vehicle_dict_vecs["Quality_a_t"] * ((1 - vehicle_dict_vecs["delta_z"]) ** vehicle_dict_vecs["L_a_t"]) * (d_i_t ** self.alpha) - d_i_t * cost_component
+        )  # Shape: (num_individuals, num_vehicles)
+
+        return commuting_utility_matrix  # Shape: (num_individuals, num_vehicles)
+
+    def vectorised_commuting_utility_public_transport(self, vehicle_dict_vecs, d_i_t):
+        commuting_utility_matrix = np.maximum(
+            0,
+            vehicle_dict_vecs["Quality_a_t"] * (d_i_t ** self.alpha) - d_i_t * self.eta * vehicle_dict_vecs["nu_z_i_t"]
         )  # Shape: (num_individuals, num_vehicles)
 
         return commuting_utility_matrix  # Shape: (num_individuals, num_vehicles)
@@ -701,6 +739,7 @@ class Social_Network:
         self.rural_public_transport_users = 0
         self.ICE_users = 0 
         self.EV_users = 0
+        self.HEV_users = 0
         self.second_hand_users = 0
         self.quality_vals = []
         self.efficiency_vals = []
@@ -711,8 +750,15 @@ class Social_Network:
         self.quality_vals_EV = []
         self.efficiency_vals_EV = []
         self.production_cost_vals_EV = []
+        self.quality_vals_HEV = []
+        self.efficiency_vals_HEV = []
+        self.production_cost_vals_HEV = []
         self.new_cars_bought = 0
         self.car_ages = []
+
+        self.cars_cum_distances_driven = []
+        self.cars_cum_driven_emissions = []
+        self.cars_cum_emissions = []
     
     def update_counters(self, person_index, vehicle_chosen, vehicle_chosen_index):
         #ADD TOTAL EMISSIONS
@@ -722,7 +768,18 @@ class Social_Network:
             self.total_production_emissions += vehicle_chosen.emissions
         
         if vehicle_chosen.transportType > 1:  
-            self.total_driving_emissions += (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_z_t 
+            
+            car_driving_emissions = (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_z_t 
+            self.total_driving_emissions += car_driving_emissions 
+
+            if isinstance(vehicle_chosen, PersonalCar):
+                vehicle_chosen.total_distance += driven_distance
+                self.cars_cum_distances_driven.append(vehicle_chosen.total_distance)
+                vehicle_chosen.total_driving_emmissions += car_driving_emissions
+                self.cars_cum_driven_emissions.append(vehicle_chosen.total_driving_emmissions)
+                vehicle_chosen.total_emissions += car_driving_emissions
+                self.cars_cum_emissions.append(vehicle_chosen.total_emissions)
+
             self.car_ages.append(vehicle_chosen.L_a_t)
             #print(vehicle_chosen.L_a_t, type(vehicle_chosen))
             self.quality_vals.append(vehicle_chosen.Quality_a_t)#done here for efficiency
@@ -733,6 +790,10 @@ class Social_Network:
                 self.quality_vals_ICE.append(vehicle_chosen.Quality_a_t)#done here for efficiency
                 self.efficiency_vals_ICE.append(vehicle_chosen.Eff_omega_a_t)
                 self.production_cost_vals_ICE.append(vehicle_chosen.ProdCost_z_t)
+            elif vehicle_chosen.transportType == 4:#HEV 
+                self.quality_vals_HEV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
+                self.efficiency_vals_HEV.append(vehicle_chosen.Eff_omega_a_t)
+                self.production_cost_vals_HEV.append(vehicle_chosen.ProdCost_z_t)
             else:
                 self.quality_vals_EV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
                 self.efficiency_vals_EV.append(vehicle_chosen.Eff_omega_a_t)
@@ -756,6 +817,8 @@ class Social_Network:
             self.ICE_users += 1
         elif vehicle_chosen.transportType == 3:#EV
             self.EV_users += 1
+        elif vehicle_chosen.transportType == 4:#HEV
+            self.HEV_users += 1
         else:
             raise ValueError("Invalid transport type")
         
@@ -771,6 +834,7 @@ class Social_Network:
         self.history_consider_ev_rate = []
         self.history_ICE_users = []
         self.history_EV_users = []
+        self.history_HEV_users = []
         self.history_second_hand_users = []
         # New history attributes for vehicle attributes
         self.history_quality = []
@@ -785,12 +849,20 @@ class Social_Network:
         self.history_efficiency_EV = []
         self.history_production_cost_EV = []
 
+        self.history_quality_HEV = []
+        self.history_efficiency_HEV = []
+        self.history_production_cost_HEV = []
+
         self.history_attributes_EV_cars_on_sale_all_firms = []
+        self.history_attributes_HEV_cars_on_sale_all_firms = []
         self.history_attributes_ICE_cars_on_sale_all_firms = []
         self.history_second_hand_bought = []
         self.history_new_car_bought = []
         self.history_car_age = []
 
+        self.history_cars_cum_distances_driven = []
+        self.history_cars_cum_driven_emissions = []
+        self.history_cars_cum_emissions = []
 
     def save_timeseries_data_social_network(self):
 
@@ -806,6 +878,7 @@ class Social_Network:
         self.history_rural_public_transport_users.append(self.rural_public_transport_users)
         self.history_ICE_users.append(self.ICE_users)
         self.history_EV_users.append(self.EV_users)
+        self.history_HEV_users.append(self.HEV_users)
         self.history_second_hand_users.append(self.second_hand_users)
         self.history_second_hand_bought.append(self.second_hand_bought)
         self.history_new_car_bought.append(self.new_cars_bought)
@@ -832,14 +905,29 @@ class Social_Network:
             self.history_quality_EV.append([np.nan])
             self.history_efficiency_EV.append([np.nan])
             self.history_production_cost_EV.append([np.nan])
+        
+        if self.quality_vals_HEV:
+            self.history_quality_HEV.append(self.quality_vals_HEV)
+            self.history_efficiency_HEV.append(self.efficiency_vals_HEV)
+            self.history_production_cost_HEV.append(self.production_cost_vals_HEV)
+        else:
+            self.history_quality_HEV.append([np.nan])
+            self.history_efficiency_HEV.append([np.nan])
+            self.history_production_cost_HEV.append([np.nan])
 
         data_ev = [[vehicle.Quality_a_t, vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 3]
         data_ice = [[vehicle.Quality_a_t ,vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 2]
+        data_hev = [[vehicle.Quality_a_t, vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 4]
 
         self.history_attributes_EV_cars_on_sale_all_firms.append(data_ev)
+        self.history_attributes_HEV_cars_on_sale_all_firms.append(data_hev)
         self.history_attributes_ICE_cars_on_sale_all_firms.append(data_ice)
 
         self.history_car_age.append(self.car_ages)
+
+        self.history_cars_cum_distances_driven.append(self.cars_cum_distances_driven)
+        self.history_cars_cum_driven_emissions.append(self.cars_cum_driven_emissions)
+        self.history_cars_cum_emissions.append(self.cars_cum_emissions)
 
 ########################################################################################################################
 
@@ -877,17 +965,5 @@ class Social_Network:
                 # Use a unique identifier for the vehicle, such as a combination of attributes
                 vehicle_id = vehicle.id  # Example attributes
                 counter_same[vehicle_id] += 1
-
-        # Now you have a dictionary-like Counter with each unique vehicle and how many times it appears
-        #for vehicle_id, count in counter_same.items():
-        #    print(f"Vehicle {vehicle_id} is shared by {count} users.")
-
-        #total_shared = sum(counter_same.values())
-        #print(f"Total shared vehicles: {total_shared}")
-
-        #print(f"Number of vehicles with the same condition: {counter_same}")
-
-        #if self.t_social_network == 10:
-        #    quit()
 
         return self.consider_ev_vec,  self.chosen_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count porfits

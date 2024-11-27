@@ -38,8 +38,8 @@ def plot_emissions(social_network, time_series, fileName, dpi=600):
     ax.plot(time_series, social_network.history_driving_emissions, label='Driving Emissions')
     ax.plot(time_series, social_network.history_production_emissions, label='Production Emissions')
     ax.plot(time_series, social_network.history_total_emissions, label='Total Emissions')
-    format_plot(ax, "Emissions Over Time", "Time Step", "Emissions")
-    save_and_show(fig, fileName, "emissions", dpi)
+    format_plot(ax, "Emissions Over Time", "Time Step", "production_emissions")
+    save_and_show(fig, fileName, "production_emissions", dpi)
 
 def plot_total_utility(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -103,10 +103,11 @@ def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600)
     urban_prop = np.array(social_network.history_urban_public_transport_users) / total_users
     ice_prop = np.array(social_network.history_ICE_users) / total_users
     ev_prop = np.array(social_network.history_EV_users) / total_users
+    hev_prop = np.array(social_network.history_HEV_users) / total_users
 
     # Plot stacked area (continuous stacked bar equivalent)
-    ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,
-                 labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+    ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,hev_prop,
+                 labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV','HEV' ],
                  alpha=0.8)
 
     # Set plot labels and limits
@@ -161,19 +162,20 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
     """
     # Attributes for ICE and EV
     attributes = {
-        "Quality": ("history_quality_ICE", "history_quality_EV"),
-        "Efficiency": ("history_efficiency_ICE", "history_efficiency_EV"),
-        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV"),
+        "Quality": ("history_quality_ICE", "history_quality_EV", "history_quality_HEV"),
+        "Efficiency": ("history_efficiency_ICE", "history_efficiency_EV", "history_efficiency_HEV"),
+        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV", "history_production_cost_HEV"),
     }
 
     fig, axs = plt.subplots(1, 3, figsize=(18, 6))
     
-    for i, (attribute_name, (ice_attr, ev_attr)) in enumerate(attributes.items()):
+    for i, (attribute_name, (ice_attr, ev_attr, hev_attr)) in enumerate(attributes.items()):
         ax = axs[i]
         
         # Extract histories for ICE and EV
         ice_history = getattr(social_network, ice_attr, [])
         ev_history = getattr(social_network, ev_attr, [])
+        hev_history = getattr(social_network, hev_attr, [])
         
         # Calculate means and confidence intervals
         ice_means = [np.mean(values) if values else np.nan for values in ice_history]
@@ -181,6 +183,9 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
         
         ev_means = [np.mean(values) if values else np.nan for values in ev_history]
         ev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ev_history]
+    
+        hev_means = [np.mean(values) if values else np.nan for values in hev_history]
+        hev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in hev_history]
 
         # Plot ICE data
         ax.plot(time_series, ice_means, label=f"ICE {attribute_name}", color="blue")
@@ -198,6 +203,15 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
             np.array(ev_means) - np.array(ev_confidence_intervals),
             np.array(ev_means) + np.array(ev_confidence_intervals),
             color="green", alpha=0.2
+        )
+
+        # Plot HEV data
+        ax.plot(time_series, hev_means, label=f"HEV {attribute_name}", color="purple")
+        ax.fill_between(
+            time_series,
+            np.array(hev_means) - np.array(hev_confidence_intervals),
+            np.array(hev_means) + np.array(hev_confidence_intervals),
+            color="purple", alpha=0.2
         )
 
         # Set title and labels
@@ -301,6 +315,7 @@ def plot_sale_EV_prop(firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, firm_manager.history_cars_on_sale_EV_prop, label="EV")
     ax.plot(time_series, firm_manager.history_cars_on_sale_ICE_prop, label="ICE")
+    ax.plot(time_series, firm_manager.history_cars_on_sale_HEV_prop, label="HEV")
     format_plot(ax, "Cars on Sale Over Time", "Time Step", "# Cars on Sale")
     save_and_show(fig, fileName, "sale_EV_prop", dpi)
 
@@ -308,7 +323,7 @@ def plot_history_research_type(firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     data = np.asarray([firm.history_research_type for firm in firm_manager.firms_list])
     for firm_data in data:
-        ax.plot(time_series,firm_data, marker='o')
+        ax.scatter(time_series,firm_data)
     format_plot(ax, "EV Research Proportion Over Time", "Time Step", "Proportion Research EV", legend=False)
     save_and_show(fig, fileName, "history_research_type", dpi)
 
@@ -360,6 +375,42 @@ def plot_history_attributes_cars_on_sale_all_firms(social_network, time_series, 
     fig.suptitle("Attributes of Cars on Sale Over Time")
     save_and_show(fig, fileName, "history_attributes_cars_on_sale_all_firms", dpi)
 
+def history_car_cum_distances(social_network, time_series, fileName, dpi=600):
+    cols = 3
+    fig, axs = plt.subplots(1, cols, figsize=(15, 6))
+
+    social_network.history_cars_cum_distances_driven
+    social_network.history_cars_cum_driven_emissions
+    social_network.history_cars_cum_emissions
+
+
+    max_len_distance = max(len(step) for step in social_network.history_cars_cum_distances_driven)
+    max_len_driven_emissions = max(len(step) for step in social_network.history_cars_cum_driven_emissions)
+    max_len_emissions = max(len(step) for step in social_network.history_cars_cum_emissions)
+
+    # Pad the data to ensure consistent length
+    data_distance_padded = [step + [np.nan] * (max_len_distance - len(step)) for step in social_network.history_cars_cum_distances_driven]
+    data_driven_emissions_padded = [step + [np.nan] * (max_len_driven_emissions - len(step)) for step in social_network.history_cars_cum_driven_emissions]
+    data_emissions_padded = [step + [np.nan] * (max_len_emissions - len(step)) for step in social_network.history_cars_cum_emissions]
+    
+    data_distance_array = np.asarray(data_distance_padded)
+    data_driven_emissions_array = np.asarray(data_driven_emissions_padded)
+    data_emissions_array = np.asarray(data_emissions_padded)
+
+    data_list = [data_distance_array, data_driven_emissions_array, data_emissions_array]
+    y_list = ["Distance", "Driven Emissions", "Total Emissions"]
+    # Ensure time series length matches the data
+    time_series = np.asarray(time_series)
+
+    for i in range(cols):
+        for t,time in enumerate(time_series):  # Loop through variables (columns)
+            axs[i].scatter([time] * data_list[i].shape[1],  data_list[i][t], alpha=0.2)
+        axs[i].set_xlabel("Time Steps")
+        axs[i].set_ylabel(y_list[i])
+
+    fig.suptitle("Cars use properties Over Time")
+    save_and_show(fig, fileName, "history_car_use", dpi)
+    
 
 def plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi=600):
     """
@@ -667,6 +718,7 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
 
+    #"""
     # All plot function calls
     plot_emissions(social_network, time_series, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
@@ -683,10 +735,10 @@ def main(fileName, dpi=600):
 
     plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
-    #plot_price_history(firm_manager, time_series, fileName, dpi)
+    plot_price_history(firm_manager, time_series, fileName, dpi)
     plot_history_car_age(social_network, time_series,fileName, dpi)
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
@@ -695,9 +747,13 @@ def main(fileName, dpi=600):
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     #SEGEMENT PLOTS
-    #plot_segment_count_grid(firm_manager, time_series, fileName)
-    
+    plot_segment_count_grid(firm_manager, time_series, fileName)
+    #"""
+
+    #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
+    #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
+
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_16_15_56__22_11_2024")
+    main("results/single_experiment_12_54_06__26_11_2024")

@@ -23,6 +23,7 @@ class Controller:
         #SET UP LANDSCAPES
         self.setup_ICE_landscape(self.parameters_ICE)
         self.setup_EV_landscape(self.parameters_EV)
+        self.setup_HEV_landscape(self.parameters_HEV)
         self.setup_second_hand_market()
 
         self.setup_urban_public_transport(self.parameters_urban_public_transport)
@@ -74,6 +75,7 @@ class Controller:
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
+        self.parameters_HEV = parameters_controller["parameters_HEV"]
         self.parameters_urban_public_transport = parameters_controller["parameters_urban_public_transport"]
         self.parameters_rural_public_transport = parameters_controller["parameters_rural_public_transport"]
 
@@ -96,7 +98,7 @@ class Controller:
         #self.duration_EV = parameters_controller["duration_EV"]
         #############################################################################################################################
         #DEAL WITH EV RESEARCH
-        self.ev_reserach_start_time = self.parameters_controller["ev_reserach_start_time"]
+        self.ev_research_start_time = self.parameters_controller["ev_research_start_time"]
         
         self.time_steps_max = parameters_controller["time_steps_max"]
         
@@ -210,6 +212,7 @@ class Controller:
         self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape
+        self.parameters_firm["HEV_landscape"] = self.HEV_landscape
         self.parameters_firm["eta"] = self.parameters_vehicle_user["eta"]
         self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
         self.parameters_firm["delta_z"] = self.parameters_ICE["delta_z"]#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
@@ -224,8 +227,8 @@ class Controller:
         self.parameters_social_network["carbon_price_state"] = self.parameters_carbon_policy["carbon_price_state"]
         self.parameters_social_network["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_social_network["second_hand_merchant"] = self.second_hand_merchant
-        self.parameters_social_network["urban_public_transport_emissions"] = self.parameters_urban_public_transport["emissions"]
-        self.parameters_social_network["rural_public_transport_emissions"] = self.parameters_rural_public_transport["emissions"]
+        self.parameters_social_network["urban_public_transport_emissions"] = self.parameters_urban_public_transport["production_emissions"]
+        self.parameters_social_network["rural_public_transport_emissions"] = self.parameters_rural_public_transport["production_emissions"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -236,6 +239,9 @@ class Controller:
 
     def setup_EV_landscape(self, parameters_EV):
         self.EV_landscape = NKModel(parameters_EV)
+    
+    def setup_HEV_landscape(self, parameters_HEV):
+        self.HEV_landscape = NKModel(parameters_HEV)
 
     def setup_urban_public_transport(self, parameters_urban_public_transport):
         parameters_urban_public_transport["eta"] = self.parameters_vehicle_user["eta"]
@@ -252,8 +258,9 @@ class Controller:
         #CREATE FIRMS    
         self.parameters_ICE["eta"] = self.parameters_vehicle_user["eta"]
         self.parameters_EV["eta"] = self.parameters_vehicle_user["eta"]
+        self.parameters_HEV["eta"] = self.parameters_vehicle_user["eta"]
 
-        self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
+        self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.parameters_HEV, self.ICE_landscape, self.EV_landscape, self.HEV_landscape)
     
     def gen_social_network(self):
         #self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
@@ -289,7 +296,7 @@ class Controller:
         return self.second_hand_merchant.cars_on_sale
 
     def update_ev_reserach_state(self):
-        if self.t_controller == self.ev_reserach_start_time:
+        if self.t_controller == self.ev_research_start_time:
             for firm in self.firm_manager.firms_list:
                 firm.ev_reserach_bool = True
     ################################################################################################

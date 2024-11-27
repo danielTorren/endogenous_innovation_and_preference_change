@@ -36,7 +36,7 @@ if __name__ == '__main__':
             "fuel_cost_c_z": 1,
             "e_z_t":0.01,
             "nu_z_i_t":0.5,
-            "emissions":0.1,
+            "production_emissions":0.1,
             "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
             "min_max_Quality": [50,200],
@@ -52,7 +52,7 @@ if __name__ == '__main__':
             "fuel_cost_c_z": 1,#0.01,
             "e_z_t": 0.01,#0.001,
             "nu_z_i_t":0.5,
-            "emissions":0.1,
+            "production_emissions":0.1,
             "delta_z":0.005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
             "min_max_Quality": [50,200],
@@ -69,7 +69,7 @@ if __name__ == '__main__':
             "fuel_cost_c_z": 0,
             "e_z_t":0.001,
             "nu_z_i_t":0.8,
-            "emissions":10000,
+            "production_emissions":10000,
             "delta_z":0
         },
         "parameters_rural_public_transport":{
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             "fuel_cost_c_z": 0,
             "e_z_t":0.001,
             "nu_z_i_t":1,
-            "emissions":10000,
+            "production_emissions":10000,
             "delta_z":0
         },
         "parameters_firm_manager": {
