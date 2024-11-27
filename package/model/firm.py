@@ -2,7 +2,7 @@ import numpy as np
 from package.model.carModel import CarModel
 
 class Firm:
-    def __init__(self, firm_id, init_tech_ICE, init_tech_EV, init_tech_HEV, parameters_firm, parameters_car_ICE, parameters_car_EV, parameters_car_HEV):
+    def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV):
         
         self.t_firm = 0
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
@@ -26,19 +26,12 @@ class Firm:
         self.list_technology_memory_EV = [init_tech_EV]
         self.last_researched_car_EV = self.init_tech_EV
 
-        #HEV
-        self.init_tech_HEV = init_tech_HEV
-        self.init_tech_HEV.firm = self
-        self.init_tech_HEV.unique_id = self.id_generator.get_new_id()
-        self.list_technology_memory_HEV = [init_tech_HEV]
-        self.last_researched_car_HEV = self.init_tech_HEV
-
         self.ev_reserach_bool = False
         self.firm_profit = 0
         self.firm_cars_users = 0
         self.research_bool = 0
 
-        self.list_technology_memory = self.list_technology_memory_ICE + self.list_technology_memory_EV + self.list_technology_memory_HEV 
+        self.list_technology_memory = self.list_technology_memory_ICE + self.list_technology_memory_EV
 
         self.parameters_firm = parameters_firm
         self.eta = parameters_firm["eta"]
@@ -55,20 +48,18 @@ class Firm:
 
         self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
         self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
-        self.universal_model_repo_HEV = parameters_firm["universal_model_repo_HEV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
 
         self.ICE_landscape = self.parameters_firm["ICE_landscape"]
         self.EV_landscape = self.parameters_firm["EV_landscape"]
-        self.HEV_landscape = self.parameters_firm["HEV_landscape"]
 
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV
-        self.parameters_car_HEV = parameters_car_HEV
+
 
         self.expected_profits_segments = {}
 
         #ALL TYPES
-        self.cars_on_sale = [init_tech_ICE, init_tech_EV, init_tech_HEV]
+        self.cars_on_sale = [init_tech_ICE, init_tech_EV]
         self.set_car_init_price_and_U()
 
         np.random.seed(parameters_firm["innovation_seed"])
@@ -177,7 +168,7 @@ class Firm:
 
             for car in vehicle_list:
                 price_s = car.optimal_price_segments[segment_code]#price for that specific segment
-                if (car.transportType in [2,4]) or all((segment_code[-1] == str(1), car.transportType == 3)):#THE EV ADOPTION BIT GOES LAST
+                if (car.transportType == 2) or all((segment_code[-1] == str(1), car.transportType == 3)):#THE EV ADOPTION BIT GOES LAST
                     utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
                 else:
@@ -232,7 +223,7 @@ class Firm:
         market_data: includes data on the population of each of the segments and the differnet values of the preferences/sensitivity of those segments
         """
 
-        self.list_technology_memory = self.list_technology_memory_EV + self.list_technology_memory_ICE + self.list_technology_memory_HEV
+        self.list_technology_memory = self.list_technology_memory_EV + self.list_technology_memory_ICE 
 
         self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
 
@@ -250,12 +241,6 @@ class Firm:
                 car.choosen_tech_bool = 0
 
         for car in self.list_technology_memory_ICE:
-            if car in cars_selected:
-                car.choosen_tech_bool = 1 
-            else:
-                car.choosen_tech_bool = 0
-
-        for car in self.list_technology_memory_HEV:
             if car in cars_selected:
                 car.choosen_tech_bool = 1 
             else:
@@ -379,9 +364,6 @@ class Firm:
         if vehicle_model_research.transportType == 2:
             if vehicle_model_research not in self.list_technology_memory_ICE:
                 self.list_technology_memory_ICE.append(vehicle_model_research)
-        elif vehicle_model_research.transportType == 4:
-            if vehicle_model_research not in self.list_technology_memory_HEV:
-                self.list_technology_memory_HEV.append(vehicle_model_research)
         else:
             if vehicle_model_research not in self.list_technology_memory_EV:
                 self.list_technology_memory_EV.append(vehicle_model_research)
@@ -401,8 +383,6 @@ class Firm:
             
             if tech_to_remove.transportType == 3:
                 self.list_technology_memory_EV.remove(tech_to_remove)
-            elif tech_to_remove.transportType == 4:
-                self.list_technology_memory_HEV.remove(tech_to_remove)
             else:
                 self.list_technology_memory_ICE.remove(tech_to_remove)
 
@@ -411,9 +391,8 @@ class Firm:
         self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
         if self.ev_reserach_bool:
-            self.unique_neighbouring_technologies_HEV = self.generate_neighbouring_technologies(self.last_researched_car_HEV,  self.list_technology_memory_HEV, self.HEV_landscape, self.parameters_car_HEV, transportType = 4)
             self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
-            self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + self.unique_neighbouring_technologies_HEV + [self.last_researched_car_EV, self.last_researched_car_ICE, self.last_researched_car_HEV]
+            self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
         else:
             self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_ICE +  [self.last_researched_car_ICE]
 
@@ -431,8 +410,6 @@ class Firm:
 
         if self.vehicle_model_research.transportType == 3:#EV
             self.last_researched_car_EV = self.vehicle_model_research
-        elif self.vehicle_model_research.transportType == 4:#HEV
-            self.last_researched_car_HEV = self.vehicle_model_research
         else:
             self.last_researched_car_ICE = self.vehicle_model_research
 
@@ -451,8 +428,6 @@ class Firm:
 
         if transportType == 2:
             universal_model_repo = self.universal_model_repo_ICE
-        elif transportType == 4:
-            universal_model_repo = self.universal_model_repo_HEV
         else:
             universal_model_repo = self.universal_model_repo_EV
 
@@ -531,8 +506,6 @@ class Firm:
             self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
             if self.vehicle_model_research.transportType == 3:
                 EVbool_res = 1
-            elif self.vehicle_model_research.transportType == 4:
-                EVbool_res = 2
             else:
                 EVbool_res = 0
             self.history_research_type.append(EVbool_res)

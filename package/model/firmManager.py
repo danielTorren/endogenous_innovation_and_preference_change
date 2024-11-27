@@ -6,7 +6,7 @@ from package.model.firm import Firm
 from collections import defaultdict
 
 class Firm_Manager:
-    def __init__(self, parameters_firm_manager: dict, parameters_firm: dict, parameters_car_ICE: dict, parameters_car_EV: dict, parameters_car_HEV: dict, ICE_landscape: dict, EV_landscape: dict, HEV_landscape: dict):
+    def __init__(self, parameters_firm_manager: dict, parameters_firm: dict, parameters_car_ICE: dict, parameters_car_EV: dict, ICE_landscape: dict, EV_landscape: dict):
         self.t_firm_manager = 0
 
         self.parameters_firm = parameters_firm
@@ -25,12 +25,10 @@ class Firm_Manager:
         #landscapes
         self.landscape_ICE = ICE_landscape
         self.landscape_EV = EV_landscape
-        self.landscape_HEV = HEV_landscape
 
         #car paramets
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV 
-        self.parameters_car_HEV = parameters_car_HEV 
 
         #PRICE, NOT SURE IF THIS IS NECESSARY
         self.beta_threshold = 0.5#parameters_firm_manager["beta_threshold"]
@@ -64,36 +62,31 @@ class Firm_Manager:
 
         self.init_tech_component_string_ICE = self.landscape_ICE.min_fitness_string
         self.init_tech_component_string_EV = self.landscape_EV.min_fitness_string
-        self.init_tech_component_string_HEV = self.landscape_HEV.min_fitness_string
+
 
         decimal_value_ICE = int(self.init_tech_component_string_ICE, 2)
         decimal_value_EV = int(self.init_tech_component_string_EV, 2)
-        decimal_value_HEV = int(self.init_tech_component_string_HEV, 2)
+
 
         init_tech_component_string_list_N_ICE = self.invert_bits_one_at_a_time(decimal_value_ICE, len(self.init_tech_component_string_ICE))
         init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
-        init_tech_component_string_list_N_HEV = self.invert_bits_one_at_a_time(decimal_value_HEV, len(self.init_tech_component_string_HEV))
-        
+
         np.random.seed(self.init_tech_seed) 
         init_tech_component_string_list_ICE= np.random.choice(init_tech_component_string_list_N_ICE, self.J)
         init_tech_component_string_list_EV = np.random.choice(init_tech_component_string_list_N_EV, self.J)
-        init_tech_component_string_list_HEV = np.random.choice(init_tech_component_string_list_N_HEV, self.J)
-        
+
         self.init_tech_list_ICE = [CarModel(init_tech_component_string_list_ICE[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
         self.init_tech_list_EV = [CarModel(init_tech_component_string_list_EV[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
-        self.init_tech_list_HEV = [CarModel(init_tech_component_string_list_HEV[j], self.landscape_HEV, parameters = self.parameters_car_HEV, choosen_tech_bool=1) for j in range(self.J)]
-        
+
         #global repo
         self.universal_model_repo_ICE = {} 
         self.universal_model_repo_EV = {}
-        self.universal_model_repo_HEV = {}
 
         self.parameters_firm["universal_model_repo_EV"] = self.universal_model_repo_EV
         self.parameters_firm["universal_model_repo_ICE"] = self.universal_model_repo_ICE
-        self.parameters_firm["universal_model_repo_HEV"] = self.universal_model_repo_HEV
 
         #Create the firms, these store the data but dont do anything otherwise
-        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j], self.init_tech_list_HEV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.parameters_car_HEV) for j in range(self.J)]
+        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV) for j in range(self.J)]
 
     def invert_bits_one_at_a_time(self, decimal_value, length):
         """THIS IS ONLY USED ONCE TO GENERATE HETEROGENOUS INITIAL TECHS"""
@@ -269,7 +262,6 @@ class Firm_Manager:
         self.history_segment_count = []
         self.history_cars_on_sale_EV_prop = []
         self.history_cars_on_sale_ICE_prop = []
-        self.history_cars_on_sale_HEV_prop = []
         self.history_cars_on_sale_price = []
 
         self.history_market_data = []
@@ -287,11 +279,9 @@ class Firm_Manager:
 
         count_transport_type_2 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 2)
         count_transport_type_3 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 3)
-        count_transport_type_4 = sum(1 for car in self.cars_on_sale_all_firms if car.transportType == 4)
 
         self.history_cars_on_sale_ICE_prop.append(count_transport_type_2)
         self.history_cars_on_sale_EV_prop.append(count_transport_type_3)
-        self.history_cars_on_sale_HEV_prop.append(count_transport_type_4)
 
         self.history_market_data.append(copy.deepcopy(self.market_data))
 

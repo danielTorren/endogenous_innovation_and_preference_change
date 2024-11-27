@@ -72,22 +72,6 @@ if __name__ == "__main__":
             "min_max_Efficiency": [1,10],
             "min_max_Cost": [10,80],
         },
-        "parameters_HEV":{
-            "landscape_seed": 33, 
-            "N": 15,
-            "K": 2,
-            "A": 3,
-            "rho":[0,0.5],
-            "fuel_cost_c_z": 1,
-            "e_z_t":1,#0.169,
-            "nu_z_i_t":1,
-            "production_emissions":1,
-            "delta_z":0.0005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
-            "transportType": 4,
-            "min_max_Quality": [50,200],
-            "min_max_Efficiency": [1,10],
-            "min_max_Cost": [10,80],
-        },
         "parameters_ICE":{
             "landscape_seed": 18, 
             "N": 15,

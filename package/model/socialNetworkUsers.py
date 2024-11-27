@@ -54,7 +54,6 @@ class Social_Network:
 
         self.history_user3 = []
         self.history_user2 = []
-        self.history_user4 = []
 
         self.current_vehicles = self.update_VehicleUsers()
         #print("self.current_vehicles", self.current_vehicles)
@@ -739,7 +738,7 @@ class Social_Network:
         self.rural_public_transport_users = 0
         self.ICE_users = 0 
         self.EV_users = 0
-        self.HEV_users = 0
+  
         self.second_hand_users = 0
         self.quality_vals = []
         self.efficiency_vals = []
@@ -750,9 +749,6 @@ class Social_Network:
         self.quality_vals_EV = []
         self.efficiency_vals_EV = []
         self.production_cost_vals_EV = []
-        self.quality_vals_HEV = []
-        self.efficiency_vals_HEV = []
-        self.production_cost_vals_HEV = []
         self.new_cars_bought = 0
         self.car_ages = []
 
@@ -790,10 +786,6 @@ class Social_Network:
                 self.quality_vals_ICE.append(vehicle_chosen.Quality_a_t)#done here for efficiency
                 self.efficiency_vals_ICE.append(vehicle_chosen.Eff_omega_a_t)
                 self.production_cost_vals_ICE.append(vehicle_chosen.ProdCost_z_t)
-            elif vehicle_chosen.transportType == 4:#HEV 
-                self.quality_vals_HEV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
-                self.efficiency_vals_HEV.append(vehicle_chosen.Eff_omega_a_t)
-                self.production_cost_vals_HEV.append(vehicle_chosen.ProdCost_z_t)
             else:
                 self.quality_vals_EV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
                 self.efficiency_vals_EV.append(vehicle_chosen.Eff_omega_a_t)
@@ -807,18 +799,12 @@ class Social_Network:
 
         if vehicle_chosen.transportType == 0:#URBAN
             self.urban_public_transport_users +=1
-            #if self.origin_vec[i] == 1:
-            #    print("WRONG")
         elif vehicle_chosen.transportType == 1:#RURAL
             self.rural_public_transport_users += 1
-            #if self.origin_vec[i] == 0:
-            #    print("WRONG")
         elif vehicle_chosen.transportType == 2:#ICE
             self.ICE_users += 1
         elif vehicle_chosen.transportType == 3:#EV
             self.EV_users += 1
-        elif vehicle_chosen.transportType == 4:#HEV
-            self.HEV_users += 1
         else:
             raise ValueError("Invalid transport type")
         
@@ -834,7 +820,6 @@ class Social_Network:
         self.history_consider_ev_rate = []
         self.history_ICE_users = []
         self.history_EV_users = []
-        self.history_HEV_users = []
         self.history_second_hand_users = []
         # New history attributes for vehicle attributes
         self.history_quality = []
@@ -849,12 +834,7 @@ class Social_Network:
         self.history_efficiency_EV = []
         self.history_production_cost_EV = []
 
-        self.history_quality_HEV = []
-        self.history_efficiency_HEV = []
-        self.history_production_cost_HEV = []
-
         self.history_attributes_EV_cars_on_sale_all_firms = []
-        self.history_attributes_HEV_cars_on_sale_all_firms = []
         self.history_attributes_ICE_cars_on_sale_all_firms = []
         self.history_second_hand_bought = []
         self.history_new_car_bought = []
@@ -878,7 +858,6 @@ class Social_Network:
         self.history_rural_public_transport_users.append(self.rural_public_transport_users)
         self.history_ICE_users.append(self.ICE_users)
         self.history_EV_users.append(self.EV_users)
-        self.history_HEV_users.append(self.HEV_users)
         self.history_second_hand_users.append(self.second_hand_users)
         self.history_second_hand_bought.append(self.second_hand_bought)
         self.history_new_car_bought.append(self.new_cars_bought)
@@ -905,22 +884,12 @@ class Social_Network:
             self.history_quality_EV.append([np.nan])
             self.history_efficiency_EV.append([np.nan])
             self.history_production_cost_EV.append([np.nan])
-        
-        if self.quality_vals_HEV:
-            self.history_quality_HEV.append(self.quality_vals_HEV)
-            self.history_efficiency_HEV.append(self.efficiency_vals_HEV)
-            self.history_production_cost_HEV.append(self.production_cost_vals_HEV)
-        else:
-            self.history_quality_HEV.append([np.nan])
-            self.history_efficiency_HEV.append([np.nan])
-            self.history_production_cost_HEV.append([np.nan])
+    
 
         data_ev = [[vehicle.Quality_a_t, vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 3]
         data_ice = [[vehicle.Quality_a_t ,vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 2]
-        data_hev = [[vehicle.Quality_a_t, vehicle.Eff_omega_a_t, vehicle.ProdCost_z_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 4]
 
         self.history_attributes_EV_cars_on_sale_all_firms.append(data_ev)
-        self.history_attributes_HEV_cars_on_sale_all_firms.append(data_hev)
         self.history_attributes_ICE_cars_on_sale_all_firms.append(data_ice)
 
         self.history_car_age.append(self.car_ages)

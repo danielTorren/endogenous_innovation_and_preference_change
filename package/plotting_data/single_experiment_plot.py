@@ -103,11 +103,10 @@ def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600)
     urban_prop = np.array(social_network.history_urban_public_transport_users) / total_users
     ice_prop = np.array(social_network.history_ICE_users) / total_users
     ev_prop = np.array(social_network.history_EV_users) / total_users
-    hev_prop = np.array(social_network.history_HEV_users) / total_users
 
     # Plot stacked area (continuous stacked bar equivalent)
-    ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,hev_prop,
-                 labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV','HEV' ],
+    ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,
+                 labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV' ],
                  alpha=0.8)
 
     # Set plot labels and limits
@@ -162,20 +161,20 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
     """
     # Attributes for ICE and EV
     attributes = {
-        "Quality": ("history_quality_ICE", "history_quality_EV", "history_quality_HEV"),
-        "Efficiency": ("history_efficiency_ICE", "history_efficiency_EV", "history_efficiency_HEV"),
-        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV", "history_production_cost_HEV"),
+        "Quality": ("history_quality_ICE", "history_quality_EV"),
+        "Efficiency": ("history_efficiency_ICE", "history_efficiency_EV"),
+        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV"),
     }
 
     fig, axs = plt.subplots(1, 3, figsize=(18, 6))
     
-    for i, (attribute_name, (ice_attr, ev_attr, hev_attr)) in enumerate(attributes.items()):
+    for i, (attribute_name, (ice_attr, ev_attr)) in enumerate(attributes.items()):
         ax = axs[i]
         
         # Extract histories for ICE and EV
         ice_history = getattr(social_network, ice_attr, [])
         ev_history = getattr(social_network, ev_attr, [])
-        hev_history = getattr(social_network, hev_attr, [])
+
         
         # Calculate means and confidence intervals
         ice_means = [np.mean(values) if values else np.nan for values in ice_history]
@@ -184,8 +183,6 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
         ev_means = [np.mean(values) if values else np.nan for values in ev_history]
         ev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ev_history]
     
-        hev_means = [np.mean(values) if values else np.nan for values in hev_history]
-        hev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in hev_history]
 
         # Plot ICE data
         ax.plot(time_series, ice_means, label=f"ICE {attribute_name}", color="blue")
@@ -203,15 +200,6 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
             np.array(ev_means) - np.array(ev_confidence_intervals),
             np.array(ev_means) + np.array(ev_confidence_intervals),
             color="green", alpha=0.2
-        )
-
-        # Plot HEV data
-        ax.plot(time_series, hev_means, label=f"HEV {attribute_name}", color="purple")
-        ax.fill_between(
-            time_series,
-            np.array(hev_means) - np.array(hev_confidence_intervals),
-            np.array(hev_means) + np.array(hev_confidence_intervals),
-            color="purple", alpha=0.2
         )
 
         # Set title and labels
@@ -315,7 +303,6 @@ def plot_sale_EV_prop(firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, firm_manager.history_cars_on_sale_EV_prop, label="EV")
     ax.plot(time_series, firm_manager.history_cars_on_sale_ICE_prop, label="ICE")
-    ax.plot(time_series, firm_manager.history_cars_on_sale_HEV_prop, label="HEV")
     format_plot(ax, "Cars on Sale Over Time", "Time Step", "# Cars on Sale")
     save_and_show(fig, fileName, "sale_EV_prop", dpi)
 
