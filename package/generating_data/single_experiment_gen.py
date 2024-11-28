@@ -38,14 +38,14 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "duration_no_carbon_price":271,
+        "duration_no_carbon_price":270,
         "duration_small_carbon_price":1,
-        "duration_large_carbon_price":148,
+        "duration_large_carbon_price":1,
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
         "age_limit_second_hand": 3,
-        "ev_research_start_time": 60,
+        "ev_research_start_time": 120,
         "parameters_carbon_policy":{
             "carbon_price_init": 0,
             "carbon_price": 0,
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         },
         "parameters_future_carbon_policy":{
             "carbon_price_init": 0,
-            "carbon_price": 0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
+            "carbon_price": 0,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
             "carbon_price_state": "linear"
         },
         "parameters_EV":{
@@ -67,7 +67,7 @@ if __name__ == "__main__":
             "delta_z":0.0005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
             "min_max_Quality": [50,200],
-            "min_max_Efficiency": [2,6],
+            "min_max_Efficiency": [4,7],
             "min_max_Cost": [5000,50000],
         },
         "parameters_ICE":{
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             "delta_z":0.0005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
             "min_max_Quality": [50,200],
-            "min_max_Efficiency": [0.5,2],
+            "min_max_Efficiency":[0.5,1.5], #historial min and max for period are (0.953754,1.252405)
             "min_max_Cost": [5000,50000],
         },
         "parameters_urban_public_transport":{
@@ -136,11 +136,11 @@ if __name__ == "__main__":
             "prob_rewire": 0.1,
             "gamma_multiplier": 1,
             "chi_multiplier": 1,
-            "beta_multiplier": 2,
+            "beta_multiplier": 1,
             "a_environment": 2,#large easy ev adoption 
             "b_environment": 2,#2,
-            "a_innovativeness": 1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
-            "b_innovativeness": 2,#1,#2,
+            "a_innovativeness": 0.6,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
+            "b_innovativeness": 1,#2,#1,#2,
             "a_price": 3,#most people price sensitive
             "b_price": 1#1,
         },

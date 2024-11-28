@@ -230,7 +230,10 @@ class Firm:
         market_data: includes data on the population of each of the segments and the differnet values of the preferences/sensitivity of those segments
         """
 
-        self.list_technology_memory = self.list_technology_memory_EV + self.list_technology_memory_ICE 
+        if self.ev_reserach_bool:
+            self.list_technology_memory = self.list_technology_memory_EV + self.list_technology_memory_ICE 
+        else:
+            self.list_technology_memory = self.list_technology_memory_ICE 
 
         self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
 
@@ -241,11 +244,12 @@ class Firm:
         cars_selected = self.select_car_lambda_production(expected_profits)#pick the cars for each car
 
         #DO THIS FASTER
-        for car in self.list_technology_memory_EV:
-            if car in cars_selected:
-                car.choosen_tech_bool = 1 
-            else:
-                car.choosen_tech_bool = 0
+        if self.ev_reserach_bool:
+            for car in self.list_technology_memory_EV:
+                if car in cars_selected:
+                    car.choosen_tech_bool = 1 
+                else:
+                    car.choosen_tech_bool = 0
 
         for car in self.list_technology_memory_ICE:
             if car in cars_selected:
@@ -378,8 +382,13 @@ class Firm:
                 
     def update_memory_timer(self):
         #change the timer for the techs that are not the ones being used
-        for technology in self.list_technology_memory:
+        if self.ev_reserach_bool:
+            for technology in self.list_technology_memory_EV:
+                technology.update_timer()
+
+        for technology in self.list_technology_memory_ICE:
             technology.update_timer()
+
 
     def update_memory_len(self):
         #is the memory list is too long then remove data

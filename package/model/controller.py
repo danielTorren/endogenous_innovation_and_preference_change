@@ -125,7 +125,9 @@ class Controller:
         self.future_carbon_price_init = self.parameters_future_carbon_policy.get("carbon_price_init", 0)
         self.future_carbon_price_policy = self.parameters_future_carbon_policy["carbon_price"]
         
+        
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
+
         self.carbon_price = self.carbon_price_time_series[0]
 
     def calculate_carbon_price_time_series(self):
