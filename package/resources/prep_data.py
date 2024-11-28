@@ -48,6 +48,9 @@ def load_in_calibration_data():
 
     #Emissions Gasoline - WE 
     gasoline_Kgco2_per_Kilowatt_Hour =  (gasoline_gco2_per_gallon/gasoline_Kilowatt_Hour_per_gallon)/1000
+    #0.26599820413049985
+    #print(gasoline_Kgco2_per_Kilowatt_Hour )
+    #quit()
 
     # Align Data
     aligned_data = CPI_california_df.join([
@@ -59,7 +62,7 @@ def load_in_calibration_data():
     return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour
 
 def load_in_output_data():
-    """
+    #"""
     #DEAL WITH EV POPULTATION, TOTAL VEHICLES AND PENERTRATION
     #POPULATION
     Vehicle_Population_df = pd.read_excel("package/calibration_data/Vehicle_Population.xlsx") 
@@ -67,8 +70,8 @@ def load_in_output_data():
     # Grouping and summing
     Vehicle_Population_Grouped_df = Vehicle_Population_df.groupby(['Data Year', 'Dashboard Fuel Type Group'], as_index=False)['Number of Vehicles'].sum()
 
-    EV_list = [ 'Battery Electric (BEV)', 'Plug-in Hybrid (PHEV)']
-    ICE_list = ['Diesel', 'Fuel Cell (FCEV)', 'Gasoline', 'Gasoline Hybrid', 'Other']
+    EV_list = [ 'Battery Electric (BEV)', 'Plug-in Hybrid (PHEV)', 'Fuel Cell (FCEV)']
+    ICE_list = ['Diesel', 'Gasoline', 'Gasoline Hybrid', 'Other']
 
     # Create a new column for categories
     Vehicle_Population_Grouped_df['Category'] = Vehicle_Population_Grouped_df['Dashboard Fuel Type Group'].apply(lambda x: 'EV' if x in EV_list else 'ICE' if x in ICE_list else 'Other')
@@ -97,7 +100,7 @@ def load_in_output_data():
     # Grouping and summing
     New_ZEV_sales_Grouped_df = New_ZEV_sales_df.groupby(['Data_Year'], as_index=False)['Number of Vehicles'].sum()
 
-    """
+    #"""
     ########################################
 
     #What are the historical ranges of Cars in terms of efficiency (km/kWhr) us this to parameterise the omega limits on the landscape
@@ -107,6 +110,7 @@ def load_in_output_data():
     gasoline_Kilowatt_Hour_per_gallon = 33.41 #Gasoline gallon equivalent (GGE)
     efficiency_and_power_df["km_per_kWhr"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*(km_to_miles/gasoline_Kilowatt_Hour_per_gallon)
     #"min_max_Efficiency":[0.5,1.5], historial min and max for period are (0.953754,1.252405)
+
     #########################################
 
     #Find minimum and maximmum values for EV fuel efficiency 
@@ -148,3 +152,19 @@ def load_in_output_data():
 
     #USE THESE VALUES OF THE MIN AND THE MAX TO PARAMETERISE THE LANSCAPE
     #"min_max_Efficiency":[4,7], historial min and max for 2006-2022 period are (4.73335294117647,6.43736)
+
+    ###############################################################################
+
+    #What is the distance travelled by your typical car?
+    average_gas_tank_size = 16#Gallons https://mechanicbase.com/cars/average-gas-tank-size/  https://millsequipment.com/blogs/blogs/understanding-average-fuel-tank-size-what-you-need-to-know
+    efficiency_and_power_df["Average Distance km"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*average_gas_tank_size*km_to_miles
+    #print(efficiency_and_power_df["Average Distance km"])
+    #MIN in 2000 is 509.838912km, MAX in 2022 its 669.485440km
+    
+    #Now compare to the evolving range in EVs
+    EV_range_df = pd.read_excel("package/calibration_data/EVrange.xlsx")# https://www.iea.org/data-and-statistics/charts/evolution-of-average-range-of-electric-vehicles-by-powertrain-2010-2021
+    #print(EV_range_df)
+    #Min in 2010 is 127km, MAX in 2021 is 349km
+    #Quality limits should be calibrated correspondingly to the ratios ICE: [450,700], EV: [100,400]
+
+    #quit()

@@ -66,9 +66,9 @@ if __name__ == "__main__":
             "production_emissions":9000,#kgC02
             "delta_z":0.0005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
-            "min_max_Quality": [50,200],
+            "min_max_Quality": [50,200],#[100,400],#[50,200],
             "min_max_Efficiency": [4,7],
-            "min_max_Cost": [5000,50000],
+            "min_max_Cost": [5000, 7000],#[5000,50000],
         },
         "parameters_ICE":{
             "landscape_seed": 18, 
@@ -80,13 +80,13 @@ if __name__ == "__main__":
             "production_emissions":6000,#kgC02,
             "delta_z":0.0005,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
-            "min_max_Quality": [50,200],
+            "min_max_Quality": [50,200],#[450,700],#[50,200],
             "min_max_Efficiency":[0.5,1.5], #historial min and max for period are (0.953754,1.252405)
-            "min_max_Cost": [5000,50000],
+            "min_max_Cost": [5000, 7000]#[5000,50000],
         },
         "parameters_urban_public_transport":{
-            "attributes": [70,1,1],#70 dollars
-            "price": 1,
+            "attributes": [100,1,1],#70 dollars
+            "price": 70,
             "id": -1, 
             "firm" : -1, 
             "transportType" : 0,
@@ -97,8 +97,8 @@ if __name__ == "__main__":
             "delta_z":0
         },
         "parameters_rural_public_transport":{
-            "attributes": [70,1,1],#70 dollars
-            "price": 1,
+            "attributes": [100,1,1],#70 dollars
+            "price": 70,
             "id" : -2, 
             "firm" : -2,
             "transportType" : 1,
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         "parameters_vehicle_user":{
             "kappa": 3,
             "alpha": 0.8,
-            "r": 1,
+            "r": 0.02,
             "eta": 2,
             "mu": 0.3,
             "second_hand_car_max_consider": 200,
