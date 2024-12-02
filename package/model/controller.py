@@ -18,7 +18,9 @@ class Controller:
         self.unpack_controller_parameters(parameters_controller)
         self.manage_time()
         self.manage_carbon_price()
+        self.generate_rebate()
         self.update_prices_and_emmisions()
+
         self.setup_id_gen()
 
         #SET UP LANDSCAPES
@@ -88,8 +90,6 @@ class Controller:
         self.parameters_urban_public_transport = parameters_controller["parameters_urban_public_transport"]
         self.parameters_rural_public_transport = parameters_controller["parameters_rural_public_transport"]
 
-        self.rebate = parameters_controller["rebate"]
-
         self.parameters_future_carbon_policy = parameters_controller["parameters_future_carbon_policy"]
 
         self.t_controller = 0
@@ -153,8 +153,6 @@ class Controller:
         else:
             return 0
 
-
-
     def calculate_growth(self, t, total_duration, start_price, end_price, growth_type):
         if growth_type == "flat":
             return end_price
@@ -174,7 +172,17 @@ class Controller:
             
         else:
             raise ValueError(f"Unknown growth type: {growth_type}")
-    
+    ########################################################################################################
+    #Handle rebate
+    def generate_rebate(self):
+
+        self.parameters_rebate = self.parameters_controller["parameters_rebate"]
+
+        self.rebate_time_series = np.zeros(self.time_steps_max)
+        self.rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["rebate"]
+
+        self.used_rebate_time_series = np.zeros(self.time_steps_max)
+        self.used_rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["used_rebate"]
 
     #############################################################################################################################
 
@@ -230,6 +238,9 @@ class Controller:
         self.parameters_social_network["electricity_price"] = self.electricity_price
         self.parameters_social_network["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_social_network["rebate"] = self.rebate 
+
+        self.parameters_social_network["used_rebate"] = self.used_rebate 
+        self.parameters_social_network["used_rebate"] = self.used_rebate 
         self.parameters_social_network["cars_init_state"] = self.parameters_controller["cars_init_state"]
 
     def setup_vehicle_users_parameters(self):
@@ -277,15 +288,17 @@ class Controller:
         self.electricity_price = self.electricity_price_vec[self.t_controller]
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.nu_z_i_t_EV = self.tank_ratio_vec[self.t_controller]*self.parameters_EV["nu_z_i_t_multiplier"]
+        self.rebate = self.rebate_time_series[self.t_controller]
+        self.used_rebate = self.used_rebate_time_series[self.t_controller]
         #print("self.nu_z_i_t_EV", self.nu_z_i_t_EV)
         
     def update_firms(self):
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.nu_z_i_t_EV)
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.nu_z_i_t_EV, self.rebate)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.public_option_list, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.nu_z_i_t_EV)
+        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.public_option_list, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.nu_z_i_t_EV, self.rebate, self.used_rebate)
 
         return consider_ev_vec, vehicles_chosen_list
     

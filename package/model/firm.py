@@ -566,7 +566,7 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
@@ -574,6 +574,7 @@ class Firm:
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.nu_z_i_t_EV = nu_z_i_t_EV
+        self.rebate = rebate
 
         #decide cars to sell
         self.cars_on_sale = self.choose_cars_segments(market_data)

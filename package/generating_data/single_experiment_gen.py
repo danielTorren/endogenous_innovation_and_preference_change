@@ -38,8 +38,6 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-        "rebate": 7500,
-        "used_rebate": (4000,0.3),
         "cars_init_state": 1,
         "duration_no_carbon_price": 272,#2000-2022
         "duration_large_carbon_price":156,#2022 - 2035
@@ -48,6 +46,11 @@ if __name__ == "__main__":
         "choice_seed": 9,
         "age_limit_second_hand": 3,
         "ev_research_start_time": 60,#2005
+        "parameters_rebate":{
+            "start_time": 120,#2010
+            "rebate": 7500,
+            "used_rebate": 1500
+        },
         "parameters_future_carbon_policy":{
             "carbon_price_init": 0,
             "carbon_price": 10,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
@@ -127,7 +130,8 @@ if __name__ == "__main__":
             "init_vals_innovative_seed":99, 
             "init_vals_price_seed": 8, 
             "d_min_seed": 45,
-            "d_i_min": 100,#in km
+            "d_i_min_urban": 100,#in km
+            "d_i_min_rural": 300,#in km
             "SBM_block_num": 2,
             "SBM_network_density_input_intra_block": 0.2,
             "SBM_network_density_input_inter_block": 0.005,

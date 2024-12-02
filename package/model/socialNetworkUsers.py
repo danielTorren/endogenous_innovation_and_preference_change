@@ -20,6 +20,7 @@ class Social_Network:
         self.t_social_network = 0
         
         self.rebate = parameters_social_network["rebate"]
+        self.used_rebate = parameters_social_network["used_rebate"]
 
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
@@ -118,8 +119,15 @@ class Social_Network:
 
         #d min
         np.random.seed(parameters_social_network["d_min_seed"]) 
-        d_i_min = parameters_social_network["d_min_seed"]
-        self.d_i_min_vec = (np.random.uniform(size = self.num_individuals) + 0.5)*d_i_min#centered about this value, should be dsitributed as income
+        d_i_min_urban = parameters_social_network["d_i_min_urban"]
+        d_i_min_rural = parameters_social_network["d_i_min_rural"]
+
+        self.d_i_min_vec = np.where(
+            self.origin_vec,
+            d_i_min_rural,
+            d_i_min_urban,
+        )
+        #self.d_i_min_vec = (np.random.uniform(size = self.num_individuals) + 0.5)*d_i_min#centered about this value, should be dsitributed as income
 
 
     def set_init_cars_selection(self, parameters_social_network):
@@ -649,7 +657,12 @@ class Social_Network:
         commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t)
         base_utility_matrix = commuting_util_matrix / (self.r + (1 - vehicle_dict_vecs["delta_z"]) / (1 - self.alpha))
 
-        price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec
+
+        price_difference = np.where(
+            vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
+            (vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate) - self.price_owns_car_vec,  # Apply rebate
+            vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec  # No rebate
+        )
 
         # Calculate price and emissions adjustments once
         price_adjustment = np.multiply(self.beta_vec[:, np.newaxis], price_difference.T)
@@ -975,7 +988,7 @@ class Social_Network:
                 car.e_z_t = self.electricity_emissions_intensity
                 car.nu_z_i_t = self.nu_z_i_t_EV
 
-    def next_step(self, carbon_price, second_hand_cars,public_transport_options,new_cars, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
+    def next_step(self, carbon_price, second_hand_cars,public_transport_options,new_cars, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate, used_rebate):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -996,6 +1009,8 @@ class Social_Network:
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.nu_z_i_t_EV = nu_z_i_t_EV
+        self.rebate = rebate
+        self.used_rebate = used_rebate
 
         #update new tech and prices
         self.second_hand_cars, self.public_transport_options, self.new_cars = second_hand_cars, public_transport_options, new_cars
