@@ -47,7 +47,7 @@ def generate_data(parameters: dict,print_simu = 0):
 
     if print_simu:
         start_time = time.time()
-    parameters["time_steps_max"] = parameters["duration_no_carbon_price"] + parameters["duration_small_carbon_price"] + parameters["duration_large_carbon_price"]
+    parameters["time_steps_max"] = parameters["duration_no_carbon_price"] + parameters["duration_large_carbon_price"]
 
     #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
     controller = Controller(parameters)
@@ -64,7 +64,7 @@ def generate_data(parameters: dict,print_simu = 0):
             "SIMULATION time taken: %s minutes" % ((time.time() - start_time) / 60),
             "or %s s" % ((time.time() - start_time)),
         )
-    #print("E: ",controller.social_network.total_carbon_emissions_cumulative)
+    print("E: ",controller.social_network.total_production_emissions, controller.social_network.total_driving_emissions)
     #quit()
     return controller
 

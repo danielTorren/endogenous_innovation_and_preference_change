@@ -19,12 +19,13 @@ class Social_Network:
         """
         self.t_social_network = 0
         
+        self.rebate = parameters_social_network["rebate"]
+
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
         self.init_network_settings(parameters_social_network)
         self.init_preference_distribution(parameters_social_network)
-        self.set_init_vehicle_options(parameters_social_network)
 
         self.alpha =  parameters_vehicle_user["alpha"]
         self.eta =  parameters_vehicle_user["eta"]
@@ -47,14 +48,22 @@ class Social_Network:
         # Create network and calculate initial emissions
         self.adjacency_matrix, self.network = self.create_network()
         self.network_density = nx.density(self.network)
+
+        self.weighting_matrix = self._calc_weighting_matrix_attribute(self.beta_vec)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
         
         #Assume nobody adopts EV at the start, THIS MAY BE AN ISSUE
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
 
-        self.current_vehicles = self.update_VehicleUsers()
+        self.cars_init_state = parameters_social_network["cars_init_state"]
+        if self.cars_init_state: 
+            self.current_vehicles = self.set_init_cars_selection(parameters_social_network)
+        else:
+            self.set_init_vehicle_options(parameters_social_network)
+            self.current_vehicles = self.update_VehicleUsers()
 
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
+        
     ###############################################################################################################################################################
     ###############################################################################################################################################################
     #MODEL SETUP
@@ -68,17 +77,14 @@ class Social_Network:
         self.carbon_price =  parameters_social_network["carbon_price"]
 
     def init_network_settings(self, parameters_social_network):
+        self.selection_bias = parameters_social_network["selection_bias"]
         self.network_structure_seed = parameters_social_network["network_structure_seed"]
-        #self.network_density_input = parameters_social_network["network_density"]
-        #self.K_social_network = parameters_social_network["K"]#int(round((self.num_individuals - 1) * self.network_density_input))  # Calculate number of links
-        #self.prob_rewire = parameters_social_network["prob_rewire"]
         self.SBM_block_num = int(parameters_social_network["SBM_block_num"])
         self.SBM_network_density_input_intra_block = parameters_social_network["SBM_network_density_input_intra_block"]
         self.SBM_network_density_input_inter_block = parameters_social_network["SBM_network_density_input_inter_block"]
 
     def init_preference_distribution(self, parameters_social_network):
         self.gamma_multiplier = parameters_social_network["gamma_multiplier"]
-        self.chi_multiplier = parameters_social_network["chi_multiplier"]
         self.beta_multiplier = parameters_social_network["beta_multiplier"]
 
         #GAMMA
@@ -92,7 +98,7 @@ class Social_Network:
         self.b_innovativeness = parameters_social_network["b_innovativeness"]
         np.random.seed(parameters_social_network["init_vals_innovative_seed"])  # Initialize random seed
         innovativeness_vec_init_unrounded = np.random.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
-        self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)*self.chi_multiplier
+        self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)
 
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
@@ -114,6 +120,21 @@ class Social_Network:
         np.random.seed(parameters_social_network["d_min_seed"]) 
         d_i_min = parameters_social_network["d_min_seed"]
         self.d_i_min_vec = (np.random.uniform(size = self.num_individuals) + 0.5)*d_i_min#centered about this value, should be dsitributed as income
+
+
+    def set_init_cars_selection(self, parameters_social_network):
+
+        old_cars = parameters_social_network["old_cars"]
+        for i, car in enumerate(old_cars):
+            self.vehicleUsers_list[i].vehicle = car
+            
+            #SET USER ID OF CARS
+        for i, individual in enumerate(self.vehicleUsers_list):
+            individual.vehicle.owner_id = individual.user_id
+
+        current_cars =  [user.vehicle for user in self.vehicleUsers_list]
+
+        return current_cars#current cars
 
     def set_init_vehicle_options(self, parameters_social_network):
         self.second_hand_cars = []
@@ -145,6 +166,51 @@ class Social_Network:
         
         return group_counts
     
+    def _calc_weighting_matrix_attribute(self, attribute_array: np.ndarray) -> sp.csr_matrix:
+        """
+        Calculate weighting matrix based on attribute similarities.
+        
+        Args:
+            attribute_array (np.ndarray): Array of attributes for calculating weights
+            
+        Returns:
+            sp.csr_matrix: Sparse matrix of normalized weights
+        """
+        differences = attribute_array[self.row_indices_sparse] - attribute_array[self.col_indices_sparse]
+        weights = np.exp(-self.selection_bias * np.abs(differences))
+        non_diagonal_weighting_matrix = sp.csr_matrix(
+            (weights, (self.row_indices_sparse, self.col_indices_sparse)),
+            shape=self.adjacency_matrix.shape
+        )
+        norm_weighting_matrix = self._normlize_matrix(non_diagonal_weighting_matrix)
+
+        return norm_weighting_matrix
+
+    def _normlize_matrix(self, matrix: sp.csr_matrix) -> sp.csr_matrix:
+        """
+        Normalize a sparse matrix row-wise.
+        
+        Args:
+            matrix (sp.csr_matrix): Sparse matrix to normalize
+            
+        Returns:
+            sp.csr_matrix: Row-normalized sparse matrix
+        """
+        row_sums = np.array(matrix.sum(axis=1)).flatten()
+        row_sums[row_sums == 0] = 1
+        inv_row_sums = 1.0 / row_sums
+        diagonal_matrix = sp.diags(inv_row_sums)
+        norm_matrix = diagonal_matrix.dot(matrix)
+        return norm_matrix
+    
+    def introduce_homophily(self) -> np.ndarray:
+        """
+        Introduce homophily based on beta parameter and state of origin. Want to sort the individual blocks by the stuff speparalty 
+        
+        """
+        #instead of making the actual network position shift i could have the strength of interaction be a function of the 
+        self.selection_bias = self.para
+        
     def create_network(self) -> tuple[npt.NDArray, npt.NDArray, nx.Graph]:
         """
         Create watts-strogatz small world graph using Networkx library
@@ -202,16 +268,10 @@ class Social_Network:
         ev_adoption_vec = (self.vehicle_type_vec == ev_type).astype(int)
 
         # Calculate the number of EV-adopting neighbors using sparse matrix multiplication
-        ev_neighbors = self.sparse_adjacency_matrix.dot(ev_adoption_vec)
+        ev_neighbors = self.weighting_matrix.dot(ev_adoption_vec)
 
+        consider_ev_vec = (ev_neighbors >= self.chi_vec).astype(np.int8)
 
-        # Calculate the proportion of neighbors with EVs
-        proportion_ev_neighbors = np.divide(ev_neighbors, self.total_neighbors, where=self.total_neighbors != 0)
-
-        consider_ev_vec = (proportion_ev_neighbors >= self.chi_vec).astype(np.int8)
-
-        #consider_ev_vec = np.asarray([1]*self.num_individuals)
-        #ev_adoption_vec =  np.asarray([1]*self.num_individuals)
         return consider_ev_vec, ev_adoption_vec
 
 ##########################################################################################################################################################
@@ -228,7 +288,7 @@ class Social_Network:
 
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
 
-        if self.t_social_network > 0:
+        if self.t_social_network > 0 or self.cars_init_state:
             # Vectorize current user vehicle attributes
             self.users_current_vehicle_price_vec = np.asarray([user.vehicle.price for user in self.vehicleUsers_list])
             self.users_current_vehicle_type_vec = np.asarray([user.vehicle.transportType for user in self.vehicleUsers_list])#USED TO CHECK IF YOU OWN A CAR
@@ -385,8 +445,11 @@ class Social_Network:
         individual_specific_util = utilities_kappa[person_index]        
         # Check if all utilities are zero after filtering
         if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
-            #keep current car
-            choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
+            if self.t_social_network == 0:
+                #pick random vehicle which is available
+                choice_index = np.random.choice(len(available_and_current_vehicles_list), p=probability_choose)
+            else:#keep current car
+                choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
         else:
             # Calculate the probability of choosing each vehicle
             sum_prob = np.sum(individual_specific_util)
@@ -604,7 +667,15 @@ class Social_Network:
 
         base_utility_matrix = commuting_util_matrix / (self.r + ((1 - vehicle_dict_vecs["delta_z"])/(1 - self.alpha)))
         
-        price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec
+
+        #price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec
+
+        # Calculate price difference, applying rebate only for transportType == 3
+        price_difference = np.where(
+            vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
+            (vehicle_dict_vecs["price"][:, np.newaxis] - self.rebate) - self.price_owns_car_vec,  # Apply rebate
+            vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec  # No rebate
+        )
     
         # Calculate price and emissions adjustments once
         price_adjustment = np.multiply(self.beta_vec[:, np.newaxis], price_difference.T)
@@ -774,7 +845,6 @@ class Social_Network:
                 self.cars_cum_emissions.append(vehicle_chosen.total_emissions)
 
             self.car_ages.append(vehicle_chosen.L_a_t)
-            #print(vehicle_chosen.L_a_t, type(vehicle_chosen))
             self.quality_vals.append(vehicle_chosen.Quality_a_t)#done here for efficiency
             self.efficiency_vals.append(vehicle_chosen.Eff_omega_a_t)
             self.production_cost_vals.append(vehicle_chosen.ProdCost_z_t)
@@ -843,14 +913,13 @@ class Social_Network:
 
     def save_timeseries_data_social_network(self):
 
-        self.history_driving_emissions.append(self.total_driving_emissions + self.urban_public_transport_emissions + self.rural_public_public_transport_emissions)
+        self.history_driving_emissions.append(self.total_driving_emissions)
         self.history_production_emissions.append(self.total_production_emissions)
-        self.history_total_emissions.append(self.total_production_emissions + self.total_driving_emissions + self.urban_public_transport_emissions + self.rural_public_public_transport_emissions)
+        self.history_total_emissions.append(self.total_production_emissions + self.total_driving_emissions)
         self.history_total_utility.append(self.total_utility)
         self.history_total_distance_driven.append(self.total_distance_travelled)
         self.history_ev_adoption_rate.append(np.mean(self.ev_adoption_vec))
         self.history_consider_ev_rate.append(np.mean(self.consider_ev_vec))
-        #print("self", self.urban_public_transport_users, self.rural_public_transport_users)
         self.history_urban_public_transport_users.append(self.urban_public_transport_users)
         self.history_rural_public_transport_users.append(self.rural_public_transport_users)
         self.history_ICE_users.append(self.ICE_users)
@@ -904,8 +973,9 @@ class Social_Network:
             elif car.transportType == 3:#EV
                 car.fuel_cost_c_z = self.electricity_price
                 car.e_z_t = self.electricity_emissions_intensity
+                car.nu_z_i_t = self.nu_z_i_t_EV
 
-    def next_step(self, carbon_price, second_hand_cars,public_transport_options,new_cars, gas_price, electricity_price, electricity_emissions_intensity):
+    def next_step(self, carbon_price, second_hand_cars,public_transport_options,new_cars, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -925,6 +995,7 @@ class Social_Network:
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
+        self.nu_z_i_t_EV = nu_z_i_t_EV
 
         #update new tech and prices
         self.second_hand_cars, self.public_transport_options, self.new_cars = second_hand_cars, public_transport_options, new_cars

@@ -2,6 +2,7 @@ import copy
 import numpy as np
 import random
 from package.model.carModel import CarModel
+from package.model.personalCar import PersonalCar
 from package.model.firm import Firm
 from collections import defaultdict
 
@@ -20,6 +21,7 @@ class Firm_Manager:
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.id_generator = parameters_firm_manager["IDGenerator_firms"]
         self.kappa = parameters_firm_manager["kappa"]
+        self.num_individuals = parameters_firm_manager["num_individuals"]
 
         #landscapes
         self.landscape_ICE = ICE_landscape
@@ -43,11 +45,33 @@ class Firm_Manager:
 
         self.init_firms()
         
+
         #calculate the inital attributes of all the cars on sale
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
 
+        self.cars_init_state = parameters_firm_manager["cars_init_state"]
+        if self.cars_init_state:
+            self.age_max = parameters_firm_manager["init_car_age_max"]
+            self.old_cars = self.gen_old_cars()        
+
     ###########################################################################################################
     #INITIALISATION
+
+    def gen_old_cars(self):
+        """
+        Using random assortment of cars intially pick some random cars and set a random age distribution
+        """
+
+        model_choices = np.random.choice(self.cars_on_sale_all_firms, self.num_individuals)
+        age_range = np.arange(0,self.age_max)
+        age_list = np.random.choice(age_range, self.num_individuals)
+        car_list = []
+        for i, car in enumerate(model_choices):
+            personalCar_id = self.id_generator.get_new_id()
+            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price)
+            car_real.L_a_t = age_list[i]
+            car_list.append(car_real)
+        return car_list
 
     def init_firms(self):
         """
@@ -71,7 +95,7 @@ class Firm_Manager:
         init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
 
         np.random.seed(self.init_tech_seed) 
-        init_tech_component_string_list_ICE= np.random.choice(init_tech_component_string_list_N_ICE, self.J)
+        init_tech_component_string_list_ICE = np.random.choice(init_tech_component_string_list_N_ICE, self.J)
         init_tech_component_string_list_EV = np.random.choice(init_tech_component_string_list_N_EV, self.J)
 
         self.init_tech_list_ICE = [CarModel(init_tech_component_string_list_ICE[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
@@ -165,11 +189,11 @@ class Firm_Manager:
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
-    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity):
+    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
         cars_on_sale_all_firms = []
         segment_U_sums = defaultdict(float)
         for firm in self.firms_list:
-            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity)
+            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
@@ -188,6 +212,7 @@ class Firm_Manager:
         for i in range(16):
             segment_code = format(i, '04b')
             
+            """
             # Determine if the segment considers ICE cars
             if segment_code[2] == '0':  
                 # Flip the bit at position 2 (count from left, 0-indexed)
@@ -200,6 +225,12 @@ class Firm_Manager:
             else:
                 self.market_data[segment_code]["I_s_t"] = segment_counts[i]
                 self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
+            """
+            self.market_data[segment_code]["I_s_t"] = segment_counts[i]
+            self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
+            
+            #print("segemtn count",segment_code,  self.market_data[segment_code]["I_s_t"])
+        #quit()
 
     ######################################################################################################################
 
@@ -285,7 +316,7 @@ class Firm_Manager:
         self.history_market_data.append(copy.deepcopy(self.market_data))
 
 
-    def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles,  gas_price, electricity_price, electricity_emissions_intensity):
+    def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
         
         self.t_firm_manager += 1
 
@@ -293,7 +324,7 @@ class Firm_Manager:
          
         self.carbon_price = carbon_price
 
-        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET OR PUBLIC TRANSPORT
+        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET OR PUBLIC TRANSPORT
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.update_market_data(sums_U_segment)

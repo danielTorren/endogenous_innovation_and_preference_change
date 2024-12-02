@@ -1,9 +1,13 @@
+from re import I
 import numpy as np
 from package.model.carModel import CarModel
 
 class Firm:
     def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV):
         
+
+        self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
+
         self.t_firm = 0
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
@@ -25,8 +29,9 @@ class Firm:
         self.init_tech_EV.unique_id = self.id_generator.get_new_id()
         self.list_technology_memory_EV = [init_tech_EV]
         self.last_researched_car_EV = self.init_tech_EV
+        
+        self.ev_reserach_bool = parameters_firm["ev_reserach_bool"]
 
-        self.ev_reserach_bool = False
         self.firm_profit = 0
         self.firm_cars_users = 0
         self.research_bool = 0
@@ -59,7 +64,11 @@ class Firm:
         self.expected_profits_segments = {}
 
         #ALL TYPES
-        self.cars_on_sale = [init_tech_ICE, init_tech_EV]
+        if self.ev_reserach_bool:
+            self.cars_on_sale = [init_tech_ICE, init_tech_EV]
+        else:
+            self.cars_on_sale = [init_tech_ICE]
+            
         self.set_car_init_price_and_U()
 
         np.random.seed(parameters_firm["innovation_seed"])
@@ -127,17 +136,17 @@ class Firm:
         utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
 
         # Ensure utility is non-negative
-        utility = max(0, utility)
+        utility_final = max(0, utility)
 
-        return utility
+        return utility_final
 
 
     def calc_optimal_price_cars(self, market_data, car_list): 
         """Calculate the optimal price for each car in the car list based on market data."""
 
         for car in car_list:
-            E_m = car.emissions  # Emissions for the current car
-            C_m = car.ProdCost_z_t  + self.carbon_price*E_m       # Cost for the current car
+            E_m = car.emissions  # Emissions for the current car                                                  
+            C_m = car.ProdCost_z_t  + self.carbon_price*E_m  # Cost for the current car
 
             #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
             if car.transportType == 2:#ICE
@@ -145,6 +154,8 @@ class Firm:
             else:#EV
                 car.fuel_cost_c_z = self.electricity_price
                 car.e_z_t = self.electricity_emissions_intensity
+                car.nu_z_i_t = self.nu_z_i_t_EV
+            #print(car.transportType,car.nu_z_i_t)
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -163,6 +174,9 @@ class Firm:
                 B = utility_segment/(self.r + (1-self.delta_z)/(1-self.alpha))
                 car.car_base_utility_segments[segment_code] = B
                 car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )) )/beta_s   )
+                
+                #print("vehicle type,segment, utility, profit",car.transportType, segment_code, car.car_utility_segments_U[segment_code], vehicle.optimal_price_segments[segment_code], vehicle.expected_profit_segments[segment_code])
+        #quit()
 
         return car_list
     
@@ -175,11 +189,23 @@ class Firm:
 
             for car in vehicle_list:
                 price_s = car.optimal_price_segments[segment_code]#price for that specific segment
-                if (car.transportType == 2) or all((segment_code[-1] == str(1), car.transportType == 3)):#THE EV ADOPTION BIT GOES LAST
-                    utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
+
+                if (car.transportType == 2) or all((segment_code[2] == str(1), car.transportType == 3)):#THE EV ADOPTION BIT GOES SECOND LAST
+                    
+                    #ADD IN A SUBSIDY
+                    if car.transportType == 3:
+                        utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *(price_s- self.rebate) - gamma_s * car.emissions
+                        #print("EV",utility_segment_U)
+                    else:
+                        utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
+                        #print("ICE ",utility_segment_U )
+                    #utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
                 else:
                     car.car_utility_segments_U[segment_code] = 0 
+                #print("final utility",car.car_utility_segments_U[segment_code])
+
+        #quit()
 
     
     def calc_predicted_profit_segments(self, market_data, car_list):
@@ -204,6 +230,7 @@ class Firm:
 
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
                 if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
+
                     # Calculate profit for this vehicle and segment
                     profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_z_t  + self.carbon_price*vehicle.emissions) 
                     
@@ -211,17 +238,20 @@ class Firm:
                     U_sum = segment_data["U_sum"]
                     
                     # Expected profit calculation
-                    expected_profit = profit_per_sale * I_s_t * (max(0,vehicle.car_utility_segments_U[segment_code])**self.kappa)/(U_sum + vehicle.car_utility_segments_U[segment_code])**self.kappa
-                    
+                    utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
+                    expected_profit = profit_per_sale * I_s_t * ((utility_car)**self.kappa)/((U_sum + utility_car)**self.kappa)
+
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit
+                    
                     expected_profits_segments[segment_code][expected_profit] = vehicle
                 else:
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     expected_profit = 0
                     vehicle.expected_profit_segments[segment_code] = expected_profit
                     expected_profits_segments[segment_code][expected_profit] = vehicle
-
+                #print("vehicle type,segment, utility, price, cost, profit, profit per sale",vehicle.transportType, segment_code, vehicle.car_utility_segments_U[segment_code],vehicle.ProdCost_z_t,  vehicle.optimal_price_segments[segment_code], vehicle.expected_profit_segments[segment_code], vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_z_t  + self.carbon_price*vehicle.emissions) )
+        #quit()
         return expected_profits_segments
 
 
@@ -288,9 +318,15 @@ class Firm:
         profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
         
         # Compute the softmax probabilities
-        lambda_profits = profits**self.lambda_pow
+        lambda_profits = profits**self.lambda_pow        
         probabilities = lambda_profits / np.sum(lambda_profits)
+        #print(probabilities)
 
+        #type_list = [car.transportType for car in vehicles]
+        #print(type_list)
+        #zip_list = zip(type_list, probabilities)
+        #print([(type_item, prob) for type_item, prob in zip_list])
+        #quit()
         # Select a vehicle based on the computed probabilities
         selected_index = np.random.choice(len(vehicles), p=probabilities)
         selected_vehicle = vehicles[selected_index]
@@ -530,13 +566,14 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
+        self.nu_z_i_t_EV = nu_z_i_t_EV
 
         #decide cars to sell
         self.cars_on_sale = self.choose_cars_segments(market_data)
@@ -551,5 +588,6 @@ class Firm:
             self.save_timeseries_data_firm()
             self.research_bool = 0
 
+        #print("len ev list", len(self.list_technology_memory_EV))
         return self.cars_on_sale
 

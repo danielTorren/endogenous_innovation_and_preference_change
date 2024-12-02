@@ -529,7 +529,37 @@ def plot_price_history(firm_manager, time_series, fileName, dpi=600):
 
     # Save and show the plot
     save_and_show(fig, fileName, "price_cars_sale", dpi)   
-  
+
+def plot_history_car_age_scatter(social_network, time_series, fileName, dpi):
+    """
+    Plots individual car ages as scatter points over time.
+    
+    Args:
+    - social_network: An object containing `history_car_age` (a list of lists of car ages at each time step).
+    - time_series: A list of time steps.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Resolution for the saved plot.
+    """
+    # Extract car ages history
+    ages_list = social_network.history_car_age
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    for t, ages in zip(time_series, ages_list):
+        ages = np.array(ages)
+        valid_ages = ages[~np.isnan(ages)]  # Exclude NaNs from the scatter plot
+        ax.scatter([t] * len(valid_ages), valid_ages, alpha=0.6, label="Ages" if t == time_series[0] else None)
+
+    ax.set_title("Car Ages Over Time (Scatter Plot)")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Car Age")
+    ax.grid(True)
+    ax.legend(["Individual Ages"], loc="upper right")
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "Car Age Over Time (Scatter)", dpi)
+
 def plot_history_car_age(social_network,time_series, fileName, dpi):
     """
     Plots the mean and 95% confidence interval for a time series of ages.
@@ -706,6 +736,9 @@ def plot_calibration_data(controller, time_series, fileName, dpi=600):
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_calibration_data", dpi)   
 
+#def plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi):
+#    data = [car.L_a_t]
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -722,31 +755,40 @@ def main(fileName, dpi=600):
 
     #"""
     # All plot function calls
-    #plot_emissions(social_network, time_series, fileName, dpi)
-    #plot_total_utility(social_network, time_series, fileName, dpi)
-    #plot_total_distance(social_network, time_series, fileName, dpi)
+    plot_emissions(social_network, time_series, fileName, dpi)
+    plot_total_utility(social_network, time_series, fileName, dpi)
+    
     plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
     plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
-    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    
     #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
+    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
-    #plot_price_history(firm_manager, time_series, fileName, dpi)
-    #plot_history_car_age(social_network, time_series,fileName, dpi)
+    
+    
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
-    #plot_total_profit(firm_manager, time_series, fileName, dpi)
+    plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
     #plot_carbon_price(data_controller, time_series, fileName)
-    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    #"""
+
+    plot_history_car_age(social_network, time_series,fileName, dpi)
+    plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
+    #plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi)
+    plot_total_distance(social_network, time_series, fileName, dpi)
+    plot_price_history(firm_manager, time_series, fileName, dpi)
+    
+    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
 
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
@@ -764,4 +806,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_09_42__28_11_2024")
+    main("results/single_experiment_14_18_43__02_12_2024")
