@@ -40,21 +40,96 @@ if __name__ == "__main__":
     base_params = {
         "cars_init_state": 1,
         "duration_no_carbon_price": 272,#2000-2022
-        "duration_large_carbon_price":156,#2022 - 2035
+        "duration_future":156,#2022 - 2035
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
         "age_limit_second_hand": 3,
         "ev_research_start_time": 60,#2005
-        "parameters_rebate":{
+        "parameters_scenarios":{
+            "States":{
+                "Gas_price_state": "Low", #"Current","High",#
+                "Electricity_price_state": "Low", #"Current","High",#
+                "Grid_emissions_intensity_state": "Weaker", # "Decarbonised"
+                "EV_Substitutability_state": "Improved", #"Parity"
+            },
+            "Values":{
+                "Gas_price":{
+                    "Low": 0.5, 
+                    "Current": 1,
+                    "High": 1.5,
+                },
+                "Electricity_price":{
+                    "Low": 0.5, 
+                    "Current": 1,
+                    "High": 1.5,
+                },
+                "Grid_emissions_intensity":{
+                    "Weaker": 0.5, 
+                    "Decarbonised": 0
+                },
+                "EV_Substitutability":{
+                    "Improved": 1.2, 
+                    "Parity": 1
+                }
+            }
+        },
+        "parameters_policies":{
+            "States":{
+                "Carbon_price_state": "Zero",#"Low", "High"
+                "Adoption_subsidy_state": "Low", #"High"
+                "Public_transport_expansion_state": "Zero", #"High"
+                "Ban_ICE_cars_state": "Zero", #"Applied"
+            },
+            "Values":{
+                "Carbon_price":{
+                    "None":{
+                        "carbon_price_init": 0,
+                        "carbon_price": 0.1,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
+                        "carbon_price_state": "linear"
+                    },
+                    "Low":{
+                        "carbon_price_init": 0,
+                        "carbon_price": 0.03,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
+                        "carbon_price_state": "linear"
+                    },
+                    "High":{
+                        "carbon_price_init": 0,
+                        "carbon_price": 0.1,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
+                        "carbon_price_state": "linear"
+                    }
+                },
+                "Adoption_subsidys":{
+                    "Zero":{
+                        "rebate": 0,
+                        "used_rebate": 0
+                    },
+                    "Low":{
+                        "rebate": 2500,
+                        "used_rebate": 500
+                    },
+                    "High":{
+                        "rebate": 7500,
+                        "used_rebate": 1500
+                    }
+                },
+                "Public_transport_expansion":{
+                    "Zero":1.2,
+                    "High":1
+                },
+                "Ban_ICE_cars":{
+                    "Zero":None,
+                    "Applied":420
+                },
+            }
+        },
+        "EV_nu_diff_state": 1,
+        "EV_rebate_state": 1,
+        "parameters_rebate":{#THIS IS A CALIBRATION PARAMETER, REFLECTIVE OF CALIFORNIA
             "start_time": 120,#2010
+            "end_time":272,
             "rebate": 7500,
             "used_rebate": 1500
-        },
-        "parameters_future_carbon_policy":{
-            "carbon_price_init": 0,
-            "carbon_price": 10,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
-            "carbon_price_state": "linear"
         },
         "parameters_EV":{
             "landscape_seed": 14,
@@ -85,8 +160,8 @@ if __name__ == "__main__":
             "min_max_Cost": [1000,30000],
         },
         "parameters_urban_public_transport":{
-            "attributes": [1000,1,1], #[0.100,1,1]
-            "nu_z_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
+            "attributes": [100,1,1], #[0.100,1,1]
+            "nu_z_i_t": 0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "price": 100,
             "production_emissions":10e4,
             "id": -1, 
@@ -97,7 +172,7 @@ if __name__ == "__main__":
             "delta_z":0
         },
         "parameters_rural_public_transport":{
-            "attributes": [1000,1,1], #[0.100,1,1],
+            "attributes": [100,1,1], #[0.100,1,1],
             "nu_z_i_t":5*0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "price": 100,
             "production_emissions":10e4,
@@ -123,7 +198,7 @@ if __name__ == "__main__":
             "num_cars_production": 5
         },
         "parameters_social_network":{
-            "num_individuals": 1000,#200,
+            "num_individuals": 500,#200,
             "prop_urban": 0.8,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -138,7 +213,7 @@ if __name__ == "__main__":
             "prob_rewire": 0.1,
             "gamma_multiplier": 1,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
             "beta_multiplier": 1,
-            "a_environment": 2,#large easy ev adoption 
+            "a_environment": 4,#large easy ev adoption 
             "b_environment": 2,#2,
             "a_innovativeness": 0.5,#0.6,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
             "b_innovativeness": 1,#1,#2,#1,#2,
@@ -150,7 +225,7 @@ if __name__ == "__main__":
             "kappa": 3,
             "alpha": 0.8,
             "r": 0.02,
-            "eta": 10e3,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
+            "eta": 1,#10e3,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
             "mu": 0.3,
             "second_hand_car_max_consider": 200,
             "new_car_max_consider": 200

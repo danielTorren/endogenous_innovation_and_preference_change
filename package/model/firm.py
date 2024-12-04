@@ -132,8 +132,11 @@ class Firm:
         nu_z_i_t = vehicle.nu_z_i_t
 
         # Calculate commuting utility based on conditions for z
+        
         cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c_z + self.carbon_price*e_z_t) + (gamma_s/ Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
         utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
+        
+
 
         # Ensure utility is non-negative
         utility_final = max(0, utility)
@@ -173,10 +176,12 @@ class Firm:
                 # Save the base utility
                 B = utility_segment/(self.r + (1-self.delta_z)/(1-self.alpha))
                 car.car_base_utility_segments[segment_code] = B
-                car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )) )/beta_s   )
-                
-                #print("vehicle type,segment, utility, profit",car.transportType, segment_code, car.car_utility_segments_U[segment_code], vehicle.optimal_price_segments[segment_code], vehicle.expected_profit_segments[segment_code])
-        #quit()
+
+                inside_component = U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )
+                if inside_component < 0:
+                    car.optimal_price_segments[segment_code] = C_m#STOP NEGATIVE SQUARE ROOTS
+                else:
+                    car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(inside_component) )/beta_s )
 
         return car_list
     
@@ -289,7 +294,6 @@ class Firm:
 
         return cars_selected
 
-
     def select_car_lambda_research(self, expected_profits_segments):
         """
         Probabilistically select a vehicle for research, where the probability of selecting a vehicle
@@ -319,20 +323,18 @@ class Firm:
         
         # Compute the softmax probabilities
         lambda_profits = profits**self.lambda_pow        
-        probabilities = lambda_profits / np.sum(lambda_profits)
+        sum_prob = np.sum(lambda_profits)
+        len_vehicles = len(vehicles)#literally just cos i do it 3 times
+        if sum_prob == 0:
+            probabilities = [1/len_vehicles ]*len_vehicles #UNIFORM PROBAILITIES
+        else:
+            probabilities = lambda_profits / np.sum(sum_prob)
         #print(probabilities)
-
-        #type_list = [car.transportType for car in vehicles]
-        #print(type_list)
-        #zip_list = zip(type_list, probabilities)
-        #print([(type_item, prob) for type_item, prob in zip_list])
-        #quit()
         # Select a vehicle based on the computed probabilities
-        selected_index = np.random.choice(len(vehicles), p=probabilities)
+        selected_index = np.random.choice(len_vehicles, p=probabilities)
         selected_vehicle = vehicles[selected_index]
 
         return selected_vehicle
-
 
     def select_car_lambda_production(self, expected_profits_segments):
         """
@@ -589,6 +591,5 @@ class Firm:
             self.save_timeseries_data_firm()
             self.research_bool = 0
 
-        #print("len ev list", len(self.list_technology_memory_EV))
         return self.cars_on_sale
 

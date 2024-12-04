@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
+import scipy.stats as stats
 from package.model import controller
 from package.resources.utility import load_object
 import matplotlib.cm as cm
@@ -9,7 +10,7 @@ import matplotlib.colors as mcolors
 from matplotlib.cm import ScalarMappable
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-import matplotlib.cm as cm
+from matplotlib.colors import LinearSegmentedColormap
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -32,8 +33,8 @@ def save_and_show(fig, fileName, plot_name, dpi=600):
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
 
-# Plot functions with `time_series` where applicable
 
+# Plot functions with `time_series` where applicable
 def plot_emissions(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, social_network.history_driving_emissions, label='Driving Emissions')
@@ -736,8 +737,632 @@ def plot_calibration_data(controller, time_series, fileName, dpi=600):
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_calibration_data", dpi)   
 
-#def plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi):
-#    data = [car.L_a_t]
+#PLOT INDIVIDUALS LEVEL DATA:
+
+def plot_emissions_individuals(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    data = np.asarray(social_network.history_driving_emissions_individual).T
+    for i, time in enumerate(time_series):
+        ax.plot(time_series, data[i])
+
+    format_plot(ax, "User emissions Over Time", "Time Step", "driving_emissions")
+    save_and_show(fig, fileName, "production_emissions", dpi)
+
+def plot_distance_individuals(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    data = np.asarray(social_network.history_distance_individual).T
+    for i, time in enumerate(time_series):
+        ax.plot(time_series, data[i])
+
+    format_plot(ax, "User distance Over Time", "Time Step", "indivudal_distance")
+    save_and_show(fig, fileName, "user_distance", dpi)
+
+
+def plot_utility_individuals(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    data = np.asarray(social_network.history_utility_individual).T
+    for i, time in enumerate(time_series):
+        ax.plot(time_series, data[i])
+
+    format_plot(ax, "User utility Over Time", "Time Step", "indivudal_utility")
+    save_and_show(fig, fileName, "user_utility", dpi)
+
+def plot_transport_type_individuals(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    data = np.asarray(social_network.history_transport_type_individual).T
+    for i, time in enumerate(time_series):
+        ax.plot(time_series, data[i])
+
+    format_plot(ax, "User transport type Over Time", "Time Step", "indivudal_transport_type")
+    save_and_show(fig, fileName, "user_transport_type", dpi)
+
+def plot_density_by_value(fileName, social_network, time_series, dpi_save=600):
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5))  # 1 row, 3 columns
+    
+    emissions_data = np.asarray(social_network.history_driving_emissions_individual).T
+    distance_data = np.asarray(social_network.history_distance_individual).T 
+    utility_data = np.asarray(social_network.history_utility_individual).T 
+
+    # Custom colormap (White to Blue)
+    colors = [(1, 1, 1), (0, 0, 1)]  # White to blue
+    cmap_name = 'white_to_blue'
+    custom_cmap = LinearSegmentedColormap.from_list(cmap_name, colors, N=100)
+
+
+    
+    # Helper function to plot density
+    def plot_density(ax, data, title, xlabel, ylabel):
+        histograms = []
+        
+        # Fixed number of bins
+        n_bins = 30
+        bins = np.linspace(np.nanmin(data), np.nanmax(data), n_bins)  # Adjust range (0, 100) as needed for your data
+
+        for t in range(data.shape[1]):  # Iterate over time steps
+            hist, _ = np.histogram(data[:, t], bins=bins, density=True)
+            histograms.append(hist)
+        
+        histograms = np.array(histograms).T
+        T, B = np.meshgrid(time_series, bins[:-1])  # Create meshgrid for plotting
+        pcm = ax.pcolormesh(T, B, histograms, cmap=custom_cmap, shading='auto')
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        return pcm
+    
+    # Plot emissions density
+    pcm = plot_density(axs[0], emissions_data, "Emissions Density Over Time", "Time Step", "Emission Value")
+    fig.colorbar(pcm, ax=axs[0], label='Density')
+    
+    # Plot distance density
+    pcm = plot_density(axs[1], distance_data, "Distance Density Over Time", "Time Step", "Distance Value")
+    fig.colorbar(pcm, ax=axs[1], label='Density')
+    
+    # Plot utility density
+    pcm = plot_density(axs[2], utility_data, "Utility Density Over Time", "Time Step", "Utility Value")
+    fig.colorbar(pcm, ax=axs[2], label='Density')
+    
+    plt.tight_layout()
+    plotName = fileName + "/Plots"
+    f = plotName + "/value_density_plot_grid"
+    fig.savefig(f + ".png", dpi=dpi_save, format="png")
+
+#################################################################################################################################################
+#Plots by segments of society
+def plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=50, dpi=600):
+    # Calculate the threshold for rich and poor
+    beta_threshold = np.percentile(social_network.beta_vec, x_percentile)
+    
+    # Separate indices for rich and poor
+    rich_indices = np.where(social_network.beta_vec <= beta_threshold)[0]
+    poor_indices = np.where(social_network.beta_vec > beta_threshold)[0]
+    
+    # Extract transport type data
+    data = np.asarray(social_network.history_transport_type_individual).T
+
+    # Compute proportions for rich and poor
+    def compute_proportions(indices):
+        num_users = len(indices)
+        transport_data = data[indices]  # Select data for the given group
+        
+        # Calculate proportions for each transport type at each time step
+        rural_prop = np.sum(transport_data == 0, axis=0) / num_users
+        urban_prop = np.sum(transport_data == 1, axis=0) / num_users
+        ice_prop = np.sum(transport_data == 2, axis=0) / num_users
+        ev_prop = np.sum(transport_data == 3, axis=0) / num_users
+        
+        return rural_prop, urban_prop, ice_prop, ev_prop
+
+    # Get proportions for rich and poor
+    rich_rural, rich_urban, rich_ice, rich_ev = compute_proportions(rich_indices)
+    poor_rural, poor_urban, poor_ice, poor_ev = compute_proportions(poor_indices)
+    
+    # Create subplots for rich and poor
+    fig, axs = plt.subplots(2, 1, figsize=(10, 12), sharex=True, sharey=True)
+
+    # Plot stacked areas for rich individuals
+    axs[0].stackplot(time_series, rich_rural, rich_urban, rich_ice, rich_ev,
+                     labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                     alpha=0.8)
+    axs[0].set_title("Transport Users Over Time (Rich Proportion)")
+    axs[0].set_ylabel("Proportion")
+    axs[0].legend(loc="upper left")
+
+    # Plot stacked areas for poor individuals
+    axs[1].stackplot(time_series, poor_rural, poor_urban, poor_ice, poor_ev,
+                     labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                     alpha=0.8)
+    axs[1].set_title("Transport Users Over Time (Poor Proportion)")
+    axs[1].set_xlabel("Time Step")
+    axs[1].set_ylabel("Proportion")
+    axs[1].legend(loc="upper left")
+    
+    # Set y-axis limits
+    axs[0].set_ylim(0, 1)
+    axs[1].set_ylim(0, 1)
+
+    # Adjust layout and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, "transport_users_stacked_rich_poor", dpi)
+
+def plot_transport_users_stacked_two_by_four(social_network, time_series, fileName, percentiles, dpi=600):
+    """
+    Plots transport user proportions in a 2x4 layout: each column represents a vector (Beta, Gamma, Chi, Origin),
+    with rich/urban in the upper row and poor/rural in the lower row.
+
+    Args:
+        social_network: The social network object containing transport data and vectors.
+        time_series: Array of time steps.
+        fileName: Output directory for saving plots.
+        percentiles: Dictionary with vector names as keys and percentiles as values.
+        dpi: Resolution of the saved plot.
+    """
+    # Vectors to process
+    vectors = {
+        'Beta': social_network.beta_vec,
+        'Gamma': social_network.gamma_vec,
+        'Chi': social_network.chi_vec
+    }
+    
+    # Extract transport type data
+    data = np.asarray(social_network.history_transport_type_individual).T
+
+    # Compute proportions for a general case
+    def compute_proportions(indices):
+        num_users = len(indices)
+        transport_data = data[indices]  # Select data for the given group
+        
+        # Calculate proportions for each transport type at each time step
+        
+        urban_prop = np.sum(transport_data == 0, axis=0) / num_users
+        rural_prop = np.sum(transport_data == 1, axis=0) / num_users
+        ice_prop = np.sum(transport_data == 2, axis=0) / num_users
+        ev_prop = np.sum(transport_data == 3, axis=0) / num_users
+        
+        return rural_prop, urban_prop, ice_prop, ev_prop
+
+    # Create a grid of subplots (2 rows x 4 columns)
+    fig, axs = plt.subplots(2, 4, figsize=(10, 8), sharex=True, sharey=True)
+    
+    # Iterate through general vectors and plot
+    for i, (label, vec) in enumerate(vectors.items()):
+        # Get the percentile threshold for this vector
+        threshold = np.percentile(vec, percentiles[label])
+        rich_indices = np.where(vec <= threshold)[0]
+        poor_indices = np.where(vec > threshold)[0]
+        
+        # Compute proportions
+        rich_rural, rich_urban, rich_ice, rich_ev = compute_proportions(rich_indices)
+        poor_rural, poor_urban, poor_ice, poor_ev = compute_proportions(poor_indices)
+        
+        # Plot stacked areas for rich in the upper row
+        axs[0, i].stackplot(time_series, rich_rural, rich_urban, rich_ice, rich_ev,
+                            labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                            alpha=0.8)
+        axs[0, i].set_title(f"{label} - Top {100 - percentiles[label]}%")
+        #axs[0, i].set_ylabel("Proportion")
+        #axs[0, i].legend(loc="upper left")
+        
+        # Plot stacked areas for poor in the lower row
+        axs[1, i].stackplot(time_series, poor_rural, poor_urban, poor_ice, poor_ev,
+                            labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                            alpha=0.8)
+        axs[1, i].set_title(f"{label} - Bottom {percentiles[label]}%")
+        #axs[1, i].set_ylabel("Proportion")
+        #axs[1, i].legend(loc="upper left")
+    
+    # Handle the origin vector separately
+    origin_vec = social_network.origin_vec
+    urban_indices = np.where(origin_vec == 0)[0]
+    rural_indices = np.where(origin_vec == 1)[0]
+    
+    # Compute proportions for urban and rural
+    urban_rural, urban_urban, urban_ice, urban_ev = compute_proportions(urban_indices)
+    rural_rural, rural_urban, rural_ice, rural_ev = compute_proportions(rural_indices)
+    
+    # Plot stacked areas for urban in the upper row, last column
+    axs[0, -1].stackplot(time_series, urban_rural, urban_urban, urban_ice, urban_ev,
+                         labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                         alpha=0.8)
+    axs[0, -1].set_title("Origin - Urban")
+    axs[0, -1].legend(loc="upper left")
+    
+    # Plot stacked areas for rural in the lower row, last column
+    axs[1, -1].stackplot(time_series, rural_rural, rural_urban, rural_ice, rural_ev,
+                         labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                         alpha=0.8)
+    axs[1, -1].set_title("Origin - Rural")
+    
+    fig.supylabel("Proportion")
+    fig.supxlabel("Time Step")
+    
+    # Adjust layout and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, "transport_users_stacked_two_by_four", dpi)
+
+def plot_mean_emissions_one_row(social_network, time_series, fileName, percentiles, dpi=600):
+    """
+    Plots mean emissions in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
+    with rich/urban and poor/rural plotted together and distinguished by a legend.
+
+    Args:
+        social_network: The social network object containing emissions data and vectors.
+        time_series: Array of time steps.
+        fileName: Output directory for saving plots.
+        percentiles: Dictionary with vector names as keys and percentiles as values.
+        dpi: Resolution of the saved plot.
+    """
+    # Vectors to process
+    vectors = {
+        'Beta': social_network.beta_vec,
+        'Gamma': social_network.gamma_vec,
+        'Chi': social_network.chi_vec
+    }
+    
+    # Extract emissions data
+    emissions_data = np.asarray(social_network.history_driving_emissions_individual).T
+
+    # Compute mean and 95% CI for a general case
+    def compute_mean_and_ci(indices):
+        selected_data = emissions_data[indices]
+        mean = np.mean(selected_data, axis=0)
+        se = stats.sem(selected_data, axis=0)  # Standard error
+        ci = se * stats.t.ppf((1 + 0.95) / 2, len(indices) - 1)  # 95% CI
+        return mean, ci
+
+    # Create a single row of subplots (1 row x 4 columns)
+    fig, axs = plt.subplots(1, 4, figsize=(20, 5), sharex=True, sharey=True)
+    
+    # Iterate through general vectors and plot
+    for i, (label, vec) in enumerate(vectors.items()):
+        # Get the percentile threshold for this vector
+        threshold = np.percentile(vec, percentiles[label])
+        rich_indices = np.where(vec <= threshold)[0]
+        poor_indices = np.where(vec > threshold)[0]
+        
+        # Compute mean and CI
+        rich_mean, rich_ci = compute_mean_and_ci(rich_indices)
+        poor_mean, poor_ci = compute_mean_and_ci(poor_indices)
+        
+        # Plot mean and CI for rich
+        axs[i].plot(time_series, rich_mean, label=f"{label} - Top {100 - percentiles[label]}%", color="blue")
+        axs[i].fill_between(time_series, rich_mean - rich_ci, rich_mean + rich_ci, color="blue", alpha=0.2)
+        
+        # Plot mean and CI for poor
+        axs[i].plot(time_series, poor_mean, label=f"{label} - Bottom {percentiles[label]}%", color="red")
+        axs[i].fill_between(time_series, poor_mean - poor_ci, poor_mean + poor_ci, color="red", alpha=0.2)
+        
+        axs[i].set_title(label)
+        axs[i].legend(loc="upper left")
+    
+    # Handle the origin vector separately
+    origin_vec = social_network.origin_vec
+    urban_indices = np.where(origin_vec == 0)[0]
+    rural_indices = np.where(origin_vec == 1)[0]
+    
+    # Compute mean and CI for urban and rural
+    urban_mean, urban_ci = compute_mean_and_ci(urban_indices)
+    rural_mean, rural_ci = compute_mean_and_ci(rural_indices)
+    
+    # Plot mean and CI for urban and rural in the last subplot
+    axs[-1].plot(time_series, urban_mean, label="Urban Mean", color="blue")
+    axs[-1].fill_between(time_series, urban_mean - urban_ci, urban_mean + urban_ci, color="blue", alpha=0.2)
+    axs[-1].plot(time_series, rural_mean, label="Rural Mean", color="red")
+    axs[-1].fill_between(time_series, rural_mean - rural_ci, rural_mean + rural_ci, color="red", alpha=0.2)
+    axs[-1].set_title("Origin")
+    axs[-1].legend(loc="upper left")
+    
+    fig.supylabel("Driving Emissions")
+    fig.supxlabel("Time Step")
+    
+    # Adjust layout and save
+    #plt.tight_layout()
+    save_and_show(fig, fileName, "mean_driving_emissions_one_row", dpi)
+
+
+def plot_mean_distance_one_row(social_network, time_series, fileName, percentiles, dpi=600):
+    """
+    Plots mean distance in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
+    with rich/urban and poor/rural plotted together and distinguished by a legend.
+
+    Args:
+        social_network: The social network object containing distance data and vectors.
+        time_series: Array of time steps.
+        fileName: Output directory for saving plots.
+        percentiles: Dictionary with vector names as keys and percentiles as values.
+        dpi: Resolution of the saved plot.
+    """
+    # Vectors to process
+    vectors = {
+        'Beta': social_network.beta_vec,
+        'Gamma': social_network.gamma_vec,
+        'Chi': social_network.chi_vec
+    }
+    
+    # Extract distance data
+    distance_data = np.asarray(social_network.history_distance_individual).T
+
+    # Compute mean and 95% CI
+    def compute_mean_and_ci(indices):
+        selected_data = distance_data[indices]
+        mean = np.mean(selected_data, axis=0)
+        se = stats.sem(selected_data, axis=0)  # Standard error
+        ci = se * stats.t.ppf((1 + 0.95) / 2, len(indices) - 1)  # 95% CI
+        return mean, ci
+
+    # Create a single row of subplots (1 row x 4 columns)
+    fig, axs = plt.subplots(1, 4, figsize=(20, 5), sharex=True, sharey=True)
+    
+    # Iterate through general vectors and plot
+    for i, (label, vec) in enumerate(vectors.items()):
+        # Get the percentile threshold for this vector
+        threshold = np.percentile(vec, percentiles[label])
+        rich_indices = np.where(vec <= threshold)[0]
+        poor_indices = np.where(vec > threshold)[0]
+        
+        # Compute mean and CI
+        rich_mean, rich_ci = compute_mean_and_ci(rich_indices)
+        poor_mean, poor_ci = compute_mean_and_ci(poor_indices)
+        
+        # Plot mean and CI for rich
+        axs[i].plot(time_series, rich_mean, label=f"{label} - Top {100 - percentiles[label]}%", color="blue")
+        axs[i].fill_between(time_series, rich_mean - rich_ci, rich_mean + rich_ci, color="blue", alpha=0.2)
+        
+        # Plot mean and CI for poor
+        axs[i].plot(time_series, poor_mean, label=f"{label} - Bottom {percentiles[label]}%", color="red")
+        axs[i].fill_between(time_series, poor_mean - poor_ci, poor_mean + poor_ci, color="red", alpha=0.2)
+        
+        axs[i].set_title(label)
+        axs[i].legend(loc="upper left")
+    
+    # Handle the origin vector separately
+    origin_vec = social_network.origin_vec
+    urban_indices = np.where(origin_vec == 0)[0]
+    rural_indices = np.where(origin_vec == 1)[0]
+    
+    # Compute mean and CI for urban and rural
+    urban_mean, urban_ci = compute_mean_and_ci(urban_indices)
+    rural_mean, rural_ci = compute_mean_and_ci(rural_indices)
+    
+    # Plot mean and CI for urban and rural in the last subplot
+    axs[-1].plot(time_series, urban_mean, label="Urban Mean", color="blue")
+    axs[-1].fill_between(time_series, urban_mean - urban_ci, urban_mean + urban_ci, color="blue", alpha=0.2)
+    axs[-1].plot(time_series, rural_mean, label="Rural Mean", color="red")
+    axs[-1].fill_between(time_series, rural_mean - rural_ci, rural_mean + rural_ci, color="red", alpha=0.2)
+    axs[-1].set_title("Origin")
+    axs[-1].legend(loc="upper left")
+    
+    fig.supylabel("Mean Distance")
+    fig.supxlabel("Time Step")
+    
+    # Adjust layout and save
+    #plt.tight_layout()
+    save_and_show(fig, fileName, "mean_distance_one_row", dpi)
+
+
+def plot_mean_utility_one_row(social_network, time_series, fileName, percentiles, dpi=600):
+    """
+    Plots mean utility in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
+    with rich/urban and poor/rural plotted together and distinguished by a legend.
+
+    Args:
+        social_network: The social network object containing utility data and vectors.
+        time_series: Array of time steps.
+        fileName: Output directory for saving plots.
+        percentiles: Dictionary with vector names as keys and percentiles as values.
+        dpi: Resolution of the saved plot.
+    """
+    # Vectors to process
+    vectors = {
+        'Beta': social_network.beta_vec,
+        'Gamma': social_network.gamma_vec,
+        'Chi': social_network.chi_vec
+    }
+    
+    # Extract utility data
+    utility_data = np.asarray(social_network.history_utility_individual).T
+
+    # Compute mean and 95% CI
+    def compute_mean_and_ci(indices):
+        selected_data = utility_data[indices]
+        mean = np.mean(selected_data, axis=0)
+        se = stats.sem(selected_data, axis=0)  # Standard error
+        ci = se * stats.t.ppf((1 + 0.95) / 2, len(indices) - 1)  # 95% CI
+        return mean, ci
+
+    # Create a single row of subplots (1 row x 4 columns)
+    fig, axs = plt.subplots(1, 4, figsize=(20, 5), sharex=True, sharey=True)
+    
+    # Iterate through general vectors and plot
+    for i, (label, vec) in enumerate(vectors.items()):
+        # Get the percentile threshold for this vector
+        threshold = np.percentile(vec, percentiles[label])
+        rich_indices = np.where(vec <= threshold)[0]
+        poor_indices = np.where(vec > threshold)[0]
+        
+        # Compute mean and CI
+        rich_mean, rich_ci = compute_mean_and_ci(rich_indices)
+        poor_mean, poor_ci = compute_mean_and_ci(poor_indices)
+        
+        # Plot mean and CI for rich
+        axs[i].plot(time_series, rich_mean, label=f"{label} - Top {100 - percentiles[label]}%", color="blue")
+        axs[i].fill_between(time_series, rich_mean - rich_ci, rich_mean + rich_ci, color="blue", alpha=0.2)
+        
+        # Plot mean and CI for poor
+        axs[i].plot(time_series, poor_mean, label=f"{label} - Bottom {percentiles[label]}%", color="red")
+        axs[i].fill_between(time_series, poor_mean - poor_ci, poor_mean + poor_ci, color="red", alpha=0.2)
+        
+        axs[i].set_title(label)
+        axs[i].legend(loc="upper left")
+    
+    # Handle the origin vector separately
+    origin_vec = social_network.origin_vec
+    urban_indices = np.where(origin_vec == 0)[0]
+    rural_indices = np.where(origin_vec == 1)[0]
+    
+    # Compute mean and CI for urban and rural
+    urban_mean, urban_ci = compute_mean_and_ci(urban_indices)
+    rural_mean, rural_ci = compute_mean_and_ci(rural_indices)
+    
+    # Plot mean and CI for urban and rural in the last subplot
+    axs[-1].plot(time_series, urban_mean, label="Urban Mean", color="blue")
+    axs[-1].fill_between(time_series, urban_mean - urban_ci, urban_mean + urban_ci, color="blue", alpha=0.2)
+    axs[-1].plot(time_series, rural_mean, label="Rural Mean", color="red")
+    axs[-1].fill_between(time_series, rural_mean - rural_ci, rural_mean + rural_ci, color="red", alpha=0.2)
+    axs[-1].set_title("Origin")
+    axs[-1].legend(loc="upper left")
+    
+    fig.supylabel("Mean Utility")
+    fig.supxlabel("Time Step")
+    
+    # Adjust layout and save
+    #plt.tight_layout()
+    save_and_show(fig, fileName, "mean_utility_one_row", dpi)
+
+def plot_conditional_transport_users_4x4(
+    social_network, time_series, fileName, percentiles, dpi=600
+):
+    """
+    Plots transport user proportions for combinations of conditions in a 4x4 grid with condition-based titles.
+
+    Args:
+        social_network: The social network object containing transport data and vectors.
+        time_series: Array of time steps.
+        fileName: Output directory for saving plots.
+        percentiles: Dictionary with vector names as keys and percentile thresholds as values.
+        dpi: Resolution of the saved plot.
+    """
+    # Vectors to process
+    vectors = {
+        'Beta': social_network.beta_vec,
+        'Gamma': social_network.gamma_vec,
+        'Chi': social_network.chi_vec
+    }
+    
+    # Extract transport type data
+    data = np.asarray(social_network.history_transport_type_individual).T
+
+    # Compute proportions for given indices
+    def compute_proportions(indices):
+        num_users = len(indices)
+        transport_data = data[indices]  # Select data for the given group
+        
+        # Calculate proportions for each transport type at each time step
+        urban_prop = np.sum(transport_data == 0, axis=0) / num_users
+        rural_prop = np.sum(transport_data == 1, axis=0) / num_users
+        ice_prop = np.sum(transport_data == 2, axis=0) / num_users
+        ev_prop = np.sum(transport_data == 3, axis=0) / num_users
+        
+        return rural_prop, urban_prop, ice_prop, ev_prop
+
+    # Define combinations for the 4 variables
+    condition_combinations = [
+        (beta_cond, gamma_cond, chi_cond, origin_cond)
+        for beta_cond in ['low', 'high']
+        for gamma_cond in ['low', 'high']
+        for chi_cond in ['low', 'high']
+        for origin_cond in ['urban', 'rural']
+    ]
+
+    # Create a grid of subplots (4x4 layout)
+    fig, axs = plt.subplots(4, 4, figsize=(12, 12), sharex=True, sharey=True)
+
+    for i, (beta_cond, gamma_cond, chi_cond, origin_cond) in enumerate(condition_combinations):
+        
+        
+        row, col = divmod(i, 4)
+        ax = axs[row, col]
+
+        # Compute indices for the current condition combination
+        beta_threshold = np.percentile(vectors['Beta'], percentiles['Beta'])
+        gamma_threshold = np.percentile(vectors['Gamma'], percentiles['Gamma'])
+        chi_threshold = np.percentile(vectors['Chi'], percentiles['Chi'])
+        
+        beta_indices = (
+            np.where(vectors['Beta'] <= beta_threshold)[0]
+            if beta_cond == 'low'
+            else np.where(vectors['Beta'] > beta_threshold)[0]
+        )
+        gamma_indices = (
+            np.where(vectors['Gamma'] <= gamma_threshold)[0]
+            if gamma_cond == 'low'
+            else np.where(vectors['Gamma'] > gamma_threshold)[0]
+        )
+        chi_indices = (
+            np.where(vectors['Chi'] <= chi_threshold)[0]
+            if chi_cond == 'low'
+            else np.where(vectors['Chi'] > chi_threshold)[0]
+        )
+        origin_indices = (
+            np.where(social_network.origin_vec == (0 if origin_cond == 'urban' else 1))[0]
+        )
+        
+        # Combine all indices (intersection of conditions)
+        combined_indices = np.intersect1d(
+            np.intersect1d(beta_indices, gamma_indices),
+            np.intersect1d(chi_indices, origin_indices)
+        )
+
+        #print("SEGEMENT COUNT", len(combined_indices))
+        # Compute proportions for the combined indices
+        if len(combined_indices) > 0:
+            rural_prop, urban_prop, ice_prop, ev_prop = compute_proportions(combined_indices)
+
+            # Plot the data
+            ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,
+                         labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV'],
+                         alpha=0.8)
+        
+        # Generate the condition-based title
+        title = (
+            f"Pop: { len(combined_indices)}, $\\beta$: {'B' if beta_cond == 'low' else 'T'}{percentiles['Beta']}%, "
+            f"$\\gamma$: {'B' if gamma_cond == 'low' else 'T'}{percentiles['Gamma']}%, "
+            f"$\\chi$: {'B' if chi_cond == 'low' else 'T'}{percentiles['Chi']}%, "
+            f"{'Urban' if origin_cond == 'urban' else 'Rural'}"
+        )
+        ax.set_title(title, fontsize=8)
+        ax.grid()
+
+    # Add shared labels
+    fig.supylabel("Proportion")
+    
+    
+    handles, labels = axs[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper center', ncol=4, fontsize="9", frameon=False)
+    #fig.subplots_adjust(top=0.1)  # Adjust bottom margin for legend
+    fig.supxlabel("Time Step")
+    # Adjust layout and save
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space at the top for the legend
+    save_and_show(fig, fileName, "conditional_transport_users_4x4_conditions", dpi)
+
+
+
+#################################################################################################################################################
+
+#controller plots
+
+def plot_time_series_controller(reference_data, time_series, reference_label,reference_save, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Plot reference data (assumes reference_data is a single time-series array)
+    ax.plot(time_series, reference_data, color="red", linewidth=2, label=reference_label)
+
+    # Formatting
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel(reference_label)
+    ax.legend(loc="best")
+    ax.grid(True)
+
+    # Save and show
+    plt.tight_layout()
+    save_and_show(fig, fileName, reference_save, dpi)
+
+
+
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -753,17 +1378,17 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
 
-    #"""
+    """
     # All plot function calls
-    plot_emissions(social_network, time_series, fileName, dpi)
-    plot_total_utility(social_network, time_series, fileName, dpi)
     
-    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    #plot_total_utility(social_network, time_series, fileName, dpi)
+    
+    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
     #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
+    
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
     plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
@@ -780,30 +1405,55 @@ def main(fileName, dpi=600):
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
     #plot_carbon_price(data_controller, time_series, fileName)
     plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
-    #"""
+    """
 
+    """
     plot_history_car_age(social_network, time_series,fileName, dpi)
-    plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
+    #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi)
-    plot_total_distance(social_network, time_series, fileName, dpi)
+    #plot_total_distance(social_network, time_series, fileName, dpi)
     plot_price_history(firm_manager, time_series, fileName, dpi)
     
-    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    
 
     #SEGEMENT PLOTS
-    #plot_segment_count_grid(firm_manager, time_series, fileName)
-    #"""
+    plot_segment_count_grid(firm_manager, time_series, fileName)
+    """
 
     #plot_calibration_data(data_controller, time_series, fileName)
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
 
     #CALIBRATION PLOTS
-    #population_scaling_factor = #How people does 
-    #plot_emissions_intensity()
-    #plot_emissions_cars()
-    #plot_EV_count()
+
+    #plot_emissions_individuals(social_network, time_series, fileName)
+    #plot_distance_individuals(social_network, time_series, fileName)
+    #plot_utility_individuals(social_network, time_series, fileName)
+    #plot_transport_type_individuals(social_network, time_series, fileName)
+    #plot_density_by_value(fileName, social_network, time_series)
+
+    #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
+    plot_emissions(social_network, time_series, fileName, dpi)
+
+    percentiles = {'Beta': 90, 'Gamma': 50, 'Chi': 10}
+    plot_transport_users_stacked_two_by_four(social_network, time_series, fileName, percentiles)
+    plot_mean_emissions_one_row(social_network, time_series, fileName, percentiles)
+    plot_mean_distance_one_row(social_network, time_series, fileName, percentiles)
+    plot_mean_utility_one_row(social_network, time_series, fileName, percentiles)
+
+    plot_conditional_transport_users_4x4(social_network, time_series, fileName, percentiles)
+    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
+
+    #PLOT ACTUAL VALUES USED
+    plot_time_series_controller(data_controller.history_gas_price, time_series,"Gas price","gas_price", fileName)
+    plot_time_series_controller(data_controller.history_electricity_price, time_series,"Electricity price","electricity_price", fileName)
+    plot_time_series_controller(data_controller.history_electricity_emissions_intensity, time_series,"Electricity emissions intensity","electricity_emissions_intensity", fileName)
+    plot_time_series_controller(data_controller.history_nu_z_i_t_EV, time_series,"nu EV","nu_z_i_t_EV", fileName)
+    #plot_time_series_controller(data_controller.history_rebate, time_series,"EV rebate","rebate", fileName)
+    #plot_time_series_controller(data_controller.history_used_rebate, time_series,"Used EV rebate","used_rebate", fileName)
+
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_14_18_43__02_12_2024")
+    main("results/single_experiment_19_09_02__03_12_2024")

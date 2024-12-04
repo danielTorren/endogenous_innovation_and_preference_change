@@ -67,12 +67,19 @@ def load_in_calibration_data():
     EV_range_df["Date"] = pd.to_datetime(EV_range_df["Date"])
     EV_range_df.set_index('Date', inplace=True)
 
+    # Create a new date range with monthly frequency
+    monthly_index = pd.date_range(
+        start=EV_range_df.index.min(),
+        end="2022-12-01",  # Specify the last month #EXTEND DATA FROM 2021 TO 2022
+        freq="MS"  # Month Start frequency
+    )
+    # Reindex to monthly, forward-fill yearly data to monthly
+    EV_range_df = EV_range_df.reindex(monthly_index, method="ffill")
     #Min in 2010 is 127km, MAX in 2021 is 349km
     #Quality limits should be calibrated correspondingly to the ratios ICE: [450,700], EV: [100,400]
 
     # Calculate the ratio (EV range / ICE average distance)
     EV_range_df["Range Ratio (ICE to EV)"] = efficiency_and_power_df["Average Distance km"]/EV_range_df["EV Range (km)"]
-
     
     ##############################################################################################
 
@@ -86,11 +93,42 @@ def load_in_calibration_data():
     aligned_data = CPI_california_df.join([
         gas_price_california_df["Real Dollars per Kilowatt-Hour"],
         electricity_price_df["Real Dollars per Kilowatt-Hour (City Average)"],
-        electricity_emissions_intensity_df["KgCO2 per Kilowatt-Hour"],
-        EV_range_df["Range Ratio (ICE to EV)"]
+        electricity_emissions_intensity_df["KgCO2 per Kilowatt-Hour"]
     ], how='inner')  # Only keep rows with data in all columns
 
-    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour
+    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_df["Range Ratio (ICE to EV)"]
+
+def future_calibration_data():
+    # Load data
+    electricity_emissions_intensity_future_df = pd.read_excel(
+        "package/calibration_data/GUBERT_2020_future_utilities_emissions.xlsx"
+    )
+    electricity_emissions_intensity_future_df["Year"] = pd.to_datetime(electricity_emissions_intensity_future_df["Year"])
+    electricity_emissions_intensity_future_df.set_index("Year", inplace=True)
+
+    # Calculate means
+    electricity_emissions_intensity_future_df["Mean KgCO2 per MWh"] = electricity_emissions_intensity_future_df[
+        ["SCE", "PG&E", "LADWP", "SDG&E", "SMUD", "Other utility"]
+    ].mean(axis=1)
+    electricity_emissions_intensity_future_df["Mean KgCO2 per kWh"] = electricity_emissions_intensity_future_df[
+        "Mean KgCO2 per MWh"
+    ] / 1000
+
+    # Create a new date range with monthly frequency
+    monthly_index = pd.date_range(
+        start=electricity_emissions_intensity_future_df.index.min(),
+        end=electricity_emissions_intensity_future_df.index.max(),
+        freq="MS"  # Month Start frequency
+    )
+
+    # Reindex to monthly, filling forward the yearly data for each month
+    electricity_emissions_intensity_future_df = electricity_emissions_intensity_future_df.reindex(
+        monthly_index, method="ffill"
+    )
+
+    # Return the relevant column
+    return electricity_emissions_intensity_future_df["Mean KgCO2 per kWh"]
+
 
 def load_in_output_data():
 

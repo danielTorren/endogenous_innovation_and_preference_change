@@ -12,7 +12,7 @@ import multiprocessing
 from package.model.controller import Controller
 #from package.model_collated.controller import Controller
 #from package.model.combinedController import CombinedController
-from package.resources.prep_data import load_in_calibration_data, load_in_output_data
+from package.resources.prep_data import load_in_calibration_data, load_in_output_data, future_calibration_data
 
 
 
@@ -39,15 +39,20 @@ def generate_data(parameters: dict,print_simu = 0):
     """
 
     load_in_output_data()
-    #quit()
+    future_electricity_emissions_intensity_data = future_calibration_data()
     
-    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
+    
+    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
     parameters["calibration_data"] =  calibration_data
     parameters["parameters_ICE"]["e_z_t"] = gasoline_Kgco2_per_Kilowatt_Hour
+    parameters["EV_range_ratio"] = EV_range_ratio
+
+    parameters["future_electricity_emissions_intensity_data"] = future_electricity_emissions_intensity_data
+    
 
     if print_simu:
         start_time = time.time()
-    parameters["time_steps_max"] = parameters["duration_no_carbon_price"] + parameters["duration_large_carbon_price"]
+    parameters["time_steps_max"] = parameters["duration_no_carbon_price"] + parameters["duration_future"]
 
     #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
     controller = Controller(parameters)

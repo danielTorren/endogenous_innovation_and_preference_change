@@ -1,5 +1,7 @@
 
 # imports
+from math import isnan
+from cycler import V
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
@@ -287,7 +289,7 @@ class Social_Network:
 #CHECK THE ACTUAL EQUATIONS
 
     def update_VehicleUsers(self):
-        
+
         self.chosen_vehicles = []
         user_vehicle_list = [None]*self.num_individuals
 
@@ -351,7 +353,7 @@ class Social_Network:
                 user = self.vehicleUsers_list[person_index]
                 vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
                 user_vehicle_list[person_index] = user_vehicle
-                self.update_counters(i, vehicle_chosen, vehicle_chosen_index)
+                self.update_counters(person_index, vehicle_chosen, vehicle_chosen_index)
         else:
             for i, person_index in enumerate(shuffle_indices):
                 user = self.vehicleUsers_list[person_index]
@@ -376,15 +378,27 @@ class Social_Network:
     def mask_second_hand_cars(self):
         self.num_second_hand_cars = len(self.second_hand_cars)
         max_consider = min(self.second_hand_car_max_consider, self.num_second_hand_cars)
-        
-        # Generate a 2D array of indices for each individual's sampled cars
-        self.sampled_indices_second_hand = np.array([
-            np.random.choice(self.num_second_hand_cars, max_consider, replace=False)
-            for _ in range(self.num_individuals)
-        ])
-        
-        # Convert sampled indices to actual car objects for later reference
-        self.sampled_second_hand_cars = np.asarray([[self.second_hand_cars[idx] for idx in indices] for indices in self.sampled_indices_second_hand])
+
+        if max_consider == 0:
+            # Handle the edge case where there are no second-hand cars
+            self.sampled_indices_second_hand = np.empty((self.num_individuals, 0), dtype=int)
+            self.sampled_second_hand_cars = np.empty((self.num_individuals, 0), dtype=object)
+            return
+
+        # Generate all indices and shuffle for randomness
+        all_indices = np.arange(self.num_second_hand_cars)
+        sampled_indices = np.tile(all_indices, (self.num_individuals, 1))
+        np.apply_along_axis(np.random.shuffle, 1, sampled_indices)#shuffle each row all the indicies
+
+        # Select the first `max_consider` indices for each individual
+        self.sampled_indices_second_hand = sampled_indices[:, :max_consider]
+
+        # Convert cars list to numpy array for efficient indexing
+        second_hand_cars_array = np.array(self.second_hand_cars)
+
+        # Use advanced indexing to fetch sampled cars
+        self.sampled_second_hand_cars = second_hand_cars_array[self.sampled_indices_second_hand]
+
 
     def _gen_mask_from_indices(self, sampled_indices, init_index, available_and_current_vehicles_list, total_number_type):
         # Start with a boolean matrix full of True (allowing all by default)
@@ -450,9 +464,12 @@ class Social_Network:
 
     def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa):
         # Select individual-specific utilities
-        individual_specific_util = utilities_kappa[person_index]        
+        individual_specific_util = utilities_kappa[person_index]  
+
+
         # Check if all utilities are zero after filtering
         if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
+            """THIS SHOULD ACRUALLY BE USED"""
             if self.t_social_network == 0:
                 #pick random vehicle which is available
                 choice_index = np.random.choice(len(available_and_current_vehicles_list), p=probability_choose)
@@ -460,10 +477,19 @@ class Social_Network:
                 choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
         else:
             # Calculate the probability of choosing each vehicle
+            """
+            SHODY FIX THIS PROPERY
+            """
+            if np.isnan(np.sum(individual_specific_util)):
+                individual_specific_util = np.nan_to_num(individual_specific_util)
+                
             sum_prob = np.sum(individual_specific_util)
+
             probability_choose = individual_specific_util / sum_prob
             choice_index = np.random.choice(len(available_and_current_vehicles_list), p=probability_choose)
 
+        #if choice_index in [0,1]:
+        #    print("chosen public", self.origin_vec[person_index], choice_index)
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
 
@@ -810,7 +836,14 @@ class Social_Network:
 ####################################################################################################################################
     #TIMESERIES
     def prep_counters(self):
+        
+        self.users_driving_emissions_vec = np.zeros(self.num_individuals)
+        self.users_distance_vec = np.zeros(self.num_individuals)
+        self.users_utility_vec  = np.zeros(self.num_individuals)
+        self.users_transport_type_vec  = np.full((self.num_individuals), np.nan)
+    
         #variable to track
+    
         self.total_driving_emissions = 0
         self.total_production_emissions = 0
         self.total_utility = 0
@@ -840,6 +873,15 @@ class Social_Network:
     def update_counters(self, person_index, vehicle_chosen, vehicle_chosen_index):
         #ADD TOTAL EMISSIONS
         driven_distance = self.d_matrix[person_index][vehicle_chosen_index]           
+        
+        if vehicle_chosen.transportType > 1:  
+            self.users_driving_emissions_vec[person_index] = (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_z_t
+        else:
+            self.users_driving_emissions_vec[person_index] = 0
+        self.users_distance_vec[person_index] = driven_distance
+        self.users_utility_vec[person_index] = self.utilities_matrix[person_index][vehicle_chosen_index]
+        self.users_transport_type_vec[person_index] = vehicle_chosen.transportType
+        
         if vehicle_chosen.scenario == "new_car":  
             self.new_cars_bought +=1
             self.total_production_emissions += vehicle_chosen.emissions
@@ -898,6 +940,7 @@ class Social_Network:
         self.history_urban_public_transport_users = []
         self.history_rural_public_transport_users = []
         self.history_consider_ev_rate = []
+        self.history_consider_ev = []
         self.history_ICE_users = []
         self.history_EV_users = []
         self.history_second_hand_users = []
@@ -924,8 +967,28 @@ class Social_Network:
         self.history_cars_cum_driven_emissions = []
         self.history_cars_cum_emissions = []
 
+        #INDIVIDUALS LEVEL DATA
+        self.history_driving_emissions_individual = []
+        self.history_distance_individual = []
+        self.history_utility_individual = []
+        self.history_transport_type_individual = []
+
     def save_timeseries_data_social_network(self):
 
+        #INDIVIDUALS LEVEL DATA
+
+        #print(self.users_driving_emissions_vec)
+        
+        self.history_driving_emissions_individual.append(self.users_driving_emissions_vec)
+        self.history_distance_individual.append(self.users_distance_vec)
+        self.history_utility_individual.append(self.users_utility_vec)
+        self.history_transport_type_individual.append(self.users_transport_type_vec)
+
+
+        #print(self.users_transport_type_vec, self.origin_vec)
+        #quit()
+
+        #SUMS
         self.history_driving_emissions.append(self.total_driving_emissions)
         self.history_production_emissions.append(self.total_production_emissions)
         self.history_total_emissions.append(self.total_production_emissions + self.total_driving_emissions)
@@ -933,6 +996,7 @@ class Social_Network:
         self.history_total_distance_driven.append(self.total_distance_travelled)
         self.history_ev_adoption_rate.append(np.mean(self.ev_adoption_vec))
         self.history_consider_ev_rate.append(np.mean(self.consider_ev_vec))
+        self.history_consider_ev.append(self.consider_ev_vec)
         self.history_urban_public_transport_users.append(self.urban_public_transport_users)
         self.history_rural_public_transport_users.append(self.rural_public_transport_users)
         self.history_ICE_users.append(self.ICE_users)
@@ -940,7 +1004,6 @@ class Social_Network:
         self.history_second_hand_users.append(self.second_hand_users)
         self.history_second_hand_bought.append(self.second_hand_bought)
         self.history_new_car_bought.append(self.new_cars_bought)
-
         
         self.history_quality.append(self.quality_vals)
         self.history_efficiency.append(self.efficiency_vals)
