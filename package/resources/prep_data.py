@@ -27,6 +27,17 @@ def load_in_calibration_data():
     gas_price_california_df.set_index('Date', inplace=True)
     gas_price_california_df["Real Dollars per Gallon"] = gas_price_california_df["Dollars per Gallon"]/CPI_california_df["2020 relative Weighted Average"]
     gas_price_california_df["Real Dollars per Kilowatt-Hour"] = gas_price_california_df["Real Dollars per Gallon"]/gasoline_Kilowatt_Hour_per_gallon
+    # Extend data to include January to April 2000
+    # Create a date range from January to April 2000
+    new_dates = pd.date_range(start="2000-01-01", end="2000-04-01", freq='MS')
+    # Get the data from May 2000
+    may_2000_data = gas_price_california_df.loc["2000-05-01"]
+    # Create a new DataFrame for the missing months
+    new_rows = pd.DataFrame([may_2000_data.values] * len(new_dates), 
+                            index=new_dates, 
+                            columns=gas_price_california_df.columns)
+    # Append the new rows to the original DataFrame
+    gas_price_california_df = pd.concat([new_rows, gas_price_california_df]).sort_index()
 
     #Electricity Price
     electricity_price_df = pd.read_excel("package/calibration_data/electricity_price.xlsx") 
@@ -63,24 +74,29 @@ def load_in_calibration_data():
     #MIN in 2000 is 509.838912km, MAX in 2022 its 669.485440km
     
     #Now compare to the evolving range in EVs
-    EV_range_df = pd.read_excel("package/calibration_data/EVrange.xlsx")# https://www.iea.org/data-and-statistics/charts/evolution-of-average-range-of-electric-vehicles-by-powertrain-2010-2021
+    # Load EV range data
+    EV_range_df = pd.read_excel("package/calibration_data/EVrange.xlsx")
     EV_range_df["Date"] = pd.to_datetime(EV_range_df["Date"])
-    EV_range_df.set_index('Date', inplace=True)
+    EV_range_df.set_index("Date", inplace=True)
 
-    # Create a new date range with monthly frequency
+    # Align the indices to yearly for calculation
+    yearly_data = EV_range_df.join(efficiency_and_power_df["Average Distance km"], how="inner")
+
+    # Calculate the year-wise range ratio
+    yearly_data["Range Ratio (ICE to EV)"] = yearly_data["Average Distance km"] / yearly_data["EV Range (km)"]
+
+    # Extend the yearly data to monthly frequency
     monthly_index = pd.date_range(
-        start=EV_range_df.index.min(),
-        end="2022-12-01",  # Specify the last month #EXTEND DATA FROM 2021 TO 2022
+        start=yearly_data.index.min(),
+        end="2022-12-01",  # Extend up to December 2022
         freq="MS"  # Month Start frequency
     )
-    # Reindex to monthly, forward-fill yearly data to monthly
-    EV_range_df = EV_range_df.reindex(monthly_index, method="ffill")
-    #Min in 2010 is 127km, MAX in 2021 is 349km
-    #Quality limits should be calibrated correspondingly to the ratios ICE: [450,700], EV: [100,400]
 
-    # Calculate the ratio (EV range / ICE average distance)
-    EV_range_df["Range Ratio (ICE to EV)"] = efficiency_and_power_df["Average Distance km"]/EV_range_df["EV Range (km)"]
-    
+    # Reindex to monthly and forward-fill yearly data to monthly
+    EV_range_monthly_data = yearly_data.reindex(monthly_index, method="ffill")
+
+    # If needed, set the index name back to "Date"
+    EV_range_monthly_data.index.name = "Date"
     ##############################################################################################
 
     #NOW - NEED TO GET ALL THE PRICES INTO 2020 DOLLARS BY DIVIDING BY THE CPI 
@@ -90,13 +106,30 @@ def load_in_calibration_data():
     #0.26599820413049985
 
     # Align Data
-    aligned_data = CPI_california_df.join([
-        gas_price_california_df["Real Dollars per Kilowatt-Hour"],
-        electricity_price_df["Real Dollars per Kilowatt-Hour (City Average)"],
-        electricity_emissions_intensity_df["KgCO2 per Kilowatt-Hour"]
-    ], how='inner')  # Only keep rows with data in all columns
+    # Perform the join
+    aligned_data = CPI_california_df.join(
+        [
+            gas_price_california_df["Real Dollars per Kilowatt-Hour"],
+            electricity_price_df["Real Dollars per Kilowatt-Hour (City Average)"],
+            electricity_emissions_intensity_df["KgCO2 per Kilowatt-Hour"]
+        ],
+        how='inner'  # Only keep rows with data in all columns
+    )
 
-    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_df["Range Ratio (ICE to EV)"]
+    # Ensure the index is a datetime type if it's not already
+    aligned_data.index = pd.to_datetime(aligned_data.index)
+
+    # Filter the data up to 01/12/2022
+    aligned_data = aligned_data[aligned_data.index <= "2022-12-01"]
+
+    #########################################################################
+    #Get end averages
+
+    Gas_price_2022 = gas_price_california_df.loc[gas_price_california_df.index.year == 2022, "Real Dollars per Kilowatt-Hour"].mean()
+    electricity_price_2022 = electricity_price_df.loc[electricity_price_df.index.year == 2022, "Real Dollars per Kilowatt-Hour (City Average)"].mean()
+    electricity_emissions_intensity_2022 = electricity_emissions_intensity_df.loc[electricity_emissions_intensity_df.index.year == 2022, "KgCO2 per Kilowatt-Hour"].mean()
+
+    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_monthly_data["Range Ratio (ICE to EV)"], Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022
 
 def future_calibration_data():
     # Load data

@@ -60,7 +60,6 @@ class Firm:
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV
 
-
         self.expected_profits_segments = {}
 
         #ALL TYPES
@@ -72,6 +71,9 @@ class Firm:
         self.set_car_init_price_and_U()
 
         np.random.seed(parameters_firm["innovation_seed"])
+
+        self.Ban_ICE_cars_state = False
+        self.yt_time_series = None#USED IN THE CASE OF BANNING OF CARS IN THE FUTURE
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()

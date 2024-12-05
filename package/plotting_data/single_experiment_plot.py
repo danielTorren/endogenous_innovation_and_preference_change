@@ -1403,7 +1403,7 @@ def main(fileName, dpi=600):
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
-    #plot_carbon_price(data_controller, time_series, fileName)
+    #
     plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
     """
 
@@ -1452,7 +1452,8 @@ def main(fileName, dpi=600):
     plot_time_series_controller(data_controller.history_nu_z_i_t_EV, time_series,"nu EV","nu_z_i_t_EV", fileName)
     #plot_time_series_controller(data_controller.history_rebate, time_series,"EV rebate","rebate", fileName)
     #plot_time_series_controller(data_controller.history_used_rebate, time_series,"Used EV rebate","used_rebate", fileName)
-
+    plot_carbon_price(data_controller, time_series, fileName)
+    
     plt.show()
 
 if __name__ == "__main__":

@@ -42,10 +42,14 @@ def generate_data(parameters: dict,print_simu = 0):
     future_electricity_emissions_intensity_data = future_calibration_data()
     
     
-    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
+    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022 = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
     parameters["calibration_data"] =  calibration_data
     parameters["parameters_ICE"]["e_z_t"] = gasoline_Kgco2_per_Kilowatt_Hour
     parameters["EV_range_ratio"] = EV_range_ratio
+
+    parameters["Gas_price_2022"] = Gas_price_2022
+    parameters["Electricity_price_2022"]  = electricity_price_2022
+    parameters["Grid_emissions_intensity_2022"]= electricity_emissions_intensity_2022
 
     parameters["future_electricity_emissions_intensity_data"] = future_electricity_emissions_intensity_data
     
@@ -75,16 +79,16 @@ def generate_data(parameters: dict,print_simu = 0):
 
 #########################################################################################
 #multi-run
-def generate_emissions_intensities(params):
+def generate_emissions(params):
     data = generate_data(params)
-    return data.social_network.total_carbon_emissions_cumulative
+    return data.social_network.emissions_flow_history 
 
-def emissions_intensities_parallel_run(
+def emissions_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
     num_cores = multiprocessing.cpu_count()
     #res = [generate_emissions_intensities(i) for i in params_dict]
-    emissions_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions_intensities)(i) for i in params_dict)
+    emissions_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions)(i) for i in params_dict)
 
     return np.asarray(emissions_list)
 #########################################################################################

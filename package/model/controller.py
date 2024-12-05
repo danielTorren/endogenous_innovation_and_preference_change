@@ -17,11 +17,9 @@ class Controller:
     def __init__(self, parameters_controller):
 
         self.unpack_controller_parameters(parameters_controller)
-        self.manage_time()
-        
 
         self.gen_time_series_calibration_scenarios_policies()
-        self.update_prices_and_emmisions()
+        self.update_time_series_data()
 
         self.setup_id_gen()
 
@@ -85,13 +83,8 @@ class Controller:
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
 
-        self.EV_rebate_state = parameters_controller["EV_rebate_state"]
-        #self.Carbon_price_state = parameters_controller["Carbon_price_state"]
-
         self.parameters_urban_public_transport = parameters_controller["parameters_urban_public_transport"]
         self.parameters_rural_public_transport = parameters_controller["parameters_rural_public_transport"]
-
-        self.parameters_future_carbon_policy = parameters_controller["parameters_future_carbon_policy"]
 
         self.EV_nu_diff_state = parameters_controller["EV_nu_diff_state"]
 
@@ -104,6 +97,11 @@ class Controller:
         #TIME STUFF
         self.duration_no_carbon_price = parameters_controller["duration_no_carbon_price"] 
         self.duration_future = parameters_controller["duration_future"] 
+
+        if self.duration_future > 0: 
+            self.full_run_state = True
+        else:
+            self.full_run_state = False
 
         #############################################################################################################################
         #DEAL WITH EV RESEARCH
@@ -119,19 +117,34 @@ class Controller:
         self.electricity_price_vec = self.parameters_calibration_data["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()
         self.electricity_emissions_intensity_vec = self.parameters_calibration_data["KgCO2 per Kilowatt-Hour"].to_numpy()
         self.tank_ratio_vec = self.parameters_controller["EV_range_ratio"].to_numpy()
+        
         self.calibration_time_steps = len(self.electricity_emissions_intensity_vec)
+        if self.EV_nu_diff_state:
+            self.nu_z_i_t_EV_vec = self.tank_ratio_vec*self.parameters_ICE["nu_z_i_t"]
+        else:
+            self.nu_z_i_t_EV_vec = [self.parameters_ICE["nu_z_i_t"]]*self.calibration_time_steps 
+        #HAVE TO MAKE PUBLIC TRANSPORT TIME SERIES FOR POTENTIAL CHANGES
+        self.Public_transport_nu_urban_vec = [self.parameters_urban_public_transport["nu_z_i_t"]]*self.calibration_time_steps 
+        self.Public_transport_nu_rural_vec = [self.parameters_rural_public_transport["nu_z_i_t"]]*self.calibration_time_steps 
 
-        self.generate_rebate_calibration() #THIS IS THE REBATE FOR THE CALIBRATION PERIOD
+        
+        self.parameters_rebate = self.parameters_controller["parameters_rebate"]
+        self.rebate_time_series = np.zeros(self.duration_no_carbon_price)
+        self.used_rebate_time_series = np.zeros(self.duration_no_carbon_price)
+        
+        if self.parameters_controller["EV_rebate_state"]:#IF TRUE IMPLEMENTED
+            self.rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["rebate"]
+            self.used_rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["used_rebate"]
 
     #############################################################################################################################
     #DEAL WITH SCENARIOS
 
     def manage_scenario(self):
 
-        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price_state"]
-        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price_state"]
-        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity_state"]
-        self.EV_Substitutability_state =  self.parameters_controller["parameters_scenarios"]["States"]["EV Substitutability_state"]
+        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]
+        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]
+        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]
+        self.EV_Substitutability_state =  self.parameters_controller["parameters_scenarios"]["States"]["EV_Substitutability"]
         
         self.Gas_price_2022 = self.parameters_controller["Gas_price_2022"]
         if self.Gas_price_state == "Low":
@@ -164,11 +177,11 @@ class Controller:
             raise ValueError("Invalid Grid emissions intensity state")
         self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.duration_future)
         
-        self.EV_Substitutability_2022 = self.parameters_controller["EV_Substitutability_2022"]
+        self.EV_Substitutability_2022 = self.nu_z_i_t_EV_vec[-1]#TAKE THE LAST VALUE
         if self.EV_Substitutability_state == "Improved":
-            self.EV_Substitutability_future = self.parameters_controller["parameters_scenarios"]["Values"]["EV_Substitutability"]["Improved"]
+            self.EV_Substitutability_future = self.EV_Substitutability_2022*self.parameters_controller["parameters_scenarios"]["Values"]["EV_Substitutability"]["Improved"]
         elif self.EV_Substitutability_state == "Parity":
-            self.EV_Substitutability_future = self.parameters_controller["parameters_scenarios"]["Values"]["EV_Substitutability"]["Parity"]
+            self.EV_Substitutability_future = self.EV_Substitutability_2022*self.parameters_controller["parameters_scenarios"]["Values"]["EV_Substitutability"]["Parity"]
         else:
             raise ValueError("Invalid EV Substitutability state")
         self.EV_Substitutability_future = np.linspace(self.EV_Substitutability_2022, self.EV_Substitutability_future, self.duration_future)
@@ -177,22 +190,28 @@ class Controller:
     #DEAL WITH POLICIES
     def manage_policies(self):
         
-        self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price_state"]
-        self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy_state"]
-        self.Public_transport_expansion_state =  self.parameters_controller["parameters_policies"]["States"]["Public_transport_expansion_state"]
-        self.Ban_ICE_cars_state =  self.parameters_controller["parameters_policies"]["States"]["Ban_ICE_cars_state"]
+        self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
+        self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
+        self.Public_transport_expansion_state =  self.parameters_controller["parameters_policies"]["States"]["Public_transport_expansion"]
+        self.Ban_ICE_cars_state =  self.parameters_controller["parameters_policies"]["States"]["Ban_ICE_cars"]
         
         # Carbon price calculation
-        if self.Carbon_price_state == "None":
-            self.Carbon_price = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["None"]["carbon_price"]
+        if self.Carbon_price_state == "Zero":
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price"]
         elif self.Carbon_price_state == "Low":
-            self.Carbon_price = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price"]
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price"]
         elif self.Carbon_price_state == "High":
-            self.Carbon_price = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price"]
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price"]
         else:
             raise ValueError("Invalid Carbon price state")
         #DEAL WITH CARBON PRICE
-        self.manage_carbon_price()
+        self.carbon_price_time_series = self.calculate_carbon_price_time_series()
 
         # Adoption subsidy calculation
         if self.Adoption_subsidy_state == "Zero":
@@ -210,38 +229,31 @@ class Controller:
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
 
         # Public transport expansion calculation
-        self.Public_transport_nu_2022 = 
+        self.Public_transport_nu_2022_urban = self.parameters_urban_public_transport["nu_z_i_t"]
+        self.Public_transport_nu_2022_rural = self.parameters_rural_public_transport["nu_z_i_t"]
         if self.Public_transport_expansion_state == "Zero":
-            self.Public_transport_expansion_factor = self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["Zero"]
+            self.Public_transport_expansion_factor_urban = self.Public_transport_nu_2022_urban*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["Zero"]
+            self.Public_transport_expansion_factor_rural = self.Public_transport_nu_2022_rural*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["Zero"]
         elif self.Public_transport_expansion_state == "High":
-            self.Public_transport_expansion_factor = self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["High"]
+            self.Public_transport_expansion_factor_urban = self.Public_transport_nu_2022_urban*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["High"]
+            self.Public_transport_expansion_factor_rural = self.Public_transport_nu_2022_rural*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["High"]
         else:
             raise ValueError("Invalid Public transport expansion state")
-        self.Public_transport_expansion_future = np.linspace(self.Public_transport_nu_2022,  self.Public_transport_expansion_factor, self.duration_future)
+        self.Public_transport_expansion_future_urban = np.linspace(self.Public_transport_nu_2022_urban,  self.Public_transport_expansion_factor_urban, self.duration_future)
+        self.Public_transport_expansion_future_rural = np.linspace(self.Public_transport_nu_2022_rural,  self.Public_transport_expansion_factor_rural, self.duration_future)
 
         # Ban ICE cars calculation
         if self.Ban_ICE_cars_state == "Zero":
             pass
         elif self.Ban_ICE_cars_state == "Applied":
             self.Ban_ICE_cars_penalty = self.parameters_controller["parameters_policies"]["Values"]["Ban_ICE_cars"]["Applied"]
-            self.yt_time_series = np.arange(156, 0)
+            self.yt_time_series = np.arange(self.duration_future, 0)
         else:
             raise ValueError("Invalid Ban ICE cars state")
         #this is the YTD according to the year
         
     #############################################################################################################################
     #DEAL WITH CARBON PRICE
-
-    def manage_carbon_price(self):
-        # Initial setup from parameters
-
-        self.future_carbon_price_state = self.parameters_future_carbon_policy["carbon_price_state"]
-        self.future_carbon_price_init = self.parameters_future_carbon_policy.get("carbon_price_init", 0)
-        self.future_carbon_price_policy = self.parameters_future_carbon_policy["carbon_price"]
-        
-        self.carbon_price_time_series = self.calculate_carbon_price_time_series()
-
-        self.carbon_price = self.carbon_price_time_series[0]
 
     def calculate_carbon_price_time_series(self):
         time_series = np.arange(self.time_steps_max + 1)
@@ -289,17 +301,6 @@ class Controller:
             
         else:
             raise ValueError(f"Unknown growth type: {growth_type}")
-    ########################################################################################################
-    #Handle rebate
-    def generate_rebate_calibration(self):
-
-        self.parameters_rebate = self.parameters_controller["parameters_rebate"]
-
-        self.rebate_time_series = np.zeros(self.duration_no_carbon_price)
-        self.rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["rebate"]
-
-        self.used_rebate_time_series = np.zeros(self.duration_no_carbon_price)
-        self.used_rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["used_rebate"]
 
     #############################################################################################################################
 
@@ -307,8 +308,21 @@ class Controller:
         """Put together the calibration, scenarios and policies data"""
 
         self.manage_calibration()
-        self.manage_scenario()
-        self.manage_policies()
+
+        if self.full_run_state:
+            self.manage_scenario()
+            self.manage_policies() 
+
+            #NOW STAPLE THE STUFF TOGETHER TO GET ONE THING
+            #CALIRBATION TIME_STEPS
+            self.gas_price_california_vec = np.concatenate((self.gas_price_california_vec, self.gas_price_series_future), axis=None) 
+            self.electricity_price_vec =  np.concatenate((self.electricity_price_vec, self.electricity_price_series_future ), axis=None) 
+            self.electricity_emissions_intensity_vec = np.concatenate((self.electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
+            self.nu_z_i_t_EV_vec = np.concatenate((self.nu_z_i_t_EV_vec,self.EV_Substitutability_future), axis=None) 
+            self.rebate_time_series = np.concatenate((self.rebate_time_series,self.rebate_time_series_future ), axis=None) 
+            self.used_rebate_time_series = np.concatenate((self.used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+            self.Public_transport_nu_urban_vec = np.concatenate((self.Public_transport_nu_urban_vec,self.Public_transport_expansion_future_urban ), axis=None)
+            self.Public_transport_nu_rural_vec = np.concatenate((self.Public_transport_nu_rural_vec,self.Public_transport_expansion_future_rural ), axis=None)
 
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
@@ -321,10 +335,13 @@ class Controller:
         #Baning EVs in the future
         if self.t_controller == self.duration_no_carbon_price:
             if self.Ban_ICE_cars_state == "Applied":
+                self.social_network.Ban_ICE_cars_state = "Applied"
+                self.social_network.yt_time_series = self.yt_time_series
                 for firm in self.firm_manager.firms_list:
                     firm.Ban_ICE_cars_state = "Applied"
                     firm.yt_time_series = self.yt_time_series
-            
+                
+                    
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
 
@@ -332,9 +349,12 @@ class Controller:
         self.gas_price = self.gas_price_california_vec[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller]
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
-        self.nu_z_i_t_EV = self.self.nu_z_i_t_EV_vec[self.t_controller]    
+        self.nu_z_i_t_EV = self.nu_z_i_t_EV_vec[self.t_controller]    
         self.rebate = self.rebate_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
+
+        self.Public_transport_nu_urban = self.Public_transport_nu_urban_vec[self.t_controller]
+        self.Public_transport_nu_rural = self.Public_transport_nu_rural_vec[self.t_controller]
 
     #############################################################################################################################
     def setup_id_gen(self):
@@ -416,11 +436,10 @@ class Controller:
         #CREATE FIRMS    
         self.parameters_ICE["eta"] = self.parameters_vehicle_user["eta"]
         self.parameters_ICE["fuel_cost_c_z"]  = self.gas_price
-
         self.parameters_EV["eta"] = self.parameters_vehicle_user["eta"]
         self.parameters_EV["fuel_cost_c_z"] = self.electricity_price 
         self.parameters_EV["e_z_t"] = self.electricity_emissions_intensity
-        self.parameters_EV["nu_z_i_t"] = self.parameters_ICE["nu_z_i_t"]#self.nu_z_i_t_EV
+        self.parameters_EV["nu_z_i_t"] = self.nu_z_i_t_EV
 
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
@@ -472,22 +491,26 @@ class Controller:
 
         return self.second_hand_merchant.cars_on_sale
 
-
+    def update_public_tranport(self):
+        self.urban_public_tranport.nu_z_i_t = self.Public_transport_nu_urban
+        self.rural_public_tranport.nu_z_i_t = self.Public_transport_nu_rural
 
     ################################################################################################
 
     def next_step(self):
-        self.t_controller+=1
-        print("TIME STEP", self.t_controller)
+        
+        #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
-
+        self.update_public_tranport()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()
         #vehicles_available = self.mix_in_vehicles()
         self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
 
         self.manage_saves()
+
+        self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
 
 

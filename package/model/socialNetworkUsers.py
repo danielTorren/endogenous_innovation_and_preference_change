@@ -20,7 +20,9 @@ class Social_Network:
         Constructs all the necessary attributes for the Social Network object.
         """
         self.t_social_network = 0
-        
+        self.emissions_cumulative = 0
+        self.emissions_flow_history = []
+
         self.rebate = parameters_social_network["rebate"]
         self.used_rebate = parameters_social_network["used_rebate"]
 
@@ -66,6 +68,8 @@ class Social_Network:
 
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
+        self.Ban_ICE_cars_state = False
+        self.yt_time_series = None#USED IN THE CASE OF BANNING OF CARS IN THE FUTURE
         
     ###############################################################################################################################################################
     ###############################################################################################################################################################
@@ -347,6 +351,8 @@ class Social_Network:
         utilities_kappa = self.masking_options(self.utilities_matrix, available_and_current_vehicles_list)
         #self.chosen_already_mask = np.ones(len(available_and_current_vehicles_list), dtype=bool)
 
+        self.emissions_flow = 0#MEASURIBNG THE FLOW
+
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
             for i, person_index in enumerate(shuffle_indices):
@@ -354,11 +360,15 @@ class Social_Network:
                 vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
                 user_vehicle_list[person_index] = user_vehicle
                 self.update_counters(person_index, vehicle_chosen, vehicle_chosen_index)
+                self.update_emisisons(person_index, vehicle_chosen_index, vehicle_chosen)
         else:
             for i, person_index in enumerate(shuffle_indices):
                 user = self.vehicleUsers_list[person_index]
                 ____, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
                 user_vehicle_list[person_index] = user_vehicle
+                self.update_emisisons(person_index, vehicle_chosen_index, vehicle_chosen)
+        
+        self.emissions_flow_history.append(self.emissions_flow)
 
         return user_vehicle_list#self.vehicle_chosen_list
 
@@ -398,7 +408,6 @@ class Social_Network:
 
         # Use advanced indexing to fetch sampled cars
         self.sampled_second_hand_cars = second_hand_cars_array[self.sampled_indices_second_hand]
-
 
     def _gen_mask_from_indices(self, sampled_indices, init_index, available_and_current_vehicles_list, total_number_type):
         # Start with a boolean matrix full of True (allowing all by default)
@@ -1040,7 +1049,22 @@ class Social_Network:
         self.history_cars_cum_driven_emissions.append(self.cars_cum_driven_emissions)
         self.history_cars_cum_emissions.append(self.cars_cum_emissions)
 
-########################################################################################################################
+####################################################################################################################################
+    #TIMESERIES
+    def update_emisisons(self, person_index, vehicle_chosen_index, vehicle_chosen):
+        driven_distance = self.d_matrix[person_index][vehicle_chosen_index]           
+        
+        if vehicle_chosen.transportType > 1:  #if its a car there are driving emissions
+            emissions_flow =   (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_z_t
+            self.emissions_cumulative += emissions_flow
+            self.emissions_flow += emissions_flow
+
+        if vehicle_chosen.scenario == "new_car":  #if its a new car add emisisons
+            self.emissions_cumulative += vehicle_chosen.emissions
+            self.emissions_flow += vehicle_chosen.emissions
+        
+        #For now i ignore the public transport emissions
+
     def update_prices_and_emissions(self):
         #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
         for car in self.current_vehicles:
@@ -1082,14 +1106,5 @@ class Social_Network:
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
  
         self.current_vehicles  = self.update_VehicleUsers()
-
-        counter_same = Counter()  # Keeps track of unique vehicle counts
-
-        # Iterate through all vehicles
-        for vehicle in self.current_vehicles:
-            if vehicle.transportType > 1 and isinstance(vehicle, PersonalCar):  # Check the condition
-                # Use a unique identifier for the vehicle, such as a combination of attributes
-                vehicle_id = vehicle.id  # Example attributes
-                counter_same[vehicle_id] += 1
 
         return self.consider_ev_vec,  self.chosen_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count porfits

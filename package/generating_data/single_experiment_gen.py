@@ -39,19 +39,27 @@ if __name__ == "__main__":
 
     base_params = {
         "cars_init_state": 1,
-        "duration_no_carbon_price": 272,#2000-2022
-        "duration_future":156,#2022 - 2035
+        "duration_no_carbon_price": 276,#that is 23 years,#01/2000-12/2022
+        "duration_future":156,#01/2023 - 12/2035  (TOTAL of 432 steps )
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
         "age_limit_second_hand": 3,
         "ev_research_start_time": 60,#2005
+        "EV_nu_diff_state": 1,
+        "EV_rebate_state": 0,
+        "parameters_rebate":{#THIS IS A CALIBRATION PARAMETER, REFLECTIVE OF CALIFORNIA
+            "start_time": 120,#2010
+            "end_time":276,
+            "rebate": 7500,
+            "used_rebate": 1500
+        },
         "parameters_scenarios":{
             "States":{
-                "Gas_price_state": "Low", #"Current","High",#
-                "Electricity_price_state": "Low", #"Current","High",#
-                "Grid_emissions_intensity_state": "Weaker", # "Decarbonised"
-                "EV_Substitutability_state": "Improved", #"Parity"
+                "Gas_price": "Current", #"Current","High",#
+                "Electricity_price": "Current", #"Current","High",#
+                "Grid_emissions_intensity": "Weaker",#"Weaker", # "Decarbonised"
+                "EV_Substitutability": "Parity", #"Improved", #"Parity"
             },
             "Values":{
                 "Gas_price":{
@@ -76,16 +84,16 @@ if __name__ == "__main__":
         },
         "parameters_policies":{
             "States":{
-                "Carbon_price_state": "Zero",#"Low", "High"
-                "Adoption_subsidy_state": "Low", #"High"
-                "Public_transport_expansion_state": "Zero", #"High"
-                "Ban_ICE_cars_state": "Zero", #"Applied"
+                "Carbon_price": "Zero",#"Zero","Low","High"
+                "Adoption_subsidy": "Zero", #"High"
+                "Public_transport_expansion": "Zero", #"High"
+                "Ban_ICE_cars": "Zero", #"Applied"
             },
             "Values":{
                 "Carbon_price":{
-                    "None":{
+                    "Zero":{
                         "carbon_price_init": 0,
-                        "carbon_price": 0.1,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
+                        "carbon_price": 0,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
                         "carbon_price_state": "linear"
                     },
                     "Low":{
@@ -114,22 +122,14 @@ if __name__ == "__main__":
                     }
                 },
                 "Public_transport_expansion":{
-                    "Zero":1.2,
-                    "High":1
+                    "Zero":1,
+                    "High":0.5
                 },
                 "Ban_ICE_cars":{
                     "Zero":None,
                     "Applied":420
                 },
             }
-        },
-        "EV_nu_diff_state": 1,
-        "EV_rebate_state": 1,
-        "parameters_rebate":{#THIS IS A CALIBRATION PARAMETER, REFLECTIVE OF CALIFORNIA
-            "start_time": 120,#2010
-            "end_time":272,
-            "rebate": 7500,
-            "used_rebate": 1500
         },
         "parameters_EV":{
             "landscape_seed": 14,
@@ -215,9 +215,9 @@ if __name__ == "__main__":
             "beta_multiplier": 1,
             "a_environment": 4,#large easy ev adoption 
             "b_environment": 2,#2,
-            "a_innovativeness": 0.5,#0.6,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
+            "a_innovativeness": 1,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
             "b_innovativeness": 1,#1,#2,#1,#2,
-            "a_price": 3,#most people price sensitive
+            "a_price": 4,#most people price sensitive
             "b_price": 1,#1,
             "selection_bias": 5
         },
