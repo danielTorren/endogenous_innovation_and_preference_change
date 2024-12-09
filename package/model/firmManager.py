@@ -77,10 +77,7 @@ class Firm_Manager:
         """
         Generate a initial ICE and EV TECH TO START WITH 
         """
-        #Pick the initial technology
-        random.seed(self.init_tech_seed)
-        #self.init_tech_component_string_ICE = f"{random.getrandbits(self.N):0{self.N}b}"#CAN USE THE SAME STRING FOR BOTH THE EV AND ICE
-        #self.init_tech_component_string_EV = f"{random.getrandbits(self.N):0{self.N}b}"
+
         #Generate the initial fitness values of the starting tecnology(ies)
 
         self.init_tech_component_string_ICE = self.landscape_ICE.min_fitness_string

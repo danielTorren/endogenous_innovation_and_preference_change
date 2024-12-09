@@ -1107,4 +1107,6 @@ class Social_Network:
  
         self.current_vehicles  = self.update_VehicleUsers()
 
+        print("HEYEYEYE",self.emissions_flow_history[-1])
+
         return self.consider_ev_vec,  self.chosen_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count porfits

@@ -22,13 +22,7 @@ def main(
     print("fileName:", fileName)
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    #print(
-    #    "emisisons driving final", 
-    #    controller.social_network.total_driving_emissions,
-    #    controller.social_network.total_utility,
-    #    controller.social_network.total_distance_travelled
-    #    )
-
+    print(controller.social_network.emissions_flow_history )
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
