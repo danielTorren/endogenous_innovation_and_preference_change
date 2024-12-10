@@ -76,8 +76,9 @@ class Firm:
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
 
-        np.random.seed(parameters_firm["innovation_seed"])
-
+        #np.random.seed(parameters_firm["innovation_seed"])
+        self.random_state = np.random.RandomState(parameters_firm["innovation_seed"])  # Local random state
+    
     def set_car_init_price_and_U(self):
         for car in self.cars_on_sale:
             car.price = self.parameters_firm["init_price"]
@@ -160,7 +161,6 @@ class Firm:
                 car.fuel_cost_c_z = self.electricity_price
                 car.e_z_t = self.electricity_emissions_intensity
                 car.nu_z_i_t = self.nu_z_i_t_EV
-            #print(car.transportType,car.nu_z_i_t)
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -202,17 +202,12 @@ class Firm:
                     #ADD IN A SUBSIDY
                     if car.transportType == 3:
                         utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *(price_s- self.rebate) - gamma_s * car.emissions
-                        #print("EV",utility_segment_U)
                     else:
                         utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
-                        #print("ICE ",utility_segment_U )
                     #utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
                 else:
                     car.car_utility_segments_U[segment_code] = 0 
-                #print("final utility",car.car_utility_segments_U[segment_code])
-
-        #quit()
 
     
     def calc_predicted_profit_segments(self, market_data, car_list):
@@ -257,8 +252,7 @@ class Firm:
                     expected_profit = 0
                     vehicle.expected_profit_segments[segment_code] = expected_profit
                     expected_profits_segments[segment_code][expected_profit] = vehicle
-                #print("vehicle type,segment, utility, price, cost, profit, profit per sale",vehicle.transportType, segment_code, vehicle.car_utility_segments_U[segment_code],vehicle.ProdCost_z_t,  vehicle.optimal_price_segments[segment_code], vehicle.expected_profit_segments[segment_code], vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_z_t  + self.carbon_price*vehicle.emissions) )
-        #quit()
+
         return expected_profits_segments
 
 
@@ -272,12 +266,11 @@ class Firm:
         else:
             self.list_technology_memory = self.list_technology_memory_ICE 
 
-        self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
-
+        car_list = self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
         self.calc_utility_cars_segments(market_data, self.list_technology_memory)#utility of all the cars for all the segments
         
         expected_profits = self.calc_predicted_profit_segments(market_data, self.list_technology_memory)#calculte the predicted profit of each segment 
-        
+
         cars_selected = self.select_car_lambda_production(expected_profits)#pick the cars for each car
 
         #DO THIS FASTER
@@ -331,9 +324,9 @@ class Firm:
             probabilities = [1/len_vehicles ]*len_vehicles #UNIFORM PROBAILITIES
         else:
             probabilities = lambda_profits / np.sum(sum_prob)
-        #print(probabilities)
         # Select a vehicle based on the computed probabilities
-        selected_index = np.random.choice(len_vehicles, p=probabilities)
+        #selected_index = np.random.choice(len_vehicles, p=probabilities)
+        selected_index = self.random_state.choice(len_vehicles, p=probabilities)
         selected_vehicle = vehicles[selected_index]
 
         return selected_vehicle
@@ -432,7 +425,6 @@ class Firm:
 
     def update_memory_len(self):
         #is the memory list is too long then remove data
-        #print(len(self.list_technology_memory))
         
         if len(self.list_technology_memory) > self.memory_cap:
 
@@ -445,8 +437,10 @@ class Firm:
 
     def innovate(self, market_data):
         # create a list of cars in neighbouring memory space                                #self, last_researched_car,  list_technology_memory,        list_technology_memory_neighbouring, landscape, parameters_car, transportType
+        
         self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
+        
         if self.ev_reserach_bool:
             self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
             self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
@@ -454,16 +448,17 @@ class Firm:
             self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_ICE +  [self.last_researched_car_ICE]
 
         # calculate the optimal price of cars in the memory 
-        self.calc_optimal_price_cars(market_data, self.unique_neighbouring_technologies)
+        car_list = self.calc_optimal_price_cars(market_data, self.unique_neighbouring_technologies)
 
         # calculate the utility of car segements
+        #if self.firm_id == 2:
+        #    print("INNOVTTA¿TUBG ")
         self.calc_utility_cars_segments(market_data, self.unique_neighbouring_technologies)
         # calc the predicted profits of cars
         expected_profits_segments = self.calc_predicted_profit_segments(market_data, self.unique_neighbouring_technologies)
         # select the car to innovate
         self.vehicle_model_research = self.select_car_lambda_research(expected_profits_segments)
 
-        #print("vehicle_model_research",self.firm_id, vehicle_model_research.component_string)
 
         if self.vehicle_model_research.transportType == 3:#EV
             self.last_researched_car_EV = self.vehicle_model_research
@@ -584,8 +579,8 @@ class Firm:
         self.cars_on_sale = self.choose_cars_segments(market_data)
 
         #decide whether to innovate
-        if np.random.rand() < self.prob_innovate:
-            #print("HIGH", self.firm_id, self.t_firm)
+
+        if self.random_state.rand() < self.prob_innovate:
             self.innovate(market_data)
             self.research_bool = 1
 

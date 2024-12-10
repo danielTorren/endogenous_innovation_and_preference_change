@@ -68,8 +68,8 @@ class Controller:
             self.set_up_time_series_controller()
         
         np.random.seed(parameters_controller["choice_seed"])#SET ONCE ALL SET UP HAS BEEN DONE
-
-
+        #self.random_state_controller = np.random.RandomState(parameters_controller["choice_seed"])
+    
     def unpack_controller_parameters(self,parameters_controller):
         
         #CONTROLLER PARAMETERS:
@@ -499,23 +499,17 @@ class Controller:
     ################################################################################################
 
     def next_step(self):
-        
-        print("TIME STEP", self.t_controller)
-        print("JJJJJJJJ")
+        self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
+        #print("TIME STEP", self.t_controller)
         self.update_time_series_data()
         self.update_public_tranport()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()
-        print([cars.attributes_fitness for cars in self.cars_on_sale_all_firms])
-        #vehicles_available = self.mix_in_vehicles()
         self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
-        
-        print("YOYOOYOYOOY")
-        if self.t_controller == 1:
-            quit()
+
         self.manage_saves()
 
-        self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
+        
 
 
 

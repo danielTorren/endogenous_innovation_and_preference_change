@@ -1,6 +1,5 @@
 import copy
 import numpy as np
-import random
 from package.model.carModel import CarModel
 from package.model.personalCar import PersonalCar
 from package.model.firm import Firm
@@ -40,8 +39,9 @@ class Firm_Manager:
         self.gamma_val_empty_upper = (1+self.gamma_threshold)/2
         self.gamma_val_empty_lower = (1-self.gamma_threshold)/2
 
-        np.random.seed(self.init_tech_seed)
-        random.seed(self.init_tech_seed)
+        
+        self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
+        #np.random.seed(self.init_tech_seed)
 
         self.init_firms()
         
@@ -62,9 +62,9 @@ class Firm_Manager:
         Using random assortment of cars intially pick some random cars and set a random age distribution
         """
 
-        model_choices = np.random.choice(self.cars_on_sale_all_firms, self.num_individuals)
+        model_choices = self.random_state.choice(self.cars_on_sale_all_firms, self.num_individuals)
         age_range = np.arange(0,self.age_max)
-        age_list = np.random.choice(age_range, self.num_individuals)
+        age_list = self.random_state.choice(age_range, self.num_individuals)
         car_list = []
         for i, car in enumerate(model_choices):
             personalCar_id = self.id_generator.get_new_id()
@@ -91,9 +91,8 @@ class Firm_Manager:
         init_tech_component_string_list_N_ICE = self.invert_bits_one_at_a_time(decimal_value_ICE, len(self.init_tech_component_string_ICE))
         init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
 
-        np.random.seed(self.init_tech_seed) 
-        init_tech_component_string_list_ICE = np.random.choice(init_tech_component_string_list_N_ICE, self.J)
-        init_tech_component_string_list_EV = np.random.choice(init_tech_component_string_list_N_EV, self.J)
+        init_tech_component_string_list_ICE = self.random_state.choice(init_tech_component_string_list_N_ICE, self.J)
+        init_tech_component_string_list_EV = self.random_state.choice(init_tech_component_string_list_N_EV, self.J)
 
         self.init_tech_list_ICE = [CarModel(init_tech_component_string_list_ICE[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
         self.init_tech_list_EV = [CarModel(init_tech_component_string_list_EV[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
@@ -189,6 +188,8 @@ class Firm_Manager:
     def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate):
         cars_on_sale_all_firms = []
         segment_U_sums = defaultdict(float)
+
+        #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate)
         for firm in self.firms_list:
             cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate)
 

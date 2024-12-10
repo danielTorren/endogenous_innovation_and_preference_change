@@ -64,7 +64,9 @@ def generate_data(parameters: dict,print_simu = 0):
     
 
     #### RUN TIME STEPS
-    while controller.t_controller < parameters["time_steps_max"]:
+    """FIX THIS!!!"""
+    #while controller.t_controller < parameters["time_steps_max"]:
+    while controller.t_controller < parameters["time_steps_max"]-1:
         controller.next_step()
         #print("step: ", round((controller.t_controller/parameters["time_steps_max"]),3)*100)
 
@@ -73,7 +75,7 @@ def generate_data(parameters: dict,print_simu = 0):
             "SIMULATION time taken: %s minutes" % ((time.time() - start_time) / 60),
             "or %s s" % ((time.time() - start_time)),
         )
-    print("E: ",controller.social_network.total_production_emissions, controller.social_network.total_driving_emissions)
+    #print("E: ",controller.social_network.total_production_emissions, controller.social_network.total_driving_emissions)
     #quit()
     return controller
 

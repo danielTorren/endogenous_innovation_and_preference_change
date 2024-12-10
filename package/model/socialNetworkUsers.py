@@ -7,7 +7,6 @@ import networkx as nx
 import numpy.typing as npt
 import scipy.sparse as sp
 import numpy as np
-import random  # Import random module
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
@@ -31,6 +30,8 @@ class Social_Network:
         self.init_initial_state(parameters_social_network)
         self.init_network_settings(parameters_social_network)
         self.init_preference_distribution(parameters_social_network)
+
+        self.random_state_social_network = np.random.RandomState(parameters_social_network["social_network_seed"])
 
         self.alpha =  parameters_vehicle_user["alpha"]
         self.eta =  parameters_vehicle_user["eta"]
@@ -97,14 +98,15 @@ class Social_Network:
         #GAMMA
         self.a_environment = parameters_social_network["a_environment"]
         self.b_environment = parameters_social_network["b_environment"]
-        np.random.seed(parameters_social_network["init_vals_environmental_seed"])  # Initialize random seed
-        self.gamma_vec = np.random.beta(self.a_environment, self.b_environment, size=self.num_individuals)*self.gamma_multiplier
+        self.random_state_gamma = np.random.RandomState(parameters_social_network["init_vals_environmental_seed"])
+        self.gamma_vec = self.random_state_gamma.beta(self.a_environment, self.b_environment, size=self.num_individuals)*self.gamma_multiplier
 
         #CHI
         self.a_innovativeness = parameters_social_network["a_innovativeness"]
         self.b_innovativeness = parameters_social_network["b_innovativeness"]
-        np.random.seed(parameters_social_network["init_vals_innovative_seed"])  # Initialize random seed
-        innovativeness_vec_init_unrounded = np.random.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
+
+        self.random_state_chi = np.random.RandomState(parameters_social_network["init_vals_innovative_seed"])
+        innovativeness_vec_init_unrounded = self.random_state_chi.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
         self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)
 
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
@@ -112,8 +114,8 @@ class Social_Network:
         #BETA
         self.a_price = parameters_social_network["a_price"]
         self.b_price = parameters_social_network["b_price"]
-        np.random.seed(parameters_social_network["init_vals_price_seed"])  # Initialize random seed
-        self.beta_vec = np.random.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
+        self.random_state_beta = np.random.RandomState(parameters_social_network["init_vals_price_seed"])
+        self.beta_vec = self.random_state_beta.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
 
 
         #origin
@@ -124,7 +126,6 @@ class Social_Network:
         self.origin_vec_invert = 1-self.origin_vec
 
         #d min
-        np.random.seed(parameters_social_network["d_min_seed"]) 
         d_i_min_urban = parameters_social_network["d_i_min_urban"]
         d_i_min_rural = parameters_social_network["d_i_min_rural"]
 
@@ -133,7 +134,6 @@ class Social_Network:
             d_i_min_rural,
             d_i_min_urban,
         )
-        #self.d_i_min_vec = (np.random.uniform(size = self.num_individuals) + 0.5)*d_i_min#centered about this value, should be dsitributed as income
 
 
     def set_init_cars_selection(self, parameters_social_network):
@@ -298,7 +298,7 @@ class Social_Network:
         user_vehicle_list = [None]*self.num_individuals
 
         # Generate a single shuffle order
-        shuffle_indices = np.random.permutation(self.num_individuals)##np.random.permutation(self.num_individuals)
+        shuffle_indices = self.random_state_social_network.permutation(self.num_individuals)##np.random.permutation(self.num_individuals)
 
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
 
@@ -378,7 +378,7 @@ class Social_Network:
         
         # Generate a 2D array of indices for each individual's sampled cars
         self.sampled_indices_new_cars = np.array([
-            np.random.choice(num_new_cars, max_consider, replace=False)
+            self.random_state_social_network.choice(num_new_cars, max_consider, replace=False)
             for _ in range(self.num_individuals)
         ])
         
@@ -398,7 +398,7 @@ class Social_Network:
         # Generate all indices and shuffle for randomness
         all_indices = np.arange(self.num_second_hand_cars)
         sampled_indices = np.tile(all_indices, (self.num_individuals, 1))
-        np.apply_along_axis(np.random.shuffle, 1, sampled_indices)#shuffle each row all the indicies
+        np.apply_along_axis(self.random_state_social_network.shuffle, 1, sampled_indices)#shuffle each row all the indicies
 
         # Select the first `max_consider` indices for each individual
         self.sampled_indices_second_hand = sampled_indices[:, :max_consider]
@@ -481,7 +481,7 @@ class Social_Network:
             """THIS SHOULD ACRUALLY BE USED"""
             if self.t_social_network == 0:
                 #pick random vehicle which is available
-                choice_index = np.random.choice(len(available_and_current_vehicles_list), p=probability_choose)
+                choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             else:#keep current car
                 choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
         else:
@@ -495,7 +495,7 @@ class Social_Network:
             sum_prob = np.sum(individual_specific_util)
 
             probability_choose = individual_specific_util / sum_prob
-            choice_index = np.random.choice(len(available_and_current_vehicles_list), p=probability_choose)
+            choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
 
         #if choice_index in [0,1]:
         #    print("chosen public", self.origin_vec[person_index], choice_index)
@@ -1106,7 +1106,6 @@ class Social_Network:
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
  
         self.current_vehicles  = self.update_VehicleUsers()
-
-        print("HEYEYEYE",self.emissions_flow_history[-1])
+        #print(self.total_driving_emissions)
 
         return self.consider_ev_vec,  self.chosen_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count porfits

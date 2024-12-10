@@ -22,7 +22,7 @@ def main(
     print("fileName:", fileName)
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    print(controller.social_network.emissions_flow_history )
+    #print(controller.social_network.emissions_flow_history )
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
@@ -192,13 +192,14 @@ if __name__ == "__main__":
             "num_cars_production": 5
         },
         "parameters_social_network":{
-            "num_individuals": 500,#200,
+            "num_individuals": 200,#500,#200,
             "prop_urban": 0.8,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
             "init_vals_innovative_seed":99, 
             "init_vals_price_seed": 8, 
             "d_min_seed": 45,
+            "social_network_seed": 66,
             "d_i_min_urban": 100,#in km
             "d_i_min_rural": 300,#in km
             "SBM_block_num": 2,

@@ -38,8 +38,14 @@ def compute_quality(P_star, beta_i, gamma_i, E, alpha, r, delta, c_z_t, e_z_t, o
 
 if __name__ == "__main__":
     # Generate beta_i and gamma_i values between 0 and 1
+    #FREE VARIABLES
     beta_i_values = np.linspace(0.01, 1, 100)  # Avoid zero to prevent division by zero
     gamma_i_values = np.linspace(0.01, 1, 100)
+    eta = 0.5  # Constant
+
+    #4 degrees of freedom: Q, beta, gamma and eta
+    #Paramterise: price of the car, distance driven
+    #leaves us with 2 parameters that we can set. 
 
     # Create a meshgrid
     beta_i_grid, gamma_i_grid = np.meshgrid(beta_i_values, gamma_i_values)
@@ -52,10 +58,10 @@ if __name__ == "__main__":
     delta = 0.0005
     c_z_t = 0.089951  # Gas price
     e_z_t = 0.26599820413049985  # Gasoline emissions per kWh
-    nu_z_i_t = 0.0355  # Another constant parameter
+    nu_z_i_t = 0.0355  # Another constant parameter, time spent per kilometer
     omega_a_t = 1  # km/kWh
 
-    eta = 10e2  # Constant
+    
 
     # Initialize storage for results
     Q_results = []
