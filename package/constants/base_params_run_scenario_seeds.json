@@ -2,13 +2,13 @@
     "cars_init_state": 1,
     "duration_no_carbon_price": 276,
     "duration_future":156,
-    "save_timeseries_data_state": 1,
+    "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
     "choice_seed": 9,
     "age_limit_second_hand": 3,
     "ev_research_start_time": 60,
     "EV_nu_diff_state": 1,
-    "EV_rebate_state": 0,
+    "EV_rebate_state": 1,
     "parameters_rebate":{
         "start_time": 120,
         "end_time":276,
@@ -45,7 +45,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Adoption_subsidy": "Zero",
             "Public_transport_expansion": "Zero", 
             "Ban_ICE_cars": "Zero"
@@ -165,6 +165,7 @@
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
+        "social_network_seed": 66,
         "d_min_seed": 45,
         "d_i_min_urban": 100,
         "d_i_min_rural": 300,
@@ -176,7 +177,7 @@
         "beta_multiplier": 1,
         "a_environment": 4,
         "b_environment": 2,
-        "a_innovativeness": 1,
+        "a_innovativeness": 0.95,
         "b_innovativeness": 1,
         "a_price": 4,
         "b_price": 1,

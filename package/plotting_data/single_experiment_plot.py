@@ -11,6 +11,7 @@ from matplotlib.cm import ScalarMappable
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.colors import LinearSegmentedColormap
+import networkx as nx
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -51,7 +52,8 @@ def plot_total_utility(social_network, time_series, fileName, dpi=600):
 
 def plot_carbon_price(controller, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, controller.carbon_price_time_series[:-1], marker='o')
+    "FIX THIS!!"
+    ax.plot(time_series, controller.carbon_price_time_series[:len(time_series)], marker='o')
     format_plot(ax, "Carbon price Over Time", "Time Step", "Carbon price", legend=False)
     save_and_show(fig, fileName, "carbon_price", dpi)
 
@@ -121,6 +123,32 @@ def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600)
     # Save and show the plot
     save_and_show(fig, fileName, "plot_transport_users_stacked", dpi)
 
+
+
+def plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Calculate total users at each time step
+    total_users = np.array(social_network.history_new_ICE_cars_bought) + np.array(social_network.history_new_EV_cars_bought)
+
+    # Calculate proportions
+    ice_prop = np.array(social_network.history_new_ICE_cars_bought) / total_users
+    ev_prop = np.array( social_network.history_new_EV_cars_bought) / total_users
+
+    # Plot stacked area (continuous stacked bar equivalent)
+    ax.stackplot(time_series, ice_prop, ev_prop,
+                 labels=['ICE', 'EV' ],
+                 alpha=0.8)
+
+    # Set plot labels and limits
+    ax.set_title("New cars Over Time (Proportion)")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Proportion of New Cars")
+    ax.set_ylim(0, 1)  # Proportion range
+    ax.legend(loc="lower right")
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_transport_new_cars_stacked", dpi)
 
 def plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi=600):
     fig, axs = plt.subplots(1, 3, figsize=(15, 6))
@@ -833,6 +861,20 @@ def plot_density_by_value(fileName, social_network, time_series, dpi_save=600):
 
 #################################################################################################################################################
 #Plots by segments of society
+
+# Compute proportions for rich and poor
+def compute_proportions(indices, data):
+    num_users = len(indices)
+    transport_data = data[indices]  # Select data for the given group
+    
+    # Calculate proportions for each transport type at each time step
+    rural_prop = np.sum(transport_data == 0, axis=0) / num_users
+    urban_prop = np.sum(transport_data == 1, axis=0) / num_users
+    ice_prop = np.sum(transport_data == 2, axis=0) / num_users
+    ev_prop = np.sum(transport_data == 3, axis=0) / num_users
+    
+    return rural_prop, urban_prop, ice_prop, ev_prop
+    
 def plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=50, dpi=600):
     # Calculate the threshold for rich and poor
     beta_threshold = np.percentile(social_network.beta_vec, x_percentile)
@@ -844,22 +886,9 @@ def plot_transport_users_stacked_rich_poor(social_network, time_series, fileName
     # Extract transport type data
     data = np.asarray(social_network.history_transport_type_individual).T
 
-    # Compute proportions for rich and poor
-    def compute_proportions(indices):
-        num_users = len(indices)
-        transport_data = data[indices]  # Select data for the given group
-        
-        # Calculate proportions for each transport type at each time step
-        rural_prop = np.sum(transport_data == 0, axis=0) / num_users
-        urban_prop = np.sum(transport_data == 1, axis=0) / num_users
-        ice_prop = np.sum(transport_data == 2, axis=0) / num_users
-        ev_prop = np.sum(transport_data == 3, axis=0) / num_users
-        
-        return rural_prop, urban_prop, ice_prop, ev_prop
-
     # Get proportions for rich and poor
-    rich_rural, rich_urban, rich_ice, rich_ev = compute_proportions(rich_indices)
-    poor_rural, poor_urban, poor_ice, poor_ev = compute_proportions(poor_indices)
+    rich_rural, rich_urban, rich_ice, rich_ev = compute_proportions(rich_indices, data)
+    poor_rural, poor_urban, poor_ice, poor_ev = compute_proportions(poor_indices, data)
     
     # Create subplots for rich and poor
     fig, axs = plt.subplots(2, 1, figsize=(10, 12), sharex=True, sharey=True)
@@ -911,20 +940,6 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
     # Extract transport type data
     data = np.asarray(social_network.history_transport_type_individual).T
 
-    # Compute proportions for a general case
-    def compute_proportions(indices):
-        num_users = len(indices)
-        transport_data = data[indices]  # Select data for the given group
-        
-        # Calculate proportions for each transport type at each time step
-        
-        urban_prop = np.sum(transport_data == 0, axis=0) / num_users
-        rural_prop = np.sum(transport_data == 1, axis=0) / num_users
-        ice_prop = np.sum(transport_data == 2, axis=0) / num_users
-        ev_prop = np.sum(transport_data == 3, axis=0) / num_users
-        
-        return rural_prop, urban_prop, ice_prop, ev_prop
-
     # Create a grid of subplots (2 rows x 4 columns)
     fig, axs = plt.subplots(2, 4, figsize=(10, 8), sharex=True, sharey=True)
     
@@ -936,8 +951,8 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
         poor_indices = np.where(vec > threshold)[0]
         
         # Compute proportions
-        rich_rural, rich_urban, rich_ice, rich_ev = compute_proportions(rich_indices)
-        poor_rural, poor_urban, poor_ice, poor_ev = compute_proportions(poor_indices)
+        rich_rural, rich_urban, rich_ice, rich_ev = compute_proportions(rich_indices, data)
+        poor_rural, poor_urban, poor_ice, poor_ev = compute_proportions(poor_indices, data)
         
         # Plot stacked areas for rich in the upper row
         axs[0, i].stackplot(time_series, rich_rural, rich_urban, rich_ice, rich_ev,
@@ -961,8 +976,8 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
     rural_indices = np.where(origin_vec == 1)[0]
     
     # Compute proportions for urban and rural
-    urban_rural, urban_urban, urban_ice, urban_ev = compute_proportions(urban_indices)
-    rural_rural, rural_urban, rural_ice, rural_ev = compute_proportions(rural_indices)
+    urban_rural, urban_urban, urban_ice, urban_ev = compute_proportions(urban_indices,data)
+    rural_rural, rural_urban, rural_ice, rural_ev = compute_proportions(rural_indices,data)
     
     # Plot stacked areas for urban in the upper row, last column
     axs[0, -1].stackplot(time_series, urban_rural, urban_urban, urban_ice, urban_ev,
@@ -1246,19 +1261,6 @@ def plot_conditional_transport_users_4x4(
     # Extract transport type data
     data = np.asarray(social_network.history_transport_type_individual).T
 
-    # Compute proportions for given indices
-    def compute_proportions(indices):
-        num_users = len(indices)
-        transport_data = data[indices]  # Select data for the given group
-        
-        # Calculate proportions for each transport type at each time step
-        urban_prop = np.sum(transport_data == 0, axis=0) / num_users
-        rural_prop = np.sum(transport_data == 1, axis=0) / num_users
-        ice_prop = np.sum(transport_data == 2, axis=0) / num_users
-        ev_prop = np.sum(transport_data == 3, axis=0) / num_users
-        
-        return rural_prop, urban_prop, ice_prop, ev_prop
-
     # Define combinations for the 4 variables
     condition_combinations = [
         (beta_cond, gamma_cond, chi_cond, origin_cond)
@@ -1310,7 +1312,7 @@ def plot_conditional_transport_users_4x4(
         #print("SEGEMENT COUNT", len(combined_indices))
         # Compute proportions for the combined indices
         if len(combined_indices) > 0:
-            rural_prop, urban_prop, ice_prop, ev_prop = compute_proportions(combined_indices)
+            rural_prop, urban_prop, ice_prop, ev_prop = compute_proportions(combined_indices, data)
 
             # Plot the data
             ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,
@@ -1362,6 +1364,46 @@ def plot_time_series_controller(reference_data, time_series, reference_label,ref
     save_and_show(fig, fileName, reference_save, dpi)
 
 
+def plot_social_network(social_network, fileName):
+    adjacency_matrix, network = social_network.adjacency_matrix, social_network.network
+    beta_vec = social_network.beta_vec
+
+    # Create a figure and axes
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    # Choose a layout for the nodes
+    pos = nx.spring_layout(network, seed=42)  # You can pick any layout you like
+
+    node_labels = list(network.nodes())
+    values = [beta_vec[node] for node in node_labels]
+
+    # Draw the nodes
+    node_collection = nx.draw_networkx_nodes(
+        network,
+        pos,
+        ax=ax,
+        node_size=300,
+        node_color=values,
+        cmap=plt.cm.viridis,
+        edgecolors='black'
+    )
+
+    # Draw the edges
+    nx.draw_networkx_edges(network, pos, ax=ax, width=1.0, alpha=0.7)
+
+    ax.axis('off')
+
+    # Create a ScalarMappable to generate a colorbar
+    sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, 
+                               norm=plt.Normalize(vmin=min(values), vmax=max(values)))
+    sm.set_array([])  # Needed for older versions of matplotlib
+
+    # Add a colorbar
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label("Price sensitivity, $\\beta$")
+
+    save_and_show(fig, fileName, "network", dpi=300)
+
 
 
 # Sample main function
@@ -1377,17 +1419,17 @@ def main(fileName, dpi=600):
     firm_manager = data_controller.firm_manager
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
+    
 
-    """
     # All plot function calls
+    """
+    plot_total_utility(social_network, time_series, fileName, dpi)
     
-    #plot_total_utility(social_network, time_series, fileName, dpi)
-    
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
-    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
@@ -1400,25 +1442,20 @@ def main(fileName, dpi=600):
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
     
     
-    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
     #
     plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
-    """
 
-    """
     plot_history_car_age(social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     plot_price_history(firm_manager, time_series, fileName, dpi)
     
-    
-
     #SEGEMENT PLOTS
     plot_segment_count_grid(firm_manager, time_series, fileName)
-    """
 
     #plot_calibration_data(data_controller, time_series, fileName)
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
@@ -1434,17 +1471,21 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     plot_emissions(social_network, time_series, fileName, dpi)
-
-    percentiles = {'Beta': 90, 'Gamma': 50, 'Chi': 10}
+    
+    percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
     plot_transport_users_stacked_two_by_four(social_network, time_series, fileName, percentiles)
     plot_mean_emissions_one_row(social_network, time_series, fileName, percentiles)
     plot_mean_distance_one_row(social_network, time_series, fileName, percentiles)
     plot_mean_utility_one_row(social_network, time_series, fileName, percentiles)
 
     plot_conditional_transport_users_4x4(social_network, time_series, fileName, percentiles)
-    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    
     plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
+    """
+    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
 
+    """
     #PLOT ACTUAL VALUES USED
     plot_time_series_controller(data_controller.history_gas_price, time_series,"Gas price","gas_price", fileName)
     plot_time_series_controller(data_controller.history_electricity_price, time_series,"Electricity price","electricity_price", fileName)
@@ -1453,8 +1494,9 @@ def main(fileName, dpi=600):
     #plot_time_series_controller(data_controller.history_rebate, time_series,"EV rebate","rebate", fileName)
     #plot_time_series_controller(data_controller.history_used_rebate, time_series,"Used EV rebate","used_rebate", fileName)
     plot_carbon_price(data_controller, time_series, fileName)
-    
+    """
+    #plot_social_network(social_network, fileName)
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_19_09_02__03_12_2024")
+    main("results/single_experiment_08_59_59__11_12_2024")

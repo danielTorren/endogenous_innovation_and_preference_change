@@ -309,7 +309,7 @@ class Controller:
         """Put together the calibration, scenarios and policies data"""
 
         self.manage_calibration()
-
+        
         if self.full_run_state:
             self.manage_scenario()
             self.manage_policies() 
@@ -324,7 +324,8 @@ class Controller:
             self.used_rebate_time_series = np.concatenate((self.used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
             self.Public_transport_nu_urban_vec = np.concatenate((self.Public_transport_nu_urban_vec,self.Public_transport_expansion_future_urban ), axis=None)
             self.Public_transport_nu_rural_vec = np.concatenate((self.Public_transport_nu_rural_vec,self.Public_transport_expansion_future_rural ), axis=None)
-
+        else:
+            self.carbon_price_time_series = np.asarray(([0])*len( self.electricity_price_vec))
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
     def update_time_series_data(self):

@@ -364,7 +364,7 @@ class Social_Network:
         else:
             for i, person_index in enumerate(shuffle_indices):
                 user = self.vehicleUsers_list[person_index]
-                ____, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
+                vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(person_index, user, available_and_current_vehicles_list, utilities_kappa)
                 user_vehicle_list[person_index] = user_vehicle
                 self.update_emisisons(person_index, vehicle_chosen_index, vehicle_chosen)
         
@@ -861,6 +861,8 @@ class Social_Network:
         self.rural_public_transport_users = 0
         self.ICE_users = 0 
         self.EV_users = 0
+        self.new_ICE_cars_bought = 0
+        self.new_EV_cars_bought = 0
   
         self.second_hand_users = 0
         self.quality_vals = []
@@ -894,6 +896,10 @@ class Social_Network:
         if vehicle_chosen.scenario == "new_car":  
             self.new_cars_bought +=1
             self.total_production_emissions += vehicle_chosen.emissions
+            if vehicle_chosen.transportType == 2:
+                self.new_ICE_cars_bought +=1
+            else:
+                self.new_EV_cars_bought +=1
         
         if vehicle_chosen.transportType > 1:  
             
@@ -953,6 +959,8 @@ class Social_Network:
         self.history_ICE_users = []
         self.history_EV_users = []
         self.history_second_hand_users = []
+        self.history_new_ICE_cars_bought = []
+        self.history_new_EV_cars_bought = []
         # New history attributes for vehicle attributes
         self.history_quality = []
         self.history_efficiency = []
@@ -993,6 +1001,8 @@ class Social_Network:
         self.history_utility_individual.append(self.users_utility_vec)
         self.history_transport_type_individual.append(self.users_transport_type_vec)
 
+        self.history_new_ICE_cars_bought.append(self.new_ICE_cars_bought)
+        self.history_new_EV_cars_bought.append(self.new_EV_cars_bought)
 
         #print(self.users_transport_type_vec, self.origin_vec)
         #quit()

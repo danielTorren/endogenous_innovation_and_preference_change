@@ -7,6 +7,7 @@ package/.ipynb_checkpoints
 ".ipynb_checkpoints"/
 .ipynb_checkpoints/
 .ipynb_checkpoints
+*.ipynb filter=strip-notebook-output
 **/__pychache__/
 __pycache__/
 package/generating_data/__pychache__/

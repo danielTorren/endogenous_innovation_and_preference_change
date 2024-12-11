@@ -46,9 +46,7 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-
     createFolder(fileName)
-
 
     # Get all combinations of scenario and policy parameters
     scenario_keys, scenario_combinations = generate_scenario_combinations(base_params, "parameters_scenarios")
@@ -60,6 +58,7 @@ def main(
         params_list.append(update_parameters(base_params, "parameters_scenarios", scenario_keys, scenario_combination))
 
     # Run the simulation with the current combination in parallel!
+    print("TOTAL RUNS: ", len(params_list))
     data_flat = emissions_parallel_run(params_list) 
     
     save_object(data_flat, fileName + "/Data", "data_flat")

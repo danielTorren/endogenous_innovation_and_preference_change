@@ -34,14 +34,14 @@ if __name__ == "__main__":
     base_params = {
         "cars_init_state": 1,
         "duration_no_carbon_price": 276,#that is 23 years,#01/2000-12/2022
-        "duration_future":156,#01/2023 - 12/2035  (TOTAL of 432 steps )
+        "duration_future":156,#156,#01/2023 - 12/2035  (TOTAL of 432 steps )
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
         "age_limit_second_hand": 3,
         "ev_research_start_time": 60,#2005
         "EV_nu_diff_state": 1,
-        "EV_rebate_state": 0,
+        "EV_rebate_state": 1,
         "parameters_rebate":{#THIS IS A CALIBRATION PARAMETER, REFLECTIVE OF CALIFORNIA
             "start_time": 120,#2010
             "end_time":276,
@@ -52,7 +52,7 @@ if __name__ == "__main__":
             "States":{
                 "Gas_price": "Current", #"Current","High",#
                 "Electricity_price": "Current", #"Current","High",#
-                "Grid_emissions_intensity": "Weaker",#"Weaker", # "Decarbonised"
+                "Grid_emissions_intensity": "Decarbonised",#"Weaker", # "Decarbonised"
                 "EV_Substitutability": "Parity", #"Improved", #"Parity"
             },
             "Values":{
@@ -78,8 +78,8 @@ if __name__ == "__main__":
         },
         "parameters_policies":{
             "States":{
-                "Carbon_price": "Zero",#"Zero","Low","High"
-                "Adoption_subsidy": "Zero", #"High"
+                "Carbon_price": "High",#"Zero","Low","High"
+                "Adoption_subsidy": "High", #"High"
                 "Public_transport_expansion": "Zero", #"High"
                 "Ban_ICE_cars": "Zero", #"Applied"
             },
@@ -154,7 +154,7 @@ if __name__ == "__main__":
             "min_max_Cost": [1000,30000],
         },
         "parameters_urban_public_transport":{
-            "attributes": [100,1,1], #[0.100,1,1]
+            "attributes": [1000,1,1], #[0.100,1,1]
             "nu_z_i_t": 0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "price": 100,
             "production_emissions":10e4,
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             "delta_z":0
         },
         "parameters_rural_public_transport":{
-            "attributes": [100,1,1], #[0.100,1,1],
+            "attributes": [1000,1,1], #[0.100,1,1],
             "nu_z_i_t":5*0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "price": 100,
             "production_emissions":10e4,
@@ -192,7 +192,7 @@ if __name__ == "__main__":
             "num_cars_production": 5
         },
         "parameters_social_network":{
-            "num_individuals": 200,#500,#200,
+            "num_individuals": 500,#500,#200,
             "prop_urban": 0.8,
             "network_structure_seed": 8,
             "init_vals_environmental_seed": 66,
@@ -205,12 +205,11 @@ if __name__ == "__main__":
             "SBM_block_num": 2,
             "SBM_network_density_input_intra_block": 0.2,
             "SBM_network_density_input_inter_block": 0.005,
-            "prob_rewire": 0.1,
             "gamma_multiplier": 1,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
             "beta_multiplier": 1,
             "a_environment": 4,#large easy ev adoption 
             "b_environment": 2,#2,
-            "a_innovativeness": 1,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
+            "a_innovativeness": 0.9,#0.9,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
             "b_innovativeness": 1,#1,#2,#1,#2,
             "a_price": 4,#most people price sensitive
             "b_price": 1,#1,
