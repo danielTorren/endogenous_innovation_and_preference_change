@@ -89,8 +89,6 @@ def plot_ev_consider_rate(social_network, time_series, fileName, dpi=600):
 
 def plot_tranport_users(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, social_network.history_rural_public_transport_users, label='Rural Public Transport', marker='o')
-    ax.plot(time_series, social_network.history_urban_public_transport_users, label='Urban Public Transport', marker='o')
     ax.plot(time_series, social_network.history_ICE_users, label='ICE', marker='o')
     ax.plot(time_series, social_network.history_EV_users, label='EV', marker='o')
     format_plot(ax, "Transport Users Over Time", "Time Step", "# Transport Users")
@@ -103,14 +101,12 @@ def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600)
     total_users = social_network.num_individuals
 
     # Calculate proportions
-    rural_prop = np.array(social_network.history_rural_public_transport_users) / total_users
-    urban_prop = np.array(social_network.history_urban_public_transport_users) / total_users
     ice_prop = np.array(social_network.history_ICE_users) / total_users
     ev_prop = np.array(social_network.history_EV_users) / total_users
 
     # Plot stacked area (continuous stacked bar equivalent)
-    ax.stackplot(time_series, rural_prop, urban_prop, ice_prop, ev_prop,
-                 labels=['Rural Public Transport', 'Urban Public Transport', 'ICE', 'EV' ],
+    ax.stackplot(time_series, ice_prop, ev_prop,
+                 labels=['ICE', 'EV' ],
                  alpha=0.8)
 
     # Set plot labels and limits

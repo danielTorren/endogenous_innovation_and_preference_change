@@ -57,30 +57,6 @@ if __name__ == '__main__':
             "min_max_Efficiency":[0.5,1.5], #historial min and max for period are (0.953754,1.252405)
             "min_max_Cost": [1000,30000],
         },
-        "parameters_urban_public_transport":{
-            "attributes": [1000,1,1], #[0.100,1,1]
-            "nu_z_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
-            "price": 100,
-            "production_emissions":10e4,
-            "id": -1, 
-            "firm" : -1, 
-            "transportType" : 0,
-            "fuel_cost_c_z": 0,
-            "e_z_t":0,
-            "delta_z":0
-        },
-        "parameters_rural_public_transport":{
-            "attributes": [1000,1,1], #[0.100,1,1],
-            "nu_z_i_t":5*0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
-            "price": 100,
-            "production_emissions":10e4,
-            "id" : -2, 
-            "firm" : -2,
-            "transportType" : 1,
-            "fuel_cost_c_z": 0,
-            "e_z_t":0,
-            "delta_z":0
-        },
         "parameters_firm_manager": {
             "init_tech_seed": 99,
             "J": 10,

@@ -30,7 +30,7 @@ class PersonalCar:
         self.e_z_t = parameters["e_z_t"]  # Effort factor for the vehicle at time 't'.
                             # Represents the effort required to use the vehicle, which can include physical, cognitive, or time-related efforts associated with traveling using this mode of transportation.
 
-        self.nu_z_i_t = parameters["nu_z_i_t"]  #AVEAGE time to do a km, worse for public transport
+        self.nu_z_i_t = parameters["nu_z_i_t"]  #AVEAGE time to do a km
         self.eta = parameters["eta"]  # Scaling constant affecting perceived utility.
                         # Represents a scaling factor used to adjust the overall utility calculation, typically to normalize or emphasize particular components in the utility function.
 

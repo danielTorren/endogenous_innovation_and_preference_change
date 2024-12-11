@@ -6,7 +6,6 @@ Created: 22/12/2023
 from ast import Raise
 from package.model.nkModel import NKModel
 from package.model.firmManager import Firm_Manager 
-from package.model.publicTransport import Public_Transport
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 import numpy as np
@@ -27,9 +26,6 @@ class Controller:
         self.setup_ICE_landscape(self.parameters_ICE)
         self.setup_EV_landscape(self.parameters_EV)
         self.setup_second_hand_market()
-
-        self.setup_urban_public_transport(self.parameters_urban_public_transport)
-        self.setup_rural_public_transport(self.parameters_rural_public_transport)
         
         #create firms and social networks
         self.setup_firm_manager_parameters()
@@ -41,10 +37,8 @@ class Controller:
 
         #NEED TO CREATE INIT OPTIONS
         self.cars_on_sale_all_firms = self.firm_manager.cars_on_sale_all_firms
-        self.public_option_list = [self.urban_public_tranport,self.rural_public_tranport]
         self.second_hand_cars = self.get_second_hand_cars()
         
-        self.parameters_social_network["public_transport"] = self.public_option_list
         self.parameters_social_network["init_car_options"] =  self.cars_on_sale_all_firms 
         self.parameters_social_network["old_cars"] = self.firm_manager.old_cars
 
@@ -62,8 +56,6 @@ class Controller:
         if self.save_timeseries_data_state:
             self.social_network.set_up_time_series_social_network()
             self.firm_manager.set_up_time_series_firm_manager()
-            self.rural_public_tranport.set_up_time_series_firm()
-            self.urban_public_tranport.set_up_time_series_firm()
             self.time_series = []
             self.set_up_time_series_controller()
         
@@ -83,9 +75,6 @@ class Controller:
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
-
-        self.parameters_urban_public_transport = parameters_controller["parameters_urban_public_transport"]
-        self.parameters_rural_public_transport = parameters_controller["parameters_rural_public_transport"]
 
         self.EV_nu_diff_state = parameters_controller["EV_nu_diff_state"]
 
@@ -124,10 +113,6 @@ class Controller:
             self.nu_z_i_t_EV_vec = self.tank_ratio_vec*self.parameters_ICE["nu_z_i_t"]
         else:
             self.nu_z_i_t_EV_vec = [self.parameters_ICE["nu_z_i_t"]]*self.calibration_time_steps 
-        #HAVE TO MAKE PUBLIC TRANSPORT TIME SERIES FOR POTENTIAL CHANGES
-        self.Public_transport_nu_urban_vec = [self.parameters_urban_public_transport["nu_z_i_t"]]*self.calibration_time_steps 
-        self.Public_transport_nu_rural_vec = [self.parameters_rural_public_transport["nu_z_i_t"]]*self.calibration_time_steps 
-
         
         self.parameters_rebate = self.parameters_controller["parameters_rebate"]
         self.rebate_time_series = np.zeros(self.duration_no_carbon_price)
@@ -193,7 +178,6 @@ class Controller:
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
-        self.Public_transport_expansion_state =  self.parameters_controller["parameters_policies"]["States"]["Public_transport_expansion"]
         self.Ban_ICE_cars_state =  self.parameters_controller["parameters_policies"]["States"]["Ban_ICE_cars"]
         
         # Carbon price calculation
@@ -228,30 +212,6 @@ class Controller:
             raise ValueError("Invalid Adoption subsidy state")
         self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
-
-        # Public transport expansion calculation
-        self.Public_transport_nu_2022_urban = self.parameters_urban_public_transport["nu_z_i_t"]
-        self.Public_transport_nu_2022_rural = self.parameters_rural_public_transport["nu_z_i_t"]
-        if self.Public_transport_expansion_state == "Zero":
-            self.Public_transport_expansion_factor_urban = self.Public_transport_nu_2022_urban*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["Zero"]
-            self.Public_transport_expansion_factor_rural = self.Public_transport_nu_2022_rural*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["Zero"]
-        elif self.Public_transport_expansion_state == "High":
-            self.Public_transport_expansion_factor_urban = self.Public_transport_nu_2022_urban*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["High"]
-            self.Public_transport_expansion_factor_rural = self.Public_transport_nu_2022_rural*self.parameters_controller["parameters_policies"]["Values"]["Public_transport_expansion"]["High"]
-        else:
-            raise ValueError("Invalid Public transport expansion state")
-        self.Public_transport_expansion_future_urban = np.linspace(self.Public_transport_nu_2022_urban,  self.Public_transport_expansion_factor_urban, self.duration_future)
-        self.Public_transport_expansion_future_rural = np.linspace(self.Public_transport_nu_2022_rural,  self.Public_transport_expansion_factor_rural, self.duration_future)
-
-        # Ban ICE cars calculation
-        if self.Ban_ICE_cars_state == "Zero":
-            pass
-        elif self.Ban_ICE_cars_state == "Applied":
-            self.Ban_ICE_cars_penalty = self.parameters_controller["parameters_policies"]["Values"]["Ban_ICE_cars"]["Applied"]
-            self.yt_time_series = np.arange(self.duration_future, 0)
-        else:
-            raise ValueError("Invalid Ban ICE cars state")
-        #this is the YTD according to the year
         
     #############################################################################################################################
     #DEAL WITH CARBON PRICE
@@ -322,8 +282,6 @@ class Controller:
             self.nu_z_i_t_EV_vec = np.concatenate((self.nu_z_i_t_EV_vec,self.EV_Substitutability_future), axis=None) 
             self.rebate_time_series = np.concatenate((self.rebate_time_series,self.rebate_time_series_future ), axis=None) 
             self.used_rebate_time_series = np.concatenate((self.used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
-            self.Public_transport_nu_urban_vec = np.concatenate((self.Public_transport_nu_urban_vec,self.Public_transport_expansion_future_urban ), axis=None)
-            self.Public_transport_nu_rural_vec = np.concatenate((self.Public_transport_nu_rural_vec,self.Public_transport_expansion_future_rural ), axis=None)
         else:
             self.carbon_price_time_series = np.asarray(([0])*len( self.electricity_price_vec))
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
@@ -354,9 +312,6 @@ class Controller:
         self.nu_z_i_t_EV = self.nu_z_i_t_EV_vec[self.t_controller]    
         self.rebate = self.rebate_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
-
-        self.Public_transport_nu_urban = self.Public_transport_nu_urban_vec[self.t_controller]
-        self.Public_transport_nu_rural = self.Public_transport_nu_rural_vec[self.t_controller]
 
     #############################################################################################################################
     def setup_id_gen(self):
@@ -402,8 +357,6 @@ class Controller:
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_social_network["second_hand_merchant"] = self.second_hand_merchant
-        self.parameters_social_network["urban_public_transport_emissions"] = self.parameters_urban_public_transport["production_emissions"]
-        self.parameters_social_network["rural_public_transport_emissions"] = self.parameters_rural_public_transport["production_emissions"]
         self.parameters_social_network["gas_price"] = self.gas_price
         self.parameters_social_network["electricity_price"] = self.electricity_price
         self.parameters_social_network["electricity_emissions_intensity"] = self.electricity_emissions_intensity
@@ -422,14 +375,6 @@ class Controller:
 
     def setup_EV_landscape(self, parameters_EV):
         self.EV_landscape = NKModel(parameters_EV)
-
-    def setup_urban_public_transport(self, parameters_urban_public_transport):
-        parameters_urban_public_transport["eta"] = self.parameters_vehicle_user["eta"]
-        self.urban_public_tranport = Public_Transport(parameters=parameters_urban_public_transport)
-
-    def setup_rural_public_transport(self, parameters_rural_public_transport):
-        parameters_rural_public_transport["eta"] = self.parameters_vehicle_user["eta"]
-        self.rural_public_tranport = Public_Transport(parameters=parameters_rural_public_transport)
 
     def setup_second_hand_market(self):
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, age_limit_second_hand = self.age_limit_second_hand)
@@ -455,7 +400,7 @@ class Controller:
     
     def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.public_option_list, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.nu_z_i_t_EV, self.rebate, self.used_rebate)
+        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.nu_z_i_t_EV, self.rebate, self.used_rebate)
 
         return consider_ev_vec, vehicles_chosen_list
     
@@ -480,8 +425,6 @@ class Controller:
         if self.save_timeseries_data_state and (self.t_controller % self.compression_factor_state == 0):
             self.social_network.save_timeseries_data_social_network()
             self.firm_manager.save_timeseries_data_firm_manager()
-            self.rural_public_tranport.save_timeseries_data_firm()
-            self.urban_public_tranport.save_timeseries_data_firm()
             self.second_hand_merchant.save_timeseries_second_hand_merchant()
             self.time_series.append(self.t_controller)
 
@@ -493,17 +436,12 @@ class Controller:
 
         return self.second_hand_merchant.cars_on_sale
 
-    def update_public_tranport(self):
-        self.urban_public_tranport.nu_z_i_t = self.Public_transport_nu_urban
-        self.rural_public_tranport.nu_z_i_t = self.Public_transport_nu_rural
-
     ################################################################################################
 
     def next_step(self):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
         #print("TIME STEP", self.t_controller)
         self.update_time_series_data()
-        self.update_public_tranport()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()
         self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
