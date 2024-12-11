@@ -322,7 +322,7 @@ class Firm_Manager:
          
         self.carbon_price = carbon_price
 
-        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET OR PUBLIC TRANSPORT
+        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.update_market_data(sums_U_segment)

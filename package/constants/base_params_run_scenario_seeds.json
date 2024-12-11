@@ -46,9 +46,7 @@
     "parameters_policies":{
         "States":{
             "Carbon_price": "High",
-            "Adoption_subsidy": "Zero",
-            "Public_transport_expansion": "Zero", 
-            "Ban_ICE_cars": "Zero"
+            "Adoption_subsidy": "Zero"
         },
         "Values":{
             "Carbon_price":{
@@ -81,14 +79,6 @@
                     "rebate": 7500,
                     "used_rebate": 1500
                 }
-            },
-            "Public_transport_expansion":{
-                "Zero":1,
-                "High":0.5
-            },
-            "Ban_ICE_cars":{
-                "Zero":"None",
-                "Applied":420
             }
         }
     },

@@ -80,8 +80,6 @@ if __name__ == "__main__":
             "States":{
                 "Carbon_price": "High",#"Zero","Low","High"
                 "Adoption_subsidy": "High", #"High"
-                "Public_transport_expansion": "Zero", #"High"
-                "Ban_ICE_cars": "Zero", #"Applied"
             },
             "Values":{
                 "Carbon_price":{
@@ -114,15 +112,7 @@ if __name__ == "__main__":
                         "rebate": 7500,
                         "used_rebate": 1500
                     }
-                },
-                "Public_transport_expansion":{
-                    "Zero":1,
-                    "High":0.5
-                },
-                "Ban_ICE_cars":{
-                    "Zero":None,
-                    "Applied":420
-                },
+                }
             }
         },
         "parameters_EV":{

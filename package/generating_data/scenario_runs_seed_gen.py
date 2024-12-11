@@ -40,8 +40,6 @@ def main(
     f = open(BASE_PARAMS_LOAD)
     base_params = json.load(f)
 
-    
-    
     root = "scenarios_combo"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
