@@ -27,10 +27,8 @@ class NKModel:
         self.max_vec = np.asarray([self.min_max_Quality[1],self.min_max_Efficiency[1], self.min_max_Cost[1]])
 
         self.fitness_landscape = self.generate_fitness_landscape()
-        #print("GEN Landscape")
+
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string()
-        #print("NUM ENTRIES",len(self.attributes_dict.keys()))
-        #print("CALCED FITNESS")
 
     def find_min_fitness_string(self):
         """

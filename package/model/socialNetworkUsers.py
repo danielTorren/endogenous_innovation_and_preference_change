@@ -83,9 +83,8 @@ class Social_Network:
     def init_network_settings(self, parameters_social_network):
         self.selection_bias = parameters_social_network["selection_bias"]
         self.network_structure_seed = parameters_social_network["network_structure_seed"]
-        self.SBM_block_num = int(parameters_social_network["SBM_block_num"])
-        self.SBM_network_density_input_intra_block = parameters_social_network["SBM_network_density_input_intra_block"]
-        self.SBM_network_density_input_inter_block = parameters_social_network["SBM_network_density_input_inter_block"]
+        self.K_social_network = parameters_social_network["SW_K"] 
+        self.prob_rewire = parameters_social_network["SW_prob_rewire"]
 
     def init_preference_distribution(self, parameters_social_network):
         self.gamma_multiplier = parameters_social_network["gamma_multiplier"]
@@ -113,23 +112,8 @@ class Social_Network:
         self.random_state_beta = np.random.RandomState(parameters_social_network["init_vals_price_seed"])
         self.beta_vec = self.random_state_beta.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
 
-
-        #origin
-        #0 indicates urban and indicates rural
-        self.prop_urban = parameters_social_network["prop_urban"]
-        self.origin_vec = np.asarray([0]*(int(round(self.num_individuals*self.prop_urban))) + [1]*(int(round(self.num_individuals*(1-self.prop_urban)))))#THIS IS A PLACE HOLDER NEED TO DISCUSS THE DISTRIBUTION OF INDIVIDUALS
-
-        self.origin_vec_invert = 1-self.origin_vec
-
         #d min
-        d_i_min_urban = parameters_social_network["d_i_min_urban"]
-        d_i_min_rural = parameters_social_network["d_i_min_rural"]
-
-        self.d_i_min_vec = np.where(
-            self.origin_vec,
-            d_i_min_rural,
-            d_i_min_urban,
-        )
+        self.d_i_min_vec = np.asarray(self.num_individuals*[parameters_social_network["d_i_min"]])
 
 
     def set_init_cars_selection(self, parameters_social_network):
@@ -170,8 +154,6 @@ class Social_Network:
         base_count = self.num_individuals//self.SBM_block_num
         remainder = self.num_individuals % self.SBM_block_num
         group_counts = [base_count + 1] * remainder + [base_count] * (self.SBM_block_num - remainder)
-
-        self.origin_vec
         
         return group_counts
     
@@ -211,14 +193,7 @@ class Social_Network:
         diagonal_matrix = sp.diags(inv_row_sums)
         norm_matrix = diagonal_matrix.dot(matrix)
         return norm_matrix
-    
-    def introduce_homophily(self) -> np.ndarray:
-        """
-        Introduce homophily based on beta parameter and state of origin. Want to sort the individual blocks by the stuff speparalty 
-        
-        """
-        #instead of making the actual network position shift i could have the strength of interaction be a function of the 
-        self.selection_bias = self.para
+
         
     def create_network(self) -> tuple[npt.NDArray, npt.NDArray, nx.Graph]:
         """
@@ -238,18 +213,8 @@ class Social_Network:
         ws: nx.Graph
             a networkx watts strogatz small world graph
         """
-
-        self.SBM_block_sizes = [self.num_individuals - np.count_nonzero(self.origin_vec), np.count_nonzero(self.origin_vec)]
-
-        block_probs = np.full((self.SBM_block_num, self.SBM_block_num), 
-                                self.SBM_network_density_input_inter_block)
-        np.fill_diagonal(block_probs, self.SBM_network_density_input_intra_block)
-        network = nx.stochastic_block_model(sizes=self.SBM_block_sizes, p=block_probs, 
-                                                   seed=self.network_structure_seed)
-        self.block_id_list = np.asarray([i for i, size in enumerate(self.SBM_block_sizes) 
-                                           for _ in range(size)])
         
-        #network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
+        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
@@ -933,9 +898,6 @@ class Social_Network:
 
         self.history_new_ICE_cars_bought.append(self.new_ICE_cars_bought)
         self.history_new_EV_cars_bought.append(self.new_EV_cars_bought)
-
-        #print(self.users_transport_type_vec, self.origin_vec)
-        #quit()
 
         #SUMS
         self.history_driving_emissions.append(self.total_driving_emissions)

@@ -124,9 +124,8 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return cars_on_sale_all_firms
 
-    def input_social_network_data(self, beta_vec, origin_vec, environmental_awareness_vec,consider_ev_vec):
+    def input_social_network_data(self, beta_vec, environmental_awareness_vec,consider_ev_vec):
         self.beta_vec = beta_vec
-        self.origin_vec = origin_vec
         self.gamma_vec = environmental_awareness_vec
         self.consider_ev_vec = consider_ev_vec
 
@@ -137,13 +136,14 @@ class Firm_Manager:
     def generate_market_data(self):
         """Used once at the start of model run, need to generate the counts then the market data without U then calc U and add it in!"""
 
-        segment_codes = (self.beta_binary << 3) | (self.gamma_binary << 2) | (self.consider_ev_vec << 1) | self.origin_vec
-        segment_counts = np.bincount(segment_codes, minlength=16)
+        segment_codes = (self.beta_binary << 2) | (self.gamma_binary << 1) | (self.consider_ev_vec << 0)
+
+        segment_counts = np.bincount(segment_codes, minlength=8)
         # Store the counts for each of the segments as binary strings ('0000' to '1111')
-        self.market_data = {format(i, '04b'): {"I_s_t":segment_counts[i]} for i in range(16)}
+        self.market_data = {format(i, '03b'): {"I_s_t":segment_counts[i]} for i in range(8)}
 
         #DEAL WITH BETA AND GAMMA
-        # Iterate over all possible segments (0 to 15)
+        # Iterate over all possible segments (0 to 7)
         for segment_code in self.market_data.keys():
             # Identify the indices of individuals belonging to the current segment
             indices = np.where(segment_codes == segment_code)[0]
@@ -203,19 +203,19 @@ class Firm_Manager:
         """Update market data with segment counts and sums U for each segment"""
 
         # Calculate segment codes based on the provided binary vecs
-        segment_codes = (self.beta_binary << 3) | (self.gamma_binary << 2) | (self.consider_ev_vec << 1) | self.origin_vec
+        segment_codes = (self.beta_binary << 2) | (self.gamma_binary << 1) | (self.consider_ev_vec << 0)
         # Calculate segment counts
-        segment_counts = np.bincount(segment_codes, minlength=16)
+        segment_counts = np.bincount(segment_codes, minlength=8)
 
-        for i in range(16):
-            segment_code = format(i, '04b')
+        for i in range(8):
+            segment_code = format(i, '03b')
             
             """
             # Determine if the segment considers ICE cars
             if segment_code[2] == '0':  
                 # Flip the bit at position 2 (count from left, 0-indexed)
                 i_flipped = i ^ (1 << 2)  # Flip the 2nd bit from the right
-                segment_code_flipped = format(i_flipped, '04b')
+                segment_code_flipped = format(i_flipped, '03b')
 
                 # Update market data
                 self.market_data[segment_code]["I_s_t"] = segment_counts[i] + segment_counts[i_flipped]

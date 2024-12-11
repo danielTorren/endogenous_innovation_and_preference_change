@@ -49,7 +49,7 @@ class Controller:
         self.vehicles_chosen_list = self.social_network.current_vehicles
 
         #pass information across one time
-        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.origin_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
+        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
 

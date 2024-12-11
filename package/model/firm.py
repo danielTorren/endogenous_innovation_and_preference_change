@@ -82,9 +82,9 @@ class Firm:
     def set_car_init_price_and_U(self):
         for car in self.cars_on_sale:
             car.price = self.parameters_firm["init_price"]
-            for segment_code in range(16):
+            for segment_code in range(8):
                 # Binary representation of the segment code (4-bit string)
-                segment_code_str = format(segment_code, '04b')
+                segment_code_str = format(segment_code, '03b')
                 # Add data for the segment
                 car.optimal_price_segments[segment_code_str] = self.parameters_firm["init_price"]
                 car.car_base_utility_segments[segment_code_str] = self.parameters_firm["init_base_U"]

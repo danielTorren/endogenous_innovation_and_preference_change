@@ -169,18 +169,15 @@ if __name__ == "__main__":
         },
         "parameters_social_network":{
             "num_individuals": 500,#500,#200,
-            "prop_urban": 0.8,
             "network_structure_seed": 8,
+            "SW_K": 30,
+            "SW_prob_rewire": 0.1,
             "init_vals_environmental_seed": 66,
             "init_vals_innovative_seed":99, 
             "init_vals_price_seed": 8, 
             "d_min_seed": 45,
             "social_network_seed": 66,
-            "d_i_min_urban": 100,#in km
-            "d_i_min_rural": 300,#in km
-            "SBM_block_num": 2,
-            "SBM_network_density_input_intra_block": 0.2,
-            "SBM_network_density_input_inter_block": 0.005,
+            "d_i_min": 100,#in km
             "gamma_multiplier": 1,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
             "beta_multiplier": 1,
             "a_environment": 4,#large easy ev adoption 
