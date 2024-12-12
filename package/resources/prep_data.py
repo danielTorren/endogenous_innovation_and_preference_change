@@ -97,14 +97,28 @@ def load_in_calibration_data():
 
     # If needed, set the index name back to "Date"
     EV_range_monthly_data.index.name = "Date"
-    ##############################################################################################
+    ##############################################################################################    ##############################################################################################
 
     #NOW - NEED TO GET ALL THE PRICES INTO 2020 DOLLARS BY DIVIDING BY THE CPI 
 
     #Emissions Gasoline - WE 
     gasoline_Kgco2_per_Kilowatt_Hour =  (gasoline_gco2_per_gallon/gasoline_Kilowatt_Hour_per_gallon)/1000
     #0.26599820413049985
+    
+    #print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)
+    #ALTERNATIVE DATA FROM USA: US energy information adminitstration: https://www.eia.gov/environment/emissions/co2_vol_mass.php
+    #1 Btu = 0.000293071 KWh
+    #millionBTU = 293.071 KWh
+    #Mototr gasoline  = 76.1104903685078 kgCO2/millionBTU
+    #Motot gasoline  = 76.1104903685078/293.071 kgCO2/KWh = 0.260 kgCO2/KWh WHICH IS BASICALLY IDENTICAL, IF not lower than what i had earlier
+    #
 
+    #AND AGAIN, this time EPA: https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references#:~:text=filled%20with%20gasoline-,The%20amount%20of%20carbon%20dioxide%20emitted%20per%20gallon%20of%20motor,A%20barrel%20equals%2042%20gallons.
+    #gallon of motor gasoline burned is 8.89 × 10-3 metric tons
+    
+
+    ##############################################################################################    ##############################################################################################
+    
     # Align Data
     # Perform the join
     aligned_data = CPI_california_df.join(

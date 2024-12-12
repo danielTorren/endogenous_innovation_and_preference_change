@@ -43,8 +43,6 @@ class Firm_Manager:
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 
         self.innovation_seed_list = self.random_state.randint(0,1000, self.J)
-        #print(self.innovation_seed_list)
-        #np.random.seed(self.init_tech_seed)
 
         self.init_firms()
         

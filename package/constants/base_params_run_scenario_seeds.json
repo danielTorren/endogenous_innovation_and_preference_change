@@ -1,4 +1,5 @@
 {
+    "seed_repetitions": 10,
     "cars_init_state": 1,
     "duration_no_carbon_price": 276,
     "duration_future":156,
@@ -125,7 +126,7 @@
         "num_cars_production": 5
     },
     "parameters_social_network":{
-        "num_individuals": 200,
+        "num_individuals": 500,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
