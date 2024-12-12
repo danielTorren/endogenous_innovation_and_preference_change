@@ -63,6 +63,7 @@ def main(
     save_object(params_list, fileName + "/Data", "params_list_flat")
     save_object(base_params, fileName + "/Data", "base_params")
     
+    print("Done")
     return results
 
 if __name__ == "__main__":

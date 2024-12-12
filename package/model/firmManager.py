@@ -41,6 +41,9 @@ class Firm_Manager:
 
         
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
+
+        self.innovation_seed_list = self.random_state.randint(0,1000, self.J)
+        #print(self.innovation_seed_list)
         #np.random.seed(self.init_tech_seed)
 
         self.init_firms()
@@ -105,7 +108,7 @@ class Firm_Manager:
         self.parameters_firm["universal_model_repo_ICE"] = self.universal_model_repo_ICE
 
         #Create the firms, these store the data but dont do anything otherwise
-        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV) for j in range(self.J)]
+        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.innovation_seed_list[j]) for j in range(self.J)]
 
     def invert_bits_one_at_a_time(self, decimal_value, length):
         """THIS IS ONLY USED ONCE TO GENERATE HETEROGENOUS INITIAL TECHS"""
@@ -197,6 +200,7 @@ class Firm_Manager:
             for car in cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
                     segment_U_sums[segment] += U
+        #print("segment_U_sums", segment_U_sums)
         return cars_on_sale_all_firms, segment_U_sums
 
     def update_market_data(self, sums_U_segment):

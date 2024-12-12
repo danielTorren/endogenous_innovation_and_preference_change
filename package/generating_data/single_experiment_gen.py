@@ -150,7 +150,7 @@ if __name__ == "__main__":
         },
         "parameters_firm":{
             "memory_cap": 30,
-            "prob_innovate": 0.08333,
+            "prob_innovate": 0.2,#0.08333,
             "lambda_pow": 2,
             "init_price": 1,
             "init_base_U": 10e5,#JUST NEEDS TO BE BIG ENOGUHT THAT THE INIT UTILITY IS NOT NEGATIVE

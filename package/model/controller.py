@@ -59,9 +59,6 @@ class Controller:
             self.time_series = []
             self.set_up_time_series_controller()
         
-        np.random.seed(parameters_controller["choice_seed"])#SET ONCE ALL SET UP HAS BEEN DONE
-        #self.random_state_controller = np.random.RandomState(parameters_controller["choice_seed"])
-    
     def unpack_controller_parameters(self,parameters_controller):
         
         #CONTROLLER PARAMETERS:
@@ -178,8 +175,7 @@ class Controller:
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
-        self.Ban_ICE_cars_state =  self.parameters_controller["parameters_policies"]["States"]["Ban_ICE_cars"]
-        
+
         # Carbon price calculation
         if self.Carbon_price_state == "Zero":
             self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price_state"]
@@ -291,15 +287,6 @@ class Controller:
         if self.t_controller == self.ev_research_start_time:
             for firm in self.firm_manager.firms_list:
                 firm.ev_reserach_bool = True
-
-        #Baning EVs in the future
-        if self.t_controller == self.duration_no_carbon_price:
-            if self.Ban_ICE_cars_state == "Applied":
-                self.social_network.Ban_ICE_cars_state = "Applied"
-                self.social_network.yt_time_series = self.yt_time_series
-                for firm in self.firm_manager.firms_list:
-                    firm.Ban_ICE_cars_state = "Applied"
-                    firm.yt_time_series = self.yt_time_series
                 
                     
         #carbon price
@@ -441,12 +428,18 @@ class Controller:
     def next_step(self):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
         #print("TIME STEP", self.t_controller)
+
         self.update_time_series_data()
         self.second_hand_cars = self.get_second_hand_cars()
         self.cars_on_sale_all_firms = self.update_firms()
         self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
 
         self.manage_saves()
+
+
+        
+
+
 
         
 

@@ -3,7 +3,7 @@ import numpy as np
 from package.model.carModel import CarModel
 
 class Firm:
-    def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV):
+    def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV, innovation_seed):
         
 
         self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
@@ -67,17 +67,16 @@ class Firm:
             self.cars_on_sale = [init_tech_ICE, init_tech_EV]
         else:
             self.cars_on_sale = [init_tech_ICE]
-            
-        self.set_car_init_price_and_U()
+        
+        #if self.firm_id == 2:
+        #    print("init_tech_ICE", init_tech_ICE.attributes_fitness)
 
-        self.Ban_ICE_cars_state = False
-        self.yt_time_series = None#USED IN THE CASE OF BANNING OF CARS IN THE FUTURE
+        self.set_car_init_price_and_U()
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
 
-        #np.random.seed(parameters_firm["innovation_seed"])
-        self.random_state = np.random.RandomState(parameters_firm["innovation_seed"])  # Local random state
+        self.random_state = np.random.RandomState(innovation_seed)  # Local random state
     
     def set_car_init_price_and_U(self):
         for car in self.cars_on_sale:
@@ -138,7 +137,6 @@ class Firm:
         
         cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c_z + self.carbon_price*e_z_t) + (gamma_s/ Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
         utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
-        
 
 
         # Ensure utility is non-negative
@@ -266,7 +264,10 @@ class Firm:
         else:
             self.list_technology_memory = self.list_technology_memory_ICE 
 
+        #if self.t_firm > 18:
+        #print("len memory", self.firm_id, len(self.list_technology_memory))
         car_list = self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
+        
         self.calc_utility_cars_segments(market_data, self.list_technology_memory)#utility of all the cars for all the segments
         
         expected_profits = self.calc_predicted_profit_segments(market_data, self.list_technology_memory)#calculte the predicted profit of each segment 
@@ -314,6 +315,10 @@ class Firm:
         # Convert profits list to numpy array
         profits = np.array(profits)
 
+        #if self.firm_id == 2:
+        #    print(profits)
+
+
         profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
         
         # Compute the softmax probabilities
@@ -325,8 +330,11 @@ class Firm:
         else:
             probabilities = lambda_profits / np.sum(sum_prob)
         # Select a vehicle based on the computed probabilities
-        #selected_index = np.random.choice(len_vehicles, p=probabilities)
+
+
+        """HERE IS RANDOM ELEMENT"""
         selected_index = self.random_state.choice(len_vehicles, p=probabilities)
+
         selected_vehicle = vehicles[selected_index]
 
         return selected_vehicle
@@ -437,10 +445,9 @@ class Firm:
 
     def innovate(self, market_data):
         # create a list of cars in neighbouring memory space                                #self, last_researched_car,  list_technology_memory,        list_technology_memory_neighbouring, landscape, parameters_car, transportType
-        
+
         self.unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
-        
         if self.ev_reserach_bool:
             self.unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
             self.unique_neighbouring_technologies = self.unique_neighbouring_technologies_EV + self.unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
@@ -458,6 +465,20 @@ class Firm:
         expected_profits_segments = self.calc_predicted_profit_segments(market_data, self.unique_neighbouring_technologies)
         # select the car to innovate
         self.vehicle_model_research = self.select_car_lambda_research(expected_profits_segments)
+
+        #if self.firm_id == 2:
+            #print("car List", np.asarray([car.attributes_fitness for car in car_list]))
+            #print("market_data",market_data)
+            #print("expected_profits_segments", expected_profits_segments)
+            #print("self.vehicle_model_researc", self.vehicle_model_research.attributes_fitness)
+            # Calculate the mean profit for each segment
+            #price = [car.optimal_price_segments for car in car_list]
+            #print(price)
+
+            #utility = [car.car_utility_segments_U for car in self.unique_neighbouring_technologies]
+            #print(utility)
+            #profits = {segment: np.asarray(list(profits.keys())) for segment, profits in expected_profits_segments.items()}
+            #print("profits", profits)
 
 
         if self.vehicle_model_research.transportType == 3:#EV
@@ -501,25 +522,52 @@ class Firm:
 
         return neighbouring_technologies
     
-    def gen_neighbour_strings(self, memory_string_list, last_researched_car):
+    def gen_neighbour_strings_set(self, memory_string_list, last_researched_car):
 
         unique_neighbouring_technologies_strings = set()
+
         unique_neighbouring_technologies_strings.update(last_researched_car.inverted_tech_strings)
         #get strings from memory
         list_technology_memory_strings = [vehicle.component_string for vehicle in memory_string_list]
-        # Remove the existing technologies from neighboring options to avoid duplicates
-        unique_neighbouring_technologies_strings -= set(list_technology_memory_strings)
+
+        # Normalize strings (strip whitespace and convert to lowercase)
+        if any(memory in unique_neighbouring_technologies_strings for memory in list_technology_memory_strings):
+            unique_neighbouring_technologies_strings -= set(list_technology_memory_strings)
+   
 
         return unique_neighbouring_technologies_strings
+    
+    def gen_neighbour_strings(self, memory_string_list, last_researched_car):
+        # Initialize a list to store unique neighboring technology strings
+        unique_neighbouring_technologies_strings = []
+
+        # Add inverted technology strings from the last researched car
+        for tech_string in last_researched_car.inverted_tech_strings:
+            if tech_string not in unique_neighbouring_technologies_strings:
+                unique_neighbouring_technologies_strings.append(tech_string)
+
+        # Get strings from memory
+        list_technology_memory_strings = [vehicle.component_string for vehicle in memory_string_list]
+
+        # Normalize strings (strip whitespace and convert to lowercase)
+        normalized_memory_strings = [memory.strip().lower() for memory in list_technology_memory_strings]
+        normalized_tech_strings = [tech.strip().lower() for tech in unique_neighbouring_technologies_strings]
+
+        # Remove overlapping strings
+        result = []
+        for tech in unique_neighbouring_technologies_strings:
+            if tech.strip().lower() not in normalized_memory_strings:
+                result.append(tech)
+
+        return result
+
 
     def generate_neighbouring_technologies(self, last_researched_car, list_technology_memory, landscape, parameters_car, transportType):
         """Generate neighboring technologies for cars. Roaming point"""
         # Set to track unique neighboring technology strings
 
         string_list = self.gen_neighbour_strings(list_technology_memory, last_researched_car)
-        #string_list = self.gen_neighbour_strings_tumor(list_technology_memory)
-        
-        #string_list = self.gen_neighbour_strings_alt(list_technology_memory)
+
         self.neighbouring_technologies = self.gen_neighbour_carsModel(string_list, landscape, parameters_car, transportType)
 
         return self.neighbouring_technologies
@@ -578,11 +626,14 @@ class Firm:
         #decide cars to sell
         self.cars_on_sale = self.choose_cars_segments(market_data)
 
-        #decide whether to innovate
+        #print("market_data", market_data)
+        #print(self.firm_id, np.asarray([vehicle.attributes_fitness  for vehicle in self.cars_on_sale]).mean(axis=0))
+        #deci  de whether to innovate
 
         if self.random_state.rand() < self.prob_innovate:
+            #print("INNOVATE", self.firm_id)
             self.innovate(market_data)
-            self.research_bool = 1
+            self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DAT
 
         if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()

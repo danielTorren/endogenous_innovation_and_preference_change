@@ -16,8 +16,7 @@ class NKModel:
         self.A = parameters["A"]
         self.rho = [1] + parameters["rho"]  # Adding 1 as the first correlation coefficient
 
-        self.landscape_seed = parameters["landscape_seed"]
-        np.random.seed(self.landscape_seed)#set seed for numpy
+        self.random_state_NK = np.random.RandomState(parameters["landscape_seed"])  # Local random state
 
         self.min_max_Quality = parameters["min_max_Quality"]
         self.min_max_Efficiency = parameters["min_max_Efficiency"]
@@ -29,6 +28,7 @@ class NKModel:
         self.fitness_landscape = self.generate_fitness_landscape()
 
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string()
+
 
     def find_min_fitness_string(self):
         """
@@ -72,9 +72,9 @@ class NKModel:
         #CHECK SEED STUFF FOR REPRODUCIBILITY 
 
 
-        L = np.random.rand(2**(self.K+1), self.N, self.A)
-        L_efficiency = np.random.rand(2**(self.K+1), self.N, self.A)
-        L_cost = np.random.rand(2**(self.K+1), self.N, self.A)
+        L = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
+        L_efficiency = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
+        L_cost = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
         # Iterate over each attribute starting from the second one
         
         #DONT HAVE TO ANYTHING FOR QUALITY, its the one we base everything off of
@@ -85,7 +85,7 @@ class NKModel:
         #FOR COST ITS CORRELATION IS 0.5
         Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
         #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-        Q_a = np.random.choice(self.N, size=Q_a_size, replace=False)
+        Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
         L[:, Q_a, 2] = L_cost[:, Q_a, 2]  # Copy fitness contribution from attribute 1
 
         return L
@@ -105,17 +105,13 @@ class NKModel:
                                     Shape: (self.A,)
         """
         
-        #print(self.N, self.K, self.A)
-        #quit()
         fitness = np.zeros(self.A)
         for a in range(self.A):
             for n in range(self.N):
                 k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2) #REVIST THIS AND UNDERSTAND WHAT IS GOING ON BETTER
                 fitness[a] +=  self.fitness_landscape[k, n, a]
-
         average_fitness_components = fitness / self.N
-        #fitness_scaled = self.min_vec + ((average_fitness_components*self.max_vec-self.min_vec)/(self.max_vec - self.min_vec))
-        
+
         fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec-self.min_vec)
         return fitness_scaled
 

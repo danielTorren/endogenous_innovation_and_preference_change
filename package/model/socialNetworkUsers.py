@@ -65,9 +65,6 @@ class Social_Network:
 
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
-        self.Ban_ICE_cars_state = False
-        self.yt_time_series = None#USED IN THE CASE OF BANNING OF CARS IN THE FUTURE
-        
     ###############################################################################################################################################################
     ###############################################################################################################################################################
     #MODEL SETUP
@@ -258,7 +255,7 @@ class Social_Network:
         user_vehicle_list = [None]*self.num_individuals
 
         # Generate a single shuffle order
-        shuffle_indices = self.random_state_social_network.permutation(self.num_individuals)##np.random.permutation(self.num_individuals)
+        shuffle_indices = self.random_state_social_network.permutation(self.num_individuals)
 
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
 
