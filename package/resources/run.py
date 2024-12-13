@@ -10,9 +10,7 @@ import numpy.typing as npt
 from joblib import Parallel, delayed
 import multiprocessing
 from package.model.controller import Controller
-#from package.model_collated.controller import Controller
-#from package.model.combinedController import CombinedController
-from package.calibration.prep_data import load_in_calibration_data
+from package.resources.utility import load_object
 
 # modules
 ####################################################################################################################################################
@@ -39,17 +37,8 @@ def generate_data(parameters: dict,print_simu = 0):
     #load_in_output_data()
     #future_electricity_emissions_intensity_data = future_calibration_data()
     
-    calibration_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022 = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
-    parameters["calibration_data"] =  calibration_data
-    parameters["parameters_ICE"]["e_z_t"] = gasoline_Kgco2_per_Kilowatt_Hour
-    parameters["EV_range_ratio"] = EV_range_ratio
-
-    parameters["Gas_price_2022"] = Gas_price_2022
-    parameters["Electricity_price_2022"]  = electricity_price_2022
-    parameters["Grid_emissions_intensity_2022"]= electricity_emissions_intensity_2022
-
-    #parameters["future_electricity_emissions_intensity_data"] = future_electricity_emissions_intensity_data
-    
+    calibration_data_input = load_object("package/calibration_data", "calibration_data_input")
+    parameters["calibration_data"] =  calibration_data_input
 
     if print_simu:
         start_time = time.time()

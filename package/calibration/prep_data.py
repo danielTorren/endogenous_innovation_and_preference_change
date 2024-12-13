@@ -1,4 +1,5 @@
 import pandas as pd
+from package.resources.utility import save_object
 
 def load_in_calibration_data():
 
@@ -175,3 +176,20 @@ def future_calibration_data():
 
     # Return the relevant column
     return electricity_emissions_intensity_future_df["Mean KgCO2 per kWh"]
+
+if __name__ == "__main__":
+
+    calibration_data_input = {}
+
+    calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022 = load_in_calibration_data()
+    
+    calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()
+    calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()
+    calibration_data_input["electricity_emissions_intensity_vec"] = calibration_data_output["KgCO2 per Kilowatt-Hour"].to_numpy()
+    calibration_data_input["tank_ratio_vec"] = EV_range_ratio.to_numpy()
+    calibration_data_input["Gas_price_2022"] = Gas_price_2022
+    calibration_data_input["Electricity_price_2022"] = electricity_price_2022
+    calibration_data_input["Electricity_emissions_intensity_2022"] = electricity_emissions_intensity_2022
+    calibration_data_input["gasoline_Kgco2_per_Kilowatt_Hour"] = gasoline_Kgco2_per_Kilowatt_Hour
+
+    save_object( calibration_data_input, "package/calibration_data", "calibration_data_input")

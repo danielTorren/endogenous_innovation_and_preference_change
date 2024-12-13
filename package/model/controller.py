@@ -99,11 +99,14 @@ class Controller:
     #############################################################################################################################
     #DEAL WITH CALIBRATION
     def manage_calibration(self):
+
+        
         self.parameters_calibration_data = self.parameters_controller["calibration_data"]
-        self.gas_price_california_vec = self.parameters_calibration_data["Real Dollars per Kilowatt-Hour"].to_numpy()
-        self.electricity_price_vec = self.parameters_calibration_data["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()
-        self.electricity_emissions_intensity_vec = self.parameters_calibration_data["KgCO2 per Kilowatt-Hour"].to_numpy()
-        self.tank_ratio_vec = self.parameters_controller["EV_range_ratio"].to_numpy()
+        self.gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
+        self.electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
+        self.electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
+        self.tank_ratio_vec = self.parameters_calibration_data["tank_ratio_vec"]
+        self.parameters_ICE["e_z_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
         self.calibration_time_steps = len(self.electricity_emissions_intensity_vec)
         if self.EV_nu_diff_state:
@@ -129,7 +132,7 @@ class Controller:
         self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]
         self.EV_Substitutability_state =  self.parameters_controller["parameters_scenarios"]["States"]["EV_Substitutability"]
         
-        self.Gas_price_2022 = self.parameters_controller["Gas_price_2022"]
+        self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
         if self.Gas_price_state == "Low":
             self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["Low"]
         elif self.Gas_price_state == "Current":
@@ -140,7 +143,7 @@ class Controller:
             raise ValueError("Invalid gas price state")
         self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
 
-        self.Electricity_price_2022 = self.parameters_controller["Electricity_price_2022"]
+        self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]
         if self.Electricity_price_state == "Low":
             self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]["Low"]
         elif self.Electricity_price_state == "Current":
@@ -151,7 +154,7 @@ class Controller:
             raise ValueError("Invalid electricity price state")
         self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
         
-        self.Grid_emissions_intensity_2022 = self.parameters_controller["Grid_emissions_intensity_2022"]
+        self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]
         if self.Grid_emissions_intensity_state == "Weaker":
             self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Grid_emissions_intensity"]["Weaker"]
         elif self.Grid_emissions_intensity_state == "Decarbonised":
