@@ -1,7 +1,4 @@
-
 # imports
-from math import isnan
-from cycler import V
 import numpy as np
 import networkx as nx
 import numpy.typing as npt
@@ -10,8 +7,6 @@ import numpy as np
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
-
-from collections import Counter
 
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
@@ -840,6 +835,7 @@ class Social_Network:
             raise ValueError("Invalid transport type")
         
     def set_up_time_series_social_network(self):
+        """
         self.history_driving_emissions = []
         self.history_production_emissions = []
         self.history_total_emissions = []
@@ -881,13 +877,16 @@ class Social_Network:
         self.history_distance_individual = []
         self.history_utility_individual = []
         self.history_transport_type_individual = []
+        """
+        self.history_prop_EV = []
 
     def save_timeseries_data_social_network(self):
 
         #INDIVIDUALS LEVEL DATA
 
-        #print(self.users_driving_emissions_vec)
-        
+        self.history_prop_EV.append(self.EV_users/(self.ICE_users + self.EV_users))
+
+        """
         self.history_driving_emissions_individual.append(self.users_driving_emissions_vec)
         self.history_distance_individual.append(self.users_distance_vec)
         self.history_utility_individual.append(self.users_utility_vec)
@@ -945,6 +944,7 @@ class Social_Network:
         self.history_cars_cum_distances_driven.append(self.cars_cum_distances_driven)
         self.history_cars_cum_driven_emissions.append(self.cars_cum_driven_emissions)
         self.history_cars_cum_emissions.append(self.cars_cum_emissions)
+        """
 
 ####################################################################################################################################
     #TIMESERIES

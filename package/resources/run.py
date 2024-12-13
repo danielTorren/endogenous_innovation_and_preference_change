@@ -12,9 +12,7 @@ import multiprocessing
 from package.model.controller import Controller
 #from package.model_collated.controller import Controller
 #from package.model.combinedController import CombinedController
-from package.resources.prep_data import load_in_calibration_data, load_in_output_data, future_calibration_data
-
-
+from package.calibration.prep_data import load_in_calibration_data
 
 # modules
 ####################################################################################################################################################
@@ -38,9 +36,8 @@ def generate_data(parameters: dict,print_simu = 0):
         Social network that has evolved from initial conditions
     """
 
-    load_in_output_data()
-    future_electricity_emissions_intensity_data = future_calibration_data()
-    
+    #load_in_output_data()
+    #future_electricity_emissions_intensity_data = future_calibration_data()
     
     calibration_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022 = load_in_calibration_data()#GENERATE DATA FROM 2000-2022
     parameters["calibration_data"] =  calibration_data
@@ -51,7 +48,7 @@ def generate_data(parameters: dict,print_simu = 0):
     parameters["Electricity_price_2022"]  = electricity_price_2022
     parameters["Grid_emissions_intensity_2022"]= electricity_emissions_intensity_2022
 
-    parameters["future_electricity_emissions_intensity_data"] = future_electricity_emissions_intensity_data
+    #parameters["future_electricity_emissions_intensity_data"] = future_electricity_emissions_intensity_data
     
 
     if print_simu:
