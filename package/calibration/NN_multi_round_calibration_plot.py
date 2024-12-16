@@ -39,11 +39,27 @@ def main(
     param_1_name = var_dict["param_1_name"]
     param_2_name = var_dict["param_2_name"]
 
+
+    ###############################################################
+    samples = posterior.sample((10000,), x=x_o)
+    #print("samples", samples)
+
+    log_probability_samples = posterior.log_prob(samples, x=x_o)
+    print("Log probabilities:", log_probability_samples)
+
+    # Find the sample with the greatest log probability
+    max_log_prob_index = log_probability_samples.argmax()
+    best_sample = samples[max_log_prob_index]
+    print("Sample with the greatest log probability:", best_sample)
+    print("Greatest log probability:", log_probability_samples[max_log_prob_index])
+
     ########################################################################################################
     #TEST NN
 
     plot_results(fileName, x_o,posterior, param_1_bounds, param_2_bounds, param_1_name,param_2_name)
 
+
+    ##############################################
 if __name__ == "__main__":
 
     #EV_percentage_2010_2022 = [0.003446, 0.026368, 0.081688, 0.225396, 0.455980, 0.680997, 0.913118, 1.147275, 1.583223, 1.952829, 2.217273, 2.798319, 3.791804, 5.166498]

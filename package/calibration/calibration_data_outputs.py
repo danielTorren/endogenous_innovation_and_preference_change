@@ -29,8 +29,8 @@ def load_in_output_data():
     # Merge EV data with total vehicles
     merged_data = pd.merge(ev_data, total_vehicles_per_year, on='Data Year', how='left')
 
-    # Calculate EV percentage
-    merged_data['EV Percentage'] = (merged_data['EV Vehicles'] / merged_data['Total Vehicles']) * 100
+    # Calculate EV prop
+    merged_data['EV Prop'] = (merged_data['EV Vehicles'] / merged_data['Total Vehicles'])
 
     #UP TO 2022 TO MATCH THE PRICING DATA!
     merged_data_filtered = merged_data[(merged_data['Data Year'] >= 2010) & (merged_data['Data Year'] <= 2022)]
@@ -90,12 +90,12 @@ def load_in_output_data():
     #USE THESE VALUES OF THE MIN AND THE MAX TO PARAMETERISE THE LANSCAPE
     #"min_max_Efficiency":[4,7], historial min and max for 2006-2022 period are (4.73335294117647,6.43736)
 
-
-    return merged_data_filtered['EV Percentage'].to_numpy()
+    print(merged_data_filtered)
+    return merged_data_filtered['EV Prop'].to_numpy()
 
 if __name__ == "__main__":
-    EV_Percentage = load_in_output_data()
+    EV_Prop = load_in_output_data()
     calibration_data_output = {}
 
-    calibration_data_output["EV Percentage"] = EV_Percentage
+    calibration_data_output["EV Prop"] = EV_Prop
     save_object(calibration_data_output, "package/calibration_data", "calibration_data_output")

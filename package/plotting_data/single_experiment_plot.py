@@ -1342,19 +1342,19 @@ def main(fileName, dpi=600):
 
     # All plot function calls
     #"""
-    plot_total_utility(social_network, time_series, fileName, dpi)
+    #plot_total_utility(social_network, time_series, fileName, dpi)
     
     #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
-    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_preferences(social_network, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_car_sale_prop(social_network, time_series, fileName, dpi)
@@ -1367,11 +1367,11 @@ def main(fileName, dpi=600):
     #
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    plot_history_car_age(social_network, time_series,fileName, dpi)
+    #plot_history_car_age(social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
-    plot_price_history(firm_manager, time_series, fileName, dpi)
+    #plot_price_history(firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
@@ -1383,7 +1383,7 @@ def main(fileName, dpi=600):
     #CALIBRATION PLOTS
 
     #plot_emissions_individuals(social_network, time_series, fileName)
-    plot_distance_individuals(social_network, time_series, fileName)
+    #plot_distance_individuals(social_network, time_series, fileName)
     #plot_utility_individuals(social_network, time_series, fileName)
     #plot_transport_type_individuals(social_network, time_series, fileName)
     #plot_density_by_value(fileName, social_network, time_series)
@@ -1391,7 +1391,7 @@ def main(fileName, dpi=600):
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
     #plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
-    #plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     """
     percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
@@ -1413,7 +1413,8 @@ def main(fileName, dpi=600):
 
     #plot_social_network(social_network, fileName)
     """
+
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_16_19_08__13_12_2024")
+    main("results/single_experiment_12_28_50__16_12_2024")

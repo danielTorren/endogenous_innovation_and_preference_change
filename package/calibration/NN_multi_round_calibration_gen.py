@@ -166,7 +166,7 @@ def main(
     #load output
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
 
-    EV_stock_percentage_2010_22 = calibration_data_output["EV Percentage"]
+    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
     #seed_repetitions = base_params["seed_repetitions"]
 
@@ -189,7 +189,7 @@ def main(
     # that were sampled from the obtained posterior.
     num_rounds = 5
     # The specific observation we want to focus the inference on.
-    x_o = torch.tensor(EV_stock_percentage_2010_22)#THIS MAY NEED TO BE DIFFERENT
+    x_o = torch.tensor(EV_stock_prop_2010_22)#THIS MAY NEED TO BE DIFFERENT
     #print("x_o", len(x_o))
 
     # Define the prior
