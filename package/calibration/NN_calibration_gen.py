@@ -1,4 +1,3 @@
-import base64
 import torch
 from package.resources.run import generate_data
 from sbi import analysis as analysis #https://github.com/sbi-dev/sbi
@@ -68,6 +67,7 @@ def gen_training_data(num_simulations,base_params, prior, param_1_name, param_2_
 
     # Check and process the prior # Check prior, return PyTorch prior.
     prior, num_parameters, prior_returns_numpy = process_prior(prior)
+
     #print("prior, num_parameters, prior_returns_numpy", prior, num_parameters, prior_returns_numpy)
     # Create the simulator with additional parameters
     simulator_wrapped = simulator_wrapper(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)

@@ -45,7 +45,7 @@ class Firm:
         self.memory_cap = self.parameters_firm["memory_cap"]
         self.prob_innovate = self.parameters_firm["prob_innovate"]
         self.r = self.parameters_firm["r"]
-        self.delta_z = self.parameters_firm["delta_z"]
+        self.delta = self.parameters_firm["delta"]
         
         self.carbon_price =  self.parameters_firm["carbon_price"]
 
@@ -99,10 +99,10 @@ class Firm:
         float: The calculated optimal distance, d^*_{a,i,t}.
         """
 
-        numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta_z) ** vehicle.L_a_t
-        denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c_z + self.carbon_price*vehicle.e_z_t) +
-                       (gamma/vehicle.Eff_omega_a_t) * vehicle.e_z_t +
-                       vehicle.eta * vehicle.nu_z_i_t)
+        numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t
+        denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) +
+                       (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t +
+                       vehicle.eta * vehicle.nu_i_t)
 
         # Compute optimal distance
         if denominator == 0:
@@ -126,17 +126,17 @@ class Firm:
         float: The calculated commuting utility u_{a,i,t}.
         """
         Quality_a_t = vehicle.Quality_a_t
-        delta_z = vehicle.delta_z
+        delta = vehicle.delta
         L_a_t = vehicle.L_a_t
         Eff_omega_a_t = vehicle.Eff_omega_a_t
-        e_z_t = vehicle.e_z_t
-        fuel_cost_c_z = vehicle.fuel_cost_c_z
-        nu_z_i_t = vehicle.nu_z_i_t
+        e_t = vehicle.e_t
+        fuel_cost_c = vehicle.fuel_cost_c
+        nu_i_t = vehicle.nu_i_t
 
         # Calculate commuting utility based on conditions for z
         
-        cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c_z + self.carbon_price*e_z_t) + (gamma_s/ Eff_omega_a_t) * e_z_t + self.eta * nu_z_i_t
-        utility = Quality_a_t * (1 - delta_z) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
+        cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c + self.carbon_price*e_t) + (gamma_s/ Eff_omega_a_t) * e_t + self.eta * nu_i_t
+        utility = Quality_a_t * (1 - delta) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
 
 
         # Ensure utility is non-negative
@@ -150,15 +150,15 @@ class Firm:
 
         for car in car_list:
             E_m = car.emissions  # Emissions for the current car                                                  
-            C_m = car.ProdCost_z_t  + self.carbon_price*E_m  # Cost for the current car
+            C_m = car.ProdCost_t  + self.carbon_price*E_m  # Cost for the current car
 
             #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
             if car.transportType == 2:#ICE
-                car.fuel_cost_c_z = self.gas_price
+                car.fuel_cost_c = self.gas_price
             else:#EV
-                car.fuel_cost_c_z = self.electricity_price
-                car.e_z_t = self.electricity_emissions_intensity
-                car.nu_z_i_t = self.nu_z_i_t_EV
+                car.fuel_cost_c = self.electricity_price
+                car.e_t = self.electricity_emissions_intensity
+                car.nu_i_t = self.nu_i_t_EV
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -174,7 +174,7 @@ class Firm:
                 utility_segment = self.calc_commuting_utility(car, d_i_t, beta_s, gamma_s)
                 
                 # Save the base utility
-                B = utility_segment/(self.r + (1-self.delta_z)/(1-self.alpha))
+                B = utility_segment/(self.r + (1-self.delta)/(1-self.alpha))
                 car.car_base_utility_segments[segment_code] = B
 
                 inside_component = U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )
@@ -232,7 +232,7 @@ class Firm:
                 if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
 
                     # Calculate profit for this vehicle and segment
-                    profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_z_t  + self.carbon_price*vehicle.emissions) 
+                    profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t  + self.carbon_price*vehicle.emissions) 
                     
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
                     U_sum = segment_data["U_sum"]
@@ -613,14 +613,14 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV, rebate):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
-        self.nu_z_i_t_EV = nu_z_i_t_EV
+        self.nu_i_t_EV = nu_i_t_EV
         self.rebate = rebate
 
         #decide cars to sell

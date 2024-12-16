@@ -1,4 +1,5 @@
 import pandas as pd
+from package.resources.utility import save_object
 
 def load_in_output_data():
 
@@ -30,9 +31,10 @@ def load_in_output_data():
 
     # Calculate EV percentage
     merged_data['EV Percentage'] = (merged_data['EV Vehicles'] / merged_data['Total Vehicles']) * 100
-    
-    print(merged_data['EV Percentage'])
-    quit()
+
+    #UP TO 2022 TO MATCH THE PRICING DATA!
+    merged_data_filtered = merged_data[(merged_data['Data Year'] >= 2010) & (merged_data['Data Year'] <= 2022)]
+
     #######################################
 
     #NOW DO EV SALES DATA
@@ -89,5 +91,11 @@ def load_in_output_data():
     #"min_max_Efficiency":[4,7], historial min and max for 2006-2022 period are (4.73335294117647,6.43736)
 
 
+    return merged_data_filtered['EV Percentage'].to_numpy()
+
 if __name__ == "__main__":
-    load_in_output_data()
+    EV_Percentage = load_in_output_data()
+    calibration_data_output = {}
+
+    calibration_data_output["EV Percentage"] = EV_Percentage
+    save_object(calibration_data_output, "package/calibration_data", "calibration_data_output")

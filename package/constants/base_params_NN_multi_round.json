@@ -2,7 +2,7 @@
     "seed_repetitions": 10,
     "cars_init_state": 1,
     "duration_no_carbon_price": 276,
-    "duration_future":156,
+    "duration_future":0,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
     "choice_seed": 9,
@@ -85,8 +85,8 @@
     },
     "parameters_EV":{
         "landscape_seed": 14,
-        "N": 15,
-        "K": 2,
+        "N": 5,
+        "K": 1,
         "A": 3,
         "rho":[0,0.5],
         "nu_i_t_multiplier":0.0355,
@@ -99,8 +99,8 @@
     },
     "parameters_ICE":{
         "landscape_seed": 18, 
-        "N": 15,
-        "K": 2,
+        "N": 5,
+        "K": 1,
         "A": 3,
         "rho":[0,0.5],
         "nu_i_t":0.0355,
@@ -113,7 +113,7 @@
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
-        "J": 10,
+        "J": 3,
         "init_car_age_max": 240
     },
     "parameters_firm":{
@@ -126,7 +126,7 @@
         "num_cars_production": 5
     },
     "parameters_social_network":{
-        "num_individuals": 500,
+        "num_individuals": 30,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -134,7 +134,7 @@
         "social_network_seed": 66,
         "d_min_seed": 45,
         "d_i_min": 100,
-        "SW_K": 30,
+        "SW_K": 10,
         "SW_prob_rewire": 0.1,
         "prob_rewire": 0.1,
         "gamma_multiplier": 1,

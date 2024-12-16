@@ -34,7 +34,7 @@ if __name__ == "__main__":
     base_params = {
         "cars_init_state": 1,
         "duration_no_carbon_price": 276,#that is 23 years,#01/2000-12/2022
-        "duration_future":156,#156,#01/2023 - 12/2035  (TOTAL of 432 steps )
+        "duration_future":0,#156,#156,#01/2023 - 12/2035  (TOTAL of 432 steps )
         "save_timeseries_data_state": 1,
         "compression_factor_state": 1,
         "choice_seed": 9,
@@ -121,13 +121,13 @@ if __name__ == "__main__":
             "K": 2,
             "A": 3,
             "rho":[0,0.5],
-            "nu_z_i_t_multiplier":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
+            "nu_i_t_multiplier":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "production_emissions":9000,#kgC02
-            "delta_z": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "delta": 0.001,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
-            "min_max_Quality": [900, 2700],#parametersised based on eta which is used to parameterise max min distances
+            "min_max_Quality": [170,200],#[900, 2700],#parametersised based on eta which is used to parameterise max min distances
             "min_max_Efficiency": [4,7],
-            "min_max_Cost": [1000,30000],
+            "min_max_Cost": [1000,10000],
         },
         "parameters_ICE":{
             "landscape_seed": 18, 
@@ -135,13 +135,13 @@ if __name__ == "__main__":
             "K": 2,
             "A": 3,
             "rho":[0,0.5],
-            "nu_z_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
+            "nu_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "production_emissions":6000,#kgC02,
-            "delta_z": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "delta": 0.001,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
-            "min_max_Quality": [900, 2700],#[50,200],#[450,700],#[50,200],
+            "min_max_Quality":  [170,200],#[900, 2700],#[50,200],#[450,700],#[50,200],
             "min_max_Efficiency":[0.5,1.5], #historial min and max for period are (0.953754,1.252405)
-            "min_max_Cost": [1000,30000],
+            "min_max_Cost": [1000,10000],
         },
         "parameters_firm_manager": {
             "init_tech_seed": 99,
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         },
         "parameters_firm":{
             "memory_cap": 30,
-            "prob_innovate": 0.2,#0.08333,
+            "prob_innovate": 0.08333,
             "lambda_pow": 2,
             "init_price": 1,
             "init_base_U": 10e5,#JUST NEEDS TO BE BIG ENOGUHT THAT THE INIT UTILITY IS NOT NEGATIVE
@@ -158,7 +158,7 @@ if __name__ == "__main__":
             "num_cars_production": 5
         },
         "parameters_social_network":{
-            "num_individuals": 500,#500,#200,
+            "num_individuals": 100,#500,#200,
             "network_structure_seed": 8,
             "SW_K": 30,
             "SW_prob_rewire": 0.1,
@@ -167,10 +167,10 @@ if __name__ == "__main__":
             "init_vals_price_seed": 8, 
             "d_min_seed": 45,
             "social_network_seed": 66,
-            "d_i_min": 100,#in km
-            "gamma_multiplier": 1,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
+            "d_i_min": 0,#in km
+            "gamma_multiplier": 0.6,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
             "beta_multiplier": 1,
-            "a_environment": 4,#large easy ev adoption 
+            "a_environment": 1,#large easy ev adoption 
             "b_environment": 2,#2,
             "a_innovativeness": 0.9,#0.9,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
             "b_innovativeness": 1,#1,#2,#1,#2,
@@ -180,9 +180,9 @@ if __name__ == "__main__":
         },
         "parameters_vehicle_user":{
             "kappa": 3,
-            "alpha": 0.8,
+            "alpha": 0.5,
             "r": 0.02,
-            "eta": 1,#10e3,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
+            "eta": 27,#27,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
             "mu": 0.3,
             "second_hand_car_max_consider": 200,
             "new_car_max_consider": 200

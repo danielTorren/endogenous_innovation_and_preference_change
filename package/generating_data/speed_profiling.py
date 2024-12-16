@@ -98,9 +98,9 @@ if __name__ == '__main__':
             "K": 2,
             "A": 3,
             "rho":[0,0.5],
-            "nu_z_i_t_multiplier":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
+            "nu_i_t_multiplier":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "production_emissions":9000,#kgC02
-            "delta_z": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "delta": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 3,
             "min_max_Quality": [900, 2700],#parametersised based on eta which is used to parameterise max min distances
             "min_max_Efficiency": [4,7],
@@ -112,9 +112,9 @@ if __name__ == '__main__':
             "K": 2,
             "A": 3,
             "rho":[0,0.5],
-            "nu_z_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
+            "nu_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
             "production_emissions":6000,#kgC02,
-            "delta_z": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+            "delta": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
             "transportType": 2,
             "min_max_Quality": [900, 2700],#[50,200],#[450,700],#[50,200],
             "min_max_Efficiency":[0.5,1.5], #historial min and max for period are (0.953754,1.252405)

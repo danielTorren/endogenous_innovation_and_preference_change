@@ -151,7 +151,7 @@ def plot_vehicle_attribute_time_series(social_network, time_series, fileName, dp
     attributes = {
         "Quality (Quality_a_t)": social_network.history_quality,
         "Efficiency (Eff_omega_a_t)": social_network.history_efficiency,
-        "Production Cost (ProdCost_z_t)": social_network.history_production_cost,
+        "Production Cost (ProdCost_t)": social_network.history_production_cost,
     }
     
     for i, (attribute_name, attribute_history) in enumerate(attributes.items()):
@@ -778,6 +778,8 @@ def plot_distance_individuals(social_network, time_series, fileName, dpi=600):
 
     data = np.asarray(social_network.history_distance_individual).T
     for i, time in enumerate(time_series):
+        if i == 100:
+            break
         ax.plot(time_series, data[i])
 
     format_plot(ax, "User distance Over Time", "Time Step", "indivudal_distance")
@@ -1339,31 +1341,31 @@ def main(fileName, dpi=600):
     
 
     # All plot function calls
-    """
+    #"""
     plot_total_utility(social_network, time_series, fileName, dpi)
     
-    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
-    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
     plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    plot_preferences(social_network, fileName, dpi)
-    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
+    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
     
     
-    plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
-    plot_total_profit(firm_manager, time_series, fileName, dpi)
-    plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    #plot_total_profit(firm_manager, time_series, fileName, dpi)
+    #plot_market_concentration(firm_manager, time_series, fileName, dpi)
     #
-    plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     plot_history_car_age(social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
@@ -1372,7 +1374,7 @@ def main(fileName, dpi=600):
     plot_price_history(firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
-    plot_segment_count_grid(firm_manager, time_series, fileName)
+    #plot_segment_count_grid(firm_manager, time_series, fileName)
 
     #plot_calibration_data(data_controller, time_series, fileName)
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
@@ -1381,14 +1383,17 @@ def main(fileName, dpi=600):
     #CALIBRATION PLOTS
 
     #plot_emissions_individuals(social_network, time_series, fileName)
-    #plot_distance_individuals(social_network, time_series, fileName)
+    plot_distance_individuals(social_network, time_series, fileName)
     #plot_utility_individuals(social_network, time_series, fileName)
     #plot_transport_type_individuals(social_network, time_series, fileName)
     #plot_density_by_value(fileName, social_network, time_series)
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
-    plot_emissions(social_network, time_series, fileName, dpi)
-    
+    #plot_emissions(social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
+    #plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
+    """
     percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
     plot_transport_users_stacked_two_by_four(social_network, time_series, fileName, percentiles)
     plot_mean_emissions_one_row(social_network, time_series, fileName, percentiles)
@@ -1397,23 +1402,18 @@ def main(fileName, dpi=600):
 
     plot_conditional_transport_users_4x4(social_network, time_series, fileName, percentiles)
     
-    plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
-    """
-    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
-    plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
-
-    """
     #PLOT ACTUAL VALUES USED
     plot_time_series_controller(data_controller.history_gas_price, time_series,"Gas price","gas_price", fileName)
     plot_time_series_controller(data_controller.history_electricity_price, time_series,"Electricity price","electricity_price", fileName)
     plot_time_series_controller(data_controller.history_electricity_emissions_intensity, time_series,"Electricity emissions intensity","electricity_emissions_intensity", fileName)
-    plot_time_series_controller(data_controller.history_nu_z_i_t_EV, time_series,"nu EV","nu_z_i_t_EV", fileName)
+    plot_time_series_controller(data_controller.history_nu_i_t_EV, time_series,"nu EV","nu_i_t_EV", fileName)
     #plot_time_series_controller(data_controller.history_rebate, time_series,"EV rebate","rebate", fileName)
     #plot_time_series_controller(data_controller.history_used_rebate, time_series,"Used EV rebate","used_rebate", fileName)
     plot_carbon_price(data_controller, time_series, fileName)
-    """
+
     #plot_social_network(social_network, fileName)
+    """
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_08_59_59__11_12_2024")
+    main("results/single_experiment_16_19_08__13_12_2024")

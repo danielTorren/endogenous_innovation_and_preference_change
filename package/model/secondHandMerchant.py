@@ -9,7 +9,7 @@ class SecondHandMerchant:
 
     def calc_price_car(self,vehicle):
         #calc the price of all cars, maybe change this to just incoming cars
-        sale_price_second_hand = vehicle.price*(1-vehicle.delta_z)**(vehicle.L_a_t)
+        sale_price_second_hand = vehicle.price*(1-vehicle.delta)**(vehicle.L_a_t)
 
         return sale_price_second_hand
     
@@ -22,11 +22,11 @@ class SecondHandMerchant:
     def update_stock_contents(self):
         for vehicle in self.cars_on_sale:
             if vehicle.transportType == 2:#ICE
-                vehicle.fuel_cost_c_z = self.gas_price
+                vehicle.fuel_cost_c = self.gas_price
             else:#EV
-                vehicle.fuel_cost_c_z = self.electricity_price
-                vehicle.e_z_t = self.electricity_emissions_intensity
-                vehicle.nu_z_i_t= self.nu_z_i_t_EV
+                vehicle.fuel_cost_c = self.electricity_price
+                vehicle.e_t = self.electricity_emissions_intensity
+                vehicle.nu_i_t= self.nu_i_t_EV
         
             if vehicle.second_hand_counter > self.age_limit_second_hand:
                 self.remove_car(vehicle)
@@ -50,12 +50,12 @@ class SecondHandMerchant:
     def save_timeseries_second_hand_merchant(self):
         self.history_num_second_hand.append(len(self.cars_on_sale))
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, nu_z_i_t_EV):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
-        self.nu_z_i_t_EV= nu_z_i_t_EV
+        self.nu_i_t_EV= nu_i_t_EV
     
         self.update_age_stock()
         self.update_stock_contents()

@@ -18,19 +18,19 @@ class PersonalCar:
         self.Quality_a_t =  self.attributes_fitness[0]  # Quality or attraction parameter for transport mode 'a' at time 't'.
                             # Represents the overall perceived attractiveness or utility that individuals derive from using this vehicle type.
 
-        self.delta_z = parameters["delta_z"]  # Depreciation or distance-decay factor for the vehicle.
+        self.delta = parameters["delta"]  # Depreciation or distance-decay factor for the vehicle.
                                # Indicates how the utility decays over distance, accounting for the decreasing benefit or increased discomfort of using the vehicle over longer distances.
 
         self.L_a_t = 0  # Lifetime or longevity parameter of transport mode 'a' at time 't'.
                             # Represents how the utility of the vehicle evolves over time or lifetime, often indicating how wear and tear or aging affects the overall utility.
 
         self.Eff_omega_a_t = self.attributes_fitness[1]  #FUEL EFFICIENCY km per kilojoules
-        self.ProdCost_z_t = self.attributes_fitness[2]  #PRODUCTION COST
-        self.fuel_cost_c_z = parameters["fuel_cost_c_z"]#Fuel cost
-        self.e_z_t = parameters["e_z_t"]  # Effort factor for the vehicle at time 't'.
+        self.ProdCost_t = self.attributes_fitness[2]  #PRODUCTION COST
+        self.fuel_cost_c = parameters["fuel_cost_c"]#Fuel cost
+        self.e_t = parameters["e_t"]  # Effort factor for the vehicle at time 't'.
                             # Represents the effort required to use the vehicle, which can include physical, cognitive, or time-related efforts associated with traveling using this mode of transportation.
 
-        self.nu_z_i_t = parameters["nu_z_i_t"]  #AVEAGE time to do a km
+        self.nu_i_t = parameters["nu_i_t"]  #AVEAGE time to do a km
         self.eta = parameters["eta"]  # Scaling constant affecting perceived utility.
                         # Represents a scaling factor used to adjust the overall utility calculation, typically to normalize or emphasize particular components in the utility function.
 
