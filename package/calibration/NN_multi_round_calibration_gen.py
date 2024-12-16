@@ -211,16 +211,6 @@ def main(
 
     print("DONE PRODUCING DATA")
 
-    ########################################################################################################
-    #TEST NN
-
-    posterior_samples = posterior.sample((10000,), x=x_o)
-
-    # plot posterior samples
-    fig, ax = pairplot(
-        posterior_samples, limits=[[-2, 2], [-2, 2], [-2, 2]], figsize=(5, 5)
-    )
-
     createFolder(fileName)
 
     # Save the density_estimator and posterior
@@ -228,6 +218,7 @@ def main(
     save_object( prior, fileName + "/Data", "prior")
     save_object( var_dict, fileName + "/Data", "var_dict")
     save_object(base_params, fileName + "/Data", "base_params")
+    save_object(x_o, fileName + "/Data", "x_o")
     
 if __name__ == "__main__":
     var_dict = {
@@ -244,6 +235,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round.json",
         OUTPUTS_LOAD_ROOT = "package/calibration_data",
         OUTPUTS_LOAD_NAME = "calibration_data_output",
-        num_simulations = 500
+        num_simulations = 100
         )
     
