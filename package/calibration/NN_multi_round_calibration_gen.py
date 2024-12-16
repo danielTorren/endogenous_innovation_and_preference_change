@@ -1,6 +1,4 @@
 import torch
-
-from sbi.analysis import pairplot
 from sbi.inference import NPE, simulate_for_sbi
 from sbi.utils import BoxUniform
 from sbi.utils.user_input_checks import (
@@ -17,7 +15,8 @@ from package.resources.utility import (
 )
 from package.resources.run import generate_data
 import numpy as np
-
+from joblib import Parallel, delayed
+import multiprocessing
 
 ###################################################################################################################################################
 #BUILD THE NEURAL NET
@@ -100,6 +99,40 @@ def simulator_wrapper_batch(base_params, param_1_name, param_2_name, param_1_sub
     
     return simulator_base_batch
 
+def simulator_wrapper_batch_parallel(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict):
+    def simulator_base_batch_parallel(prior_sample):
+        # Ensure prior_sample is a 2D tensor (batch_size, num_params)
+        if prior_sample.ndim == 1:  # Handle single sample case
+            prior_sample = prior_sample.unsqueeze(0)
+
+        def run_simulation(sample):
+            # Create a copy of base_params for this sample
+            updated_params = base_params.copy()
+            updated_params[param_1_subdict][param_1_name] = sample[0].item()
+            updated_params[param_2_subdict][param_2_name] = sample[1].item()
+
+            # Run the market simulation
+            controller = generate_data(updated_params)
+
+            # Compute the financial market return
+            arr_history = np.asarray(controller.social_network.history_prop_EV)
+            data_to_fit = convert_data(arr_history)
+            
+            return torch.tensor(data_to_fit, dtype=torch.float32)
+
+        # Run simulations in parallel
+        num_cores = multiprocessing.cpu_count()
+        results = Parallel(n_jobs=num_cores, verbose=10)(
+            delayed(run_simulation)(sample) for sample in prior_sample
+        )
+
+        # Return a batched tensor
+        stacked_results = torch.stack(results)
+        return stacked_results
+
+    return simulator_base_batch_parallel
+
+
 
 #####################################################################################################################################
 def gen_training_data(base_params, prior, param_1_name, param_2_name, param_1_subdict, param_2_subdict):
@@ -114,7 +147,8 @@ def gen_training_data(base_params, prior, param_1_name, param_2_name, param_1_su
 
     # Create the simulator with additional parameters
     #simulator_wrapped = simulator_wrapper_single(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
-    simulator_wrapped = simulator_wrapper_batch(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
+    #simulator_wrapped = simulator_wrapper_batch(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
+    simulator_wrapped = simulator_wrapper_batch_parallel(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
     #print("simulator_wrapped", simulator_wrapped)
 
     # Check simulator, returns PyTorch simulator able to simulate batches.
