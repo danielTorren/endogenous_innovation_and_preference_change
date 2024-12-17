@@ -132,8 +132,6 @@ def simulator_wrapper_batch_parallel(base_params, param_1_name, param_2_name, pa
 
     return simulator_base_batch_parallel
 
-
-
 #####################################################################################################################################
 def gen_training_data(base_params, prior, param_1_name, param_2_name, param_1_subdict, param_2_subdict):
     """
@@ -148,7 +146,7 @@ def gen_training_data(base_params, prior, param_1_name, param_2_name, param_1_su
     # Create the simulator with additional parameters
     #simulator_wrapped = simulator_wrapper_single(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
     #simulator_wrapped = simulator_wrapper_batch(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
-    simulator_wrapped = simulator_wrapper_batch_parallel(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
+    simulator_wrapped = simulator_wrapper_batch(base_params, param_1_name, param_2_name, param_1_subdict, param_2_subdict)
     #print("simulator_wrapped", simulator_wrapped)
 
     # Check simulator, returns PyTorch simulator able to simulate batches.
@@ -256,8 +254,8 @@ def main(
     
 if __name__ == "__main__":
     var_dict = {
-        "param_1_bounds" : [0.01, 10],
-        "param_2_bounds" : [0.01, 10],
+        "param_1_bounds" : [0.01, 4],
+        "param_2_bounds" : [0.01, 4],
         "param_1_name" : "a_innovativeness",
         "param_2_name" : "b_innovativeness",
         "param_1_subdict" : "parameters_social_network",

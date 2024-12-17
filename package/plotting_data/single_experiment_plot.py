@@ -1322,8 +1322,43 @@ def plot_social_network(social_network, fileName):
     cbar.set_label("Price sensitivity, $\\beta$")
 
     save_and_show(fig, fileName, "network", dpi=300)
+#############################################################################################
+def convert_data(data_to_fit):
 
+    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2000 to 2022
+    # Define the starting and ending indices for the years 2010 to 2022
+    start_year = 2010
+    end_year = 2022
 
+    # Calculate the average of the last three months of each year
+    averages = []
+
+    #print("filtered_data", filtered_data)
+    for year in range(start_year, end_year + 1):
+        year_start_index = (year - 2000) * 12
+        start_idx = year_start_index + 9  # October index
+        end_idx = year_start_index + 12  # December index (exclusive)
+        # Ensure the indices are within bounds
+        last_three_months = data_to_fit[start_idx:end_idx]
+        
+        #print(f"Year: {year}, Start Index: {start_idx}, End Index: {end_idx}, Last Three Months: {last_three_months}")
+
+        averages.append(np.mean(last_three_months))
+
+    averages_array = np.array(averages)
+
+    return averages_array
+
+def plot_ev_stock(real_data, social_network, fileName, dpi=600):
+    data_truncated = convert_data(social_network.history_prop_EV)
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    ax.plot(data_truncated, label = "Simulated data")
+    ax.plot(real_data, label = "California data")
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("EV stock %")
+    save_and_show(fig, fileName, "plot_ev_stock", dpi)
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -1345,10 +1380,10 @@ def main(fileName, dpi=600):
     #plot_total_utility(social_network, time_series, fileName, dpi)
     
     #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
-    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
@@ -1414,7 +1449,12 @@ def main(fileName, dpi=600):
     #plot_social_network(social_network, fileName)
     """
 
+    calibration_data_output = load_object( "package/calibration_data", "calibration_data_input")
+    #print(calibration_data_output)
+    #quit()
+    #EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    #plot_ev_stock(EV_stock_prop_2010_22, social_network, fileName, dpi=600)
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_28_50__16_12_2024")
+    main("results/single_experiment_12_38_20__17_12_2024")

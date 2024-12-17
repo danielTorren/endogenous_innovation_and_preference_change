@@ -138,13 +138,12 @@
         "SW_prob_rewire": 0.1,
         "prob_rewire": 0.1,
         "gamma_multiplier": 1,
-        "beta_multiplier": 1,
+
         "a_environment": 4,
         "b_environment": 2,
         "a_innovativeness": 0.95,
         "b_innovativeness": 1,
-        "a_price": 4,
-        "b_price": 1,
+
         "selection_bias": 5
     },
     "parameters_vehicle_user":{

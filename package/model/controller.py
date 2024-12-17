@@ -122,6 +122,8 @@ class Controller:
             self.rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["rebate"]
             self.used_rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["used_rebate"]
 
+        self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
+
     #############################################################################################################################
     #DEAL WITH SCENARIOS
 

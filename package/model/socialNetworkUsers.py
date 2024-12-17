@@ -83,7 +83,6 @@ class Social_Network:
 
     def init_preference_distribution(self, parameters_social_network):
         self.gamma_multiplier = parameters_social_network["gamma_multiplier"]
-        self.beta_multiplier = parameters_social_network["beta_multiplier"]
 
         #GAMMA
         self.a_environment = parameters_social_network["a_environment"]
@@ -102,14 +101,94 @@ class Social_Network:
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
         #BETA
-        self.a_price = parameters_social_network["a_price"]
-        self.b_price = parameters_social_network["b_price"]
         self.random_state_beta = np.random.RandomState(parameters_social_network["init_vals_price_seed"])
-        self.beta_vec = self.random_state_beta.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
+
+        # Example usage
+        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  parameters_social_network["income"])
+
+    
+        
+        #self.beta_vec = self.random_state_beta.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
 
         #d min
         self.d_i_min_vec = np.asarray(self.num_individuals*[parameters_social_network["d_i_min"]])
 
+
+    def generate_beta_values_quintiles(self,n, quintile_incomes):
+        """
+        Generate a list of beta values for n agents based on quintile incomes.
+        Beta for each quintile is calculated as:
+            beta = 1 * (lowest_quintile_income / quintile_income)
+        
+        Args:
+            n (int): Total number of agents.
+            quintile_incomes (list): List of incomes for each quintile (from lowest to highest).
+            
+        Returns:
+            list: A list of beta values of length n.
+        """
+        # Calculate beta values for each quintile
+        lowest_income = quintile_incomes[0]
+        beta_vals = [lowest_income / income for income in quintile_incomes]
+        
+        # Assign proportions for each quintile (evenly split 20% each)
+        proportions = [0.2] * len(quintile_incomes)
+        
+        # Compute the number of agents for each quintile
+        agent_counts = [int(round(p * n)) for p in proportions]
+        
+        # Adjust for rounding discrepancies to ensure sum(agent_counts) == n
+        while sum(agent_counts) < n:
+            agent_counts[agent_counts.index(min(agent_counts))] += 1
+        while sum(agent_counts) > n:
+            agent_counts[agent_counts.index(max(agent_counts))] -= 1
+        
+        # Generate the beta values list
+        beta_list = []
+        for count, beta in zip(agent_counts, beta_vals):
+            beta_list.extend([beta] * count)
+        
+        # Shuffle to randomize the order of agents
+        self.random_state_beta.shuffle(beta_list)
+        
+        return np.asarray(beta_list)
+
+
+    def generate_beta_values(self, n, percentages, beta_vals):
+        """
+        Generate a list of beta values for n agents based on given percentages and beta values.
+        
+        Args:
+            n (int): Total number of agents.
+            percentages (list): List of percentages for each beta value.
+            beta_vals (list): List of corresponding beta values.
+            
+        Returns:
+            list: A list of beta values of length n.
+        """
+        # Normalize percentages if they sum to 100
+        total = sum(percentages)
+        if total > 1.0:
+            percentages = [p / total for p in percentages]
+        
+        # Compute the number of agents for each beta value
+        agent_counts = [int(round(p * n)) for p in percentages]
+
+        # Adjust for rounding discrepancies to ensure sum(agent_counts) == n
+        while sum(agent_counts) < n:
+            agent_counts[agent_counts.index(min(agent_counts))] += 1
+        while sum(agent_counts) > n:
+            agent_counts[agent_counts.index(max(agent_counts))] -= 1
+
+        # Generate the beta values list
+        beta_list = []
+        for count, beta in zip(agent_counts, beta_vals):
+            beta_list.extend([beta] * count)
+
+        # Shuffle to randomize the order of agents
+        self.random_state_beta.shuffle(beta_list)
+
+        return np.asarray(beta_list)
 
     def set_init_cars_selection(self, parameters_social_network):
 

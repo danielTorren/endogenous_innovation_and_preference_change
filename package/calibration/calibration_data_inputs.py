@@ -144,7 +144,14 @@ def load_in_calibration_data():
     electricity_price_2022 = electricity_price_df.loc[electricity_price_df.index.year == 2022, "Real Dollars per Kilowatt-Hour (City Average)"].mean()
     electricity_emissions_intensity_2022 = electricity_emissions_intensity_df.loc[electricity_emissions_intensity_df.index.year == 2022, "KgCO2 per Kilowatt-Hour"].mean()
 
-    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_monthly_data["Range Ratio (ICE to EV)"], Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022
+    ################################################################################################################################################
+    #LOAD IN BETA distribution data - using the 2020 (inflation adjusted) distribution of percentiles, from census data - https://data.census.gov/table/ACSST5Y2020.S1901?q=california%20income
+    #DATA FROM: https://www.bls.gov/cex/tables/geographic/mean/cu-state-ca-income-quintiles-before-taxes-2-year-average-2020.htm
+    #income_df = pd.read_excel("package/calibration_data/income.xlsx")
+    income_df = pd.read_excel("package/calibration_data/income_quintiles_2019_20.xlsx")
+    
+    ################################################################################################################################################
+    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_monthly_data["Range Ratio (ICE to EV)"], Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df
 
 def future_calibration_data():
     # Load data
@@ -181,7 +188,7 @@ if __name__ == "__main__":
 
     calibration_data_input = {}
 
-    calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022 = load_in_calibration_data()
+    calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
     
     calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()
     calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()
@@ -191,5 +198,8 @@ if __name__ == "__main__":
     calibration_data_input["Electricity_price_2022"] = electricity_price_2022
     calibration_data_input["Electricity_emissions_intensity_2022"] = electricity_emissions_intensity_2022
     calibration_data_input["gasoline_Kgco2_per_Kilowatt_Hour"] = gasoline_Kgco2_per_Kilowatt_Hour
+
+    calibration_data_input["income"] = income_df["Income"].to_numpy()
+    
 
     save_object( calibration_data_input, "package/calibration_data", "calibration_data_input")

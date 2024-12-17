@@ -28,8 +28,8 @@ def main(
     ) -> str: 
 
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
-    EV_stock_percentage_2010_22 = calibration_data_output["EV Percentage"]
-    x_o = EV_stock_percentage_2010_22
+    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    x_o = EV_stock_prop_2010_22
 
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
@@ -39,9 +39,8 @@ def main(
     param_1_name = var_dict["param_1_name"]
     param_2_name = var_dict["param_2_name"]
 
-
     ###############################################################
-    samples = posterior.sample((10000,), x=x_o)
+    samples = posterior.sample((100000,), x=x_o)
     #print("samples", samples)
 
     log_probability_samples = posterior.log_prob(samples, x=x_o)
@@ -62,9 +61,9 @@ def main(
     ##############################################
 if __name__ == "__main__":
 
-    #EV_percentage_2010_2022 = [0.003446, 0.026368, 0.081688, 0.225396, 0.455980, 0.680997, 0.913118, 1.147275, 1.583223, 1.952829, 2.217273, 2.798319, 3.791804, 5.166498]
+    #EV_prop_2010_2022 = [0.003446, 0.026368, 0.081688, 0.225396, 0.455980, 0.680997, 0.913118, 1.147275, 1.583223, 1.952829, 2.217273, 2.798319, 3.791804, 5.166498]
     main(
-        fileName = "results/NN_calibration_11_57_19__16_12_2024",
+        fileName = "results/NN_calibration_12_59_02__16_12_2024",
         OUTPUTS_LOAD_ROOT = "package/calibration_data",
         OUTPUTS_LOAD_NAME = "calibration_data_output"
         )

@@ -42,7 +42,7 @@ if __name__ == "__main__":
     "age_limit_second_hand": 3,
     "ev_research_start_time": 60,
     "EV_nu_diff_state": 1,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate":{
         "start_time": 120,
         "end_time":276,
@@ -171,13 +171,10 @@ if __name__ == "__main__":
         "SW_prob_rewire": 0.1,
         "prob_rewire": 0.1,
         "gamma_multiplier": 1,
-        "beta_multiplier": 1,
-        "a_environment": 4,
-        "b_environment": 2,
-        "a_innovativeness": 1.6458,
-        "b_innovativeness": 3.6312,
-        "a_price": 4,
-        "b_price": 1,
+        "a_environment": 1,
+        "b_environment": 1,
+        "a_innovativeness": 1,
+        "b_innovativeness": 1,
         "selection_bias": 5
     },
     "parameters_vehicle_user":{
