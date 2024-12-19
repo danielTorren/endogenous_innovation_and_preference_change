@@ -39,7 +39,6 @@ class Firm:
         self.list_technology_memory = self.list_technology_memory_ICE + self.list_technology_memory_EV
 
         self.parameters_firm = parameters_firm
-        self.eta = parameters_firm["eta"]
         self.alpha = parameters_firm["alpha"]
         self.kappa = self.parameters_firm["kappa"]
         self.memory_cap = self.parameters_firm["memory_cap"]
@@ -101,8 +100,7 @@ class Firm:
 
         numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t
         denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) +
-                       (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t +
-                       vehicle.eta * vehicle.nu_i_t)
+                       (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
 
         # Compute optimal distance
         if denominator == 0:
@@ -131,13 +129,11 @@ class Firm:
         Eff_omega_a_t = vehicle.Eff_omega_a_t
         e_t = vehicle.e_t
         fuel_cost_c = vehicle.fuel_cost_c
-        nu_i_t = vehicle.nu_i_t
 
         # Calculate commuting utility based on conditions for z
         
-        cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c + self.carbon_price*e_t) + (gamma_s/ Eff_omega_a_t) * e_t + self.eta * nu_i_t
+        cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c + self.carbon_price*e_t) + (gamma_s/ Eff_omega_a_t) * e_t
         utility = Quality_a_t * (1 - delta) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
-
 
         # Ensure utility is non-negative
         utility_final = max(0, utility)
@@ -157,8 +153,6 @@ class Firm:
                 car.fuel_cost_c = self.gas_price
             else:#EV
                 car.fuel_cost_c = self.electricity_price
-                car.e_t = self.electricity_emissions_intensity
-                car.nu_i_t = self.nu_i_t_EV
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -613,14 +607,13 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
-        self.nu_i_t_EV = nu_i_t_EV
         self.rebate = rebate
 
         #decide cars to sell

@@ -1,37 +1,4 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
-# imports
-from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
-
-def main(
-    base_params
-) -> str: 
-
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
-    print("fileName:", fileName)
-
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    #print(controller.social_network.emissions_flow_history )
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-    return fileName
-
-if __name__ == "__main__":
-
-    base_params = {
+{
     "seed_repetitions": 10,
     "cars_init_state": 1,
     "duration_no_carbon_price": 276,
@@ -140,7 +107,7 @@ if __name__ == "__main__":
         "production_emissions":9000,
         "transportType": 3,
         "min_Efficiency": 4,
-        "max_Efficiency": 7,
+        "max_Efficiency": 7
 
     },
     "parameters_firm_manager": {
@@ -158,7 +125,7 @@ if __name__ == "__main__":
         "num_cars_production": 5
     },
     "parameters_social_network":{
-        "num_individuals": 100,
+        "num_individuals": 50,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -188,14 +155,3 @@ if __name__ == "__main__":
         "new_car_max_consider": 200
     }
 }
-
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
-
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 1
-
-    if RUN_PLOT:
-        plotting_main(fileName = fileName)

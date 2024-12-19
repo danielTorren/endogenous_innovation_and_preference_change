@@ -18,12 +18,16 @@ class NKModel:
 
         self.random_state_NK = np.random.RandomState(parameters["landscape_seed"])  # Local random state
 
-        self.min_max_Quality = parameters["min_max_Quality"]
-        self.min_max_Efficiency = parameters["min_max_Efficiency"]
-        self.min_max_Cost = parameters["min_max_Cost"]
+        self.min_Quality = parameters["min_Quality"]
+        self.min_Efficiency = parameters["min_Efficiency"]
+        self.min_Cost = parameters["min_Cost"]
 
-        self.min_vec = np.asarray([self.min_max_Quality[0],self.min_max_Efficiency[0], self.min_max_Cost[0]])
-        self.max_vec = np.asarray([self.min_max_Quality[1],self.min_max_Efficiency[1], self.min_max_Cost[1]])
+        self.max_Quality = parameters["max_Quality"]
+        self.max_Efficiency = parameters["max_Efficiency"]
+        self.max_Cost = parameters["max_Cost"]
+
+        self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
+        self.max_vec = np.asarray([self.max_Quality,self.max_Efficiency, self.max_Cost])
 
         self.fitness_landscape = self.generate_fitness_landscape()
 

@@ -785,6 +785,30 @@ def plot_distance_individuals(social_network, time_series, fileName, dpi=600):
     format_plot(ax, "User distance Over Time", "Time Step", "indivudal_distance")
     save_and_show(fig, fileName, "user_distance", dpi)
 
+def plot_distance_individuals_mean(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Extract data and compute statistics
+    data = np.asarray(social_network.history_distance_individual).T
+    mean_distance = np.mean(data, axis=0)
+    standard_error = sem(data, axis=0)
+    confidence_interval = t.ppf(0.975, df=data.shape[0] - 1) * standard_error
+    
+    # Plot mean and confidence interval
+    ax.plot(time_series, mean_distance, color='blue', label='Mean Distance', linewidth=2)
+    ax.fill_between(
+        time_series, 
+        mean_distance - confidence_interval, 
+        mean_distance + confidence_interval, 
+        color='blue', 
+        alpha=0.2, 
+        label='95% Confidence Interval'
+    )
+
+    # Format and save plot
+    format_plot(ax, "User Distance Over Time", "Time Step", "Individual Distance")
+    ax.legend()
+    save_and_show(fig, fileName, "user_distance_mean", dpi)
 
 def plot_utility_individuals(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -1383,7 +1407,7 @@ def main(fileName, dpi=600):
     #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
-    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
@@ -1402,11 +1426,11 @@ def main(fileName, dpi=600):
     #
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    #plot_history_car_age(social_network, time_series,fileName, dpi)
+    plot_history_car_age(social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
-    #plot_price_history(firm_manager, time_series, fileName, dpi)
+    plot_price_history(firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
@@ -1418,7 +1442,8 @@ def main(fileName, dpi=600):
     #CALIBRATION PLOTS
 
     #plot_emissions_individuals(social_network, time_series, fileName)
-    #plot_distance_individuals(social_network, time_series, fileName)
+    plot_distance_individuals(social_network, time_series, fileName)
+    plot_distance_individuals_mean(social_network, time_series, fileName)
     #plot_utility_individuals(social_network, time_series, fileName)
     #plot_transport_type_individuals(social_network, time_series, fileName)
     #plot_density_by_value(fileName, social_network, time_series)
@@ -1441,7 +1466,6 @@ def main(fileName, dpi=600):
     plot_time_series_controller(data_controller.history_gas_price, time_series,"Gas price","gas_price", fileName)
     plot_time_series_controller(data_controller.history_electricity_price, time_series,"Electricity price","electricity_price", fileName)
     plot_time_series_controller(data_controller.history_electricity_emissions_intensity, time_series,"Electricity emissions intensity","electricity_emissions_intensity", fileName)
-    plot_time_series_controller(data_controller.history_nu_i_t_EV, time_series,"nu EV","nu_i_t_EV", fileName)
     #plot_time_series_controller(data_controller.history_rebate, time_series,"EV rebate","rebate", fileName)
     #plot_time_series_controller(data_controller.history_used_rebate, time_series,"Used EV rebate","used_rebate", fileName)
     plot_carbon_price(data_controller, time_series, fileName)
@@ -1449,7 +1473,7 @@ def main(fileName, dpi=600):
     #plot_social_network(social_network, fileName)
     """
 
-    calibration_data_output = load_object( "package/calibration_data", "calibration_data_input")
+    #calibration_data_output = load_object( "package/calibration_data", "calibration_data_input")
     #print(calibration_data_output)
     #quit()
     #EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
@@ -1457,4 +1481,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_38_20__17_12_2024")
+    main("results/single_experiment_17_28_14__18_12_2024")

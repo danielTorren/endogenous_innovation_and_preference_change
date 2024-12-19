@@ -30,7 +30,6 @@ class Social_Network:
         self.random_state_social_network = np.random.RandomState(parameters_social_network["social_network_seed"])
 
         self.alpha =  parameters_vehicle_user["alpha"]
-        self.eta =  parameters_vehicle_user["eta"]
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
         self.kappa = parameters_vehicle_user["kappa"]
@@ -82,33 +81,29 @@ class Social_Network:
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
 
     def init_preference_distribution(self, parameters_social_network):
-        self.gamma_multiplier = parameters_social_network["gamma_multiplier"]
-
-        #GAMMA
-        self.a_environment = parameters_social_network["a_environment"]
-        self.b_environment = parameters_social_network["b_environment"]
-        self.random_state_gamma = np.random.RandomState(parameters_social_network["init_vals_environmental_seed"])
-        self.gamma_vec = self.random_state_gamma.beta(self.a_environment, self.b_environment, size=self.num_individuals)*self.gamma_multiplier
-
         #CHI
         self.a_innovativeness = parameters_social_network["a_innovativeness"]
         self.b_innovativeness = parameters_social_network["b_innovativeness"]
-
         self.random_state_chi = np.random.RandomState(parameters_social_network["init_vals_innovative_seed"])
         innovativeness_vec_init_unrounded = self.random_state_chi.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
         self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)
-
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
         #BETA
         self.random_state_beta = np.random.RandomState(parameters_social_network["init_vals_price_seed"])
-
-        # Example usage
-        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  parameters_social_network["income"])
-
-    
-        
-        #self.beta_vec = self.random_state_beta.beta(self.a_price, self.b_price, size=self.num_individuals)*self.beta_multiplier
+        self.beta_vec = parameters_social_network["beta_multiplier"]*self.generate_beta_values_quintiles(self.num_individuals,  parameters_social_network["income"])
+        #print("beta",np.max(self.beta_vec), np.min(self.beta_vec), np.median(self.beta_vec))
+        #GAMMA
+        self.random_state_gamma = np.random.RandomState(parameters_social_network["init_vals_environmental_seed"])
+        self.WTP_mean = parameters_social_network["WTP_mean"]
+        self.WTP_sd = parameters_social_network["WTP_sd"]
+        self.car_lifetime_months = parameters_social_network["car_lifetime_months"]
+        WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
+        self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = 0, a_max = np.inf)
+        self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
+        #print("gamma",np.max(self.gamma_vec), np.min(self.gamma_vec), np.median(self.gamma_vec))
+        #quit()
+        #ETA
 
         #d min
         self.d_i_min_vec = np.asarray(self.num_individuals*[parameters_social_network["d_i_min"]])
@@ -513,6 +508,7 @@ class Social_Network:
                 #pick random vehicle which is available
                 choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             else:#keep current car
+                
                 choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
         else:
             # Calculate the probability of choosing each vehicle
@@ -523,7 +519,8 @@ class Social_Network:
                 individual_specific_util = np.nan_to_num(individual_specific_util)
                 
             sum_prob = np.sum(individual_specific_util)
-
+            #if person_index == 10:
+            #    print("YO", sum_prob, np.count_nonzero(individual_specific_util))
             probability_choose = individual_specific_util / sum_prob
             choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
 
@@ -630,7 +627,6 @@ class Social_Network:
             "fuel_cost_c": [], 
             "e_t": [],
             "L_a_t": [],
-            "nu_i_t": [],
             "transportType": []
         }
 
@@ -644,7 +640,6 @@ class Social_Network:
             vehicle_dict_vecs["fuel_cost_c"].append(vehicle.fuel_cost_c)
             vehicle_dict_vecs["e_t"].append(vehicle.e_t)
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
-            vehicle_dict_vecs["nu_i_t"].append(vehicle.nu_i_t)
             vehicle_dict_vecs["transportType"].append(vehicle.transportType)
 
         # convert lists to numpy arrays for vectorised operations
@@ -747,13 +742,7 @@ class Social_Network:
             (1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]
         )  # Shape: (num_individuals,)
 
-        denominator = np.where(
-            vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_vehicles,)
-            ((self.beta_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-            ((self.gamma_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]) +
-            (self.eta * vehicle_dict_vecs["nu_i_t"]),
-            (self.eta * vehicle_dict_vecs["nu_i_t"])
-        )  # Resulting shape: (num_individuals, num_vehicles)
+        denominator = ((self.beta_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) + ((self.gamma_vec/vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
 
         # Calculate optimal distance vec for each individual-vehicle pair
         optimal_distance_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
@@ -772,8 +761,7 @@ class Social_Network:
         # Reshape self.beta_vec and self.gamma_vec to (num_individuals, 1) for broadcasting across vehicles
         denominator = (
             ((self.beta_vec[:, np.newaxis]/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-            ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]) +
-            (self.eta * vehicle_dict_vecs["nu_i_t"])
+            ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
         )  # Shape: (num_individuals, num_vehicles)
 
         # Calculate optimal distance matrix for each individual-vehicle pair
@@ -788,13 +776,7 @@ class Social_Network:
         """
 
         # Compute cost component based on transport type, without broadcasting
-        cost_component = np.where(
-            vehicle_dict_vecs["transportType"] > 1,  # Shape: (num_individuals,)
-            ((self.beta_vec/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-            ((self.gamma_vec/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]) +
-            (self.eta * vehicle_dict_vecs["nu_i_t"]),
-            self.eta * vehicle_dict_vecs["nu_i_t"]
-        )  # Shape: (num_individuals,)
+        cost_component = ((self.beta_vec/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) + ((self.gamma_vec/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
 
         # Calculate the commuting utility for each individual-vehicle pair
         commuting_utility_vec = np.maximum(
@@ -810,9 +792,7 @@ class Social_Network:
         # dit Shape: (num_individuals, num_vehicles)
 
         # Compute cost component based on transport type, with conditional operations
-        cost_component = ((self.beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) +
-            ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]) +
-            (self.eta * vehicle_dict_vecs["nu_i_t"]))
+        cost_component = (self.beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((self.gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
 
         # Compute the commuting utility for each individual-vehicle pair
 
@@ -1046,7 +1026,6 @@ class Social_Network:
             elif car.transportType == 3:#EV
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
-                car.nu_i_t = self.nu_i_t_EV
 
 ####################################################################################################################################
 
@@ -1055,7 +1034,7 @@ class Social_Network:
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
         self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate, used_rebate):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1075,7 +1054,6 @@ class Social_Network:
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
-        self.nu_i_t_EV = nu_i_t_EV
         self.rebate = rebate
         self.used_rebate = used_rebate
 

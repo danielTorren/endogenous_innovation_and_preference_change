@@ -186,13 +186,13 @@ class Firm_Manager:
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
-    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate):
+    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate):
         cars_on_sale_all_firms = []
         segment_U_sums = defaultdict(float)
 
-        #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate)
+        #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate)
         for firm in self.firms_list:
-            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate)
+            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
@@ -316,7 +316,7 @@ class Firm_Manager:
         self.history_market_data.append(copy.deepcopy(self.market_data))
 
 
-    def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate):
+    def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate):
         
         self.t_firm_manager += 1
 
@@ -324,7 +324,7 @@ class Firm_Manager:
          
         self.carbon_price = carbon_price
 
-        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV, rebate)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.update_market_data(sums_U_segment)

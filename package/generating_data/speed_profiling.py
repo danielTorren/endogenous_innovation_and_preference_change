@@ -17,7 +17,6 @@ if __name__ == '__main__':
         "choice_seed": 9,
         "age_limit_second_hand": 3,
         "ev_research_start_time": 60,#2005
-        "EV_nu_diff_state": 1,
         "EV_rebate_state": 1,
         "parameters_rebate":{#THIS IS A CALIBRATION PARAMETER, REFLECTIVE OF CALIFORNIA
             "start_time": 120,#2010

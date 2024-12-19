@@ -26,7 +26,6 @@ class SecondHandMerchant:
             else:#EV
                 vehicle.fuel_cost_c = self.electricity_price
                 vehicle.e_t = self.electricity_emissions_intensity
-                vehicle.nu_i_t= self.nu_i_t_EV
         
             if vehicle.second_hand_counter > self.age_limit_second_hand:
                 self.remove_car(vehicle)
@@ -50,12 +49,11 @@ class SecondHandMerchant:
     def save_timeseries_second_hand_merchant(self):
         self.history_num_second_hand.append(len(self.cars_on_sale))
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, nu_i_t_EV):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
-        self.nu_i_t_EV= nu_i_t_EV
     
         self.update_age_stock()
         self.update_stock_contents()

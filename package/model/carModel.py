@@ -55,11 +55,6 @@ class CarModel:
         self.e_t = self.parameters["e_t"]  # Effort factor for the vehicle at time 't'.
                             # Represents the effort required to use the vehicle, which can include physical, cognitive, or time-related efforts associated with traveling using this mode of transportation.
 
-        self.nu_i_t = self.parameters["nu_i_t"]  #AVEAGE time to do a km
-        
-        self.eta = self.parameters["eta"]  # Scaling constant affecting perceived utility.
-                        # Represents a scaling factor used to adjust the overall utility calculation, typically to normalize or emphasize particular components in the utility function.
-
         self.emissions = self.parameters["production_emissions"]  # Emissions factor for the vehicle (E_a_t).
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
     
