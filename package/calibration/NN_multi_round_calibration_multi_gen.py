@@ -18,12 +18,14 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
+import os
 
 def run_single_simulation(theta, base_params, param_list):
     """
     Runs a single simulation for the given parameters theta.
     This function must be defined at the top-level so it can be pickled for parallel processing.
     """
+
     updated_params = base_params.copy()
     # Update the parameters from theta
     for i, param in enumerate(param_list):
