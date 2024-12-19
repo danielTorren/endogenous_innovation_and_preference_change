@@ -16,8 +16,36 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 import numpy as np
 from package.calibration.NN_multi_round_calibration_gen import convert_data
-
+import multiprocessing
+from joblib import Parallel, delayed
 #####################################################################################################################################
+
+def simulator_wrapper_batch_parallel(base_params, param_list):
+    def simulator_base_batch_parallel(prior_sample):
+        if prior_sample.ndim == 1:
+            prior_sample = prior_sample.unsqueeze(0)
+
+        def process_sample(sample):
+            updated_params = base_params.copy()
+            for i, param in enumerate(param_list):
+                subdict = param["subdict"]
+                name = param["name"]
+                updated_params[subdict][name] = sample[i].item()
+            controller = generate_data(updated_params)
+            data_to_fit_distance = np.median(np.asarray(controller.social_network.history_distance_individual[-1]))
+            arr_history = np.asarray(controller.social_network.history_prop_EV)
+            data_to_fit = convert_data(arr_history)
+            stock_tensor = torch.tensor(data_to_fit, dtype=torch.float32)
+            median_distance_tensor = torch.tensor([data_to_fit_distance], dtype=torch.float32)
+            return torch.cat((stock_tensor, median_distance_tensor), dim=0)
+
+        num_cores = multiprocessing.cpu_count()
+
+        results = Parallel(n_jobs=num_cores, verbose=10)(delayed(process_sample)(i) for i in prior_sample)
+
+        return torch.stack(results)
+    return simulator_base_batch_parallel
+
 def simulator_wrapper_batch(base_params, param_list):
     def simulator_base_batch(prior_sample):
         # Ensure prior_sample is a 2D tensor (batch_size, num_params)
@@ -72,7 +100,8 @@ def gen_training_data(base_params, prior, param_list):
     #print("prior", prior)
 
     # Create the simulator with additional parameters
-    simulator_wrapped = simulator_wrapper_batch(base_params, param_list)
+    #simulator_wrapped = simulator_wrapper_batch(base_params, param_list)
+    simulator_wrapped = simulator_wrapper_batch_parallel(base_params, param_list)
 
     # Check simulator, returns PyTorch simulator able to simulate batches.
     simulator = process_simulator(simulator_wrapped, prior, is_numpy_simulator=prior_returns_numpy)
@@ -159,8 +188,7 @@ def main(
     print("READIED INPUTS")
     ########################################################################################################
     #build NN
-    #ADJUST THIS FOR THE MULTIPLE ROUNDS, MAYBE START WITH SOME DATA FROM THE SENSTIVITY ANALYSIS
-    
+    #HERE IS RUNS IT ONCE
     inference, simulator_wrapped = gen_training_data(base_params, prior, parameters_list)
     print("DONE TRAINING")
     #quit()
@@ -243,6 +271,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_distance.json",
         OUTPUTS_LOAD_ROOT = "package/calibration_data",
         OUTPUTS_LOAD_NAME = "calibration_data_output",
-        num_simulations = 100
+        num_simulations = 48
         )
     
