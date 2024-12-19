@@ -89,14 +89,14 @@
         "A": 3,
         "rho":[0,0.5],
         "production_emissions":6000,
-        "delta": 10e-3,
+        "delta": 10e-5,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 80,
+        "max_Quality": 25,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 1000,
-        "max_Cost": 30000
+        "max_Cost": 10000
     },
     "parameters_EV":{
         "landscape_seed": 14,
@@ -108,7 +108,6 @@
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7
-
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
@@ -117,10 +116,8 @@
     },
     "parameters_firm":{
         "memory_cap": 30,
-        "prob_innovate": 0.08333,
+        "prob_innovate": 0.4,
         "lambda_pow": 2,
-        "init_price": 1,
-        "init_base_U": 10e5,
         "innovation_seed": 77,
         "num_cars_production": 5
     },
@@ -133,11 +130,10 @@
         "social_network_seed": 66,
         "d_min_seed": 45,
         "d_i_min": 100,
-        "SW_K": 30,
+        "SW_K": 20,
         "SW_prob_rewire": 0.1,
         "prob_rewire": 0.1,
-        "beta_multiplier": 1,
-        "a_environment": 1,
+        "a_environment": 0.9,
         "b_environment": 1,
         "WTP_mean": 210,
         "WTP_sd": 175,
@@ -150,8 +146,8 @@
         "kappa": 3,
         "alpha": 0.5,
         "r": 0.02,
-        "mu": 0.1,
-        "second_hand_car_max_consider": 1000,
+        "mu": 0.3,
+        "second_hand_car_max_consider": 200,
         "new_car_max_consider": 200
     }
 }

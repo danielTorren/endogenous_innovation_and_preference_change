@@ -1401,7 +1401,7 @@ def main(fileName, dpi=600):
 
     # All plot function calls
     #"""
-    #plot_total_utility(social_network, time_series, fileName, dpi)
+    plot_total_utility(social_network, time_series, fileName, dpi)
     
     #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
     #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
@@ -1411,12 +1411,12 @@ def main(fileName, dpi=600):
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    plot_preferences(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
     
     
@@ -1424,11 +1424,10 @@ def main(fileName, dpi=600):
     #plot_total_profit(firm_manager, time_series, fileName, dpi)
     #plot_market_concentration(firm_manager, time_series, fileName, dpi)
     #
-    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     plot_history_car_age(social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
-    #plot_second_hand_market_age_distribution(second_hand_merchant, time_series, fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     plot_price_history(firm_manager, time_series, fileName, dpi)
     
@@ -1442,7 +1441,7 @@ def main(fileName, dpi=600):
     #CALIBRATION PLOTS
 
     #plot_emissions_individuals(social_network, time_series, fileName)
-    plot_distance_individuals(social_network, time_series, fileName)
+    #plot_distance_individuals(social_network, time_series, fileName)
     plot_distance_individuals_mean(social_network, time_series, fileName)
     #plot_utility_individuals(social_network, time_series, fileName)
     #plot_transport_type_individuals(social_network, time_series, fileName)

@@ -122,14 +122,14 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0.5],
         "production_emissions":6000,
-        "delta": 10e-3,
+        "delta": 10e-5,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 80,
+        "max_Quality": 25,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 1000,
-        "max_Cost": 30000
+        "max_Cost": 10000
     },
     "parameters_EV":{
         "landscape_seed": 14,
@@ -141,7 +141,6 @@ if __name__ == "__main__":
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7,
-
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
@@ -150,15 +149,13 @@ if __name__ == "__main__":
     },
     "parameters_firm":{
         "memory_cap": 30,
-        "prob_innovate": 0.08333,
+        "prob_innovate": 0.4,#0.08333,
         "lambda_pow": 2,
-        "init_price": 1,
-        "init_base_U": 10e5,
         "innovation_seed": 77,
         "num_cars_production": 5
     },
     "parameters_social_network":{
-        "num_individuals": 100,
+        "num_individuals": 500,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -169,8 +166,7 @@ if __name__ == "__main__":
         "SW_K": 20,
         "SW_prob_rewire": 0.1,
         "prob_rewire": 0.1,
-        "beta_multiplier": 1,
-        "a_environment": 1,
+        "a_environment": 0.9,
         "b_environment": 1,
         "WTP_mean": 210,
         "WTP_sd": 175,
@@ -183,8 +179,8 @@ if __name__ == "__main__":
         "kappa": 3,
         "alpha": 0.5,
         "r": 0.02,
-        "mu": 0.1,
-        "second_hand_car_max_consider": 1000,
+        "mu": 0.3,
+        "second_hand_car_max_consider": 200,
         "new_car_max_consider": 200
     }
 }

@@ -79,13 +79,13 @@ class Firm:
     
     def set_car_init_price_and_U(self):
         for car in self.cars_on_sale:
-            car.price = self.parameters_firm["init_price"]
+            car.price = car.ProdCost_t
             for segment_code in range(8):
                 # Binary representation of the segment code (4-bit string)
                 segment_code_str = format(segment_code, '03b')
                 # Add data for the segment
-                car.optimal_price_segments[segment_code_str] = self.parameters_firm["init_price"]
-                car.car_base_utility_segments[segment_code_str] = self.parameters_firm["init_base_U"]
+                car.optimal_price_segments[segment_code_str] = car.price
+                car.car_base_utility_segments[segment_code_str] = 0
     
     def optimal_distance(self, vehicle, beta, gamma):
         """
@@ -168,11 +168,11 @@ class Firm:
                 utility_segment = self.calc_commuting_utility(car, d_i_t, beta_s, gamma_s)
                 
                 # Save the base utility
-                B = utility_segment/(self.r + (1-self.delta)/(1-self.alpha))
+                B = utility_segment/(self.r + (np.log(1+self.delta))/(1-self.alpha))
                 car.car_base_utility_segments[segment_code] = B
 
                 inside_component = U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )
-                if inside_component < 0:
+                if inside_component < 0 or self.t_firm == 1:
                     car.optimal_price_segments[segment_code] = C_m#STOP NEGATIVE SQUARE ROOTS
                 else:
                     car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(inside_component) )/beta_s )

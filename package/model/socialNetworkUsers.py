@@ -4,6 +4,7 @@ import networkx as nx
 import numpy.typing as npt
 import scipy.sparse as sp
 import numpy as np
+from sympy import per
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
@@ -91,8 +92,8 @@ class Social_Network:
 
         #BETA
         self.random_state_beta = np.random.RandomState(parameters_social_network["init_vals_price_seed"])
-        self.beta_vec = parameters_social_network["beta_multiplier"]*self.generate_beta_values_quintiles(self.num_individuals,  parameters_social_network["income"])
-        #print("beta",np.max(self.beta_vec), np.min(self.beta_vec), np.median(self.beta_vec))
+        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  parameters_social_network["income"])
+        
         #GAMMA
         self.random_state_gamma = np.random.RandomState(parameters_social_network["init_vals_environmental_seed"])
         self.WTP_mean = parameters_social_network["WTP_mean"]
@@ -101,8 +102,6 @@ class Social_Network:
         WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
         self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = 0, a_max = np.inf)
         self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
-        #print("gamma",np.max(self.gamma_vec), np.min(self.gamma_vec), np.median(self.gamma_vec))
-        #quit()
         #ETA
 
         #d min
@@ -501,6 +500,12 @@ class Social_Network:
         # Select individual-specific utilities
         individual_specific_util = utilities_kappa[person_index]  
 
+        #if person_index ==3:
+        #    quality_list = [car.attributes_fitness for car in available_and_current_vehicles_list]
+        #    print("individual_specific_util ", individual_specific_util ,np.count_nonzero(individual_specific_util) )
+        #    print("quality_list", quality_list)
+        #    if self.t_social_network == 20:
+        #        quit()
         # Check if all utilities are zero after filtering
         if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
             """THIS SHOULD ACRUALLY BE USED"""
@@ -660,7 +665,7 @@ class Social_Network:
         )  # Ensuring compatibility for element-wise comparison
 
         commuting_util_vec = self.vectorised_commuting_utility_current(vehicle_dict_vecs, d_i_t)
-        base_utility_vec = commuting_util_vec / (self.r + (1 - vehicle_dict_vecs["delta"]) / (1 - self.alpha))
+        base_utility_vec = commuting_util_vec / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])) / (1 - self.alpha))
 
         # Create mask for users who do NOT own a car
         does_not_own_car_mask = self.users_current_vehicle_type_vec <= 1
@@ -688,7 +693,7 @@ class Social_Network:
         d_i_t = np.maximum(self.d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance_cars(vehicle_dict_vecs))
 
         commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t)
-        base_utility_matrix = commuting_util_matrix / (self.r + (1 - vehicle_dict_vecs["delta"]) / (1 - self.alpha))
+        base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])) / (1 - self.alpha))
 
 
         price_difference = np.where(
@@ -711,7 +716,7 @@ class Social_Network:
         
         commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t)
 
-        base_utility_matrix = commuting_util_matrix / (self.r + ((1 - vehicle_dict_vecs["delta"])/(1 - self.alpha)))
+        base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])/(1 - self.alpha)))
         
 
         #price_difference = vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec
