@@ -18,9 +18,12 @@ import numpy as np
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
 from torch.multiprocessing import Pool
+import os  # Import here to avoid redundant imports globally
 #####################################################################################################################################
 
 def process_sample(sample, base_params, param_list):
+    print(f"Processing sample {sample} on process {os.getpid()}")  # Print process ID and sample being processed
+
     updated_params = base_params.copy()
     for i, param in enumerate(param_list):
         subdict = param["subdict"]
