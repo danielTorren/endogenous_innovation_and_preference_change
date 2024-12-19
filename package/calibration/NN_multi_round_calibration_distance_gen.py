@@ -17,34 +17,38 @@ from package.resources.run import generate_data
 import numpy as np
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
-from joblib import Parallel, delayed
+from torch.multiprocessing import Pool
 #####################################################################################################################################
+
+def process_sample(sample, base_params, param_list):
+    updated_params = base_params.copy()
+    for i, param in enumerate(param_list):
+        subdict = param["subdict"]
+        name = param["name"]
+        updated_params[subdict][name] = sample[i].item()
+    controller = generate_data(updated_params)
+    data_to_fit_distance = np.median(np.asarray(controller.social_network.history_distance_individual[-1]))
+    arr_history = np.asarray(controller.social_network.history_prop_EV)
+    data_to_fit = convert_data(arr_history)
+    stock_tensor = torch.tensor(data_to_fit, dtype=torch.float32)
+    median_distance_tensor = torch.tensor([data_to_fit_distance], dtype=torch.float32)
+    return torch.cat((stock_tensor, median_distance_tensor), dim=0)
 
 def simulator_wrapper_batch_parallel(base_params, param_list):
     def simulator_base_batch_parallel(prior_sample):
         if prior_sample.ndim == 1:
             prior_sample = prior_sample.unsqueeze(0)
 
-        def process_sample(sample):
-            updated_params = base_params.copy()
-            for i, param in enumerate(param_list):
-                subdict = param["subdict"]
-                name = param["name"]
-                updated_params[subdict][name] = sample[i].item()
-            controller = generate_data(updated_params)
-            data_to_fit_distance = np.median(np.asarray(controller.social_network.history_distance_individual[-1]))
-            arr_history = np.asarray(controller.social_network.history_prop_EV)
-            data_to_fit = convert_data(arr_history)
-            stock_tensor = torch.tensor(data_to_fit, dtype=torch.float32)
-            median_distance_tensor = torch.tensor([data_to_fit_distance], dtype=torch.float32)
-            return torch.cat((stock_tensor, median_distance_tensor), dim=0)
-
-        num_cores = multiprocessing.cpu_count()
-
-        results = Parallel(n_jobs=num_cores, verbose=10)(delayed(process_sample)(i) for i in prior_sample)
+        # Use a multiprocessing Pool
+        with Pool(processes=multiprocessing.cpu_count()) as pool:
+            results = pool.starmap(
+                process_sample, [(sample, base_params, param_list) for sample in prior_sample]
+            )
 
         return torch.stack(results)
+    
     return simulator_base_batch_parallel
+
 
 def simulator_wrapper_batch(base_params, param_list):
     def simulator_base_batch(prior_sample):
@@ -165,8 +169,10 @@ def main(
     # 2 rounds: first round simulates from the prior, second round simulates parameter set
     # that were sampled from the obtained posterior.
     num_rounds = 3
+
     # The specific observation we want to focus the inference on.
     median_distance_traveled = 1400
+
     # Convert EV_stock_prop_2010_22 to a tensor (if it isn't already)
     EV_stock_prop_2010_22_tensor = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
 
