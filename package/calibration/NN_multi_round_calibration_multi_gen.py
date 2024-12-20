@@ -18,6 +18,7 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
+import deepcopy
 
 def run_single_simulation(theta, base_params, param_list):
     """
@@ -53,6 +54,20 @@ def run_single_simulation(theta, base_params, param_list):
     #return result
     return data_to_fit
 
+def change_seeds(base_params, seed, seed_repetitions):
+    """
+    Expand the list of scenarios by varying the seed parameters.
+    """
+    # VARY ALL THE SEEDS
+    base_params["init_tech_seed"] = seed + seed_repetitions
+    base_params["landscape_seed"] = seed + 2 * seed_repetitions
+    base_params["social_network_seed"] = seed + 3 * seed_repetitions
+    base_params["network_structure_seed"] = seed + 4 * seed_repetitions
+    base_params["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+    base_params["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+    base_params["init_vals_price_seed"] = seed + 7 * seed_repetitions
+    base_params["innovation_seed"] = seed + 8 * seed_repetitions
+    return base_params
 
 def main(
         parameters_list,
@@ -120,13 +135,36 @@ def main(
     proposal = prior
 
     for i in range(num_rounds):
-        print("ROUND: ", i+1,"/", num_rounds)
+        print("ROUND: ", i + 1, "/", num_rounds)
+        
         # Set num_workers to use parallelization
-        theta, x = simulate_for_sbi(simulator, proposal, num_simulations=num_simulations, num_workers=multiprocessing.cpu_count())
-        density_estimator = inference.append_simulations(theta, x, proposal=proposal).train()
+        for seed in range(base_params["seed_repetitions"]):           
+            # Update the seed in base_params for this round
+            base_params = change_seeds(base_params, seed, base_params["seed_repetitions"])
+            # Update the simulator to use the modified base_params with the new seed
+
+            def seeded_simulator(theta):
+                return run_single_simulation(theta, base_params=base_params, param_list=parameters_list)
+
+            simulator = partial(seeded_simulator)
+
+            # Run the simulations with the updated simulator
+            theta, x = simulate_for_sbi(
+                simulator,
+                proposal,
+                num_simulations=num_simulations,
+                num_workers=multiprocessing.cpu_count(),
+                simulation_batch_size=multiprocessing.cpu_count()
+            )
+            
+            # Append the simulations and train the density estimator
+            density_estimator = inference.append_simulations(theta, x, proposal=proposal).train()
+
+        # Build the posterior for this round
         posterior = inference.build_posterior(density_estimator)
         posteriors.append(posterior)
         proposal = posterior.set_default_x(x_o)
+
 
     createFolder(fileName)
 
@@ -149,5 +187,5 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=1000
+        num_simulations=128
     )

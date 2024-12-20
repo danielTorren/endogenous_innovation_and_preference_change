@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 10,
+    "seed_repetitions": 3,
     "cars_init_state": 1,
     "duration_no_carbon_price": 276,
     "duration_future":0,

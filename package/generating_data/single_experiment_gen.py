@@ -150,7 +150,7 @@ if __name__ == "__main__":
         "num_cars_production": 5
     },
     "parameters_social_network":{
-        "num_individuals": 500,
+        "num_individuals": 100,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
