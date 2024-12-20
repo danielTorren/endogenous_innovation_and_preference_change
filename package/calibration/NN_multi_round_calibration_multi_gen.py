@@ -122,7 +122,7 @@ def main(
     for i in range(num_rounds):
         print("ROUND: ", i+1,"/", num_rounds)
         # Set num_workers to use parallelization
-        theta, x = simulate_for_sbi(simulator, proposal, num_simulations=num_simulations, num_workers=multiprocessing.cpu_count(), exclude_invalid_x=True)
+        theta, x = simulate_for_sbi(simulator, proposal, num_simulations=num_simulations, num_workers=multiprocessing.cpu_count())
         density_estimator = inference.append_simulations(theta, x, proposal=proposal).train()
         posterior = inference.build_posterior(density_estimator)
         posteriors.append(posterior)
