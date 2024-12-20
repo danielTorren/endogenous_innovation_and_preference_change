@@ -166,8 +166,8 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 2.29,
-        "b_innovativeness": 2.15,
+        "a_innovativeness": 1.8088, 
+        "b_innovativeness": 2.2720,
         "selection_bias": 5
     },
     "parameters_vehicle_user":{
