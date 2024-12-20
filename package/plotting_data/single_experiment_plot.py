@@ -1384,6 +1384,48 @@ def plot_ev_stock(real_data, social_network, fileName, dpi=600):
     ax.set_ylabel("EV stock %")
     save_and_show(fig, fileName, "plot_ev_stock", dpi)
 
+
+def plot_history_count_buy(social_network, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    
+    data = np.asarray(social_network.history_count_buy)
+    data_trans = data.T
+    labels =  ["current", "new", "second hand"]
+    for i in range(data_trans.shape[0]):
+        ax.plot(data_trans[i], label = labels[i])
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Count buys")
+    ax.legend()
+    save_and_show(fig, fileName, "count_buy", dpi)
+
+def plot_history_median_price(social_network, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    
+    data = np.asarray(social_network.history_median_price)
+    data_trans = data.T
+    labels =  ["new", "second hand"]
+    for i in range(data_trans.shape[0]):
+        ax.plot(data_trans[i], label = labels[i])
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Median Price")
+    ax.legend()
+    save_and_show(fig, fileName, "history_median_price", dpi)
+
+def plot_history_quality_index(social_network, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    data = np.asarray(social_network.history_quality_index)
+    ax.plot(data)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Quality index")
+    ax.legend()
+    save_and_show(fig, fileName, "history_quality_index", dpi)
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -1401,6 +1443,10 @@ def main(fileName, dpi=600):
 
     # All plot function calls
     #"""
+    #plot_history_quality_index(social_network, fileName, dpi)
+    plot_history_median_price(social_network, fileName, dpi)
+    plot_history_count_buy(social_network, fileName, dpi)
+
     plot_total_utility(social_network, time_series, fileName, dpi)
     
     #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
@@ -1480,4 +1526,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_28_14__18_12_2024")
+    main("results/single_experiment_17_16_48__20_12_2024")

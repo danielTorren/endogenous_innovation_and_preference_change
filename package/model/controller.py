@@ -4,6 +4,9 @@ Created: 22/12/2023
 
 # imports
 from ast import Raise
+
+from sympy import beta
+from package.model import socialNetworkUsers
 from package.model.nkModel import NKModel
 from package.model.firmManager import Firm_Manager 
 from package.model.centralizedIdGenerator import IDGenerator
@@ -37,16 +40,24 @@ class Controller:
 
         #NEED TO CREATE INIT OPTIONS
         self.cars_on_sale_all_firms = self.firm_manager.cars_on_sale_all_firms
-        self.second_hand_cars = self.get_second_hand_cars()
+
+        
+        self.second_hand_cars = []#EMPTY INITIATILLY
         
         self.parameters_social_network["init_car_options"] =  self.cars_on_sale_all_firms 
         self.parameters_social_network["old_cars"] = self.firm_manager.old_cars
 
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
+
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
         self.vehicles_chosen_list = self.social_network.current_vehicles
+
+        #UPDATE SECOND HADN MERCHANT WITH THE DATA
+        self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)
+        self.total_U_sum = self.parameters_firm["init_U_sum"]*8#NUM SEGMENTS
+        
 
         #pass information across one time
         self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
@@ -306,7 +317,6 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
-        self.parameters_firm_manager["cars_init_state"] = self.parameters_controller["cars_init_state"]
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -344,7 +354,6 @@ class Controller:
 
         self.parameters_social_network["used_rebate"] = self.used_rebate 
         self.parameters_social_network["used_rebate"] = self.used_rebate 
-        self.parameters_social_network["cars_init_state"] = self.parameters_controller["cars_init_state"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -357,7 +366,12 @@ class Controller:
         self.EV_landscape = NKModel(parameters_EV)
 
     def setup_second_hand_market(self):
-        self.second_hand_merchant = SecondHandMerchant(unique_id = -3, age_limit_second_hand = self.age_limit_second_hand)
+        self.parameters_second_hand = {
+            "age_limit_second_hand" : self.age_limit_second_hand,
+            "alpha" : self.parameters_vehicle_user["alpha"],
+            "r": self.parameters_vehicle_user["r"]
+        }
+        self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
         #CREATE FIRMS    
@@ -368,12 +382,13 @@ class Controller:
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
     def gen_social_network(self):
+
         #self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
         self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
 
     def update_firms(self):
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate)
-        return cars_on_sale_all_firms
+        cars_on_sale_all_firms, total_U_sum = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate)
+        return cars_on_sale_all_firms, total_U_sum
     
     def update_social_network(self):
         # Update social network based on firm preferences
@@ -406,8 +421,7 @@ class Controller:
             self.save_timeseries_controller()
 
     def get_second_hand_cars(self):
-
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity)
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.total_U_sum, self.carbon_price)
 
         return self.second_hand_merchant.cars_on_sale
 
@@ -418,8 +432,8 @@ class Controller:
         #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
+        self.cars_on_sale_all_firms, self.total_U_sum = self.update_firms()
         self.second_hand_cars = self.get_second_hand_cars()
-        self.cars_on_sale_all_firms = self.update_firms()
         self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
 
         self.manage_saves()

@@ -9,6 +9,7 @@ class Firm_Manager:
     def __init__(self, parameters_firm_manager: dict, parameters_firm: dict, parameters_car_ICE: dict, parameters_car_EV: dict, ICE_landscape: dict, EV_landscape: dict):
         self.t_firm_manager = 0
 
+        self.total_U_sum = 0
         self.parameters_firm = parameters_firm
 
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
@@ -39,21 +40,16 @@ class Firm_Manager:
         self.gamma_val_empty_upper = (1+self.gamma_threshold)/2
         self.gamma_val_empty_lower = (1-self.gamma_threshold)/2
 
-        
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 
         self.innovation_seed_list = self.random_state.randint(0,1000, self.J)
 
         self.init_firms()
         
-
         #calculate the inital attributes of all the cars on sale
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
-
-        self.cars_init_state = parameters_firm_manager["cars_init_state"]
-        if self.cars_init_state:
-            self.age_max = parameters_firm_manager["init_car_age_max"]
-            self.old_cars = self.gen_old_cars()        
+        self.age_max = parameters_firm_manager["init_car_age_max"]
+        self.old_cars = self.gen_old_cars()        
 
     ###########################################################################################################
     #INITIALISATION
@@ -69,7 +65,7 @@ class Firm_Manager:
         car_list = []
         for i, car in enumerate(model_choices):
             personalCar_id = self.id_generator.get_new_id()
-            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price)
+            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=1)
             car_real.L_a_t = age_list[i]
             car_list.append(car_real)
         return car_list
@@ -228,6 +224,7 @@ class Firm_Manager:
             """
             self.market_data[segment_code]["I_s_t"] = segment_counts[i]
             self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
+            self.total_U_sum += sums_U_segment[segment_code]
             
             #print("segemtn count",segment_code,  self.market_data[segment_code]["I_s_t"])
         #quit()
@@ -320,6 +317,8 @@ class Firm_Manager:
         
         self.t_firm_manager += 1
 
+        self.total_U_sum = 0
+        
         self.past_chosen_vehicles =  chosen_vehicles
          
         self.carbon_price = carbon_price
@@ -329,4 +328,4 @@ class Firm_Manager:
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.update_market_data(sums_U_segment)
 
-        return self.cars_on_sale_all_firms
+        return self.cars_on_sale_all_firms, self.total_U_sum

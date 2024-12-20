@@ -18,7 +18,6 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
-import os
 
 def update_base_params_with_seed(base_params, seed):
     """
@@ -26,14 +25,15 @@ def update_base_params_with_seed(base_params, seed):
     """
     seed_repetitions = base_params["seed_repetitions"]
     # VARY ALL THE SEEDS
-    base_params["init_tech_seed"] = seed + seed_repetitions
-    base_params["landscape_seed"] = seed + 2 * seed_repetitions
-    base_params["social_network_seed"] = seed + 3 * seed_repetitions
-    base_params["network_structure_seed"] = seed + 4 * seed_repetitions
-    base_params["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-    base_params["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-    base_params["init_vals_price_seed"] = seed + 7 * seed_repetitions
-    base_params["innovation_seed"] = seed + 8 * seed_repetitions
+    base_params["parameters_firm_manager"]["init_tech_seed"] = seed + seed_repetitions
+    base_params["parameters_ICE"]["landscape_seed"] = seed + 2 * seed_repetitions
+    base_params["parameters_EV"]["landscape_seed"] = seed + 9 * seed_repetitions
+    base_params["parameters_social_network"]["social_network_seed"] = seed + 3 * seed_repetitions
+    base_params["parameters_social_network"]["network_structure_seed"] = seed + 4 * seed_repetitions
+    base_params["parameters_social_network"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+    base_params["parameters_social_network"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+    base_params["parameters_social_network"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+    base_params["parameters_firm"]["innovation_seed"] = seed + 8 * seed_repetitions
     return base_params
 
 def run_single_simulation(theta, base_params, param_list):

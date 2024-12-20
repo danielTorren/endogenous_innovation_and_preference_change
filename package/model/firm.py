@@ -45,6 +45,10 @@ class Firm:
         self.prob_innovate = self.parameters_firm["prob_innovate"]
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
+
+
+        self.init_U_sum = self.parameters_firm["init_U_sum"]
+        self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
         self.carbon_price =  self.parameters_firm["carbon_price"]
 
@@ -79,13 +83,13 @@ class Firm:
     
     def set_car_init_price_and_U(self):
         for car in self.cars_on_sale:
-            car.price = car.ProdCost_t
+            car.price = car.ProdCost_t*self.init_price_multiplier
             for segment_code in range(8):
                 # Binary representation of the segment code (4-bit string)
                 segment_code_str = format(segment_code, '03b')
                 # Add data for the segment
                 car.optimal_price_segments[segment_code_str] = car.price
-                car.car_base_utility_segments[segment_code_str] = 0
+                car.car_base_utility_segments[segment_code_str] = self.init_U_sum
     
     def optimal_distance(self, vehicle, beta, gamma):
         """

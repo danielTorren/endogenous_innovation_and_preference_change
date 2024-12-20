@@ -144,10 +144,6 @@ if __name__ == '__main__':
             "d_min_seed": 45,
             "social_network_seed": 66,
             "d_i_min": 100,#in km
-            "gamma_multiplier": 1,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
-    
-            "a_environment": 4,#large easy ev adoption 
-            "b_environment": 2,#2,
             "a_innovativeness": 0.9,#0.9,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
             "b_innovativeness": 1,#1,#2,#1,#2,
             "selection_bias": 5

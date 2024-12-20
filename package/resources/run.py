@@ -79,6 +79,36 @@ def emissions_parallel_run(
     emissions_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions)(i) for i in params_dict)
 
     return np.asarray(emissions_list)
+########################################################################################
+
+def generate_distance(params):
+    data = generate_data(params)
+    return data.social_network.history_distance_individual
+
+def distance_parallel_run(
+        params_dict: list[dict]
+) -> npt.NDArray:
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_emissions_intensities(i) for i in params_dict]
+    distance_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_distance)(i) for i in params_dict)
+
+    return np.asarray(distance_list)
+
+def generate_distance_ev_prop(params):
+    data = generate_data(params)
+    return data.social_network.history_distance_individual, data.social_network.history_prop_EV
+
+def distance_ev_prop_parallel_run(
+        params_dict: list[dict]
+) -> npt.NDArray:
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_emissions_intensities(i) for i in params_dict]
+    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_distance_ev_prop)(i) for i in params_dict)
+    distance_list, ev_prop_list = zip(
+        *res
+    )
+    return np.asarray(distance_list), np.asarray(ev_prop_list)
+
 #########################################################################################
 #multi-run
 def generate_preferences(params):

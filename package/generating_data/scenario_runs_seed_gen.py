@@ -46,14 +46,15 @@ def expand_scenarios_with_seeds(scenarios, seed_list):
             scenario_copy = deepcopy(scenario)
 
             # VARY ALL THE SEEDS
-            scenario_copy["init_tech_seed"] = seed + seed_repetitions
-            scenario_copy["landscape_seed"] = seed + 2 * seed_repetitions
-            scenario_copy["social_network_seed"] = seed + 3 * seed_repetitions
-            scenario_copy["network_structure_seed"] = seed + 4 * seed_repetitions
-            scenario_copy["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-            scenario_copy["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-            scenario_copy["init_vals_price_seed"] = seed + 7 * seed_repetitions
-            scenario_copy["innovation_seed"] = seed + 8 * seed_repetitions
+            scenario_copy["parameters_firm_manager"]["init_tech_seed"] = seed + seed_repetitions
+            scenario_copy["parameters_ICE"]["landscape_seed"] = seed + 2 * seed_repetitions
+            scenario_copy["parameters_EV"]["landscape_seed"] = seed + 9 * seed_repetitions
+            scenario_copy["parameters_social_network"]["social_network_seed"] = seed + 3 * seed_repetitions
+            scenario_copy["parameters_social_network"]["network_structure_seed"] = seed + 4 * seed_repetitions
+            scenario_copy["parameters_social_network"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+            scenario_copy["parameters_social_network"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+            scenario_copy["parameters_social_network"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+            scenario_copy["parameters_firm"]["innovation_seed"] = seed + 8 * seed_repetitions
 
             scenario_seeds.append(scenario_copy)
         expanded_scenarios.append(scenario_seeds)

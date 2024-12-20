@@ -1,5 +1,5 @@
 class PersonalCar:
-    def __init__(self, unique_id, firm, owner_id, component_string, parameters, attributes_fitness, sale_price):
+    def __init__(self, unique_id, firm, owner_id, component_string, parameters, attributes_fitness, sale_price, init_car = 0):
         self.id = unique_id
         self.firm = firm
         self.owner_id = owner_id
@@ -7,7 +7,11 @@ class PersonalCar:
         self.component_string = component_string
         self.price = sale_price
         self.original_price = sale_price
+        self.last_price_paid = sale_price
+
         self.timer = 0
+
+        self.init_car = init_car
 
         self.scenario =  "current_car"
 
