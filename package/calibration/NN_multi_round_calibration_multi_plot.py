@@ -1,70 +1,92 @@
-from sbi import analysis as analysis #https://github.com/sbi-dev/sbi
-from sbi import utils as utils
+from sbi import analysis as analysis  # https://github.com/sbi-dev/sbi
 from sbi.analysis import pairplot
 import matplotlib.pyplot as plt
-from package.resources.utility import (
-    load_object
-)
+from package.resources.utility import load_object
 from package.plotting_data.single_experiment_plot import save_and_show
+import torch
 
-def plot_results(fileName, x_o,posterior, param_1_bounds, param_2_bounds, param_1_name,param_2_name):
-    posterior_samples = posterior.sample((100000,), x=x_o)#GET A BUNCH OF GUESSES AT THE POSTERIOR BASED ON THE OBSERVATIONS, WHAT DOES IT THINK THE VALUE IS
-    # Plot posterior samples
+def plot_results(fileName, posterior_samples, x_o, posterior, param_bounds, param_names):
+    """
+    Plots results for posterior samples, dynamically handling multiple parameters.
+    
+    Args:
+        fileName (str): The output filename for saving the plot.
+        x_o (torch.Tensor): Observed data tensor.
+        posterior (object): The posterior object from sbi.
+        param_bounds (list): List of parameter bounds, one per parameter.
+        param_names (list): List of parameter names, one per parameter.
+    """
+    # Sample posterior
+    #posterior_samples = posterior.sample((100000,), x=x_o)  # Get posterior samples based on observations
+
+    # Generate pairplot
     fig, ax = pairplot(
         posterior_samples,
-        limits=[param_1_bounds, param_2_bounds],
-        figsize=(5, 5),
+        limits=param_bounds,
+        figsize=(10, 10),  # Adjust size based on number of parameters
         points_colors='r',
-        labels=[param_1_name,param_2_name]
+        labels=param_names
     )
+
+    # Save and show plot
     save_and_show(fig, fileName, "pairplot", dpi=300)
-    #plt.savefig('Figures/posterior_samples_synthetic.png')
     plt.show()
 
-def main(
-        fileName,
-        OUTPUTS_LOAD_ROOT, 
-        OUTPUTS_LOAD_NAME
-    ) -> str: 
+def main(fileName):
+    """
+    Main function to load data and plot results.
+    
+    Args:
+        fileName (str): Base directory for data and outputs.
+        OUTPUTS_LOAD_ROOT (str): Root path for loading calibration data.
+        OUTPUTS_LOAD_NAME (str): File name for calibration data.
+    """
+    # Load observed data
 
-    calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    x_o = EV_stock_prop_2010_22
+    match_data = load_object(fileName + "/Data", "match_data")
 
+    # Extract observed statistics
+    EV_stock_prop_2010_22 = match_data["EV_stock_prop_2010_22"]
+    #median_distance_traveled = match_data["median_distance_traveled"]
+    #median_age = match_data["median_age"]
+    #median_price = match_data["median_price"]
+
+    # Convert data to tensors
+    EV_stock_prop_2010_22_tensor = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
+    #median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
+    #median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
+    #median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
+
+    # Reconstruct x_o by concatenating the tensors
+    #x_o = torch.cat((EV_stock_prop_2010_22_tensor, 
+    #                 median_distance_traveled_tensor, 
+    #                 median_age_tensor, 
+    #                 median_price_tensor), dim=0)
+    x_o = EV_stock_prop_2010_22_tensor
+
+    # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
 
-    param_1_bounds = var_dict["param_1_bounds"]
-    param_2_bounds = var_dict["param_2_bounds"]
-    param_1_name = var_dict["param_1_name"]
-    param_2_name = var_dict["param_2_name"]
+    # Extract parameter bounds and names dynamically
+    param_bounds = [p["bounds"] for p in var_dict]
+    param_names = [p["name"] for p in var_dict]
 
-    ###############################################################
+    # Test posterior samples and plot results
     samples = posterior.sample((100000,), x=x_o)
-    #print("samples", samples)
-
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     print("Log probabilities:", log_probability_samples)
 
-    # Find the sample with the greatest log probability
+    # Find sample with greatest log probability
     max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
     print("Sample with the greatest log probability:", best_sample)
     print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
-    ########################################################################################################
-    #TEST NN
+    # Plot results
+    plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
 
-    plot_results(fileName, x_o,posterior, param_1_bounds, param_2_bounds, param_1_name,param_2_name)
-
-
-    ##############################################
 if __name__ == "__main__":
-
-    #EV_prop_2010_2022 = [0.003446, 0.026368, 0.081688, 0.225396, 0.455980, 0.680997, 0.913118, 1.147275, 1.583223, 1.952829, 2.217273, 2.798319, 3.791804, 5.166498]
     main(
-        fileName = "results/NN_calibration_12_59_02__16_12_2024",
-        OUTPUTS_LOAD_ROOT = "package/calibration_data",
-        OUTPUTS_LOAD_NAME = "calibration_data_output"
-        )
-    
+        fileName="results/NN_calibration_multi_22_37_14__19_12_2024",
+    )

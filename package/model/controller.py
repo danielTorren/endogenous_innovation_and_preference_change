@@ -133,7 +133,6 @@ class Controller:
         self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]
         self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]
         self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]
-        self.EV_Substitutability_state =  self.parameters_controller["parameters_scenarios"]["States"]["EV_Substitutability"]
         
         self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
         if self.Gas_price_state == "Low":

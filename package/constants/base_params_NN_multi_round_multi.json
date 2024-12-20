@@ -87,23 +87,23 @@
         "N": 15,
         "K": 2,
         "A": 3,
-        "rho":[0,0.5],
+        "rho":[0,0],
         "production_emissions":6000,
         "delta": 10e-5,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 25,
+        "max_Quality": 20,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 1000,
-        "max_Cost": 10000
+        "max_Cost": 30000
     },
     "parameters_EV":{
         "landscape_seed": 14,
         "N": 15,
         "K": 2,
         "A": 3,
-        "rho":[0,0.5],
+        "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
         "min_Efficiency": 4,
@@ -122,7 +122,7 @@
         "num_cars_production": 5
     },
     "parameters_social_network":{
-        "num_individuals": 500,
+        "num_individuals": 100,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 

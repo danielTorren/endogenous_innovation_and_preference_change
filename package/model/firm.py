@@ -193,7 +193,7 @@ class Firm:
                     
                     #ADD IN A SUBSIDY
                     if car.transportType == 3:
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *(price_s- self.rebate) - gamma_s * car.emissions
+                        utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *(price_s - self.rebate) - gamma_s * car.emissions
                     else:
                         utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     #utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions

@@ -1407,7 +1407,7 @@ def main(fileName, dpi=600):
     #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
-    plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
@@ -1449,7 +1449,7 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    #plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(social_network, time_series, fileName, dpi)
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     """

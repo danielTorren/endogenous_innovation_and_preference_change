@@ -52,8 +52,7 @@ if __name__ == "__main__":
         "States":{
             "Gas_price": "Current",
             "Electricity_price": "Current",
-            "Grid_emissions_intensity": "Weaker",
-            "EV_Substitutability": "Parity"
+            "Grid_emissions_intensity": "Weaker"
         },
         "Values":{
             "Gas_price":{
@@ -69,10 +68,6 @@ if __name__ == "__main__":
             "Grid_emissions_intensity":{
                 "Weaker": 0.5, 
                 "Decarbonised": 0
-            },
-            "EV_Substitutability":{
-                "Improved": 1.2, 
-                "Parity": 1
             }
         }
     },
@@ -120,27 +115,27 @@ if __name__ == "__main__":
         "N": 15,
         "K": 2,
         "A": 3,
-        "rho":[0,0.5],
+        "rho":[0,0],
         "production_emissions":6000,
-        "delta": 10e-5,
+        "delta": 4e-5,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 25,
+        "max_Quality": 16,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 1000,
-        "max_Cost": 10000
+        "max_Cost": 30000
     },
     "parameters_EV":{
         "landscape_seed": 14,
         "N": 15,
         "K": 2,
         "A": 3,
-        "rho":[0,0.5],
+        "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
         "min_Efficiency": 4,
-        "max_Efficiency": 7,
+        "max_Efficiency": 7
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
@@ -149,7 +144,7 @@ if __name__ == "__main__":
     },
     "parameters_firm":{
         "memory_cap": 30,
-        "prob_innovate": 0.4,#0.08333,
+        "prob_innovate": 0.4,
         "lambda_pow": 2,
         "innovation_seed": 77,
         "num_cars_production": 5
@@ -171,14 +166,14 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 1,
-        "b_innovativeness": 1,
+        "a_innovativeness": 2.29,
+        "b_innovativeness": 2.15,
         "selection_bias": 5
     },
     "parameters_vehicle_user":{
         "kappa": 3,
         "alpha": 0.5,
-        "r": 0.02,
+        "r": 0.05,
         "mu": 0.3,
         "second_hand_car_max_consider": 200,
         "new_car_max_consider": 200

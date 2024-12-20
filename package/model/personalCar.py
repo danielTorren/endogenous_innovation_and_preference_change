@@ -6,6 +6,7 @@ class PersonalCar:
         self.transportType = parameters["transportType"]
         self.component_string = component_string
         self.price = sale_price
+        self.original_price = sale_price
         self.timer = 0
 
         self.scenario =  "current_car"

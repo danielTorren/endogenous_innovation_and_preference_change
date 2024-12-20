@@ -9,8 +9,7 @@ class SecondHandMerchant:
 
     def calc_price_car(self,vehicle):
         #calc the price of all cars, maybe change this to just incoming cars
-        sale_price_second_hand = vehicle.price*(1+vehicle.delta)**(vehicle.L_a_t)
-
+        sale_price_second_hand = vehicle.original_price*(1 - vehicle.delta)**(vehicle.L_a_t)
         return sale_price_second_hand
     
     def update_age_stock(self):

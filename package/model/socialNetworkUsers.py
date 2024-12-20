@@ -582,9 +582,12 @@ class Social_Network:
     def generate_utilities(self):
         #CALC WHO OWNS CAR
         owns_car_mask = self.users_current_vehicle_type_vec > 1
+
+        self.delta_vec = np.asarray([car.delta for car in self.current_vehicles])
+        self.age_vec = np.asarray([car.L_a_t for car in self.current_vehicles])
         self.price_owns_car_vec = np.where(
             owns_car_mask,
-            self.users_current_vehicle_price_vec / (1 + self.mu),
+            self.users_current_vehicle_price_vec*(1-self.delta_vec)**self.age_vec/(1 + self.mu),
             0
         )
 
@@ -698,7 +701,7 @@ class Social_Network:
 
         price_difference = np.where(
             vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
-            (vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate) - self.price_owns_car_vec,  # Apply rebate
+            (vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate - self.price_owns_car_vec),  # Apply rebate
             vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec  # No rebate
         )
 
@@ -724,7 +727,7 @@ class Social_Network:
         # Calculate price difference, applying rebate only for transportType == 3
         price_difference = np.where(
             vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
-            (vehicle_dict_vecs["price"][:, np.newaxis] - self.rebate) - self.price_owns_car_vec,  # Apply rebate
+            (vehicle_dict_vecs["price"][:, np.newaxis] - self.rebate - self.price_owns_car_vec),  # Apply rebate
             vehicle_dict_vecs["price"][:, np.newaxis] - self.price_owns_car_vec  # No rebate
         )
     

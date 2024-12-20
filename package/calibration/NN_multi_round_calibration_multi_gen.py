@@ -37,21 +37,22 @@ def run_single_simulation(theta, base_params, param_list):
     controller = generate_data(updated_params)
 
     # Compute summary statistics
-    data_to_fit_distance = np.median(np.asarray(controller.social_network.users_distance_vec))
-    data_to_fit_age = np.median(np.asarray(controller.social_network.car_ages))
-    data_to_fit_price = np.median(np.asarray([car.price for car in controller.firm_manager.cars_on_sale_all_firms]))
+    #data_to_fit_distance = np.median(np.asarray(controller.social_network.users_distance_vec))
+    #data_to_fit_age = np.median(np.asarray(controller.social_network.car_ages))
+    #data_to_fit_price = np.median(np.asarray([car.price for car in controller.firm_manager.cars_on_sale_all_firms]))
     arr_history = np.asarray(controller.social_network.history_prop_EV)
     data_to_fit = convert_data(arr_history)
 
     # Convert to tensors
-    stock_tensor = torch.tensor(data_to_fit, dtype=torch.float32)
-    median_distance_tensor = torch.tensor([data_to_fit_distance], dtype=torch.float32)
-    median_age_tensor = torch.tensor([data_to_fit_age], dtype=torch.float32)
-    median_price_tensor = torch.tensor([data_to_fit_price], dtype=torch.float32)
+    #stock_tensor = torch.tensor(data_to_fit, dtype=torch.float32)
+    #median_distance_tensor = torch.tensor([data_to_fit_distance], dtype=torch.float32)
+    #median_age_tensor = torch.tensor([data_to_fit_age], dtype=torch.float32)
+    #median_price_tensor = torch.tensor([data_to_fit_price], dtype=torch.float32)
 
     # Concatenate into a single output tensor
-    result = torch.cat((stock_tensor, median_distance_tensor, median_age_tensor, median_price_tensor), dim=0)
-    return result
+    #result = torch.cat((stock_tensor, median_distance_tensor, median_age_tensor, median_price_tensor), dim=0)
+    #return result
+    return data_to_fit
 
 
 def main(
@@ -89,10 +90,11 @@ def main(
 
     # Convert observed data to tensors
     EV_stock_prop_2010_22_tensor = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
-    median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
-    median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
-    median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
-    x_o = torch.cat((EV_stock_prop_2010_22_tensor, median_distance_traveled_tensor, median_age_tensor, median_price_tensor), dim=0)
+    #median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
+    #median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
+    #median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
+    #x_o = torch.cat((EV_stock_prop_2010_22_tensor, median_distance_traveled_tensor, median_age_tensor, median_price_tensor), dim=0)
+    x_o = EV_stock_prop_2010_22_tensor 
 
     # Define the prior
     low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -121,7 +123,7 @@ def main(
     for i in range(num_rounds):
         print("ROUND: ", i+1,"/", num_rounds)
         # Set num_workers to use parallelization
-        theta, x = simulate_for_sbi(simulator, proposal, num_simulations=num_simulations, num_workers=multiprocessing.cpu_count())
+        theta, x = simulate_for_sbi(simulator, proposal, num_simulations=num_simulations, num_workers=multiprocessing.cpu_count(), exclude_invalid_x=True)
         density_estimator = inference.append_simulations(theta, x, proposal=proposal).train()
         posterior = inference.build_posterior(density_estimator)
         posteriors.append(posterior)
@@ -142,21 +144,11 @@ if __name__ == "__main__":
     parameters_list = [
         {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.01, 4]},
         {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.01, 4]},
-        {"name": "min_Quality", "subdict": "parameters_ICE", "bounds": [0, 10]},
-        {"name": "max_Quality", "subdict": "parameters_ICE", "bounds": [1, 50]},
-        {"name": "min_Cost", "subdict": "parameters_ICE", "bounds": [0, 10000]},
-        {"name": "max_Cost", "subdict": "parameters_ICE", "bounds": [1000, 100000]},
-        {"name": "r", "subdict": "parameters_vehicle_user", "bounds": [0.01, 1]},
-        {"name": "delta", "subdict": "parameters_ICE", "bounds": [1e-3, 1e-2]},
-        {"name": "alpha", "subdict": "parameters_vehicle_user", "bounds": [0.1, 0.95]},
-        {"name": "d_min", "subdict": "parameters_social_network", "bounds": [100, 1300]},
-        {"name": "mu", "subdict": "parameters_vehicle_user", "bounds": [0.01, 1]},
     ]
-
     main(
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=40
+        num_simulations=2*multiprocessing.cpu_count()
     )
