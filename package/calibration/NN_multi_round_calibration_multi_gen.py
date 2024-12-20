@@ -18,7 +18,6 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
-import os
 
 def run_single_simulation(theta, base_params, param_list):
     """
@@ -78,13 +77,13 @@ def main(
     num_rounds = 3
 
     # Observed statistics
-    median_distance_traveled = 1400
-    median_age = 120
-    median_price = 30000
+    #median_distance_traveled = 1400
+    #median_age = 120
+    #median_price = 30000
     match_data = {
-        "median_distance_traveled": median_distance_traveled,
-        "median_age": median_age,
-        "median_price": median_price,
+        #"median_distance_traveled": median_distance_traveled,
+        #"median_age": median_age,
+        #"median_price": median_price,
         "EV_stock_prop_2010_22": EV_stock_prop_2010_22
     }
 
@@ -142,13 +141,13 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.01, 4]},
-        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.01, 4]},
+        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.05, 3]},
+        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.05, 3]},
     ]
     main(
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=2*multiprocessing.cpu_count()
+        num_simulations=128
     )
