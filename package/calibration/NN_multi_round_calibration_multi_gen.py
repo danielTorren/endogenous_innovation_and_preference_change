@@ -18,7 +18,6 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
-import deepcopy
 
 def run_single_simulation(theta, base_params, param_list):
     """
