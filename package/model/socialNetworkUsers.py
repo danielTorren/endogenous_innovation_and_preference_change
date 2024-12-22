@@ -74,7 +74,7 @@ class Social_Network:
     def init_network_settings(self, parameters_social_network):
         self.selection_bias = parameters_social_network["selection_bias"]
         self.network_structure_seed = parameters_social_network["network_structure_seed"]
-        self.K_social_network = parameters_social_network["SW_K"] 
+        self.K_social_network =  int(round(parameters_social_network["SW_K"]))
         self.prob_rewire = int(round(parameters_social_network["SW_prob_rewire"]))
 
     def init_preference_distribution(self, parameters_social_network):
