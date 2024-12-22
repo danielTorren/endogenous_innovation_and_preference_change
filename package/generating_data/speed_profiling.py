@@ -9,155 +9,157 @@ if __name__ == '__main__':
 
     ###################################################################
     base_params = {
-        "cars_init_state": 1,
-        "duration_no_carbon_price": 276,#that is 23 years,#01/2000-12/2022
-        "duration_future":156,#156,#01/2023 - 12/2035  (TOTAL of 432 steps )
-        "save_timeseries_data_state": 1,
-        "compression_factor_state": 1,
-        "choice_seed": 9,
-        "age_limit_second_hand": 3,
-        "ev_research_start_time": 60,#2005
-        "EV_rebate_state": 1,
-        "parameters_rebate":{#THIS IS A CALIBRATION PARAMETER, REFLECTIVE OF CALIFORNIA
-            "start_time": 120,#2010
-            "end_time":276,
-            "rebate": 7500,
-            "used_rebate": 1500
+    "seed_repetitions": 10,
+    "duration_no_carbon_price": 276,
+    "duration_future":0,
+    "save_timeseries_data_state": 1,
+    "compression_factor_state": 1,
+    "choice_seed": 9,
+    "ev_research_start_time": 120,
+    "EV_rebate_state": 1,
+    "parameters_rebate":{
+        "start_time": 120,
+        "end_time":276,
+        "rebate": 10000,
+        "used_rebate": 4000
+    },
+    "parameters_scenarios":{
+        "States":{
+            "Gas_price": "Current",
+            "Electricity_price": "Current",
+            "Grid_emissions_intensity": "Weaker"
         },
-        "parameters_scenarios":{
-            "States":{
-                "Gas_price": "Current", #"Current","High",#
-                "Electricity_price": "Current", #"Current","High",#
-                "Grid_emissions_intensity": "Decarbonised",#"Weaker", # "Decarbonised"
-                "EV_Substitutability": "Parity", #"Improved", #"Parity"
+        "Values":{
+            "Gas_price":{
+                "Low": 0.5, 
+                "Current": 1,
+                "High": 1.5
             },
-            "Values":{
-                "Gas_price":{
-                    "Low": 0.5, 
-                    "Current": 1,
-                    "High": 1.5,
-                },
-                "Electricity_price":{
-                    "Low": 0.5, 
-                    "Current": 1,
-                    "High": 1.5,
-                },
-                "Grid_emissions_intensity":{
-                    "Weaker": 0.5, 
-                    "Decarbonised": 0
-                },
-                "EV_Substitutability":{
-                    "Improved": 1.2, 
-                    "Parity": 1
-                }
-            }
-        },
-        "parameters_policies":{
-            "States":{
-                "Carbon_price": "High",#"Zero","Low","High"
-                "Adoption_subsidy": "High", #"High"
+            "Electricity_price":{
+                "Low": 0.5, 
+                "Current": 1,
+                "High": 1.5
             },
-            "Values":{
-                "Carbon_price":{
-                    "Zero":{
-                        "carbon_price_init": 0,
-                        "carbon_price": 0,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
-                        "carbon_price_state": "linear"
-                    },
-                    "Low":{
-                        "carbon_price_init": 0,
-                        "carbon_price": 0.03,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
-                        "carbon_price_state": "linear"
-                    },
-                    "High":{
-                        "carbon_price_init": 0,
-                        "carbon_price": 0.1,#0.1,#$/kgCO2 ie $100/tonneC02 would bee 100/1000 = 0.1
-                        "carbon_price_state": "linear"
-                    }
-                },
-                "Adoption_subsidys":{
-                    "Zero":{
-                        "rebate": 0,
-                        "used_rebate": 0
-                    },
-                    "Low":{
-                        "rebate": 2500,
-                        "used_rebate": 500
-                    },
-                    "High":{
-                        "rebate": 7500,
-                        "used_rebate": 1500
-                    }
-                }
+            "Grid_emissions_intensity":{
+                "Weaker": 0.5, 
+                "Decarbonised": 0
             }
-        },
-        "parameters_EV":{
-            "landscape_seed": 14,
-            "N": 15,
-            "K": 2,
-            "A": 3,
-            "rho":[0,0.5],
-            "nu_i_t_multiplier":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
-            "production_emissions":9000,#kgC02
-            "delta": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
-            "transportType": 3,
-            "min_max_Quality": [900, 2700],#parametersised based on eta which is used to parameterise max min distances
-            "min_max_Efficiency": [4,7],
-            "min_max_Cost": [1000,30000],
-        },
-        "parameters_ICE":{
-            "landscape_seed": 18, 
-            "N": 15,
-            "K": 2,
-            "A": 3,
-            "rho":[0,0.5],
-            "nu_i_t":0.0355,#1,#1/17.5 mph in kph, https://www.blairramirezlaw.com/worst-days-for-commuting-in-los-angeles
-            "production_emissions":6000,#kgC02,
-            "delta": 8*10e-5,#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
-            "transportType": 2,
-            "min_max_Quality": [900, 2700],#[50,200],#[450,700],#[50,200],
-            "min_max_Efficiency":[0.5,1.5], #historial min and max for period are (0.953754,1.252405)
-            "min_max_Cost": [1000,30000],
-        },
-        "parameters_firm_manager": {
-            "init_tech_seed": 99,
-            "J": 10,
-            "init_car_age_max": 240
-        },
-        "parameters_firm":{
-            "memory_cap": 30,
-            "prob_innovate": 0.2,#0.08333,
-            "lambda_pow": 2,
-            "init_price": 1,
-            "init_base_U": 10e5,#JUST NEEDS TO BE BIG ENOGUHT THAT THE INIT UTILITY IS NOT NEGATIVE
-            "innovation_seed": 77,
-            "num_cars_production": 5
-        },
-        "parameters_social_network":{
-            "num_individuals": 500,#500,#200,
-            "network_structure_seed": 8,
-            "SW_K": 30,
-            "SW_prob_rewire": 0.1,
-            "init_vals_environmental_seed": 66,
-            "init_vals_innovative_seed":99, 
-            "init_vals_price_seed": 8, 
-            "d_min_seed": 45,
-            "social_network_seed": 66,
-            "d_i_min": 100,#in km
-            "a_innovativeness": 0.9,#0.9,#1.2,#0.6,#1,#TRY TO MATCH 18% of people innovators from LAVE-Trans#low easy ev adoption 
-            "b_innovativeness": 1,#1,#2,#1,#2,
-            "selection_bias": 5
-        },
-        "parameters_vehicle_user":{
-            "kappa": 3,
-            "alpha": 0.8,
-            "r": 0.02,
-            "eta": 1,#10e3,#THE INTENITION OF THIS IS TOO MATCH THE SCALE OF THE EMISSIONS AND COST
-            "mu": 0.3,
-            "second_hand_car_max_consider": 200,
-            "new_car_max_consider": 200
         }
+    },
+    "parameters_policies":{
+        "States":{
+            "Carbon_price": "High",
+            "Adoption_subsidy": "High"
+        },
+        "Values":{
+            "Carbon_price":{
+                "Zero":{
+                    "carbon_price_init": 0,
+                    "carbon_price": 0,
+                    "carbon_price_state": "linear"
+                },
+                "Low":{
+                    "carbon_price_init": 0,
+                    "carbon_price": 0.1,
+                    "carbon_price_state": "linear"
+                },
+                "High":{
+                    "carbon_price_init": 0,
+                    "carbon_price": 0.5,
+                    "carbon_price_state": "linear"
+                }
+            },
+            "Adoption_subsidys":{
+                "Zero":{
+                    "rebate": 0,
+                    "used_rebate": 0
+                },
+                "Low":{
+                    "rebate": 2500,
+                    "used_rebate": 500
+                },
+                "High":{
+                    "rebate": 10000,
+                    "used_rebate": 4000
+                }
+            }
+        }
+    },
+    "parameters_second_hand":{
+        "remove_seed": 48,
+        "age_limit_second_hand": 3,
+        "max_num_cars": 5000
+    },
+    "parameters_ICE":{
+        "landscape_seed": 18, 
+        "N": 15,
+        "K": 2,
+        "A": 3,
+        "rho":[0,0],
+        "production_emissions":6000,
+        "delta": 0.001,
+        "transportType": 2,
+        "min_Quality": 0,
+        "max_Quality": 20,
+        "min_Efficiency": 0.5,
+        "max_Efficiency": 1.5,
+        "min_Cost": 5000,
+        "max_Cost": 50000
+    },
+    "parameters_EV":{
+        "landscape_seed": 14,
+        "N": 15,
+        "K": 2,
+        "A": 3,
+        "rho":[0,0],
+        "production_emissions":9000,
+        "transportType": 3,
+        "min_Efficiency": 4,
+        "max_Efficiency": 7
+    },
+    "parameters_firm_manager": {
+        "init_tech_seed": 99,
+        "J": 30,
+        "init_car_age_max": 240
+    },
+    "parameters_firm":{
+        "memory_cap": 30,
+        "prob_innovate": 0.4,
+        "lambda_pow": 2,
+        "innovation_seed": 77,
+        "num_cars_production": 5,
+        "init_U_sum": 10e7,
+        "init_price_multiplier": 3
+    },
+    "parameters_social_network":{
+        "num_individuals": 1000,
+        "network_structure_seed": 8,
+        "init_vals_environmental_seed": 66,
+        "init_vals_innovative_seed":99, 
+        "init_vals_price_seed": 8, 
+        "social_network_seed": 66,
+        "d_min_seed": 45,
+        "d_i_min": 700,
+        "d_i_min_sd": 700,
+        "SW_K": 20,
+        "SW_prob_rewire": 0.1,
+        "prob_rewire": 0.3,
+        "WTP_mean": 210,
+        "WTP_sd": 175,
+        "car_lifetime_months": 192,
+        "a_innovativeness": 1, 
+        "b_innovativeness": 1,
+        "selection_bias": 5
+    },
+    "parameters_vehicle_user":{
+        "kappa": 3,
+        "alpha": 0.5,
+        "r": 0.01,
+        "mu": 0.3,
+        "second_hand_car_max_consider": 200,
+        "new_car_max_consider": 200
     }
+}
     # Create a profiler object
     pr = cProfile.Profile()
 

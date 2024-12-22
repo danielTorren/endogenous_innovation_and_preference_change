@@ -33,13 +33,14 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 10,
+    "duration_burn_in": 60,#24,
     "duration_no_carbon_price": 276,
-    "duration_future":120,
+    "duration_future":0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
-    "age_limit_second_hand": 3,
-    "ev_research_start_time": 120,
+    "ev_research_start_time": 60,#200
+    "ev_production_start_time": 96,#2008
     "EV_rebate_state": 1,
     "parameters_rebate":{
         "start_time": 120,
@@ -109,6 +110,13 @@ if __name__ == "__main__":
             }
         }
     },
+    "parameters_second_hand":{
+        "remove_seed": 48,
+        "age_limit_second_hand": 3,
+        "max_num_cars": 5000,
+        "burn_in_second_hand_market": 0,#12,#first year no second hand cars
+        "fixed_alternative_mark_up": 0.2
+    },
     "parameters_ICE":{
         "landscape_seed": 18, 
         "N": 15,
@@ -116,13 +124,13 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.001,
+        "delta": 0.002,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 20,
+        "max_Quality": 15,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
-        "min_Cost": 1000,
+        "min_Cost": 5000,
         "max_Cost": 30000
     },
     "parameters_EV":{
@@ -143,15 +151,16 @@ if __name__ == "__main__":
     },
     "parameters_firm":{
         "memory_cap": 30,
-        "prob_innovate": 0.4,
-        "lambda_pow": 2,
+        "prob_innovate": 0.02,
+        "lambda_pow": 5,
         "innovation_seed": 77,
-        "num_cars_production": 5,
+        "num_cars_production": 8,
         "init_U_sum": 10e7,
-        "init_price_multiplier": 3
+        "init_price_multiplier": 1,
+        "price_adjust_monthly": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 100,
+        "num_individuals": 1000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -171,12 +180,10 @@ if __name__ == "__main__":
         "selection_bias": 5
     },
     "parameters_vehicle_user":{
-        "kappa": 3,
+        "kappa": 30,
         "alpha": 0.5,
-        "r": 0.01,
-        "mu": 0.1,
-        "second_hand_car_max_consider": 200,
-        "new_car_max_consider": 200
+        "r": 0.00417,#5%/12
+        "mu": 1
     }
 }
 

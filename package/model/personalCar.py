@@ -8,7 +8,7 @@ class PersonalCar:
         self.price = sale_price
         self.original_price = sale_price
         self.last_price_paid = sale_price
-
+        
         self.timer = 0
 
         self.init_car = init_car

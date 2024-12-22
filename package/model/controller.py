@@ -75,14 +75,13 @@ class Controller:
         #CONTROLLER PARAMETERS:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
 
-
-
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_vehicle_user = parameters_controller["parameters_vehicle_user"]
         self.parameters_firm_manager = parameters_controller["parameters_firm_manager"]
         self.parameters_firm = parameters_controller["parameters_firm"]
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
+        self.parameters_second_hand = parameters_controller["parameters_second_hand"]
 
         """TEMPORTY FIX JSUT TO SIMPLIFY CALIBRATION"""
         self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
@@ -96,9 +95,8 @@ class Controller:
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
         
-        self.age_limit_second_hand = parameters_controller["age_limit_second_hand"]
-
-        #TIME STUFF
+        #TIME STUFF#
+        self.duration_burn_in = parameters_controller["duration_burn_in"] 
         self.duration_no_carbon_price = parameters_controller["duration_no_carbon_price"] 
         self.duration_future = parameters_controller["duration_future"] 
 
@@ -109,20 +107,26 @@ class Controller:
 
         #############################################################################################################################
         #DEAL WITH EV RESEARCH
-        self.ev_research_start_time = self.parameters_controller["ev_research_start_time"]
-        
+        self.ev_research_start_time = self.duration_burn_in + self.parameters_controller["ev_research_start_time"]
+        self.ev_production_start_time = self.duration_burn_in + self.parameters_controller["ev_production_start_time"]
+        if self.ev_research_start_time > self.ev_production_start_time:
+            raise ValueError("EV Production before research")
+
         self.time_steps_max = parameters_controller["time_steps_max"]
+
+    #######################################################################################################################################
+    def manage_burn_in(self):
+        self.burn_in_gas_price_vec = np.asarray([self.gas_price_california_vec[0]]*self.duration_burn_in)
+        self.burn_in_electricity_price_vec = np.asarray([self.electricity_price_vec[0]]*self.duration_burn_in)
+        self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
+        self.burn_in_rebate_time_series = np.zeros(self.duration_burn_in)
+        self.burn_in_used_rebate_time_series = np.zeros(self.duration_burn_in)
 
     #############################################################################################################################
     #DEAL WITH CALIBRATION
+    
     def manage_calibration(self):
 
-        
-        self.parameters_calibration_data = self.parameters_controller["calibration_data"]
-        self.gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
-        self.electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
-        self.electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
-        self.tank_ratio_vec = self.parameters_calibration_data["tank_ratio_vec"]
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
         self.calibration_time_steps = len(self.electricity_emissions_intensity_vec)
@@ -178,6 +182,7 @@ class Controller:
         
     #############################################################################################################################
     #DEAL WITH POLICIES
+
     def manage_policies(self):
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
@@ -231,10 +236,10 @@ class Controller:
 
     def calculate_price_at_time(self, t):
         if self.future_carbon_price_policy > 0 and self.duration_future > 0:
-            if t < self.duration_no_carbon_price:
+            if t < self.duration_burn_in + self.duration_no_carbon_price:
                 return 0
             
-            if t >= self.duration_no_carbon_price:
+            if t >= self.duration_burn_in + self.duration_no_carbon_price:
                 relative_time = t - self.duration_no_carbon_price
                 return self.calculate_growth(
                     relative_time, 
@@ -270,9 +275,23 @@ class Controller:
 
     def gen_time_series_calibration_scenarios_policies(self):
         """Put together the calibration, scenarios and policies data"""
+        
+        self.parameters_calibration_data = self.parameters_controller["calibration_data"]
+        self.gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
+        self.electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
+        self.electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
+
+        self.manage_burn_in()
 
         self.manage_calibration()
-        
+
+        #JOIN BURN IN AND CALIBRATION
+        self.gas_price_california_vec = np.concatenate((self.burn_in_gas_price_vec,self.gas_price_california_vec), axis=None) 
+        self.electricity_price_vec =  np.concatenate((self.burn_in_gas_price_vec,self.electricity_price_vec), axis=None) 
+        self.electricity_emissions_intensity_vec = np.concatenate((self.burn_in_gas_price_vec,self.electricity_emissions_intensity_vec), axis=None) 
+        self.rebate_time_series = np.concatenate((self.burn_in_rebate_time_series, self.rebate_time_series), axis=None) 
+        self.used_rebate_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.used_rebate_time_series), axis=None) 
+                
         if self.full_run_state:
             self.manage_scenario()
             self.manage_policies() 
@@ -285,16 +304,19 @@ class Controller:
             self.rebate_time_series = np.concatenate((self.rebate_time_series,self.rebate_time_series_future ), axis=None) 
             self.used_rebate_time_series = np.concatenate((self.used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
         else:
-            self.carbon_price_time_series = np.asarray(([0])*len( self.electricity_price_vec))
+            self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
     def update_time_series_data(self):
         #EV research state
         if self.t_controller == self.ev_research_start_time:
             for firm in self.firm_manager.firms_list:
-                firm.ev_reserach_bool = True
+                firm.ev_research_bool = True
+
+        if self.t_controller == self.ev_production_start_time:
+            for firm in self.firm_manager.firms_list:
+                firm.ev_production_bool = True
                 
-                    
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
 
@@ -335,9 +357,14 @@ class Controller:
         self.parameters_firm["rebate"] = self.rebate 
 
         if self.t_controller == self.ev_research_start_time:
-            self.parameters_firm["ev_reserach_bool"] = True
+            self.parameters_firm["ev_research_bool"] = True
         else:
-            self.parameters_firm["ev_reserach_bool"] = False
+            self.parameters_firm["ev_research_bool"] = False
+
+        if self.t_controller == self.ev_production_start_time:
+            self.parameters_firm["ev_production_bool"] = True
+        else:
+            self.parameters_firm["ev_production_bool"] = False
 
     def setup_social_network_parameters(self):
         #create social network
@@ -366,11 +393,9 @@ class Controller:
         self.EV_landscape = NKModel(parameters_EV)
 
     def setup_second_hand_market(self):
-        self.parameters_second_hand = {
-            "age_limit_second_hand" : self.age_limit_second_hand,
-            "alpha" : self.parameters_vehicle_user["alpha"],
-            "r": self.parameters_vehicle_user["r"]
-        }
+        self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]
+        self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
+        self.parameters_second_hand["price_adjust_monthly"] = self.parameters_firm["price_adjust_monthly"]
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):

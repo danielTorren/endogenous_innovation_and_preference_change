@@ -34,7 +34,36 @@ def save_and_show(fig, fileName, plot_name, dpi=600):
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
 
+def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
+    """
+    Adds dashed vertical lines to the plot at specified steps.
 
+    Parameters:
+    ax : matplotlib.axes.Axes
+        The Axes object to add the lines to.
+    base_params : dict
+        Dictionary containing 'duration_burn_in' and 'duration_no_carbon_price'.
+    color : str, optional
+        Color of the dashed lines. Default is 'red'.
+    linestyle : str, optional
+        Style of the dashed lines. Default is '--'.
+    """
+    burn_in = base_params["duration_burn_in"]
+    no_carbon_price = base_params["duration_no_carbon_price"]
+    ev_research_start_time = base_params["ev_research_start_time"]
+    ev_production_start_time = base_params["ev_production_start_time"]
+    second_hand_burn_in = base_params["parameters_second_hand"]["burn_in_second_hand_market"]
+    # Adding the dashed lines
+    ax.axvline(second_hand_burn_in, color=color, linestyle='-.', label="Second hand market enabled")
+    ax.axvline(burn_in, color=color, linestyle='--', label="Burn-in period end")
+    ax.axvline( burn_in  + ev_research_start_time, color=color, linestyle=':', label="EV research enabled")
+    ax.axvline( burn_in  + ev_production_start_time, color="red", linestyle=':', label="EV sale enabled")
+    
+    if base_params["EV_rebate_state"]:
+        ax.axvline( burn_in  + base_params["parameters_rebate"]["start_time"], color="red", linestyle='-.', label="EV adoption subsidy")
+    if base_params["duration_future"] > 0:
+        ax.axvline(burn_in + no_carbon_price, color="red", linestyle='--', label="No Carbon Price End")
+    
 # Plot functions with `time_series` where applicable
 def plot_emissions(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -94,7 +123,7 @@ def plot_tranport_users(social_network, time_series, fileName, dpi=600):
     format_plot(ax, "Transport Users Over Time", "Time Step", "# Transport Users")
     save_and_show(fig, fileName, "transport_users", dpi)
 
-def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600):
+def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Calculate total users at each time step
@@ -108,7 +137,7 @@ def plot_transport_users_stacked(social_network, time_series, fileName, dpi=600)
     ax.stackplot(time_series, ice_prop, ev_prop,
                  labels=['ICE', 'EV' ],
                  alpha=0.8)
-
+    add_vertical_lines(ax, base_params)
     # Set plot labels and limits
     ax.set_title("Transport Users Over Time (Proportion)")
     ax.set_xlabel("Time Step")
@@ -174,7 +203,7 @@ def plot_vehicle_attribute_time_series(social_network, time_series, fileName, dp
     fig.suptitle("Vehicle Attributes Over Time")
     save_and_show(fig, fileName, "vehicle_attribute_time_series", dpi)
 
-def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file_name, dpi=600):
+def plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, file_name, dpi=600):
     """
     Plots time series of Quality, Efficiency, and Production Cost for both ICE and EV vehicles
     with means and confidence intervals.
@@ -196,7 +225,7 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
     
     for i, (attribute_name, (ice_attr, ev_attr)) in enumerate(attributes.items()):
         ax = axs[i]
-        
+        add_vertical_lines(ax, base_params)
         # Extract histories for ICE and EV
         ice_history = getattr(social_network, ice_attr, [])
         ev_history = getattr(social_network, ev_attr, [])
@@ -232,9 +261,9 @@ def plot_vehicle_attribute_time_series_by_type(social_network, time_series, file
         ax.set_title(f"{attribute_name} Over Time")
         ax.set_xlabel("Time Step")
         ax.set_ylabel(attribute_name)
-        ax.legend()
+        
         ax.grid()
-
+    axs[-1].legend()
     fig.suptitle("Vehicle Attributes (ICE and EV) Over Time")
     plt.tight_layout()
 
@@ -299,7 +328,7 @@ def plot_scatter_research_time_series_multiple_firms(firms, fileName, dpi=600) -
     ax2.set_ylabel("Production Cost (Third Attribute)")
     ax2.grid()
 
-    fig.suptitle("Evolution of firm reserach attributes")
+    fig.suptitle("Evolution of firm research attributes")
     # Add a colorbar for time steps
     cbar = fig.colorbar(
         ScalarMappable(cmap='viridis', norm=mcolors.Normalize(vmin=0, vmax=max(len(firm.history_attributes_researched) for firm in firms))),
@@ -525,7 +554,7 @@ def plot_car_sale_prop(social_network, time_series, fileName, dpi=600):
 
 import matplotlib.pyplot as plt
 
-def plot_price_history(firm_manager, time_series, fileName, dpi=600):
+def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600):
     """
     Plots the price history of cars on sale over time.
 
@@ -551,10 +580,54 @@ def plot_price_history(firm_manager, time_series, fileName, dpi=600):
     ax.set_xlabel("Time")
     ax.set_ylabel("Price")
     ax.grid(True)
-
+    add_vertical_lines(ax, base_params)
+    ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "price_cars_sale", dpi)   
 
+def plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi=600):
+    """
+    Plots the price history of cars on sale over time.
+
+    Args:
+    - firm_manager: An object with `history_cars_on_sale_price` attribute, 
+      a list of lists representing car prices at each time step.
+    - time_series: A list of time steps corresponding to the data in `history_cars_on_sale_price`.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Dots per inch (resolution) for the saved plot.
+    """
+    # Flatten the data
+
+    time_points_new = []
+    prices_new = []
+
+    time_points_second_hand= []
+    prices_second_hand = []
+    
+    for i, price_list in enumerate(social_network.history_car_prices_sold_new):
+        time_points_new .extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+        prices_new.extend(price_list)  # Add all prices for the current time step
+    
+    for i, price_list in enumerate(social_network.history_car_prices_sold_second_hand):
+        time_points_second_hand.extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+        prices_second_hand.extend(price_list)  # Add all prices for the current time step
+    
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(time_points_new, prices_new, marker='o', alpha=0.7, label = "New")
+    ax.scatter(time_points_second_hand, prices_second_hand, marker='o', alpha=0.7, label = "Second hand")
+    ax.set_title("Price History of Cars Sold")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Price")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "price_cars_sale_by type", dpi)   
+
+
+    
 def plot_history_car_age_scatter(social_network, time_series, fileName, dpi):
     """
     Plots individual car ages as scatter points over time.
@@ -585,7 +658,7 @@ def plot_history_car_age_scatter(social_network, time_series, fileName, dpi):
     # Save and show the plot
     save_and_show(fig, fileName, "Car Age Over Time (Scatter)", dpi)
 
-def plot_history_car_age(social_network,time_series, fileName, dpi):
+def plot_history_car_age( base_params,social_network,time_series, fileName, dpi):
     """
     Plots the mean and 95% confidence interval for a time series of ages.
     
@@ -599,27 +672,33 @@ def plot_history_car_age(social_network,time_series, fileName, dpi):
     means = []
     lower_bounds = []
     upper_bounds = []
+    medians = []
+
     ages_list = social_network.history_car_age
     for ages in ages_list:
         ages = np.array(ages)
         valid_ages = ages[~np.isnan(ages)]  # Exclude NaNs from calculations
         mean = np.mean(valid_ages)
+        median  = np.median(valid_ages)
         confidence = t.ppf(0.975, len(valid_ages)-1) * sem(valid_ages)
         
         means.append(mean)
+        medians.append(median)
         lower_bounds.append(mean - confidence)
         upper_bounds.append(mean + confidence)
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, medians, label="Median Age", color='red')
     ax.plot(time_series, means, label="Mean Age", color='blue')
     ax.fill_between(time_series, lower_bounds, upper_bounds, color='blue', alpha=0.2, label="95% Confidence Interval")
     ax.set_title("Mean Age and 95% Confidence Interval Over Time")
     ax.set_xlabel("Time")
     ax.set_ylabel("Age")
-    ax.legend()
-    ax.grid(True)
 
+    ax.grid(True)
+    add_vertical_lines(ax, base_params)
+    ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned", dpi)   
 
@@ -785,7 +864,7 @@ def plot_distance_individuals(social_network, time_series, fileName, dpi=600):
     format_plot(ax, "User distance Over Time", "Time Step", "indivudal_distance")
     save_and_show(fig, fileName, "user_distance", dpi)
 
-def plot_distance_individuals_mean(social_network, time_series, fileName, dpi=600):
+def plot_distance_individuals_mean_median(base_params, social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Extract data and compute statistics
@@ -794,7 +873,10 @@ def plot_distance_individuals_mean(social_network, time_series, fileName, dpi=60
     standard_error = sem(data, axis=0)
     confidence_interval = t.ppf(0.975, df=data.shape[0] - 1) * standard_error
     
+    median_distance = np.median(data, axis=0)
     # Plot mean and confidence interval
+    ax.plot(time_series, median_distance, color='red', label='Mediann Distance', linewidth=2)
+
     ax.plot(time_series, mean_distance, color='blue', label='Mean Distance', linewidth=2)
     ax.fill_between(
         time_series, 
@@ -804,11 +886,12 @@ def plot_distance_individuals_mean(social_network, time_series, fileName, dpi=60
         alpha=0.2, 
         label='95% Confidence Interval'
     )
+    add_vertical_lines(ax, base_params)
 
     # Format and save plot
     format_plot(ax, "User Distance Over Time", "Time Step", "Individual Distance")
     ax.legend()
-    save_and_show(fig, fileName, "user_distance_mean", dpi)
+    save_and_show(fig, fileName, "user_distance_mean_median", dpi)
 
 def plot_utility_individuals(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -1187,7 +1270,7 @@ def plot_mean_utility_one_row(social_network, time_series, fileName, percentiles
     save_and_show(fig, fileName, "mean_utility_one_row", dpi)
 
 def plot_conditional_transport_users_4x4(
-    social_network, time_series, fileName, percentiles, dpi=600
+    base_params, social_network, time_series, fileName, percentiles, dpi=600
 ):
     """
     Plots transport user proportions for combinations of conditions in a 4x4 grid with condition-based titles.
@@ -1271,6 +1354,7 @@ def plot_conditional_transport_users_4x4(
         )
         ax.set_title(title, fontsize=8)
         ax.grid()
+        add_vertical_lines(ax, base_params)
 
     # Add shared labels
     fig.supylabel("Proportion")
@@ -1281,6 +1365,7 @@ def plot_conditional_transport_users_4x4(
     #fig.subplots_adjust(top=0.1)  # Adjust bottom margin for legend
     fig.supxlabel("Time Step")
     # Adjust layout and save
+
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space at the top for the legend
     save_and_show(fig, fileName, "conditional_transport_users_4x4_conditions", dpi)
 
@@ -1290,7 +1375,7 @@ def plot_conditional_transport_users_4x4(
 
 #controller plots
 
-def plot_time_series_controller(reference_data, time_series, reference_label,reference_save, fileName, dpi=600):
+def plot_time_series_controller(base_params, reference_data, time_series, reference_label,reference_save, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     
     # Plot reference data (assumes reference_data is a single time-series array)
@@ -1299,9 +1384,10 @@ def plot_time_series_controller(reference_data, time_series, reference_label,ref
     # Formatting
     ax.set_xlabel("Time Step")
     ax.set_ylabel(reference_label)
-    ax.legend(loc="best")
-    ax.grid(True)
 
+    ax.grid(True)
+    add_vertical_lines(ax, base_params)
+    ax.legend(loc="best")
     # Save and show
     plt.tight_layout()
     save_and_show(fig, fileName, reference_save, dpi)
@@ -1373,7 +1459,7 @@ def convert_data(data_to_fit):
 
     return averages_array
 
-def plot_ev_stock(real_data, social_network, fileName, dpi=600):
+def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600):
     data_truncated = convert_data(social_network.history_prop_EV)
 
     # Create a grid of subplots (4x4 layout)
@@ -1382,10 +1468,12 @@ def plot_ev_stock(real_data, social_network, fileName, dpi=600):
     ax.plot(real_data, label = "California data")
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("EV stock %")
+    add_vertical_lines(ax, base_params)
+    ax.legend(loc="best")
     save_and_show(fig, fileName, "plot_ev_stock", dpi)
 
 
-def plot_history_count_buy(social_network, fileName, dpi=600):
+def plot_history_count_buy(base_params, social_network, fileName, dpi=600):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -1397,10 +1485,54 @@ def plot_history_count_buy(social_network, fileName, dpi=600):
         ax.plot(data_trans[i], label = labels[i])
     ax.set_xlabel("Time")
     ax.set_ylabel("Count buys")
+
+    add_vertical_lines(ax, base_params)
     ax.legend()
     save_and_show(fig, fileName, "count_buy", dpi)
 
-def plot_history_median_price(social_network, fileName, dpi=600):
+def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(6, 6))
+
+    # Convert to numpy array
+    data = np.asarray(social_network.history_count_buy)  # shape: (timesteps, categories)
+
+    # Compute proportions: divide each row by its sum
+    row_sums = data.sum(axis=1, keepdims=True)
+    data_proportions = data / row_sums  # shape remains (timesteps, categories)
+
+    # Prepare x-axis and labels
+    x = np.arange(data.shape[0])
+    labels = ["current", "new", "second hand"]
+
+    # Create a stacked area chart
+    ax.stackplot(x, data_proportions.T, labels=labels)
+
+    # Labeling
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Proportion of buys")
+    ax.set_ylim([0, 1])
+    add_vertical_lines(ax, base_params)
+    ax.legend(loc='lower right')
+    save_and_show(fig, fileName, "count_buy_stacked", dpi)
+
+def plot_history_mean_price(base_params, social_network, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    
+    data = np.asarray(social_network.history_mean_price)
+    data_trans = data.T
+    labels =  ["new", "second hand"]
+    for i in range(data_trans.shape[0]):
+        ax.plot(data_trans[i], label = labels[i])
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Mean Price")
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    save_and_show(fig, fileName, "history_mean_price", dpi)
+
+def plot_history_median_price(base_params, social_network, fileName, dpi=600):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -1412,6 +1544,8 @@ def plot_history_median_price(social_network, fileName, dpi=600):
         ax.plot(data_trans[i], label = labels[i])
     ax.set_xlabel("Time")
     ax.set_ylabel("Median Price")
+
+    add_vertical_lines(ax, base_params)
     ax.legend()
     save_and_show(fig, fileName, "history_median_price", dpi)
 
@@ -1425,6 +1559,76 @@ def plot_history_quality_index(social_network, fileName, dpi=600):
     ax.set_ylabel("Quality index")
     ax.legend()
     save_and_show(fig, fileName, "history_quality_index", dpi)
+
+def plot_history_quality_users_raw_adjusted(social_network, fileName, dpi=600):
+    # Convert the history list to a NumPy array for easier manipulation
+    data = np.array(social_network.history_quality_users_raw_adjusted, dtype=object)
+
+    # Extract Quality (x-axis) and Adjusted Quality (y-axis)
+    quality = [item[0] for step in data for item in step]
+    adjusted_quality = [item[1] for step in data for item in step]
+
+    # Generate an array of time steps corresponding to the data points
+    time_steps = np.repeat(np.arange(len(data)), [len(step) for step in data])
+    
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    scatter = ax.scatter(quality, adjusted_quality, c=time_steps, cmap='viridis', alpha=0.8)
+
+    # Add labels and a color bar
+    ax.set_xlabel("Quality (Quality_a_t)")
+    ax.set_ylabel("Adjusted Quality (Quality_a_t * (1 - delta)**L_a_t)")
+    ax.set_title("Quality vs Adjusted Quality Over Time")
+    cbar = plt.colorbar(scatter, ax=ax, label="Time Step")
+
+    # Save and show the plot
+    fig.tight_layout()
+    plt.savefig(fileName, dpi=dpi)
+
+
+def plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi=600):
+
+    """
+    Plots the price history of cars on sale over time.
+
+    Args:
+    - firm_manager: An object with `history_cars_on_sale_price` attribute, 
+      a list of lists representing car prices at each time step.
+    - time_series: A list of time steps corresponding to the data in `history_cars_on_sale_price`.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Dots per inch (resolution) for the saved plot.
+    """
+    # Flatten the data
+
+    time_points_new = []
+    prices_new = []
+    
+    for i, price_list in enumerate(social_network.history_second_hand_merchant_price_paid):
+        time_points_new .extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+        prices_new.extend(price_list)  # Add all prices for the current time step
+    
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(time_points_new, prices_new, marker='o', alpha=0.7)
+    ax.set_title("Price paid out by second hand merchant")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Price")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "price_paid_out_by_second_hand_merchant", dpi)   
+    
+def plot_history_profit_second_hand(second_hand_merchant, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    data = np.asarray(second_hand_merchant.history_profit)
+    ax.plot(data)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Profit Second Hand Merchant")
+    save_and_show(fig, fileName, "history_profit_second_hand", dpi)
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -1443,44 +1647,52 @@ def main(fileName, dpi=600):
 
     # All plot function calls
     #"""
+    plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
+
+    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
+    plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
+    plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
+
     #plot_history_quality_index(social_network, fileName, dpi)
-    plot_history_median_price(social_network, fileName, dpi)
-    plot_history_count_buy(social_network, fileName, dpi)
+    plot_history_median_price(base_params, social_network, fileName, dpi)
+    plot_history_mean_price(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy(base_params, social_network, fileName, dpi)
+    plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
 
     plot_total_utility(social_network, time_series, fileName, dpi)
     
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
+    plot_ev_consider_rate(social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
     #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
 
-    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
     plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
+    plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    plot_history_research_type(firm_manager, time_series, fileName, dpi)
     plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
     
     
-    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
-    #plot_total_profit(firm_manager, time_series, fileName, dpi)
-    #plot_market_concentration(firm_manager, time_series, fileName, dpi)
-    #
+    plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    plot_total_profit(firm_manager, time_series, fileName, dpi)
+    plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    
     plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    plot_history_car_age(social_network, time_series,fileName, dpi)
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
-    #plot_total_distance(social_network, time_series, fileName, dpi)
-    plot_price_history(firm_manager, time_series, fileName, dpi)
+    plot_total_distance(social_network, time_series, fileName, dpi)
+    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
 
-    #plot_calibration_data(data_controller, time_series, fileName)
+    plot_calibration_data(data_controller, time_series, fileName)
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
 
@@ -1488,15 +1700,15 @@ def main(fileName, dpi=600):
 
     #plot_emissions_individuals(social_network, time_series, fileName)
     #plot_distance_individuals(social_network, time_series, fileName)
-    plot_distance_individuals_mean(social_network, time_series, fileName)
+    plot_distance_individuals_mean_median(base_params, social_network, time_series, fileName)
     #plot_utility_individuals(social_network, time_series, fileName)
     #plot_transport_type_individuals(social_network, time_series, fileName)
     #plot_density_by_value(fileName, social_network, time_series)
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(social_network, time_series, fileName, dpi)
-    plot_transport_users_stacked(social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     """
     percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
@@ -1526,4 +1738,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_16_48__20_12_2024")
+    main("results/single_experiment_17_49_07__22_12_2024")
