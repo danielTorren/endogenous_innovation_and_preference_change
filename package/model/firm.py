@@ -364,20 +364,20 @@ class Firm:
 
         profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
         profits[profits == np.nan] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
-        
+
         # Compute the softmax probabilities
         lambda_profits = profits**self.lambda_pow        
         sum_prob = np.sum(lambda_profits)
         len_vehicles = len(vehicles)#literally just cos i do it 3 times
         if sum_prob == 0:
-            probabilities = [1/len_vehicles ]*len_vehicles #UNIFORM PROBAILITIES
+            selected_index = self.random_state.choice(len_vehicles)#pick one
         else:
             probabilities = lambda_profits / np.sum(sum_prob)
+            selected_index = self.random_state.choice(len_vehicles, p=probabilities)
         # Select a vehicle based on the computed probabilities
 
 
-        """HERE IS RANDOM ELEMENT"""
-        selected_index = self.random_state.choice(len_vehicles, p=probabilities)
+
 
         selected_vehicle = vehicles[selected_index]
 
