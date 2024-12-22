@@ -160,7 +160,7 @@ if __name__ == "__main__":
         "price_adjust_monthly": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 5000,
+        "num_individuals": 3000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
