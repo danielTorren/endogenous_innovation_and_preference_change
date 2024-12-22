@@ -16,8 +16,31 @@ from package.resources.utility import (
     load_object
 )
 from package.resources.run import generate_data
-from package.calibration.NN_multi_round_calibration_gen import convert_data
 import multiprocessing
+
+def convert_data(data_to_fit, base_params):
+
+    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2000 to 2022
+    # Define the starting and ending indices for the years 2010 to 2022
+    start_year = 2010
+    end_year = 2022
+
+    # Calculate the average of the last three months of each year
+    averages = []
+
+    #print("filtered_data", filtered_data)
+    for year in range(start_year, end_year + 1):
+        year_start_index = (year - 2000) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
+        start_idx = year_start_index + 9  # October index
+        end_idx = year_start_index + 12  # December index (exclusive)
+        # Ensure the indices are within bounds
+        last_three_months = data_to_fit[start_idx:end_idx]
+        
+        averages.append(np.mean(last_three_months))
+
+    averages_array = np.array(averages)
+
+    return averages_array
 
 def update_base_params_with_seed(base_params, seed):
     """
@@ -53,7 +76,7 @@ def run_single_simulation(theta, base_params, param_list):
 
     # Compute summary statistics
     arr_history = np.asarray(controller.social_network.history_prop_EV)
-    data_to_fit = convert_data(arr_history)
+    data_to_fit = convert_data(arr_history, base_params)
 
     return data_to_fit
 
@@ -150,11 +173,15 @@ if __name__ == "__main__":
     parameters_list = [
         {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.05, 3]},
         {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.05, 3]},
+        {"name": "mu", "subdict": "parameters_vehicle_user", "bounds": [0, 2]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [0, 35]},
+        {"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},
+        {"name": "SW_K", "subdict": "parameters_social_network", "bounds": [20, 500]},
     ]
     main(
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=128
+        num_simulations=256
     )

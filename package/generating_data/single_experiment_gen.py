@@ -114,7 +114,7 @@ if __name__ == "__main__":
         "remove_seed": 48,
         "age_limit_second_hand": 3,
         "max_num_cars": 5000,
-        "burn_in_second_hand_market": 0,#12,#first year no second hand cars
+        "burn_in_second_hand_market": 12,#12,#first year no second hand cars
         "fixed_alternative_mark_up": 0.2
     },
     "parameters_ICE":{
@@ -160,7 +160,7 @@ if __name__ == "__main__":
         "price_adjust_monthly": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 1000,
+        "num_individuals": 5000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 

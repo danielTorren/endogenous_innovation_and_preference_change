@@ -1,13 +1,13 @@
 {
     "seed_repetitions": 10,
-    "cars_init_state": 1,
+    "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future":0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
-    "age_limit_second_hand": 3,
-    "ev_research_start_time": 120,
+    "ev_research_start_time": 60,
+    "ev_production_start_time": 96,
     "EV_rebate_state": 1,
     "parameters_rebate":{
         "start_time": 120,
@@ -19,8 +19,7 @@
         "States":{
             "Gas_price": "Current",
             "Electricity_price": "Current",
-            "Grid_emissions_intensity": "Weaker",
-            "EV_Substitutability": "Parity"
+            "Grid_emissions_intensity": "Weaker"
         },
         "Values":{
             "Gas_price":{
@@ -36,17 +35,13 @@
             "Grid_emissions_intensity":{
                 "Weaker": 0.5, 
                 "Decarbonised": 0
-            },
-            "EV_Substitutability":{
-                "Improved": 1.2, 
-                "Parity": 1
             }
         }
     },
     "parameters_policies":{
         "States":{
             "Carbon_price": "High",
-            "Adoption_subsidy": "Zero"
+            "Adoption_subsidy": "High"
         },
         "Values":{
             "Carbon_price":{
@@ -57,12 +52,12 @@
                 },
                 "Low":{
                     "carbon_price_init": 0,
-                    "carbon_price": 0.03,
+                    "carbon_price": 0.1,
                     "carbon_price_state": "linear"
                 },
                 "High":{
                     "carbon_price_init": 0,
-                    "carbon_price": 0.1,
+                    "carbon_price": 0.5,
                     "carbon_price_state": "linear"
                 }
             },
@@ -76,11 +71,18 @@
                     "used_rebate": 500
                 },
                 "High":{
-                    "rebate": 7500,
-                    "used_rebate": 1500
+                    "rebate": 10000,
+                    "used_rebate": 4000
                 }
             }
         }
+    },
+    "parameters_second_hand":{
+        "remove_seed": 48,
+        "age_limit_second_hand": 3,
+        "max_num_cars": 5000,
+        "burn_in_second_hand_market": 12,
+        "fixed_alternative_mark_up": 0.2
     },
     "parameters_ICE":{
         "landscape_seed": 18, 
@@ -89,13 +91,13 @@
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 10e-5,
+        "delta": 0.002,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 20,
+        "max_Quality": 15,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
-        "min_Cost": 1000,
+        "min_Cost": 5000,
         "max_Cost": 30000
     },
     "parameters_EV":{
@@ -111,42 +113,36 @@
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
-        "J": 10,
+        "J": 30,
         "init_car_age_max": 240
     },
     "parameters_firm":{
         "memory_cap": 30,
-        "prob_innovate": 0.4,
-        "lambda_pow": 2,
+        "prob_innovate": 0.02,
+        "lambda_pow": 5,
         "innovation_seed": 77,
-        "num_cars_production": 5
+        "num_cars_production": 8,
+        "init_U_sum": 10e7,
+        "init_price_multiplier": 1,
+        "price_adjust_monthly": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 100,
+        "num_individuals": 5000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
         "social_network_seed": 66,
         "d_min_seed": 45,
-        "d_i_min": 100,
+        "d_i_min": 700,
         "d_i_min_sd": 700,
-        "SW_K": 20,
-        "SW_prob_rewire": 0.1,
-        "prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 1,
-        "b_innovativeness": 1,
         "selection_bias": 5
     },
     "parameters_vehicle_user":{
-        "kappa": 3,
         "alpha": 0.5,
-        "r": 0.02,
-        "mu": 0.3,
-        "second_hand_car_max_consider": 200,
-        "new_car_max_consider": 200
+        "r": 0.00417
     }
 }
