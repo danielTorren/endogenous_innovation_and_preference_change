@@ -143,6 +143,7 @@
     },
     "parameters_vehicle_user":{
         "alpha": 0.5,
-        "r": 0.00417
+        "r": 0.00417,
+        "mu": 1
     }
 }
