@@ -376,9 +376,6 @@ class Firm:
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
         # Select a vehicle based on the computed probabilities
 
-
-
-
         selected_vehicle = vehicles[selected_index]
 
         return selected_vehicle
