@@ -363,6 +363,7 @@ class Firm:
         profits = np.array(profits)
 
         profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
+        profits[profits == np.nan] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
         
         # Compute the softmax probabilities
         lambda_profits = profits**self.lambda_pow        
