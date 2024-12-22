@@ -73,7 +73,7 @@ class Social_Network:
 
     def init_network_settings(self, parameters_social_network):
         self.selection_bias = parameters_social_network["selection_bias"]
-        self.network_structure_seed = parameters_social_network["network_structure_seed"]
+        self.network_structure_seed = int(round(parameters_social_network["network_structure_seed"]))
         self.K_social_network =  int(round(parameters_social_network["SW_K"]))
         self.prob_rewire = int(round(parameters_social_network["SW_prob_rewire"]))
 
@@ -271,7 +271,10 @@ class Social_Network:
         ws: nx.Graph
             a networkx watts strogatz small world graph
         """
-        
+        print(self.num_individuals, self.K_social_network, self.prob_rewire, self.network_structure_seed)
+        print(type(self.num_individuals), type(self.K_social_network), type(self.prob_rewire), type(self.network_structure_seed))
+        quit()
+
         network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
