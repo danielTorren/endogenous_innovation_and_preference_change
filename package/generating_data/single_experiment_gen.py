@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "compression_factor_state": 1,
     "choice_seed": 9,
     "ev_research_start_time": 60,#200
-    "ev_production_start_time": 96,#2008
+    "ev_production_start_time": 108,#2008
     "EV_rebate_state": 1,
     "parameters_rebate":{
         "start_time": 120,
@@ -141,6 +141,8 @@ if __name__ == "__main__":
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
+        "min_Quality": 0,
+        "max_Quality": 7,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -160,7 +162,7 @@ if __name__ == "__main__":
         "price_adjust_monthly": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals": 1000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -171,7 +173,6 @@ if __name__ == "__main__":
         "d_i_min_sd": 700,
         "SW_K": 20,
         "SW_prob_rewire": 0.1,
-        "prob_rewire": 0.3,
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,

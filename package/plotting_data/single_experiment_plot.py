@@ -893,6 +893,91 @@ def plot_distance_individuals_mean_median(base_params, social_network, time_seri
     ax.legend()
     save_and_show(fig, fileName, "user_distance_mean_median", dpi)
 
+def plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Extract data and compute statistics
+    data = np.asarray(social_network.history_distance_individual).T
+    mean_distance = np.mean(data, axis=0)
+    standard_error = sem(data, axis=0)
+    confidence_interval = t.ppf(0.975, df=data.shape[0] - 1) * standard_error
+    
+    median_distance = np.median(data, axis=0)
+    # Plot mean and confidence interval
+    ax.plot(time_series, median_distance, color='red', label='Mediann Distance', linewidth=2)
+
+    ax.plot(time_series, mean_distance, color='blue', label='Mean Distance', linewidth=2)
+    ax.fill_between(
+        time_series, 
+        mean_distance - confidence_interval, 
+        mean_distance + confidence_interval, 
+        color='blue', 
+        alpha=0.2, 
+        label='95% Confidence Interval'
+    )
+    add_vertical_lines(ax, base_params)
+
+    # Format and save plot
+    format_plot(ax, "User Distance Over Time", "Time Step", "Individual Distance")
+    ax.legend()
+    save_and_show(fig, fileName, "user_distance_mean_median", dpi)
+
+def plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Extract data for EV and ICE
+    data_ev = np.asarray(social_network.history_distance_individual_EV).T
+    data_ice = np.asarray(social_network.history_distance_individual_ICE).T
+
+    # Compute statistics for EV
+    mean_ev = np.nanmean(data_ev, axis=0)
+    median_ev = np.nanmedian(data_ev, axis=0)
+    std_error_ev = sem(data_ev, axis=0, nan_policy='omit')
+    ci_ev = t.ppf(0.975, df=data_ev.shape[0] - 1) * std_error_ev
+
+    # Compute statistics for ICE
+    mean_ice = np.nanmean(data_ice, axis=0)
+    median_ice = np.nanmedian(data_ice, axis=0)
+    std_error_ice = sem(data_ice, axis=0, nan_policy='omit')
+    ci_ice = t.ppf(0.975, df=data_ice.shape[0] - 1) * std_error_ice
+
+    # Plot EV data (green)
+    ax.plot(time_series, mean_ev, color='green', linestyle='-', linewidth=2, label='EV Mean Distance')
+    ax.plot(time_series, median_ev, color='green', linestyle='--', linewidth=2, label='EV Median Distance')
+
+    # Plot ICE data (blue)
+    ax.plot(time_series, mean_ice, color='blue', linestyle='-', linewidth=2, label='ICE Mean Distance')
+    ax.plot(time_series, median_ice, color='blue', linestyle='--', linewidth=2, label='ICE Median Distance')
+
+    # Add confidence intervals for EV and ICE
+    ax.fill_between(
+        time_series,
+        mean_ev - ci_ev,
+        mean_ev + ci_ev,
+        color='green',
+        alpha=0.2,
+        label='EV 95% Confidence Interval'
+    )
+    ax.fill_between(
+        time_series,
+        mean_ice - ci_ice,
+        mean_ice + ci_ice,
+        color='blue',
+        alpha=0.2,
+        label='ICE 95% Confidence Interval'
+    )
+
+    # Add vertical lines for base parameters (e.g., milestones or events)
+    add_vertical_lines(ax, base_params)
+
+    # Format plot
+    format_plot(ax, "User Distance Over Time", "Time Step", "Individual Distance")
+    ax.legend()
+    
+    # Save and show the plot
+    save_and_show(fig, fileName, "user_distance_mean_median_type", dpi)
+
+
 def plot_utility_individuals(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -1468,7 +1553,6 @@ def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600):
     ax.plot(real_data, label = "California data")
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("EV stock %")
-    add_vertical_lines(ax, base_params)
     ax.legend(loc="best")
     save_and_show(fig, fileName, "plot_ev_stock", dpi)
 
@@ -1630,6 +1714,65 @@ def plot_history_profit_second_hand(second_hand_merchant, fileName, dpi=600):
     ax.set_ylabel("Profit Second Hand Merchant")
     save_and_show(fig, fileName, "history_profit_second_hand", dpi)
 
+
+def plot_history_age_second_hand_car_removed(base_params, second_hand_merchant, time_series, fileName, dpi=600):
+    """
+    Plots the age history of cars removed over time, with per-time-step mean and median lines.
+
+    Args:
+    - base_params: Configuration or parameters for the plot (e.g., milestone markers).
+    - second_hand_merchant: Object containing history of car ages removed.
+    - time_series: List of time steps corresponding to the data.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Resolution for the saved plot.
+    """
+    # Flatten the data for scatter plot
+    time_points_new = []
+    ages_new = []
+
+    # Store means and medians for each time step
+    mean_per_timestep = []
+    median_per_timestep = []
+
+    for i, age_list in enumerate(second_hand_merchant.history_age_second_hand_car_removed):
+        # Skip empty lists or lists with only NaNs
+        if len(age_list) == 0 or np.all(np.isnan(age_list)):
+            mean_per_timestep.append(np.nan)
+            median_per_timestep.append(np.nan)
+            continue
+
+        time_points_new.extend([time_series[i]] * len(age_list))  # Repeat the time step for each age
+        ages_new.extend(age_list)  # Add all ages for the current time step
+
+        # Compute mean and median for the current time step
+        mean_per_timestep.append(np.nanmean(age_list))
+        median_per_timestep.append(np.nanmedian(age_list))
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(time_points_new, ages_new, marker='o', alpha=0.7, label='Age of Cars Removed')
+
+    # Plot per-time-step mean and median
+    ax.plot(
+        time_series, mean_per_timestep, color='blue', linestyle='-', linewidth=2, label='Mean (Per Time Step)'
+    )
+    ax.plot(
+        time_series, median_per_timestep, color='red', linestyle='--', linewidth=2, label='Median (Per Time Step)'
+    )
+
+    # Add vertical lines for base parameters
+    add_vertical_lines(ax, base_params)
+
+    # Formatting the plot
+    ax.set_title("Age of Cars Scrapped Over Time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Age")
+    ax.grid(True)
+    ax.legend()
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "age_scrapped_second_hand_merchant", dpi)
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -1647,6 +1790,11 @@ def main(fileName, dpi=600):
 
     # All plot function calls
     #"""
+    plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
+
+    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+
     plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
     plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
@@ -1708,7 +1856,7 @@ def main(fileName, dpi=600):
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
-    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     """
     percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
@@ -1730,12 +1878,13 @@ def main(fileName, dpi=600):
     #plot_social_network(social_network, fileName)
     """
 
-    #calibration_data_output = load_object( "package/calibration_data", "calibration_data_input")
+    calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     #print(calibration_data_output)
     #quit()
-    #EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    #plot_ev_stock(EV_stock_prop_2010_22, social_network, fileName, dpi=600)
+    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
+    #(base_params, real_data, social_network, fileName, dpi=600
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_49_07__22_12_2024")
+    main("results/single_experiment_13_03_10__23_12_2024")

@@ -95,9 +95,6 @@ class SecondHandMerchant:
 
         inside_component = U_sum*(U_sum + B_vec - beta*vehicle_dict_vecs["cost_second_hand_merchant"])
 
-        #negative_proportion = np.sum(inside_component < 0) / len(inside_component)
-        #print("Second hand: negative_proportion", negative_proportion)
-        
         # Adjust the component to avoid negative square roots
         inside_component_adjusted = np.maximum(inside_component, 0)  # Replace negatives with 0
 
@@ -157,11 +154,15 @@ class SecondHandMerchant:
         #check len of list
         if len(self.cars_on_sale) > self.max_num_cars:
             cars_to_remove = self.random_state_second_hand.choice(self.max_num_cars, self.max_num_cars - self.cars_on_sale)#RANDOMLY REMOVE CARS FROM THE SALE LIST
+            for vehicle in cars_to_remove:
+             self.age_second_hand_car_removed.append(vehicle.L_a_t)
             self.cars_on_sale.remove(cars_to_remove)
     
         for vehicle in self.cars_on_sale:       
             if vehicle.second_hand_counter > self.age_limit_second_hand:
+                self.age_second_hand_car_removed.append(vehicle.L_a_t)
                 self.cars_on_sale.remove(vehicle)
+                
         
         data_dicts = self.gen_vehicle_dict_vecs(self.cars_on_sale)
 
@@ -198,10 +199,12 @@ class SecondHandMerchant:
     def set_up_time_series_social_network(self):
         self.history_num_second_hand = []
         self.history_profit = []
+        self.history_age_second_hand_car_removed = []
 
     def save_timeseries_second_hand_merchant(self):
         self.history_num_second_hand.append(len(self.cars_on_sale))
         self.history_profit.append(self.profit )
+        self.history_age_second_hand_car_removed.append(self.age_second_hand_car_removed)
 
     def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, U_sum, carbon_price):
         
@@ -211,6 +214,8 @@ class SecondHandMerchant:
         self.U_sum = U_sum
         self.carbon_price = carbon_price
 
+        self.age_second_hand_car_removed = []
+        
         self.update_age_stock()
 
         if self.cars_on_sale:

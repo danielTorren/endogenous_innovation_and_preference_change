@@ -5,6 +5,7 @@ import networkx as nx
 import numpy.typing as npt
 import scipy.sparse as sp
 import numpy as np
+from sympy import E
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
@@ -330,7 +331,9 @@ class Social_Network:
         # Generate current utilities and vehicles
         utilities_current_matrix, d_current_matrix, dict_current = self.generate_utilities_current()
 
-        self.second_hand_merchant_offer_price = self.calc_offer_prices_optimal(dict_current)
+        self.second_hand_merchant_offer_price = self.calc_offer_prices_max(dict_current)
+        #self.second_hand_merchant_offer_price = self.calc_offer_prices_depreciated(dict_current)
+        #self.second_hand_merchant_offer_price = self.calc_offer_prices_optimal(dict_current)
         #self.second_hand_merchant_offer_price = self.calc_offer_prices_median(self.current_vehicles)
 
         # Generate buying utilities and vehicles
@@ -432,7 +435,9 @@ class Social_Network:
         # Save the base utility
         B_vec = present_utility_vec/(self.r + (np.log(1+vehicle_dict_vecs["delta"]))/(1-self.alpha))
 
-        inside_component = U_sum*(U_sum + B_vec - beta*vehicle_dict_vecs["last_price_paid"])
+        car_cost_depreciated = vehicle_dict_vecs["last_price_paid"]*(1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]
+        
+        inside_component = U_sum*(U_sum + B_vec - beta*car_cost_depreciated )
        
         #negative_proportion = np.sum(inside_component < 0) / len(inside_component)
         #print("price offered: negative_proportion", negative_proportion)
@@ -443,9 +448,40 @@ class Social_Network:
         
         price_optimal_vec = np.where(
             inside_component < 0,
-            vehicle_dict_vecs["last_price_paid"],
-            np.minimum(vehicle_dict_vecs["last_price_paid"], (U_sum  + B_vec - np.sqrt( inside_component_adjusted))/beta )
+            car_cost_depreciated,
+            np.minimum(car_cost_depreciated, (U_sum  + B_vec - np.sqrt( inside_component_adjusted))/beta )
         )
+
+        ##################################################################
+        # Identify indices where inside_component > 0
+        valid_indices = inside_component > 0
+
+        # Compute price_optimal_vec for valid indices
+        price_optimal_vec_valid = np.where(
+            inside_component[valid_indices] < 0,
+            car_cost_depreciated[valid_indices],
+            np.minimum(
+                car_cost_depreciated[valid_indices],
+                (U_sum+ B_vec[valid_indices] - np.sqrt(inside_component_adjusted[valid_indices])) / beta
+            )
+        )
+
+        # Count occurrences where the minimum is the last_price_paid
+        last_price_paid_is_min = (
+            price_optimal_vec_valid == car_cost_depreciated[valid_indices]
+        ).sum()
+
+        # Total valid times
+        total_valid_times = valid_indices.sum()
+
+        # Proportion
+        proportion_last_price_paid = last_price_paid_is_min / total_valid_times if total_valid_times > 0 else 0
+
+        print(f"Proportion of the time the minimum is the last price paid: {proportion_last_price_paid}")
+
+
+        ##################################################################
+
 
         price_vec_negative = price_optimal_vec/(1+self.mu)#CAN HAVE NEATIVE PRICES IF THE OPTIMAL PRICE IS NEGATIVE, BASICALLY SCRAP
         
@@ -455,7 +491,61 @@ class Social_Network:
             vehicle.cost_second_hand_merchant = price_vec[i]
 
         return price_vec
+
+    def calc_offer_prices_depreciated(self, vehicle_dict_vecs):
+        
+        car_cost_depreciated = vehicle_dict_vecs["last_price_paid"]*(1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]
+        
+        price_vec_negative = car_cost_depreciated/(1+self.mu)#CAN HAVE NEATIVE PRICES IF THE OPTIMAL PRICE IS NEGATIVE, BASICALLY SCRAP
+        
+        price_vec = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
+
+        for i, vehicle in enumerate(self.current_vehicles):
+            vehicle.cost_second_hand_merchant = price_vec[i]
+
+        return price_vec
     
+    def calc_offer_prices_max(self, vehicle_dict_vecs):
+        beta = np.median(self.beta_vec)
+        gamma = np.median(self.beta_vec)
+        
+        #DISTANCE
+                # Compute numerator for all vehicles
+        numerator = (
+            self.alpha * vehicle_dict_vecs["Quality_a_t"] *
+            ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"])
+        ) 
+        denominator = (
+            ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
+            ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        )  # Shape: (num_individuals, num_vehicles)
+
+        # Calculate optimal distance matrix for each individual-vehicle pair
+        d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
+
+        #present UTILITY
+        # Compute cost component based on transport type, with conditional operations
+        cost_component = (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        # Compute the commuting utility for each individual-vehicle pair
+        present_utility_vec = np.maximum(
+            0,
+            vehicle_dict_vecs["Quality_a_t"] * ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]) * (d_i_t_vec ** self.alpha) - d_i_t_vec * cost_component
+        )
+
+        # Save the base utility
+        B_vec = present_utility_vec/(self.r + (np.log(1+vehicle_dict_vecs["delta"]))/(1-self.alpha))
+
+        price_optimal_vec = B_vec/beta
+
+        price_vec_negative = price_optimal_vec/(1+self.mu)#CAN HAVE NEATIVE PRICES IF THE OPTIMAL PRICE IS NEGATIVE, BASICALLY SCRAP
+        
+        price_vec = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
+
+        for i, vehicle in enumerate(self.current_vehicles):
+            vehicle.cost_second_hand_merchant = price_vec[i]
+
+        return price_vec
+
 ########################################################################################################
     
     def _gen_mask_from_indices(self, sampled_indices, init_index, available_and_current_vehicles_list, total_number_type):
@@ -889,7 +979,9 @@ class Social_Network:
         self.users_distance_vec = np.zeros(self.num_individuals)
         self.users_utility_vec  = np.zeros(self.num_individuals)
         self.users_transport_type_vec  = np.full((self.num_individuals), np.nan)
-    
+
+        self.users_distance_vec_EV = np.full((self.num_individuals), np.nan)
+        self.users_distance_vec_ICE = np.full((self.num_individuals), np.nan)
         #variable to track
     
         self.total_driving_emissions = 0
@@ -964,10 +1056,12 @@ class Social_Network:
         self.production_cost_vals.append(vehicle_chosen.ProdCost_t)
 
         if vehicle_chosen.transportType == 2:#ICE 
+            self.users_distance_vec_ICE[person_index] = driven_distance
             self.quality_vals_ICE.append(vehicle_chosen.Quality_a_t)#done here for efficiency
             self.efficiency_vals_ICE.append(vehicle_chosen.Eff_omega_a_t)
             self.production_cost_vals_ICE.append(vehicle_chosen.ProdCost_t)
         else:
+            self.users_distance_vec_EV[person_index] = driven_distance
             self.quality_vals_EV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
             self.efficiency_vals_EV.append(vehicle_chosen.Eff_omega_a_t)
             self.production_cost_vals_EV.append(vehicle_chosen.ProdCost_t)
@@ -1029,6 +1123,8 @@ class Social_Network:
         self.history_utility_individual = []
         self.history_transport_type_individual = []
 
+        self.history_distance_individual_ICE = []
+        self.history_distance_individual_EV = []
         self.history_count_buy = []
 
         #self.history_quality_index = []
@@ -1065,6 +1161,9 @@ class Social_Network:
         self.history_distance_individual.append(self.users_distance_vec)
         self.history_utility_individual.append(self.users_utility_vec)
         self.history_transport_type_individual.append(self.users_transport_type_vec)
+
+        self.history_distance_individual_ICE.append(self.users_distance_vec_ICE)
+        self.history_distance_individual_EV.append(self.users_distance_vec_EV)
 
         self.history_new_ICE_cars_bought.append(self.new_ICE_cars_bought)
         self.history_new_EV_cars_bought.append(self.new_EV_cars_bought)

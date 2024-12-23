@@ -169,10 +169,19 @@ def main(
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(x_o, fileName + "/Data", "x_o")
 
+
+    samples = posterior.sample((10000000,), x=x_o)
+    log_probability_samples = posterior.log_prob(samples, x=x_o)
+    max_log_prob_index = log_probability_samples.argmax()
+    best_sample = samples[max_log_prob_index]
+
+    save_object(samples, fileName + "/Data", "samples")
+    save_object(best_sample, fileName + "/Data", "best_sample")
+
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.05, 3]},
-        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.05, 3]},
+        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.1, 3]},
+        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.1, 3]},
         {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1, 30]},
         #{"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},
         #{"name": "SW_K", "subdict": "parameters_social_network", "bounds": [20, 500]},
@@ -182,5 +191,5 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=128
+        num_simulations=256
     )

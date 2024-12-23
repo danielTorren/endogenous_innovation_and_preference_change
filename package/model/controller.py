@@ -84,8 +84,8 @@ class Controller:
         self.parameters_second_hand = parameters_controller["parameters_second_hand"]
 
         """TEMPORTY FIX JSUT TO SIMPLIFY CALIBRATION"""
-        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
-        self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
+        self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
+        self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
         self.parameters_EV["min_Cost"] = self.parameters_ICE["min_Cost"]
         self.parameters_EV["max_Cost"] = self.parameters_ICE["max_Cost"]
         self.parameters_EV["delta"] = self.parameters_ICE["delta"]
