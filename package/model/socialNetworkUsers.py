@@ -33,7 +33,7 @@ class Social_Network:
         self.alpha =  parameters_vehicle_user["alpha"]
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
-        self.kappa = parameters_vehicle_user["kappa"]
+        self.kappa = int(round(parameters_vehicle_user["kappa"]))
         #self.second_hand_car_max_consider = parameters_vehicle_user["second_hand_car_max_consider"]
         #self.new_car_max_consider = parameters_vehicle_user["new_car_max_consider"]
 

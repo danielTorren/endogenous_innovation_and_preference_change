@@ -73,7 +73,7 @@ def main(fileName):
     param_names = [p["name"] for p in var_dict]
 
     # Test posterior samples and plot results
-    samples = posterior.sample((100000,), x=x_o)
+    samples = posterior.sample((10000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     print("Log probabilities:", log_probability_samples)
 
@@ -88,5 +88,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_12_23_34__20_12_2024",
+        fileName="results/NN_calibration_multi_19_06_17__22_12_2024",
     )

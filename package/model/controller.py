@@ -337,14 +337,14 @@ class Controller:
         self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
-        self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
+        self.parameters_firm_manager["kappa"] = int(round(self.parameters_vehicle_user["kappa"]))
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["IDGenerator_firms"] = self.IDGenerator_firms
-        self.parameters_firm["kappa"] = self.parameters_vehicle_user["kappa"]
+        self.parameters_firm["kappa"] = int(round(self.parameters_vehicle_user["kappa"]))
         self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape
