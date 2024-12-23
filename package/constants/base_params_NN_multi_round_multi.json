@@ -109,7 +109,9 @@
         "production_emissions":9000,
         "transportType": 3,
         "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "max_Efficiency": 7,
+        "min_Quality": 0,
+        "max_Quality": 7,
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
