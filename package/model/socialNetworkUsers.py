@@ -23,6 +23,8 @@ class Social_Network:
         self.rebate = parameters_social_network["rebate"]
         self.used_rebate = parameters_social_network["used_rebate"]
 
+        self.prob_switch_car = parameters_social_network["prob_switch_car"]
+
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
@@ -607,26 +609,32 @@ class Social_Network:
         # Select individual-specific utilities
         individual_specific_util = utilities_kappa[person_index]  
 
-        # Check if all utilities are zero after filtering
-        if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
-            """THIS SHOULD ACRUALLY BE USED"""
-            if self.t_social_network == 0:
-                #pick random vehicle which is available
+        #SWICHING_CLAUSE
+
+        if self.random_state_social_network.rand() < self.prob_switch_car:#ONLY CHANGE CAR IF STOCHASTICALLY ITS TIME!
+            # Check if all utilities are zero after filtering
+            if not np.any(individual_specific_util):#THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
+                """THIS SHOULD ACRUALLY BE USED"""
+                if self.t_social_network == 0:
+                    #pick random vehicle which is available
+                    choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
+                else:#keep current car
+                    
+                    choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
+            else:
+                # Calculate the probability of choosing each vehicle
+                """
+                SHODY FIX THIS PROPERY
+                """
+                if np.isnan(np.sum(individual_specific_util)):
+                    individual_specific_util = np.nan_to_num(individual_specific_util)
+                    
+                sum_prob = np.sum(individual_specific_util)
+                probability_choose = individual_specific_util / sum_prob
                 choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
-            else:#keep current car
-                
-                choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
-        else:
-            # Calculate the probability of choosing each vehicle
-            """
-            SHODY FIX THIS PROPERY
-            """
-            if np.isnan(np.sum(individual_specific_util)):
-                individual_specific_util = np.nan_to_num(individual_specific_util)
-                
-            sum_prob = np.sum(individual_specific_util)
-            probability_choose = individual_specific_util / sum_prob
-            choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
+        else:          
+            choice_index = self.index_current_cars_start + person_index #available_and_current_vehicles_list.index(user.vehicle)
+        
             #choice_index = np.argmax(probability_choose)
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]

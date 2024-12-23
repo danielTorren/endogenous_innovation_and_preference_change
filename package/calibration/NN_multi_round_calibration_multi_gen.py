@@ -180,8 +180,8 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.5, 1.5]},
-        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.5, 1.5]},
+        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.1, 3]},
+        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.1, 3]},
         {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1, 30]},
         #{"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},
         #{"name": "SW_K", "subdict": "parameters_social_network", "bounds": [20, 500]},

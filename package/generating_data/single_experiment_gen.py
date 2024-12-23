@@ -178,7 +178,8 @@ if __name__ == "__main__":
         "car_lifetime_months": 192,
         "a_innovativeness": 0.8882,
         "b_innovativeness": 0.7293,
-        "selection_bias": 5
+        "selection_bias": 5,
+        "prob_switch_car": 0.021#CAN SWITCH CARS ONCE EVERY 4 years
     },
     "parameters_vehicle_user":{
         "kappa": 8.9130,#17.7372,#30,
