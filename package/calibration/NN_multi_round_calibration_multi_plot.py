@@ -45,6 +45,7 @@ def main(fileName):
 
     match_data = load_object(fileName + "/Data", "match_data")
 
+
     # Extract observed statistics
     EV_stock_prop_2010_22 = match_data["EV_stock_prop_2010_22"]
     #median_distance_traveled = match_data["median_distance_traveled"]
@@ -67,28 +68,30 @@ def main(fileName):
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
+    samples = load_object(fileName + "/Data", "samples")
+    best_sample = load_object(fileName + "/Data", "best_sample")
 
     # Extract parameter bounds and names dynamically
     param_bounds = [p["bounds"] for p in var_dict]
     param_names = [p["name"] for p in var_dict]
 
     # Test posterior samples and plot results
-    samples = posterior.sample((10000000,), x=x_o)
-    log_probability_samples = posterior.log_prob(samples, x=x_o)
-    print("Log probabilities:", log_probability_samples)
+    #samples = posterior.sample((10000000,), x=x_o)
+    #log_probability_samples = posterior.log_prob(samples, x=x_o)
+    #print("Log probabilities:", log_probability_samples)
 
     # Find sample with greatest log probability
-    max_log_prob_index = log_probability_samples.argmax()
+    #max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
     print("Sample with the greatest log probability:", best_sample)
     print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
-    save_object(best_sample, fileName + "/Data", "best_sample")
+    #save_object(best_sample, fileName + "/Data", "best_sample")
     
     # Plot results
     plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_10_46_04__23_12_2024",
+        fileName="results/NN_calibration_multi_16_31_17__23_12_2024",
     )

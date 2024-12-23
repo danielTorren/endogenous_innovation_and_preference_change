@@ -440,16 +440,29 @@ class Firm:
 
         # Final selection of vehicles with the highest utility prices
         vehicles_selected_profits = []
+        vehicle_segments = []  # To keep track of vehicle segments
+
         for vehicle, info in vehicle_best_segment.items():
             segment_code = info['segment_code']
             vehicle.price = vehicle.optimal_price_segments[segment_code]
             vehicles_selected_profits.append((vehicle, info["profit"]))
+            vehicle_segments.append((vehicle, segment_code))  # Store segment info
 
-        #SELECT THE most profitable cars 
+        # SELECT THE most profitable cars
         if len(vehicles_selected_profits) < self.num_cars_production:
             vehicles_selected = [x[0] for x in vehicles_selected_profits]
         else:
             vehicles_selected = [x[0] for x in sorted(vehicles_selected_profits, key=lambda x: x[1], reverse=True)]
+
+        # Count segments of selected vehicles
+        self.selected_vehicle_segment_counts = {}
+
+        for vehicle, segment_code in vehicle_segments:
+            if vehicle in vehicles_selected:
+                if segment_code not in self.selected_vehicle_segment_counts:
+                    self.selected_vehicle_segment_counts[segment_code] = 0
+                self.selected_vehicle_segment_counts[segment_code] += 1
+
         return vehicles_selected
 
     def add_new_vehicle(self, vehicle_model_research):
@@ -623,11 +636,13 @@ class Firm:
         self.history_attributes_researched = []
         self.history_research_type = []
         self.history_num_cars_on_sale = []
+        self.history_segment_production_counts = []
 
     def save_timeseries_data_firm(self):
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
         self.history_num_cars_on_sale.append(len(self.cars_on_sale))
+        self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
         if self.research_bool == 1:
             self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
             if self.vehicle_model_research.transportType == 3:

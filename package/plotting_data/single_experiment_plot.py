@@ -1773,6 +1773,123 @@ def plot_history_age_second_hand_car_removed(base_params, second_hand_merchant, 
     # Save and show the plot
     save_and_show(fig, fileName, "age_scrapped_second_hand_merchant", dpi)
 
+from matplotlib.cm import get_cmap
+
+def plot_segment_production_time_series(base_params, firms, fileName, dpi=600):
+    """
+    Plots the evolution of the number of cars produced in each segment by each firm over time.
+
+    Parameters:
+        firms: list
+            List of firm objects containing historical segment production counts.
+        fileName: str
+            Directory or file name to save the plots.
+        dpi: int
+            DPI for the saved plots.
+    """
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Define color palette for firms
+    cmap = get_cmap("tab10")
+    
+    # Iterate through each firm and plot its data
+    for firm_idx, firm in enumerate(firms):
+        segment_counts_by_time = firm.history_segment_production_counts
+        segment_time_series = {}
+
+        # Accumulate counts for each segment across time
+        for t, segment_counts in enumerate(segment_counts_by_time):
+            for segment, count in segment_counts.items():
+                if segment not in segment_time_series:
+                    segment_time_series[segment] = [0] * len(segment_counts_by_time)
+                segment_time_series[segment][t] = count
+
+        # Plot the time series for each segment
+        for segment, counts in segment_time_series.items():
+            ax.plot(
+                range(len(counts)),
+                counts,
+                label=f"Firm {firm_idx + 1} - Segment {segment}",
+                color=cmap(firm_idx),
+                linestyle='-'
+            )
+
+    # Add labels, legend, and grid
+    ax.set_title("Evolution of Cars Produced in Each Segment by Each Firm")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Number of Cars Produced")
+    ax.grid()
+
+    add_vertical_lines(ax, base_params)
+
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_segment_production_time_series", dpi)
+
+import matplotlib.pyplot as plt
+from matplotlib.cm import get_cmap
+
+def plot_aggregated_segment_production_time_series(base_params, firms, fileName, dpi=600):
+    """
+    Plots the aggregated number of cars produced in each segment over time across all firms.
+
+    Parameters:
+        base_params: Configuration or parameters for the plot (e.g., milestone markers).
+        firms: list
+            List of firm objects containing historical segment production counts.
+        fileName: str
+            Directory or file name to save the plots.
+        dpi: int
+            DPI for the saved plots.
+    """
+    # Initialize a dictionary to store aggregated segment counts over time
+    aggregated_segment_counts = {}
+
+    # Iterate through each firm and aggregate segment data
+    for firm in firms:
+        for t, segment_counts in enumerate(firm.history_segment_production_counts):
+            for segment, count in segment_counts.items():
+                if segment not in aggregated_segment_counts:
+                    aggregated_segment_counts[segment] = []
+                # Ensure the list for this segment has enough time steps
+                while len(aggregated_segment_counts[segment]) <= t:
+                    aggregated_segment_counts[segment].append(0)
+                aggregated_segment_counts[segment][t] += count
+
+    # Determine the maximum number of time steps
+    max_time_steps = max(len(v) for v in aggregated_segment_counts.values())
+
+    # Ensure all lists in aggregated_segment_counts are the same length
+    for segment in aggregated_segment_counts:
+        while len(aggregated_segment_counts[segment]) < max_time_steps:
+            aggregated_segment_counts[segment].append(0)
+
+    # Plot the aggregated data
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    for segment, counts in aggregated_segment_counts.items():
+        ax.plot(
+            range(len(counts)),
+            counts,
+            label=f"Segment {segment}",
+            linestyle='-'
+        )
+
+    # Add labels, legend, and grid
+    ax.set_title("Aggregated Cars Produced in Each Segment Over Time")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Number of Cars Produced")
+    ax.grid()
+
+    add_vertical_lines(ax, base_params)
+
+    ax.legend(bbox_to_anchor=(1, 1), loc='upper left', fontsize='small')
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "aggregated_segment_production_time_series", dpi)
+
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -1790,6 +1907,10 @@ def main(fileName, dpi=600):
 
     # All plot function calls
     #"""
+    plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
+    #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
+    #plt.show()
+
     plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
@@ -1887,4 +2008,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_03_10__23_12_2024")
+    main("results/single_experiment_16_48_06__23_12_2024")

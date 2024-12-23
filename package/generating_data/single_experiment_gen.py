@@ -176,12 +176,12 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 1, 
-        "b_innovativeness": 1,
+        "a_innovativeness": 0.8882,
+        "b_innovativeness": 0.7293,
         "selection_bias": 5
     },
     "parameters_vehicle_user":{
-        "kappa": 30,
+        "kappa": 8.9130,#17.7372,#30,
         "alpha": 0.5,
         "r": 0.00417,#5%/12
         "mu": 1
