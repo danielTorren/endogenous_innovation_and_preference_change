@@ -82,9 +82,9 @@ def main(fileName):
 
     # Find sample with greatest log probability
     #max_log_prob_index = log_probability_samples.argmax()
-    best_sample = samples[max_log_prob_index]
+    #best_sample = samples[max_log_prob_index]
     print("Sample with the greatest log probability:", best_sample)
-    print("Greatest log probability:", log_probability_samples[max_log_prob_index])
+    #print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
     #save_object(best_sample, fileName + "/Data", "best_sample")
     
@@ -93,5 +93,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_16_31_17__23_12_2024",
+        fileName="results/NN_calibration_multi_22_42_55__23_12_2024",
     )

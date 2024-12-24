@@ -80,7 +80,20 @@ def emissions_parallel_run(
 
     return np.asarray(emissions_list)
 ########################################################################################
+def generate_ev_prop(params):
+    data = generate_data(params)
+    return data.social_network.history_prop_EV
 
+def ev_prop_parallel_run(
+        params_dict: list[dict]
+) -> npt.NDArray:
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_emissions_intensities(i) for i in params_dict]
+    ev_prop_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_ev_prop)(i) for i in params_dict)
+
+    return np.asarray(ev_prop_list)
+
+########################################################################################
 def generate_distance(params):
     data = generate_data(params)
     return data.social_network.history_distance_individual

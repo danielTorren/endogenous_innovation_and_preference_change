@@ -1,46 +1,13 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
-# imports
-from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
-
-def main(
-    base_params
-) -> str: 
-
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
-    print("fileName:", fileName)
-
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    #print(controller.social_network.emissions_flow_history )
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-    return fileName
-
-if __name__ == "__main__":
-
-    base_params = {
-    "seed_repetitions": 10,
-    "duration_burn_in": 60,#24,
+{
+    "seed_repetitions": 12,
+    "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future":0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
-    "ev_research_start_time": 60,#200
-    "ev_production_start_time": 108,#2008
+    "ev_research_start_time": 60,
+    "ev_production_start_time": 108,
     "EV_rebate_state": 1,
     "parameters_rebate":{
         "start_time": 120,
@@ -114,7 +81,7 @@ if __name__ == "__main__":
         "remove_seed": 48,
         "age_limit_second_hand": 3,
         "max_num_cars": 5000,
-        "burn_in_second_hand_market": 12,#12,#first year no second hand cars
+        "burn_in_second_hand_market": 12,
         "fixed_alternative_mark_up": 0.2
     },
     "parameters_ICE":{
@@ -179,23 +146,12 @@ if __name__ == "__main__":
         "a_innovativeness": 0.7287,
         "b_innovativeness": 0.9186,
         "selection_bias": 5,
-        "prob_switch_car": 0.021#CAN SWITCH CARS ONCE EVERY 4 years
+        "prob_switch_car": 0.021
     },
     "parameters_vehicle_user":{
-        "kappa": 9.9481,#17.7372,#30,
+        "kappa": 9.9481,
         "alpha": 0.5,
-        "r": 0.00417,#5%/12
+        "r": 0.00417,
         "mu": 1
     }
 }
-
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
-
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 1
-
-    if RUN_PLOT:
-        plotting_main(fileName = fileName)

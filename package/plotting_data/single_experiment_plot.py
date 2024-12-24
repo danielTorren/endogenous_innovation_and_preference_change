@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.colors import LinearSegmentedColormap
 import networkx as nx
+from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -1518,34 +1519,10 @@ def plot_social_network(social_network, fileName):
 
     save_and_show(fig, fileName, "network", dpi=300)
 #############################################################################################
-def convert_data(data_to_fit):
 
-    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2000 to 2022
-    # Define the starting and ending indices for the years 2010 to 2022
-    start_year = 2010
-    end_year = 2022
-
-    # Calculate the average of the last three months of each year
-    averages = []
-
-    #print("filtered_data", filtered_data)
-    for year in range(start_year, end_year + 1):
-        year_start_index = (year - 2000) * 12
-        start_idx = year_start_index + 9  # October index
-        end_idx = year_start_index + 12  # December index (exclusive)
-        # Ensure the indices are within bounds
-        last_three_months = data_to_fit[start_idx:end_idx]
-        
-        #print(f"Year: {year}, Start Index: {start_idx}, End Index: {end_idx}, Last Three Months: {last_three_months}")
-
-        averages.append(np.mean(last_three_months))
-
-    averages_array = np.array(averages)
-
-    return averages_array
 
 def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600):
-    data_truncated = convert_data(social_network.history_prop_EV)
+    data_truncated = convert_data(social_network.history_prop_EV, base_params)
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -1904,9 +1881,10 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
     
-
+    
     # All plot function calls
     #"""
+    """
     plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plt.show()
@@ -1977,7 +1955,7 @@ def main(fileName, dpi=600):
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
-
+    """
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     """
     percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
@@ -2003,9 +1981,10 @@ def main(fileName, dpi=600):
     #print(calibration_data_output)
     #quit()
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    print("EV_stock_prop_2010_22", EV_stock_prop_2010_22)
     plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
     #(base_params, real_data, social_network, fileName, dpi=600
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_16_48_06__23_12_2024")
+    main("results/single_experiment_10_09_08__24_12_2024")
