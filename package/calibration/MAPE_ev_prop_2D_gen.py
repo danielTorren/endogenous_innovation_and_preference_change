@@ -32,7 +32,7 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
         for j in  property_dict_1["property_list"]:
             params_updated = deepcopy(params)
             params_updated[property_dict_1["subdict"]][property_dict_1["property_varied"]] = i
-            params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = i
+            params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = j
 
             for seed in np.arange(1, params_updated["seed_repetitions"] + 1):
 
