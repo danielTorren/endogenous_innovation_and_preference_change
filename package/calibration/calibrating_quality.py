@@ -41,12 +41,12 @@ def plot_lifetime_utility_condition():
     c = 0.12  # Gas price
     e = 0.26599820413049985  # Gasoline emissions per kWh
     omega = 1.03  # km/kWh
-    delta = 0.0001
+    delta = 0.002
     L = 0#NEW CAR
     prod_emmisions = 6000
     r = 0.00417
     distance = 1400
-    mu = 0.5
+    mu = 0.2
     cost_list = [5000, 10000, 50000, 100000]
 
     # Initialize storage for results

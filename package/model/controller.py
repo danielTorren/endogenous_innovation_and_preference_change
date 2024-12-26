@@ -1,19 +1,12 @@
 """Define controller than manages exchange of information between social network and firms
 Created: 22/12/2023
 """
-
-# imports
-from ast import Raise
-
-from sympy import beta
-from package.model import socialNetworkUsers
 from package.model.nkModel import NKModel
 from package.model.firmManager import Firm_Manager 
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
-import numpy as np
 from package.model.socialNetworkUsers import Social_Network
-import pandas as pd
+import numpy as np
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -50,6 +43,8 @@ class Controller:
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
 
+        self.firm_manager.add_social_network(self.social_network)
+
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
         self.vehicles_chosen_list = self.social_network.current_vehicles
@@ -82,14 +77,13 @@ class Controller:
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
         self.parameters_second_hand = parameters_controller["parameters_second_hand"]
+        self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]
 
-        """TEMPORTY FIX JSUT TO SIMPLIFY CALIBRATION"""
         self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
         self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
         self.parameters_EV["min_Cost"] = self.parameters_ICE["min_Cost"]
         self.parameters_EV["max_Cost"] = self.parameters_ICE["max_Cost"]
         self.parameters_EV["delta"] = self.parameters_ICE["delta"]
-                           
                            
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
@@ -130,13 +124,12 @@ class Controller:
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
         self.calibration_time_steps = len(self.electricity_emissions_intensity_vec)
-        self.parameters_rebate = self.parameters_controller["parameters_rebate"]
         self.rebate_time_series = np.zeros(self.duration_no_carbon_price)
         self.used_rebate_time_series = np.zeros(self.duration_no_carbon_price)
         
         if self.parameters_controller["EV_rebate_state"]:#IF TRUE IMPLEMENTED
-            self.rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["rebate"]
-            self.used_rebate_time_series[self.parameters_rebate["start_time"]:] = self.parameters_rebate["used_rebate"]
+            self.rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
+            self.used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
 
         self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
 
@@ -266,8 +259,6 @@ class Controller:
         elif growth_type == "exponential":
             r = np.log(end_price / start_price) / total_duration if start_price > 0 else 0
             return start_price * np.exp(r * t)
-
-            
         else:
             raise ValueError(f"Unknown growth type: {growth_type}")
 
@@ -307,25 +298,6 @@ class Controller:
             self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
-    def update_time_series_data(self):
-        #EV research state
-        if self.t_controller == self.ev_research_start_time:
-            for firm in self.firm_manager.firms_list:
-                firm.ev_research_bool = True
-
-        if self.t_controller == self.ev_production_start_time:
-            for firm in self.firm_manager.firms_list:
-                firm.ev_production_bool = True
-                
-        #carbon price
-        self.carbon_price = self.carbon_price_time_series[self.t_controller]
-
-        #update_prices_and_emmisions
-        self.gas_price = self.gas_price_california_vec[self.t_controller]
-        self.electricity_price = self.electricity_price_vec[self.t_controller]
-        self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
-        self.rebate = self.rebate_time_series[self.t_controller]
-        self.used_rebate = self.used_rebate_time_series[self.t_controller]
 
     #############################################################################################################################
     def setup_id_gen(self):
@@ -339,6 +311,8 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = int(round(self.parameters_vehicle_user["kappa"]))
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
+        self.rebate_users_per_pop = self.parameters_social_network["num_individuals"]/self.parameters_rebate_calibration["pop"]
+        self.parameters_firm_manager["rebate_count_cap_adjusted"] = self.parameters_rebate_calibration["rebate_count_cap"]*self.rebate_users_per_pop
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -355,6 +329,7 @@ class Controller:
         self.parameters_firm["electricity_price"] = self.electricity_price
         self.parameters_firm["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_firm["rebate"] = self.rebate 
+        self.parameters_firm["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -378,9 +353,9 @@ class Controller:
         self.parameters_social_network["electricity_price"] = self.electricity_price
         self.parameters_social_network["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_social_network["rebate"] = self.rebate 
-
         self.parameters_social_network["used_rebate"] = self.used_rebate 
-        self.parameters_social_network["used_rebate"] = self.used_rebate 
+        self.parameters_social_network["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
+        self.parameters_social_network["used_rebate_low"] = self.parameters_rebate_calibration["used_rebate_low"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -411,15 +386,7 @@ class Controller:
         #self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
         self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
 
-    def update_firms(self):
-        cars_on_sale_all_firms, total_U_sum = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate)
-        return cars_on_sale_all_firms, total_U_sum
-    
-    def update_social_network(self):
-        # Update social network based on firm preferences
-        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate)
-
-        return consider_ev_vec, vehicles_chosen_list
+##########################################################################################################################################
     
     def set_up_time_series_controller(self):
         self.history_gas_price = []
@@ -444,6 +411,43 @@ class Controller:
             self.time_series.append(self.t_controller)
 
             self.save_timeseries_controller()
+
+##########################################################################################################################################
+
+    def update_time_series_data(self):
+        #EV research state
+        if self.t_controller == self.ev_research_start_time:
+            for firm in self.firm_manager.firms_list:
+                firm.ev_research_bool = True
+
+        if self.t_controller == self.ev_production_start_time:
+            for firm in self.firm_manager.firms_list:
+                firm.ev_production_bool = True
+                
+        #carbon price
+        self.carbon_price = self.carbon_price_time_series[self.t_controller]
+
+        #update_prices_and_emmisions
+        self.gas_price = self.gas_price_california_vec[self.t_controller]
+        self.electricity_price = self.electricity_price_vec[self.t_controller]
+        self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
+        self.rebate = self.rebate_time_series[self.t_controller]
+        self.used_rebate = self.used_rebate_time_series[self.t_controller]
+
+        #HANDLE REBATE EXCLUSION, REMOVE ALL THE FIRMS FROM THE LIST
+        if self.t_controller == self.duration_burn_in + self.duration_no_carbon_price:
+            for firm_id in self.social_network.firm_rebate_exclusion_set:
+                self.social_network.remove_firm_rebate_exclusion_set(firm_id)
+
+    def update_firms(self):
+        cars_on_sale_all_firms, total_U_sum = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate)
+        return cars_on_sale_all_firms, total_U_sum
+    
+    def update_social_network(self):
+        # Update social network based on firm preferences
+        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate)
+
+        return consider_ev_vec, vehicles_chosen_list
 
     def get_second_hand_cars(self):
         self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.total_U_sum, self.carbon_price)

@@ -90,12 +90,18 @@ def load_in_output_data():
     #USE THESE VALUES OF THE MIN AND THE MAX TO PARAMETERISE THE LANSCAPE
     #"min_max_Efficiency":[4,7], historial min and max for 2006-2022 period are (4.73335294117647,6.43736)
 
-    print(merged_data_filtered)
-    return merged_data_filtered['EV Prop'].to_numpy()
+    ##############################################################################################################################
+    #EMISSIONS INTENSITY OF FLEET
+    emissions_intensity_cars_df = pd.read_excel("package/calibration_data/emissions_intensity_cars.xlsx") 
+    emisisons_intensity_cars_data = emissions_intensity_cars_df["gCO2e per mile"].to_numpy()
+    kg_CO2_per_km_vec = emisisons_intensity_cars_data*km_to_miles/1000
+
+    return merged_data_filtered['EV Prop'].to_numpy(), kg_CO2_per_km_vec
 
 if __name__ == "__main__":
-    EV_Prop = load_in_output_data()
+    EV_Prop, kg_CO2_per_km = load_in_output_data()
     calibration_data_output = {}
 
     calibration_data_output["EV Prop"] = EV_Prop
+    calibration_data_output["kg_CO2_per_km"] = kg_CO2_per_km
     save_object(calibration_data_output, "package/calibration_data", "calibration_data_output")

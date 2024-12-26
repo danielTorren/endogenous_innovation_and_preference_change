@@ -9,11 +9,11 @@
     "ev_research_start_time": 60,
     "ev_production_start_time": 96,
     "EV_rebate_state": 1,
-    "parameters_rebate":{
+    "parameters_rebate_calibration":{
         "start_time": 120,
         "end_time":276,
         "rebate": 10000,
-        "used_rebate": 4000
+        "used_rebate": 1000
     },
     "parameters_scenarios":{
         "States":{
@@ -72,7 +72,7 @@
                 },
                 "High":{
                     "rebate": 10000,
-                    "used_rebate": 4000
+                    "used_rebate": 1000
                 }
             }
         }

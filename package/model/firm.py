@@ -11,6 +11,7 @@ class Firm:
         self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
 
         self.t_firm = 0
+        self.production_change_bool = 0
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.id_generator = parameters_firm["IDGenerator_firms"]  
@@ -39,6 +40,7 @@ class Firm:
         self.firm_profit = 0
         self.firm_cars_users = 0
         self.research_bool = 0
+        self.EVs_sold = 0
 
         self.list_technology_memory = self.list_technology_memory_ICE + self.list_technology_memory_EV
 
@@ -47,9 +49,9 @@ class Firm:
         self.kappa = self.parameters_firm["kappa"]
         self.memory_cap = self.parameters_firm["memory_cap"]
         self.prob_innovate = self.parameters_firm["prob_innovate"]
+        self.prob_change_production = self.parameters_firm["prob_change_production"]
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
-
 
         self.init_U_sum = self.parameters_firm["init_U_sum"]
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
@@ -642,7 +644,15 @@ class Firm:
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
         self.history_num_cars_on_sale.append(len(self.cars_on_sale))
-        self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
+        if self.production_change_bool == 1:
+            self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
+        else:
+            self.selected_vehicle_segment_counts = {}
+            for segment_code in range(8):
+                segment_code_str = format(segment_code, '03b')
+                self.selected_vehicle_segment_counts[segment_code_str] = np.nan
+            self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
+
         if self.research_bool == 1:
             self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)
             if self.vehicle_model_research.transportType == 3:
@@ -663,12 +673,10 @@ class Firm:
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
 
-        #decide cars to sell
-        self.cars_on_sale = self.choose_cars_segments(market_data)
-
-        #print("market_data", market_data)
-        #print(self.firm_id, np.asarray([vehicle.attributes_fitness  for vehicle in self.cars_on_sale]).mean(axis=0))
-        #deci  de whether to innovate
+        #update cars to sell
+        if self.random_state.rand() < self.prob_change_production:
+            self.cars_on_sale = self.choose_cars_segments(market_data)
+            self.production_change_bool = 1
 
         if self.random_state.rand() < self.prob_innovate:
             #print("INNOVATE", self.firm_id)

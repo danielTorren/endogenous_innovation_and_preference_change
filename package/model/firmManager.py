@@ -23,6 +23,10 @@ class Firm_Manager:
         self.kappa = parameters_firm_manager["kappa"]
         self.num_individuals = parameters_firm_manager["num_individuals"]
 
+        self.rebate_count_cap = parameters_firm_manager["rebate_count_cap_adjusted"]
+
+        self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
+
         #landscapes
         self.landscape_ICE = ICE_landscape
         self.landscape_EV = EV_landscape
@@ -164,6 +168,9 @@ class Firm_Manager:
             self.market_data[segment_code]["beta_s_t"] =  avg_beta
             self.market_data[segment_code]["gamma_s_t"] =  avg_gamma
 
+            self.market_data[segment_code]["history_I_s_t"] = []
+            self.market_data[segment_code]["history_U_sum"] = []
+
         #NEED TO HAVE MARKET DATA WITHOUT THE U SUM IN ORDER TO CALCULATE U SUM
         #CALC THE U SUM DATA
         for firm in self.firms_list:#CREATE THE UTILITY SEGMENT DATA
@@ -194,7 +201,7 @@ class Firm_Manager:
             for car in cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
                     segment_U_sums[segment] += U
-        #print("segment_U_sums", segment_U_sums)
+
         return cars_on_sale_all_firms, segment_U_sums
 
     def update_market_data(self, sums_U_segment):
@@ -208,26 +215,46 @@ class Firm_Manager:
         for i in range(8):
             segment_code = format(i, '03b')
             
-            """
-            # Determine if the segment considers ICE cars
-            if segment_code[2] == '0':  
-                # Flip the bit at position 2 (count from left, 0-indexed)
-                i_flipped = i ^ (1 << 2)  # Flip the 2nd bit from the right
-                segment_code_flipped = format(i_flipped, '03b')
-
-                # Update market data
-                self.market_data[segment_code]["I_s_t"] = segment_counts[i] + segment_counts[i_flipped]
-                self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code] + sums_U_segment[segment_code_flipped]
-            else:
-                self.market_data[segment_code]["I_s_t"] = segment_counts[i]
-                self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
-            """
             self.market_data[segment_code]["I_s_t"] = segment_counts[i]
             self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
             self.total_U_sum += sums_U_segment[segment_code]
-            
-            #print("segemtn count",segment_code,  self.market_data[segment_code]["I_s_t"])
-        #quit()
+
+    def update_market_data_moving_average(self, sums_U_segment):
+        """Update market data with the moving average of segment counts and sums U for each segment over the last 12 time steps."""
+
+        # Calculate segment codes based on the provided binary vecs
+        segment_codes = (self.beta_binary << 2) | (self.gamma_binary << 1) | (self.consider_ev_vec << 0)
+        # Calculate segment counts
+        segment_counts = np.bincount(segment_codes, minlength=8)
+
+        # Track total U sum for all segments
+        self.total_U_sum = 0
+
+        # Update each segment's moving average
+        for i in range(8):
+            segment_code = format(i, '03b')
+
+            # Append current values to history
+            self.market_data[segment_code]["history_I_s_t"].append(segment_counts[i])
+            self.market_data[segment_code]["history_U_sum"].append(sums_U_segment[segment_code])
+
+            # Trim history to the last 12 time steps
+            if len(self.market_data[segment_code]["history_I_s_t"]) > self.time_steps_tracking_market_data:
+                self.market_data[segment_code]["history_I_s_t"].pop(0)
+            if len(self.market_data[segment_code]["history_U_sum"]) > self.time_steps_tracking_market_data:
+                self.market_data[segment_code]["history_U_sum"].pop(0)
+
+            # Calculate moving averages
+            moving_avg_I_s_t = np.mean(self.market_data[segment_code]["history_I_s_t"])
+            moving_avg_U_sum = np.mean(self.market_data[segment_code]["history_U_sum"])
+
+            # Store the moving averages
+            self.market_data[segment_code]["I_s_t"] = moving_avg_I_s_t
+            self.market_data[segment_code]["U_sum"] = moving_avg_U_sum
+
+            # Update total U sum
+            self.total_U_sum += moving_avg_U_sum
+
 
     ######################################################################################################################
 
@@ -276,9 +303,20 @@ class Firm_Manager:
         HHI = sum(self.calculate_market_share(firm, past_chosen_vehicles, total_sales)**2 for firm in self.firms_list)
         return HHI
 
-    def calc_vehicles_chosen_list(self, past_chosen_vehicles):
+    #######################################################################################################################
+    #DEAL WITH REBATE
+    def add_social_network(self,social_network):
+        self.social_network = social_network
+
+    def handle_limited_rebate(self):#THIS BLOCKS FIRMS IF THEY RECIEVE TOO MUCH REBATE
+        for vehicle in self.past_chosen_vehicles:
+            if vehicle.transport_type == 3:
+                vehicle.firm.EVs_sold += 1
+        
         for firm in self.firms_list:
-            firm.firm_cars_users = sum(1 for car in past_chosen_vehicles if car.firm == firm)
+            if firm.EVs_sold > self.rebate_count_cap:
+                self.social_network.add_firm_rebate_exclusion_set(firm.firm_id)
+                print("firm got to the limit:", self.t_firm_manager,firm.firm_id)
 
     #####################################################################################################################
 
@@ -312,6 +350,11 @@ class Firm_Manager:
 
         self.history_market_data.append(copy.deepcopy(self.market_data))
 
+    def calc_vehicles_chosen_list(self, past_chosen_vehicles):
+        for firm in self.firms_list:
+            firm.firm_cars_users = sum(1 for car in past_chosen_vehicles if car.firm == firm)
+
+    #####################################################################################################################
 
     def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate):
         

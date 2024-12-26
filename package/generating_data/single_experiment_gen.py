@@ -31,7 +31,7 @@ def main(
 
 if __name__ == "__main__":
 
-    base_params = {
+    base_params ={
     "seed_repetitions": 10,
     "duration_burn_in": 60,#24,
     "duration_no_carbon_price": 276,
@@ -42,11 +42,15 @@ if __name__ == "__main__":
     "ev_research_start_time": 60,#200
     "ev_production_start_time": 108,#2008
     "EV_rebate_state": 1,
-    "parameters_rebate":{
+    "parameters_rebate_calibration":{
         "start_time": 120,
         "end_time":276,
         "rebate": 10000,
-        "used_rebate": 4000
+        "used_rebate": 1000,
+        "rebate_count_cap": 70000,
+        "pop": 39370000,
+        "rebate_low": 2500,
+        "used_rebate_low": 1000
     },
     "parameters_scenarios":{
         "States":{
@@ -105,7 +109,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "rebate": 10000,
-                    "used_rebate": 4000
+                    "used_rebate": 1000
                 }
             }
         }
@@ -149,11 +153,13 @@ if __name__ == "__main__":
     "parameters_firm_manager": {
         "init_tech_seed": 99,
         "J": 30,
-        "init_car_age_max": 240
+        "init_car_age_max": 240,
+        "time_steps_tracking_market_data":12
     },
     "parameters_firm":{
         "memory_cap": 30,
-        "prob_innovate": 0.02,
+        "prob_innovate": 0.083,
+        "prob_change_production": 0.083,
         "lambda_pow": 5,
         "innovation_seed": 77,
         "num_cars_production": 8,
@@ -162,7 +168,7 @@ if __name__ == "__main__":
         "price_adjust_monthly": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 1000,
+        "num_individuals": 10000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -176,13 +182,13 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.7287,
-        "b_innovativeness": 0.9186,
+        "a_innovativeness": 0.75,
+        "b_innovativeness": 0.91,
         "selection_bias": 5,
-        "prob_switch_car": 0.021#CAN SWITCH CARS ONCE EVERY 4 years
+        "prob_switch_car": 0.083#CAN SWITCH CARS ONCE EVERY year
     },
     "parameters_vehicle_user":{
-        "kappa": 9.9481,#17.7372,#30,
+        "kappa":10,#17.7372,#30,
         "alpha": 0.5,
         "r": 0.00417,#5%/12
         "mu": 1

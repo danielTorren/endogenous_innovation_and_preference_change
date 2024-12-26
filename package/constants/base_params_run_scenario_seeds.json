@@ -10,7 +10,7 @@
     "ev_research_start_time": 60,
     "EV_nu_diff_state": 1,
     "EV_rebate_state": 1,
-    "parameters_rebate":{
+    "parameters_rebate_calibration":{
         "start_time": 120,
         "end_time":276,
         "rebate": 7500,

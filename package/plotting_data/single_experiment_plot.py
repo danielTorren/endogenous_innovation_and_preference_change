@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
 import scipy.stats as stats
-from package.model import controller
 from package.resources.utility import load_object
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
@@ -13,6 +12,7 @@ from matplotlib.colors import Normalize
 from matplotlib.colors import LinearSegmentedColormap
 import networkx as nx
 from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
+from matplotlib.cm import get_cmap
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -61,7 +61,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     ax.axvline( burn_in  + ev_production_start_time, color="red", linestyle=':', label="EV sale enabled")
     
     if base_params["EV_rebate_state"]:
-        ax.axvline( burn_in  + base_params["parameters_rebate"]["start_time"], color="red", linestyle='-.', label="EV adoption subsidy")
+        ax.axvline( burn_in  + base_params["parameters_rebate_calibration"]["start_time"], color="red", linestyle='-.', label="EV adoption subsidy")
     if base_params["duration_future"] > 0:
         ax.axvline(burn_in + no_carbon_price, color="red", linestyle='--', label="No Carbon Price End")
     
@@ -1750,8 +1750,6 @@ def plot_history_age_second_hand_car_removed(base_params, second_hand_merchant, 
     # Save and show the plot
     save_and_show(fig, fileName, "age_scrapped_second_hand_merchant", dpi)
 
-from matplotlib.cm import get_cmap
-
 def plot_segment_production_time_series(base_params, firms, fileName, dpi=600):
     """
     Plots the evolution of the number of cars produced in each segment by each firm over time.
@@ -1803,9 +1801,6 @@ def plot_segment_production_time_series(base_params, firms, fileName, dpi=600):
 
     # Save and show the plot
     save_and_show(fig, fileName, "plot_segment_production_time_series", dpi)
-
-import matplotlib.pyplot as plt
-from matplotlib.cm import get_cmap
 
 def plot_aggregated_segment_production_time_series(base_params, firms, fileName, dpi=600):
     """
@@ -1867,6 +1862,21 @@ def plot_aggregated_segment_production_time_series(base_params, firms, fileName,
     save_and_show(fig, fileName, "aggregated_segment_production_time_series", dpi)
 
 
+def plot_emissions_intensity(base_params, real_data , social_network, time_series, fileName, dpi = 600):
+    
+    data_time_series = np.asarray(social_network.history_driving_emissions_ICE)/np.asarray(social_network.history_total_distance_driven_ICE)#kg_C02_per_km
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    ax.plot(time_series, data_time_series, label = "Simulated data")
+    time_series_yearly = range(base_params["duration_burn_in"],base_params["duration_burn_in"] + 23*12, 12)
+    ax.plot(time_series_yearly, real_data, label = "California data")
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("Kg CO2 per km, ICE cars")
+
+    add_vertical_lines(ax, base_params)
+    
+    ax.legend(loc="center left")
+    save_and_show(fig, fileName, "plot_emissions_per_km_ICE", dpi)
+    
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -1889,16 +1899,16 @@ def main(fileName, dpi=600):
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plt.show()
 
-    plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
+    #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
-    plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
+    #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
-    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
-    plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
-    plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
+    #plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
 
     #plot_history_quality_index(social_network, fileName, dpi)
     plot_history_median_price(base_params, social_network, fileName, dpi)
@@ -1914,32 +1924,30 @@ def main(fileName, dpi=600):
     
     #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
     
+    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
-
-    plot_preferences(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     plot_history_research_type(firm_manager, time_series, fileName, dpi)
     plot_car_sale_prop(social_network, time_series, fileName, dpi)
     #plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_series, fileName, dpi)
     
-    
     plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
     
-    plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
-    plot_total_distance(social_network, time_series, fileName, dpi)
-    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
+    #plot_total_distance(social_network, time_series, fileName, dpi)
+    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
 
-    plot_calibration_data(data_controller, time_series, fileName)
+    #plot_calibration_data(data_controller, time_series, fileName)
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
 
@@ -1953,7 +1961,7 @@ def main(fileName, dpi=600):
     #plot_density_by_value(fileName, social_network, time_series)
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
-    #plot_emissions(social_network, time_series, fileName, dpi)
+    plot_emissions(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     """
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
@@ -1977,14 +1985,16 @@ def main(fileName, dpi=600):
     #plot_social_network(social_network, fileName)
     """
 
+    #CHECKING OUTPUTS
+
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
-    #print(calibration_data_output)
-    #quit()
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    print("EV_stock_prop_2010_22", EV_stock_prop_2010_22)
     plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
-    #(base_params, real_data, social_network, fileName, dpi=600
+
+    emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
+    plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
+
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_10_09_08__24_12_2024")
+    main("results/single_experiment_20_12_57__26_12_2024")

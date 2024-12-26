@@ -61,7 +61,7 @@ def generate_data(parameters: dict,print_simu = 0):
             "SIMULATION time taken: %s minutes" % ((time.time() - start_time) / 60),
             "or %s s" % ((time.time() - start_time)),
         )
-    #print("E: ",controller.social_network.total_production_emissions, controller.social_network.total_driving_emissions)
+    print("E: ",controller.social_network.total_production_emissions, controller.social_network.total_driving_emissions)
     #quit()
     return controller
 
