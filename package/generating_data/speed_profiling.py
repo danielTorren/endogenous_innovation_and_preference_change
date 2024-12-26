@@ -71,7 +71,7 @@ if __name__ == '__main__':
                     "carbon_price_state": "linear"
                 }
             },
-            "Adoption_subsidys":{
+            "Adoption_subsidy":{
                 "Zero":{
                     "rebate": 0,
                     "used_rebate": 0

@@ -179,41 +179,89 @@ class Controller:
     def manage_policies(self):
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
+        self.Discriminatory_corporate_tax_state =  self.parameters_controller["parameters_policies"]["States"]["Discriminatory_corporate_tax"]
+        self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
+        self.Production_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Production_subsidy"]
+        self.Research_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Research_subsidy"]
 
         # Carbon price calculation
         if self.Carbon_price_state == "Zero":
-            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price_state"]
-            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price_init"]
-            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["carbon_price"]
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price"]
         elif self.Carbon_price_state == "Low":
-            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price_state"]
-            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price_init"]
-            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["carbon_price"]
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["Carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["Carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["Carbon_price"]
         elif self.Carbon_price_state == "High":
-            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price_state"]
-            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price_init"]
-            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["carbon_price"]
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price"]
         else:
             raise ValueError("Invalid Carbon price state")
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
 
+        # Discriminatory_corporate_tax calculation
+        if self.Discriminatory_corporate_tax_state == "Zero":
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Zero"]["corporate_tax"]
+        elif self.Discriminatory_corporate_tax_state == "Low":
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Low"]["corporate_tax"]
+        elif self.Discriminatory_corporate_tax_state == "High":
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["High"]["corporate_tax"]
+        else:
+            raise ValueError("Invalid Discriminatory_corporate_tax state")
+        self.discriminatory_corporate_tax_time_series_future = np.asarray([self.Discriminatory_corporate_tax]*self.duration_future)
+
+        # Electricity_subsidy calculation
+        if self.Electricity_subsidy_state == "Zero":
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Zero"]["electricity_price_subsidy"]
+        elif self.Electricity_subsidy_state == "Low":
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Low"]["electricity_price_subsidy"]
+        elif self.Electricity_subsidy_state == "High":
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["High"]["electricity_price_subsidy"]
+        else:
+            raise ValueError("Invalid electricity_price_subsidy state")
+        self.electricity_price_subsidy_time_series_future = np.asarray([self.Electricity_subsidy]*self.duration_future)
+
         # Adoption subsidy calculation
         if self.Adoption_subsidy_state == "Zero":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidys"]["Zero"]["rebate"]
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidys"]["Zero"]["used_rebate"]
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["rebate"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["used_rebate"]
         elif self.Adoption_subsidy_state == "Low":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidys"]["Low"]["rebate"]
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidys"]["Low"]["used_rebate"]
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["rebate"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["used_rebate"]
         elif self.Adoption_subsidy_state == "High":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidys"]["High"]["rebate"]
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidys"]["High"]["used_rebate"]
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["rebate"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["used_rebate"]
         else:
             raise ValueError("Invalid Adoption subsidy state")
         self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
-        
+
+        # Production_subsidy calculation
+        if self.Production_subsidy_state == "Zero":
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Zero"]["rebate"]
+        elif self.Production_subsidy_state == "Low":
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Low"]["rebate"]
+        elif self.Production_subsidy_state == "High":
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["High"]["rebate"]
+        else:
+            raise ValueError("Invalid Production_subsidy state")
+        self.production_subsidy_time_series_future = np.asarray([self.Production_subsidy]*self.duration_future)
+
+        # Research_subsidy calculation
+        if self.Research_subsidy_state == "Zero":
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Zero"]["rebate"]
+        elif self.Research_subsidy_state == "Low":
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Low"]["rebate"]
+        elif self.Research_subsidy_state == "High":
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["High"]["rebate"]
+        else:
+            raise ValueError("Invalid Research_subsidy state")
+        self.research_subsidy_time_series_future = np.asarray([self.Research_subsidy]*self.duration_future)
+
     #############################################################################################################################
     #DEAL WITH CARBON PRICE
 
@@ -294,8 +342,17 @@ class Controller:
             self.electricity_emissions_intensity_vec = np.concatenate((self.electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
             self.rebate_time_series = np.concatenate((self.rebate_time_series,self.rebate_time_series_future ), axis=None) 
             self.used_rebate_time_series = np.concatenate((self.used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+            self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
+            self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
+            self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.production_subsidy_time_series_future), axis=None) 
+            self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.research_subsidy_time_series_future), axis=None) 
+
         else:
             self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.discriminatory_corporate_tax_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.production_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.research_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
 
@@ -429,10 +486,15 @@ class Controller:
 
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller]
-        self.electricity_price = self.electricity_price_vec[self.t_controller]
+        self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
+        self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
+
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
+        self.discriminatory_corporate_tax = self.discriminatory_corporate_tax_time_series[self.t_controller]
+        self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
+        self.research_subsidy = self.research_subsidy_time_series[self.t_controller]
 
         #HANDLE REBATE EXCLUSION, REMOVE ALL THE FIRMS FROM THE LIST
         if self.t_controller == self.duration_burn_in + self.duration_no_carbon_price:
@@ -440,7 +502,7 @@ class Controller:
                 self.social_network.remove_firm_rebate_exclusion_set(firm_id)
 
     def update_firms(self):
-        cars_on_sale_all_firms, total_U_sum = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate)
+        cars_on_sale_all_firms, total_U_sum = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
         return cars_on_sale_all_firms, total_U_sum
     
     def update_social_network(self):

@@ -831,13 +831,13 @@ def plot_calibration_data(controller, time_series, fileName, dpi=600):
     #print(social_network.history_second_hand_bought)
     #quit()
 
-    axes[0].plot( controller.gas_price_california_vec)
+    axes[0].plot(controller.gas_price_california_vec)
     axes[1].plot(controller.electricity_price_vec)
     axes[2].plot(controller.electricity_emissions_intensity_vec)
 
-    axes[0].set_ylabel("Gas price california 2000-22 in 2020 Dollars")
-    axes[1].set_ylabel("Electricity price california 2000-22 in 2020 Dollars")
-    axes[2].set_ylabel("Urban Electricity emissions intensity 2000-22 in kgCO2/kWhr")
+    axes[0].set_ylabel("Gas price california in 2020 Dollars")
+    axes[1].set_ylabel("Electricity price california in 2020 Dollars")
+    axes[2].set_ylabel("Urban Electricity emissions intensity in kgCO2/kWhr")
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_calibration_data", dpi)   
 
@@ -1610,17 +1610,6 @@ def plot_history_median_price(base_params, social_network, fileName, dpi=600):
     ax.legend()
     save_and_show(fig, fileName, "history_median_price", dpi)
 
-def plot_history_quality_index(social_network, fileName, dpi=600):
-
-    # Create a grid of subplots (4x4 layout)
-    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
-    data = np.asarray(social_network.history_quality_index)
-    ax.plot(data)
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Quality index")
-    ax.legend()
-    save_and_show(fig, fileName, "history_quality_index", dpi)
-
 def plot_history_quality_users_raw_adjusted(social_network, fileName, dpi=600):
     # Convert the history list to a NumPy array for easier manipulation
     data = np.array(social_network.history_quality_users_raw_adjusted, dtype=object)
@@ -1644,7 +1633,7 @@ def plot_history_quality_users_raw_adjusted(social_network, fileName, dpi=600):
 
     # Save and show the plot
     fig.tight_layout()
-    plt.savefig(fileName, dpi=dpi)
+    save_and_show(fig, fileName, "plot_history_quality_users_raw_adjusted", dpi)
 
 
 def plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi=600):
@@ -1894,7 +1883,9 @@ def main(fileName, dpi=600):
     
     # All plot function calls
     #"""
-    """
+    #"""
+    plot_calibration_data(data_controller, time_series, fileName)
+
     plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plt.show()
@@ -1947,7 +1938,7 @@ def main(fileName, dpi=600):
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
 
-    #plot_calibration_data(data_controller, time_series, fileName)
+
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
 
@@ -1963,7 +1954,7 @@ def main(fileName, dpi=600):
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     plot_emissions(social_network, time_series, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
-    """
+    #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     """
     percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
@@ -1997,4 +1988,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_20_12_57__26_12_2024")
+    main("results/single_experiment_21_49_53__26_12_2024")

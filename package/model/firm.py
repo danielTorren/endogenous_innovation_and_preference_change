@@ -152,7 +152,7 @@ class Firm:
 
 
     def calc_optimal_price_cars(self, market_data, car_list): 
-        """Calculate the optimal price for each car in the car list based on market data."""
+        """Calculate the optimal price for each car in the car list based on market data. USED WHEN FIRST STUDYING A CAR"""
 
         for car in car_list:
             E_m = car.emissions  # Emissions for the current car                                                  
@@ -163,6 +163,7 @@ class Firm:
                 car.fuel_cost_c = self.gas_price
             else:#EV
                 car.fuel_cost_c = self.electricity_price
+                C_m  = C_m - self.production_subsidy
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -201,6 +202,7 @@ class Firm:
                 car.fuel_cost_c = self.gas_price
             else:#EV
                 car.fuel_cost_c = self.electricity_price
+                C_m  = C_m - self.production_subsidy
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -288,7 +290,13 @@ class Firm:
                     utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
 
                     utility_proportion = ((utility_car)**self.kappa)/((U_sum + utility_car)**self.kappa)
-                    expected_profit = profit_per_sale * I_s_t * utility_proportion
+
+                    raw_profit = profit_per_sale * I_s_t * utility_proportion
+
+                    if is_ev:
+                        expected_profit = raw_profit
+                    else:
+                        expected_profit = raw_profit*(1-self.discriminatory_corporate_tax)
 
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit
@@ -302,6 +310,59 @@ class Firm:
 
         return expected_profits_segments
 
+    def calc_predicted_profit_segments_research(self, market_data, car_list):
+        """
+        THIS INCLUDES THE FLAT SUBSIDY FOR EV RESEARCH!
+        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars, 
+        and segments that do not consider EVs only able to buy ICE cars.
+        """
+        expected_profits_segments = {}
+        
+        # Initialize expected profits dictionary for each segment
+        for segment_code, segment_data in market_data.items():
+            expected_profits_segments[segment_code] = {}  # Initialize dict to store profits by vehicle
+        
+        # Loop through each vehicle in car_list to calculate profit for each segment
+        for vehicle in car_list:
+            is_ev = vehicle.transportType == 3  # Assuming transportType 3 is EV; adjust as needed
+
+            # Calculate profit for each segment
+            for segment_code, segment_data in market_data.items():
+
+                consider_ev = segment_code[2] == str(1)  # Determine if the segment considers EVs
+
+                # For segments that consider EVs, calculate profit for both EV and ICE vehicles
+                if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
+
+                    # Calculate profit for this vehicle and segment
+                    profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t  + self.carbon_price*vehicle.emissions) 
+                    
+                    I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
+                    U_sum = segment_data["U_sum"]
+                    
+                    # Expected profit calculation
+                    utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
+
+                    utility_proportion = ((utility_car)**self.kappa)/((U_sum + utility_car)**self.kappa)
+
+                    raw_profit = profit_per_sale * I_s_t * utility_proportion
+
+                    if is_ev:
+                        expected_profit = raw_profit + self.research_subsidy
+                    else:
+                        expected_profit = raw_profit*(1-self.discriminatory_corporate_tax)
+
+                    # Store profit in the vehicle's expected profit attribute and update the main dictionary
+                    vehicle.expected_profit_segments[segment_code] = expected_profit 
+                    
+                    expected_profits_segments[segment_code][expected_profit] = vehicle
+                else:
+                    # Store profit in the vehicle's expected profit attribute and update the main dictionary
+                    expected_profit = self.research_subsidy
+                    vehicle.expected_profit_segments[segment_code] = expected_profit 
+                    expected_profits_segments[segment_code][expected_profit] = vehicle
+
+        return expected_profits_segments
 
     def choose_cars_segments(self, market_data):
         """
@@ -517,7 +578,7 @@ class Firm:
         #    print("INNOVTTA¿TUBG ")
         self.calc_utility_cars_segments(market_data, self.unique_neighbouring_technologies)
         # calc the predicted profits of cars
-        expected_profits_segments = self.calc_predicted_profit_segments(market_data, self.unique_neighbouring_technologies)
+        expected_profits_segments = self.calc_predicted_profit_segments_research(market_data, self.unique_neighbouring_technologies)
         # select the car to innovate
         self.vehicle_model_research = self.select_car_lambda_research(expected_profits_segments)
 
@@ -563,21 +624,6 @@ class Firm:
 
         return neighbouring_technologies
     
-    def gen_neighbour_strings_set(self, memory_string_list, last_researched_car):
-
-        unique_neighbouring_technologies_strings = set()
-
-        unique_neighbouring_technologies_strings.update(last_researched_car.inverted_tech_strings)
-        #get strings from memory
-        list_technology_memory_strings = [vehicle.component_string for vehicle in memory_string_list]
-
-        # Normalize strings (strip whitespace and convert to lowercase)
-        if any(memory in unique_neighbouring_technologies_strings for memory in list_technology_memory_strings):
-            unique_neighbouring_technologies_strings -= set(list_technology_memory_strings)
-   
-
-        return unique_neighbouring_technologies_strings
-    
     def gen_neighbour_strings(self, memory_string_list, last_researched_car):
         # Initialize a list to store unique neighboring technology strings
         unique_neighbouring_technologies_strings = []
@@ -592,7 +638,7 @@ class Firm:
 
         # Normalize strings (strip whitespace and convert to lowercase)
         normalized_memory_strings = [memory.strip().lower() for memory in list_technology_memory_strings]
-        normalized_tech_strings = [tech.strip().lower() for tech in unique_neighbouring_technologies_strings]
+        #normalized_tech_strings = [tech.strip().lower() for tech in unique_neighbouring_technologies_strings]
 
         # Remove overlapping strings
         result = []
@@ -601,7 +647,6 @@ class Firm:
                 result.append(tech)
 
         return result
-
 
     def generate_neighbouring_technologies(self, last_researched_car, list_technology_memory, landscape, parameters_car, transportType):
         """Generate neighboring technologies for cars. Roaming point"""
@@ -612,23 +657,6 @@ class Firm:
         self.neighbouring_technologies = self.gen_neighbour_carsModel(string_list, landscape, parameters_car, transportType)
 
         return self.neighbouring_technologies
-    
-    ########################################################################################################################################
-    #TUMOR ALTERNATIVE
-    
-    def gen_neighbour_strings_tumor(self, list_technology_memory):
-
-        unique_neighbouring_technologies_strings = set(
-            tech_string  # Each individual tech string we want to add to the set
-            for vehicleModel in list_technology_memory  # For each vehicleModel in the list
-            for tech_string in vehicleModel.inverted_tech_strings  # For each tech_string in the vehicleModel's inverted_tech_strings
-        )
-        #get strings from memory
-        list_technology_memory_strings = [vehicle.component_string for vehicle in list_technology_memory]
-        # Remove the existing technologies from neighboring options to avoid duplicates
-        unique_neighbouring_technologies_strings -= set(list_technology_memory_strings)
-
-        return unique_neighbouring_technologies_strings
     
     ########################################################################################################################################
 
@@ -664,7 +692,7 @@ class Firm:
             self.history_attributes_researched.append([np.nan, np.nan,np.nan ])
             self.history_research_type.append(np.nan)
         
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
@@ -672,6 +700,9 @@ class Firm:
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
+        self.discriminatory_corporate_tax =  discriminatory_corporate_tax
+        self.production_subsidy = production_subsidy
+        self.research_subsidy = research_subsidy
 
         #update cars to sell
         if self.random_state.rand() < self.prob_change_production:

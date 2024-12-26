@@ -33,9 +33,9 @@ if __name__ == "__main__":
 
     base_params ={
     "seed_repetitions": 10,
-    "duration_burn_in": 60,#24,
-    "duration_no_carbon_price": 276,
-    "duration_future":0,
+    "duration_burn_in": 60,#24#,5 years
+    "duration_no_carbon_price": 276,#2022
+    "duration_future":156,#2035
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         "States":{
             "Gas_price": "Current",
             "Electricity_price": "Current",
-            "Grid_emissions_intensity": "Weaker"
+            "Grid_emissions_intensity": "Decarbonised"
         },
         "Values":{
             "Gas_price":{
@@ -78,27 +78,53 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": "High",
-            "Adoption_subsidy": "High"
+            "Discriminatory_corporate_tax": "Zero",
+            "Electricity_subsidy": "Zero",
+            "Adoption_subsidy": "Zero",
+            "Production_subsidy": "Zero",
+            "Research_subsidy": "Zero"
         },
         "Values":{
             "Carbon_price":{
                 "Zero":{
-                    "carbon_price_init": 0,
-                    "carbon_price": 0,
-                    "carbon_price_state": "linear"
+                    "Carbon_price_init": 0,
+                    "Carbon_price": 0,
+                    "Carbon_price_state": "linear"
                 },
                 "Low":{
-                    "carbon_price_init": 0,
-                    "carbon_price": 0.1,
-                    "carbon_price_state": "linear"
+                    "Carbon_price_init": 0,
+                    "Carbon_price": 0.03,
+                    "Carbon_price_state": "linear"
                 },
                 "High":{
-                    "carbon_price_init": 0,
-                    "carbon_price": 0.5,
-                    "carbon_price_state": "linear"
+                    "Carbon_price_init": 0,
+                    "Carbon_price": 0.1,
+                    "Carbon_price_state": "linear"
                 }
             },
-            "Adoption_subsidys":{
+            "Discriminatory_corporate_tax":{
+                "Zero":{
+                    "corporate_tax": 0
+                },
+                "Low":{
+                    "corporate_tax": 0.05
+                },
+                "High":{
+                    "corporate_tax": 0.2
+                }
+            },
+            "Electricity_subsidy":{                
+                "Zero":{
+                    "electricity_price_subsidy": 0
+                },
+                "Low":{
+                    "electricity_price_subsidy": 0.01
+                },
+                "High":{
+                    "electricity_price_subsidy": 0.1
+                }
+            },
+            "Adoption_subsidy":{
                 "Zero":{
                     "rebate": 0,
                     "used_rebate": 0
@@ -110,6 +136,28 @@ if __name__ == "__main__":
                 "High":{
                     "rebate": 10000,
                     "used_rebate": 1000
+                }
+            },
+            "Production_subsidy":{
+                "Zero":{
+                    "rebate": 0,
+                },
+                "Low":{
+                    "rebate": 2500
+                },
+                "High":{
+                    "rebate": 5000
+                }
+            },
+            "Research_subsidy":{
+                "Zero":{
+                    "rebate": 0,
+                },
+                "Low":{
+                    "rebate": 2500
+                },
+                "High":{
+                    "rebate": 5000
                 }
             }
         }
