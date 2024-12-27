@@ -150,7 +150,7 @@ if __name__ == '__main__':
         "d_min_seed": 45,
         "d_i_min": 700,
         "d_i_min_sd": 700,
-        "SW_K": 20,
+        "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,

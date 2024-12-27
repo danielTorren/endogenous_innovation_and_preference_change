@@ -190,50 +190,6 @@ class Firm:
 
         return car_list
     
-    def calc_optimal_price_cars_sticky(self, market_data, car_list): 
-        """Calculate the optimal price for each car in the car list based on market data."""
-
-        for car in car_list:
-            E_m = car.emissions  # Emissions for the current car                                                  
-            C_m = car.ProdCost_t  + self.carbon_price*E_m  # Cost for the current car
-
-            #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
-            if car.transportType == 2:#ICE
-                car.fuel_cost_c = self.gas_price
-            else:#EV
-                car.fuel_cost_c = self.electricity_price
-                C_m  = C_m - self.production_subsidy
-
-            # Iterate over each market segment to calculate utilities and distances
-            for segment_code, segment_data in market_data.items():
-                beta_s = segment_data["beta_s_t"]
-                gamma_s = segment_data["gamma_s_t"]
-                U_sum = segment_data["U_sum"]
- 
-                # Calculate optimal distance for the given segment
-                d_i_t = self.optimal_distance(car, beta_s, gamma_s)
-                car.car_distance_segments[segment_code] = d_i_t  # Save the calculated distance
-
-                # Calculate the commuting  utility for the given segment
-                utility_segment = self.calc_commuting_utility(car, d_i_t, beta_s, gamma_s)
-                
-                # Save the base utility
-                B = utility_segment/(self.r + (np.log(1+self.delta))/(1-self.alpha))
-                car.car_base_utility_segments[segment_code] = B
-
-                inside_component = U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )
-
-                if inside_component < 0 or self.t_firm == 1:
-                    price_optimal = C_m#STOP NEGATIVE SQUARE ROOTS
-                else:
-                    price_optimal = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(inside_component) )/beta_s )
-
-                price = min((1+self.price_adjust_monthly)*car.optimal_price_segments[segment_code], max((1 -self.price_adjust_monthly)*car.optimal_price_segments[segment_code], price_optimal))
-                
-                car.optimal_price_segments[segment_code] = price
-
-        return car_list
-    
     def calc_utility_cars_segments(self, market_data, vehicle_list):
 
         for segment_code, segment_data in market_data.items():
@@ -374,8 +330,7 @@ class Firm:
         else:
             self.list_technology_memory = self.list_technology_memory_ICE 
 
-        #if self.t_firm > 18:
-        #print("len memory", self.firm_id, len(self.list_technology_memory))
+
         car_list = self.calc_optimal_price_cars(market_data,  self.list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
         
         self.calc_utility_cars_segments(market_data, self.list_technology_memory)#utility of all the cars for all the segments

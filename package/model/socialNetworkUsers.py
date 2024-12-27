@@ -79,9 +79,11 @@ class Social_Network:
     def init_network_settings(self, parameters_social_network):
         self.selection_bias = parameters_social_network["selection_bias"]
         self.network_structure_seed = int(round(parameters_social_network["network_structure_seed"]))
-        self.K_social_network =  int(round(parameters_social_network["SW_K"]))
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
-
+        self.SW_network_density_input = parameters_social_network["SW_network_density"]
+        self.SW_prob_rewire = parameters_social_network["SW_prob_rewire"]
+        self.SW_K = int(round((self.num_individuals - 1) * self.SW_network_density_input))
+        
     def init_preference_distribution(self, parameters_social_network):
         #CHI
         self.a_innovativeness = parameters_social_network["a_innovativeness"]
@@ -151,7 +153,6 @@ class Social_Network:
         
         return np.asarray(beta_list)
 
-
     def generate_beta_values(self, n, percentages, beta_vals):
         """
         Generate a list of beta values for n agents based on given percentages and beta values.
@@ -204,24 +205,6 @@ class Social_Network:
         
     def normalize_vec_sum(self, vec):
         return vec/sum(vec)
-
-    def _split_into_groups(self) -> list:
-        """
-        Split agents into groups for SBM network creation.
-        
-        Returns:
-            list: List of group sizes
-        
-        Raises:
-            ValueError: If SBM_block_num is not positive
-        """
-        if self.SBM_block_num <= 0:
-            raise ValueError("SBM_block_num must be greater than zero.")
-        base_count = self.num_individuals//self.SBM_block_num
-        remainder = self.num_individuals % self.SBM_block_num
-        group_counts = [base_count + 1] * remainder + [base_count] * (self.SBM_block_num - remainder)
-        
-        return group_counts
     
     def _calc_weighting_matrix_attribute(self, attribute_array: np.ndarray) -> sp.csr_matrix:
         """
@@ -279,11 +262,8 @@ class Social_Network:
         ws: nx.Graph
             a networkx watts strogatz small world graph
         """
-        #print(self.num_individuals, self.K_social_network, self.prob_rewire, self.network_structure_seed)
-        #print(type(self.num_individuals), type(self.K_social_network), type(self.prob_rewire), type(self.network_structure_seed))
-        #quit()
 
-        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.K_social_network, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
+        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)

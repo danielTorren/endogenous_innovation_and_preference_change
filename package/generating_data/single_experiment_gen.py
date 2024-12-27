@@ -172,7 +172,7 @@ if __name__ == "__main__":
     "parameters_ICE":{
         "landscape_seed": 18, 
         "N": 15,
-        "K": 2,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     "parameters_EV":{
         "landscape_seed": 14,
         "N": 15,
-        "K": 2,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":9000,
@@ -225,7 +225,7 @@ if __name__ == "__main__":
         "d_min_seed": 45,
         "d_i_min": 700,
         "d_i_min_sd": 700,
-        "SW_K": 20,
+        "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
