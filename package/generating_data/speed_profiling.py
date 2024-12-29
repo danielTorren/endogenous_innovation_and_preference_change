@@ -164,7 +164,7 @@ if __name__ == '__main__':
         "kappa": 9.9481,#17.7372,#30,
         "alpha": 0.5,
         "r": 0.00417,#5%/12
-        "mu": 1
+        "mu": 0.1
     }
 }
     # Create a profiler object

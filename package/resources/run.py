@@ -11,6 +11,7 @@ from joblib import Parallel, delayed
 import multiprocessing
 from package.model.controller import Controller
 from package.resources.utility import load_object
+from copy import deepcopy
 
 # modules
 ####################################################################################################################################################
@@ -61,9 +62,22 @@ def generate_data(parameters: dict,print_simu = 0):
             "SIMULATION time taken: %s minutes" % ((time.time() - start_time) / 60),
             "or %s s" % ((time.time() - start_time)),
         )
-    print("E: ",controller.social_network.total_production_emissions, controller.social_network.total_driving_emissions)
-    #quit()
     return controller
+
+def load_in_controller(controller_load, base_params_future):
+
+    #Need to change stuff so that it now runs till the future
+    base_params_future["time_steps_max"] = controller_load.duration_burn_in + controller_load.duration_no_carbon_price + base_params_future["duration_future"]
+
+    controller = controller_load
+    controller.setup_continued_run_future(base_params_future)
+
+    #### RUN TIME STEPS
+    while controller.t_controller < base_params_future["time_steps_max"]-1:
+        controller.next_step()
+
+    return controller
+
 
 #########################################################################################
 #multi-run
@@ -88,7 +102,6 @@ def ev_prop_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
     num_cores = multiprocessing.cpu_count()
-    #res = [generate_emissions_intensities(i) for i in params_dict]
     ev_prop_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_ev_prop)(i) for i in params_dict)
 
     return np.asarray(ev_prop_list)
@@ -139,21 +152,31 @@ def distance_ev_prop_age_price_emissions_parallel_run(
     )
     return np.asarray(distance_list), np.asarray(ev_prop_list), np.asarray(age_list) , np.asarray(price_list) , np.asarray(emissions_list) 
 
+#########################################################################################
+
+def policy_generate_multi(params, controller_load):
+    print("controller loaded!")
+    data = load_in_controller(controller_load, params)
+    print("E: ",data.social_network.total_production_emissions, data.social_network.total_driving_emissions)
+    return data.social_network.history_distance_individual, data.social_network.history_prop_EV, data.social_network.history_car_age, data.social_network.history_mean_price, data.social_network.history_driving_emissions, data.social_network.history_quality_ICE, data.social_network.history_quality_EV, data.social_network.history_efficiency_ICE, data.social_network.history_efficiency_EV, data.social_network.history_production_cost_ICE, data.social_network.history_production_cost_EV, data.social_network.history_distance_individual_ICE, data.social_network.history_distance_individual_EV
+
+def policy_parallel_run(
+        params_dict,
+        controller
+) -> npt.NDArray:
+    res = [policy_generate_multi(params_dict[i],deepcopy(controller)) for i in range(len(params_dict))]
+    
+    num_cores = multiprocessing.cpu_count()
+    #res = Parallel(n_jobs=num_cores, verbose=10)(delayed(policy_generate_multi)(i, params_dict[i], deepcopy(controller) ) for i in range(len(params_dict)))
+    distance_list, ev_prop_list, age_list, price_list, emissions_list, quality_ICE_list, quality_EV_list, efficiency_ICE_list, efficiency_EV_list, production_cost_ICE_list, production_cost_EV_list, distance_individual_ICE_list, distance_individual_EV_list = zip(
+        *res
+    )
+    return np.asarray(distance_list), np.asarray(ev_prop_list), np.asarray(age_list) , np.asarray(price_list) , np.asarray(emissions_list) , quality_ICE_list, quality_EV_list, efficiency_ICE_list, efficiency_EV_list, production_cost_ICE_list, production_cost_EV_list, distance_individual_ICE_list, distance_individual_EV_list
 
 #########################################################################################
-#multi-run
-def generate_preferences(params):
-    data = generate_data(params)
-    return data.social_network.low_carbon_preference_arr
 
-def preferences_parallel_run(
-        params_dict: list[dict]
-) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
-    #res = [generate_emissions_intensities(i) for i in params_dict]
-    preferences_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_preferences)(i) for i in params_dict)
+#########################################################################################
 
-    return np.asarray(preferences_list)
 ######################################################################################
 
 def parallel_run(

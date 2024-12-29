@@ -31,16 +31,16 @@ def main(
 
 if __name__ == "__main__":
 
-    base_params ={
+    base_params = {
     "seed_repetitions": 10,
-    "duration_burn_in": 60,#24#,5 years
-    "duration_no_carbon_price": 276,#2022
-    "duration_future":156,#2035
+    "duration_burn_in": 60,
+    "duration_no_carbon_price": 276,
+    "duration_future":156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
-    "ev_research_start_time": 60,#200
-    "ev_production_start_time": 108,#2008
+    "ev_research_start_time": 60,
+    "ev_production_start_time": 108,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -93,12 +93,12 @@ if __name__ == "__main__":
                 },
                 "Low":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 0.03,
+                    "Carbon_price": 0.1,
                     "Carbon_price_state": "linear"
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 0.1,
+                    "Carbon_price": 0.2,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             },
             "Production_subsidy":{
                 "Zero":{
-                    "rebate": 0,
+                    "rebate": 0
                 },
                 "Low":{
                     "rebate": 2500
@@ -151,7 +151,7 @@ if __name__ == "__main__":
             },
             "Research_subsidy":{
                 "Zero":{
-                    "rebate": 0,
+                    "rebate": 0
                 },
                 "Low":{
                     "rebate": 2500
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         "remove_seed": 48,
         "age_limit_second_hand": 3,
         "max_num_cars": 5000,
-        "burn_in_second_hand_market": 12,#12,#first year no second hand cars
+        "burn_in_second_hand_market": 12,
         "fixed_alternative_mark_up": 0.2
     },
     "parameters_ICE":{
@@ -212,8 +212,7 @@ if __name__ == "__main__":
         "innovation_seed": 77,
         "num_cars_production": 8,
         "init_U_sum": 10e7,
-        "init_price_multiplier": 1,
-        "price_adjust_monthly": 0.01
+        "init_price_multiplier": 1
     },
     "parameters_social_network":{
         "num_individuals": 10000,
@@ -230,16 +229,16 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.75,
-        "b_innovativeness": 0.91,
+        "a_innovativeness": 0.7,
+        "b_innovativeness": 1,
         "selection_bias": 5,
-        "prob_switch_car": 0.083#CAN SWITCH CARS ONCE EVERY year
+        "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
-        "kappa":10,#17.7372,#30,
+        "kappa":10,
         "alpha": 0.5,
-        "r": 0.00417,#5%/12
-        "mu": 1
+        "r": 0.00417,
+        "mu": 0.5
     }
 }
 

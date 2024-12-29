@@ -47,12 +47,10 @@ class Controller:
 
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
-        self.vehicles_chosen_list = self.social_network.current_vehicles
+        self.new_bought_vehicles = self.social_network.current_vehicles
 
         #UPDATE SECOND HADN MERCHANT WITH THE DATA
-        self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)
-        self.total_U_sum = self.parameters_firm["init_U_sum"]*8#NUM SEGMENTS
-        
+        self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)        
 
         #pass information across one time
         self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
@@ -110,9 +108,9 @@ class Controller:
 
     #######################################################################################################################################
     def manage_burn_in(self):
-        self.burn_in_gas_price_vec = np.asarray([self.gas_price_california_vec[0]]*self.duration_burn_in)
-        self.burn_in_electricity_price_vec = np.asarray([self.electricity_price_vec[0]]*self.duration_burn_in)
-        self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
+        self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
+        self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
+        self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.calibration_electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
         self.burn_in_rebate_time_series = np.zeros(self.duration_burn_in)
         self.burn_in_used_rebate_time_series = np.zeros(self.duration_burn_in)
 
@@ -123,13 +121,12 @@ class Controller:
 
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
-        self.calibration_time_steps = len(self.electricity_emissions_intensity_vec)
-        self.rebate_time_series = np.zeros(self.duration_no_carbon_price)
-        self.used_rebate_time_series = np.zeros(self.duration_no_carbon_price)
+        self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price)
+        self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price)
         
         if self.parameters_controller["EV_rebate_state"]:#IF TRUE IMPLEMENTED
-            self.rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
-            self.used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
+            self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
+            self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
 
         self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
 
@@ -316,20 +313,20 @@ class Controller:
         """Put together the calibration, scenarios and policies data"""
         
         self.parameters_calibration_data = self.parameters_controller["calibration_data"]
-        self.gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
-        self.electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
-        self.electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
+        self.calibration_gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
+        self.calibration_electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
+        self.calibration_electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
 
         self.manage_burn_in()
 
         self.manage_calibration()
 
         #JOIN BURN IN AND CALIBRATION
-        self.gas_price_california_vec = np.concatenate((self.burn_in_gas_price_vec,self.gas_price_california_vec), axis=None) 
-        self.electricity_price_vec =  np.concatenate((self.burn_in_gas_price_vec,self.electricity_price_vec), axis=None) 
-        self.electricity_emissions_intensity_vec = np.concatenate((self.burn_in_gas_price_vec,self.electricity_emissions_intensity_vec), axis=None) 
-        self.rebate_time_series = np.concatenate((self.burn_in_rebate_time_series, self.rebate_time_series), axis=None) 
-        self.used_rebate_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.used_rebate_time_series), axis=None) 
+        self.pre_future_gas_price_california_vec = np.concatenate((self.burn_in_gas_price_vec,self.calibration_gas_price_california_vec), axis=None) 
+        self.pre_future_electricity_price_vec =  np.concatenate((self.burn_in_gas_price_vec,self.calibration_electricity_price_vec), axis=None) 
+        self.pre_future_electricity_emissions_intensity_vec = np.concatenate((self.burn_in_gas_price_vec,self.calibration_electricity_emissions_intensity_vec), axis=None) 
+        self.pre_future_rebate_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) 
+        self.pre_future_used_rebate_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
                 
         if self.full_run_state:
             self.manage_scenario()
@@ -337,22 +334,30 @@ class Controller:
 
             #NOW STAPLE THE STUFF TOGETHER TO GET ONE THING
             #CALIRBATION TIME_STEPS
-            self.gas_price_california_vec = np.concatenate((self.gas_price_california_vec, self.gas_price_series_future), axis=None) 
-            self.electricity_price_vec =  np.concatenate((self.electricity_price_vec, self.electricity_price_series_future ), axis=None) 
-            self.electricity_emissions_intensity_vec = np.concatenate((self.electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
-            self.rebate_time_series = np.concatenate((self.rebate_time_series,self.rebate_time_series_future ), axis=None) 
-            self.used_rebate_time_series = np.concatenate((self.used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+            self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
+            self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
+            self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
+            self.rebate_time_series = np.concatenate((self.pre_future_rebate_time_series,self.rebate_time_series_future ), axis=None) 
+            self.used_rebate_time_series = np.concatenate((self.pre_future_used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+
             self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
             self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
             self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.production_subsidy_time_series_future), axis=None) 
             self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.research_subsidy_time_series_future), axis=None) 
 
         else:
+            self.gas_price_california_vec = self.pre_future_gas_price_california_vec 
+            self.electricity_price_vec = self.pre_future_electricity_price_vec 
+            self.electricity_emissions_intensity_vec = self.pre_future_electricity_emissions_intensity_vec
+            self.rebate_time_series = self.pre_future_rebate_time_series 
+            self.used_rebate_time_series = self.pre_future_used_rebate_time_series
+                    
             self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.discriminatory_corporate_tax_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.production_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.research_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+        
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
 
@@ -427,7 +432,6 @@ class Controller:
     def setup_second_hand_market(self):
         self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
-        self.parameters_second_hand["price_adjust_monthly"] = self.parameters_firm["price_adjust_monthly"]
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
@@ -496,39 +500,75 @@ class Controller:
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
         self.research_subsidy = self.research_subsidy_time_series[self.t_controller]
 
-        #HANDLE REBATE EXCLUSION, REMOVE ALL THE FIRMS FROM THE LIST
+        #HANDLE REBATE EXCLUSION, REMOVE ALL THE FIRMS FROM THE LIST, RESET THE COMULATIVE COST OF POLICY
         if self.t_controller == self.duration_burn_in + self.duration_no_carbon_price:
             for firm_id in self.social_network.firm_rebate_exclusion_set:
                 self.social_network.remove_firm_rebate_exclusion_set(firm_id)
 
+            self.social_network.policy_distortion = 0
+            self.firm_manager.policy_distortion = 0
+            for firm in self.firm_manager.firms_list:
+                firm.policy_distortion = 0
+
     def update_firms(self):
-        cars_on_sale_all_firms, total_U_sum = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.vehicles_chosen_list, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
-        return cars_on_sale_all_firms, total_U_sum
+        cars_on_sale_all_firms, U_sum_total = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
+        return cars_on_sale_all_firms, U_sum_total
     
     def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, vehicles_chosen_list = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy)
 
-        return consider_ev_vec, vehicles_chosen_list
+        return consider_ev_vec, new_bought_vehicles
 
-    def get_second_hand_cars(self):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.total_U_sum, self.carbon_price)
+    def get_second_hand_cars(self,U_sum_total):
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total)
 
         return self.second_hand_merchant.cars_on_sale
 
     ################################################################################################
+
+    def calc_total_policy_distortion(self):
+        """RUN ONCE AT THE END OF SIMULATION"""
+        policy_distortion_firms = sum(firm.policy_distortion for firm in self.firm_manager)
+        policy_distortion = self.social_network.policy_distortion + self.firm_manager.policy_distortion + policy_distortion_firms
+        return policy_distortion
+
+
 
     def next_step(self):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
         #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
-        self.cars_on_sale_all_firms, self.total_U_sum = self.update_firms()
-        self.second_hand_cars = self.get_second_hand_cars()
-        self.consider_ev_vec, self.vehicles_chosen_list = self.update_social_network()
+        self.cars_on_sale_all_firms, U_sum_total = self.update_firms()
+        self.second_hand_cars = self.get_second_hand_cars(U_sum_total)
+        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()
 
+    #################################################################################################
+
+    def setup_continued_run_future(self, updated_parameters):
+        """Allows future runs to be made using a single loadable controller for a given seed. Used for policy analysis"""
+
+        self.parameters_controller = updated_parameters
+
+        self.duration_future = self.parameters_controller["duration_future"]
+        self.time_steps_max = self.parameters_controller["time_steps_max"]
+
+        self.manage_scenario()
+        self.manage_policies() 
+
+        self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
+        self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
+        self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
+        self.rebate_time_series = np.concatenate((self.pre_future_rebate_time_series,self.rebate_time_series_future ), axis=None) 
+        self.used_rebate_time_series = np.concatenate((self.pre_future_used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+
+        self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
+        self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
+        self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.production_subsidy_time_series_future), axis=None) 
+        self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.research_subsidy_time_series_future), axis=None) 
 
         
 

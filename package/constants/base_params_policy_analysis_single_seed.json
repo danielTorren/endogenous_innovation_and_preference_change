@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 8,
+    "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future":156,
@@ -182,7 +182,7 @@
         "init_price_multiplier": 1
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 3000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -196,8 +196,8 @@
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.5034,
-        "b_innovativeness": 1.287, 
+        "a_innovativeness": 1,
+        "b_innovativeness": 1, 
         "selection_bias": 5,
         "prob_switch_car": 0.083
     },

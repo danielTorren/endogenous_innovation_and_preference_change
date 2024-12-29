@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 8,
+    "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future":156,
@@ -44,12 +44,12 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
-            "Discriminatory_corporate_tax": "High",
-            "Electricity_subsidy": "High",
-            "Adoption_subsidy": "High",
-            "Production_subsidy": "High",
-            "Research_subsidy": "High"
+            "Carbon_price": "Zero",
+            "Discriminatory_corporate_tax": "Zero",
+            "Electricity_subsidy": "Zero",
+            "Adoption_subsidy": "Zero",
+            "Production_subsidy": "Zero",
+            "Research_subsidy": "Zero"
         },
         "Values":{
             "Carbon_price":{
@@ -182,7 +182,7 @@
         "init_price_multiplier": 1
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 3000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -196,8 +196,8 @@
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.5034,
-        "b_innovativeness": 1.287, 
+        "a_innovativeness": 0.7,
+        "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car": 0.083
     },
@@ -205,6 +205,6 @@
         "kappa":10,
         "alpha": 0.5,
         "r": 0.00417,
-        "mu": 0.1
+        "mu": 0.5
     }
 }

@@ -149,7 +149,7 @@
     "parameters_vehicle_user":{
         "alpha": 0.5,
         "r": 0.00417,
-        "mu": 1,
+        "mu": 0.1,
         "kappa":20
     }
 }

@@ -8,9 +8,9 @@ from collections import defaultdict
 class Firm_Manager:
     def __init__(self, parameters_firm_manager: dict, parameters_firm: dict, parameters_car_ICE: dict, parameters_car_EV: dict, ICE_landscape: dict, EV_landscape: dict):
         self.t_firm_manager = 0
-
-        self.total_U_sum = 0
         self.parameters_firm = parameters_firm
+
+        self.policy_distortion = 0
 
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
         self.J = int(round(parameters_firm_manager["J"]))
@@ -217,7 +217,6 @@ class Firm_Manager:
             
             self.market_data[segment_code]["I_s_t"] = segment_counts[i]
             self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
-            self.total_U_sum += sums_U_segment[segment_code]
 
     def update_market_data_moving_average(self, sums_U_segment):
         """Update market data with the moving average of segment counts and sums U for each segment over the last 12 time steps."""
@@ -227,7 +226,6 @@ class Firm_Manager:
         # Calculate segment counts
         segment_counts = np.bincount(segment_codes, minlength=8)
 
-        # Track total U sum for all segments
         self.total_U_sum = 0
 
         # Update each segment's moving average
@@ -255,52 +253,59 @@ class Firm_Manager:
             # Update total U sum
             self.total_U_sum += moving_avg_U_sum
 
-
     ######################################################################################################################
 
-    def calc_total_profits(self, past_chosen_vehicles):
+    def calc_total_profits(self, past_new_bought_vehicles):
 
         total_profit_all_firms = 0         
-        for car in self.cars_on_sale_all_firms:
-            num_vehicle_sold = past_chosen_vehicles.count(car)
+        for car in self.cars_on_sale_all_firms:#LOOP OVER ALL CARS ON SALE TO DO IT IN ONE GO I GUESS
+            num_vehicle_sold = past_new_bought_vehicles.count(car)
+            
+            if num_vehicle_sold > 0:#ONLY COUNT WHEN A CAR HAS ACTUALLY BEEN SOLD
+                profit = (car.price - car.ProdCost_t)
+                total_profit = num_vehicle_sold*profit
+                car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
+                total_profit_all_firms += total_profit
+                
+                #OPTIMIZATION OF DISCRIMINATORY CORPORATE TAX
+                if car.transportType == 2 and total_profit > 0:#ICE CARS THAT MAKE ACTUAL PROFITS
+                    self.policy_distortion += total_profit*self.discriminatory_corporate_tax
 
-            profit = (car.price - car.ProdCost_t)
-            total_profit = num_vehicle_sold*profit
-            car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
-            total_profit_all_firms += total_profit
+                #OPTIMIZATION OF PRODUCTION SUBSIDY
+                if car.transportType == 3:
+                    self.policy_distortion += num_vehicle_sold*self.production_subsidy
 
         return total_profit_all_firms
 
-    def calculate_market_share(self, firm, past_chosen_vehicles, total_sales):
+    def calculate_market_share(self, firm, past_new_bought_vehicles, total_sales):
         """
         Calculate market share for a specific firm.
         Parameters:
             firm : Firm - The firm object for which to calculate market share
-            past_chosen_vehicles : list - List of car objects representing vehicles sold in the past period
+            past_new_bought_vehicles : list - List of car objects representing vehicles sold in the past period
         Returns:
             MS_firm : float - Market share for the specified firm, 0 if no cars sold
         """
         # Calculate total sales for the specified firm by summing prices of cars sold by this firm
-        firm_sales = sum(car.price for car in past_chosen_vehicles if car.firm == firm)
+        firm_sales = sum(car.price for car in past_new_bought_vehicles if car.firm == firm)
         
         # If total_sales is zero, return 0 to avoid division by zero; otherwise, calculate firm market share
         MS_firm = firm_sales / total_sales if total_sales > 0 else 0
         return MS_firm
 
-
-    def calculate_market_concentration(self, past_chosen_vehicles):
+    def calculate_market_concentration(self, past_new_bought_vehicles):
         """
         Calculate market concentration (HHI) based on market shares of all firms.
         Parameters:
-            past_chosen_vehicles : list - List of car objects representing vehicles sold in the past period
+            past_new_bought_vehicles : list - List of car objects representing vehicles sold in the past period
         Returns:
             HHI : float - Market concentration (HHI)
         """
         # Calculate total market sales by summing prices of all cars sold in the market
-        total_sales = sum(car.price for car in past_chosen_vehicles)
+        total_sales = sum(car.price for car in past_new_bought_vehicles)
 
         # Calculate the HHI by summing the squares of market shares for each firm in firm_list
-        HHI = sum(self.calculate_market_share(firm, past_chosen_vehicles, total_sales)**2 for firm in self.firms_list)
+        HHI = sum(self.calculate_market_share(firm, past_new_bought_vehicles, total_sales)**2 for firm in self.firms_list)
         return HHI
 
     #######################################################################################################################
@@ -309,7 +314,7 @@ class Firm_Manager:
         self.social_network = social_network
 
     def handle_limited_rebate(self):#THIS BLOCKS FIRMS IF THEY RECIEVE TOO MUCH REBATE
-        for vehicle in self.past_chosen_vehicles:
+        for vehicle in self.past_new_bought_vehicles:
             if vehicle.transport_type == 3:
                 vehicle.firm.EVs_sold += 1
         
@@ -333,9 +338,9 @@ class Firm_Manager:
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
-        self.total_profit = self.calc_total_profits(self.past_chosen_vehicles)
-        self.HHI = self. calculate_market_concentration(self.past_chosen_vehicles)
-        self.calc_vehicles_chosen_list(self.past_chosen_vehicles)
+        #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
+        self.HHI = self. calculate_market_concentration(self.past_new_bought_vehicles)
+        self.calc_vehicles_chosen_list(self.past_new_bought_vehicles)
         self.history_cars_on_sale_price.append([car.price for car in self.cars_on_sale_all_firms])
 
         self.history_total_profit.append(self.total_profit)
@@ -350,25 +355,27 @@ class Firm_Manager:
 
         self.history_market_data.append(copy.deepcopy(self.market_data))
 
-    def calc_vehicles_chosen_list(self, past_chosen_vehicles):
+    def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
         for firm in self.firms_list:
-            firm.firm_cars_users = sum(1 for car in past_chosen_vehicles if car.firm == firm)
+            firm.firm_cars_users = sum(1 for car in past_new_bought_vehicles if car.firm == firm)
 
     #####################################################################################################################
 
-    def next_step(self, carbon_price, consider_ev_vec, chosen_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy):
+    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy):
         
         self.t_firm_manager += 1
-
-        self.total_U_sum = 0
         
-        self.past_chosen_vehicles =  chosen_vehicles
+        self.past_new_bought_vehicles = new_bought_vehicles
+        self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
          
         self.carbon_price = carbon_price
 
+        self.discriminatory_corporate_tax = discriminatory_corporate_tax
+        self.production_subsidy = production_subsidy
         self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
-        self.update_market_data(sums_U_segment)
+        #self.update_market_data(sums_U_segment)
+        self.update_market_data_moving_average(sums_U_segment)
 
         return self.cars_on_sale_all_firms, self.total_U_sum

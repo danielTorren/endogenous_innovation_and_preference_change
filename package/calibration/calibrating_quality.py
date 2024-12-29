@@ -15,9 +15,12 @@ def calc_lifetime_utility(beta_i, gamma_i, alpha, c, e, omega, distance, delta, 
     Q = distance**(1-alpha)*(X)/(alpha*(1-delta)**L)
     u = Q*(1-delta)**(L)*distance**(alpha) - distance*(X)
     
-    diving_thing = (r + np.log(1+delta)/(1-alpha))
-    #print(diving_thing)
-    U = u/diving_thing - beta_i*(price_new - price_old) - gamma_i*prod_emmisions
+    #diving_thing = (r + np.log(1+delta)/(1-alpha))
+    #U = u/diving_thing - beta_i*(price_new - price_old) - gamma_i*prod_emmisions
+
+    multiply_thing = (1+r)/((1+r) - (1 - delta)**(1/(1 - alpha)))
+    U = u*multiply_thing - beta_i*(price_new - price_old) - gamma_i*prod_emmisions
+
 
     return U, u, Q
 

@@ -15,6 +15,7 @@ class Social_Network:
         """
         self.t_social_network = 0
         self.emissions_cumulative = 0
+        self.policy_distortion = 0#NEED FOR OPTIMISATION, measures the distortion from policies
         self.emissions_flow_history = []
         self.history_prop_EV = []
         self.used_firm_rebate_exclusion_set = set()
@@ -306,6 +307,7 @@ class Social_Network:
         self.zero_util_count = 0 #are people actually choosing or beign forced to choose the same
         self.new_bought_vehicles = []#track list of new vehicles
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
+        
 
         #########################################################
         #LIMIT CALCULATION FOR THOSE THAT DONT NEED TO SWTICH
@@ -321,14 +323,10 @@ class Social_Network:
 
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
 
-        # Vectorize current user vehicle attributes
-        #self.users_current_vehicle_price_vec = np.asarray([user.vehicle.original_price for user in self.vehicleUsers_list])
-        self.users_current_vehicle_type_vec = np.asarray([user.vehicle.transportType for user in self.vehicleUsers_list])#USED TO CHECK IF YOU OWN A CAR
-
         # Generate current utilities and vehicles
         #Calculate the optimal distance for all user with current car, NEEDS TO BE DONE ALWAYS AND FOR ALL USERS
         d_i_t, CV_vehicle_dict_vecs = self.generate_distances_current(self.current_vehicles,self.d_i_min_vec, self.beta_vec, self.gamma_vec)
-        
+
         # NEED THIS FOR SOME OF THE COUNTERS I THINK - CHECK THIS
         if self.second_hand_cars:
             index_current_cars_start = len(self.new_cars) + len(self.second_hand_cars)
@@ -350,11 +348,18 @@ class Social_Network:
             user = self.vehicleUsers_list[person_index]
             user.vehicle.update_timer()# Update the age or timer of the chosen vehicle
             # Handle consequences of the choice
-            self.keep_car += 1
             vehicle_chosen_index = index_current_cars_start + person_index
             driven_distance = d_i_t[person_index]
             self.update_emisisons(user.vehicle, driven_distance)
+
+            #NEEDED FOR OPTIMISATION, add the carbon price paid 
+            self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
+            #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
+            if user.vehicle.transportType == 3:
+                self.policy_distortion += (self.electricity_price_subsidy*driven_distance)/user.vehicle.Eff_omega_a_t
+
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+                self.keep_car += 1
                 utility = full_CV_utility_vec[person_index]
                 self.update_counters(person_index, user.vehicle, driven_distance, utility)
 
@@ -416,6 +421,12 @@ class Social_Network:
             driven_distance = self.d_matrix_switchers[reduced_index][vehicle_chosen_index]  # Use the reduced index for the matrix
             self.update_emisisons(vehicle_chosen, driven_distance)
 
+            #CARBON TAX POLICY OPTIMISATION
+            self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#NEEDED FOR OPTIMISATION of carbon tax
+            #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
+            if user.vehicle.transportType == 3:
+                self.policy_distortion += (self.electricity_price_subsidy*driven_distance)/user.vehicle.Eff_omega_a_t
+                
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)
@@ -452,11 +463,12 @@ class Social_Network:
         )
 
         # Save the base utility
-        B_vec = present_utility_vec/(self.r + (np.log(1+vehicle_dict_vecs["delta"]))/(1-self.alpha))
+        #B_vec = present_utility_vec/(self.r + (np.log(1+vehicle_dict_vecs["delta"]))/(1-self.alpha))
+        B_vec = present_utility_vec*(1+self.r) / ((1+self.r) - (1 - vehicle_dict_vecs["delta"])**(1/(1 - self.alpha)))
 
         price_optimal_vec = B_vec/self.beta_median
 
-        price_vec_negative = price_optimal_vec/(1+self.mu)#CAN HAVE NEATIVE PRICES IF THE OPTIMAL PRICE IS NEGATIVE, BASICALLY SCRAP
+        price_vec_negative = price_optimal_vec*(1-self.mu)#CAN HAVE NEATIVE PRICES IF THE OPTIMAL PRICE IS NEGATIVE, BASICALLY SCRAP
         
         price_vec = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
 
@@ -525,41 +537,54 @@ class Social_Network:
                     user.vehicle.owner_id = -99#send to shadow realm
                     user.vehicle = None
                 else:
-                    self.second_hand_merchant_price_paid.append(user.vehicle.cost_second_hand_merchant)
+
                     if self.t_social_network > self.burn_in_second_hand_market:
+                        
+                        if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+                            self.second_hand_merchant_price_paid.append(user.vehicle.cost_second_hand_merchant)
+                        
                         user.vehicle.owner_id = self.second_hand_merchant.id
                         self.second_hand_merchant.add_to_stock(user.vehicle)
                         user.vehicle = None
+
                     else:#VANISH CAR TO THE ABYSS
                         user.vehicle.owner_id = -99#send to shadow realm
                         user.vehicle = None
-
             
             if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
+                #USED ADOPTION SUBSIDY OPTIMIZATION
+                self.policy_distortion += self.used_rebate           
+
                 #SET THE UTILITY TO 0 of that second hand car
                 utilities_kappa[:, choice_index] = 0
-
                 self.second_hand_merchant.remove_car(vehicle_chosen)
-                self.second_hand_bought += 1
-
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
                 user.vehicle = vehicle_chosen
-                self.buy_second_hand_car+=1
                 user.vehicle.last_price_paid = user.vehicle.price
-                self.car_prices_sold_second_hand.append(user.vehicle.price)
                 self.second_hand_merchant.income += user.vehicle.price
 
+                if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+                    self.car_prices_sold_second_hand.append(user.vehicle.price)
+                    self.buy_second_hand_car+= 1
+                    self.second_hand_bought += 1
+
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
+                #ADOPTION SUBSIDY OPTIMIZATION
+                self.policy_distortion += self.rebate    
+            
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
                 user.vehicle = PersonalCar(personalCar_id, vehicle_chosen.firm, user.user_id, vehicle_chosen.component_string, vehicle_chosen.parameters, vehicle_chosen.attributes_fitness, vehicle_chosen.price)
-                self.buy_new_car+=1
-                self.car_prices_sold_new.append(user.vehicle.price)
+                
+                if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+                    self.car_prices_sold_new.append(user.vehicle.price)
+                    self.buy_new_car+=1
             else:
                 raise(ValueError("invalid user transport behaviour"))
         else:
-            self.keep_car += 1#KEEP CURRENT CAR
+            if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+                self.keep_car +=1#KEEP CURRENT CAR
 
         # Update the age or timer of the chosen vehicle
         #if isinstance(vehicle_chosen, PersonalCar):
@@ -602,10 +627,8 @@ class Social_Network:
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         last_price_paid = np.array([vehicle.last_price_paid for vehicle in list_vehicles])
         l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
-
-        # Vectorized updates for fuel cost and emissions intensity
-        fuel_cost_c = np.where(transport_type == 2, self.gas_price, self.electricity_price)
-        e_t = np.where(transport_type == 2, 0, self.electricity_emissions_intensity)
+        fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
+        e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
 
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
@@ -815,8 +838,8 @@ class Social_Network:
         d_i_t = np.maximum(d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance_cars(vehicle_dict_vecs, beta_vec, gamma_vec))
 
         commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t, beta_vec, gamma_vec)
-        base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])) / (1 - self.alpha))
-
+        #base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])) / (1 - self.alpha))
+        base_utility_matrix = commuting_util_matrix*(1+self.r)/((1+self.r) - (1 - vehicle_dict_vecs["delta"])**(1/(1 - self.alpha)))
 
         price_difference = np.where(
             vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
@@ -838,7 +861,8 @@ class Social_Network:
         
         commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t, beta_vec, gamma_vec)
 
-        base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])/(1 - self.alpha)))
+        #base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])/(1 - self.alpha)))
+        base_utility_matrix = commuting_util_matrix*(1+self.r) / ((1+self.r) - (1 - vehicle_dict_vecs["delta"])**(1/(1 - self.alpha)))
 
         # Calculate price difference, applying rebate only for transportType == 3
         price_difference = np.where(
@@ -922,12 +946,14 @@ class Social_Network:
     
         self.total_driving_emissions = 0
         self.total_driving_emissions_ICE = 0
+        self.total_driving_emissions_EV = 0
         self.total_production_emissions = 0
         self.total_utility = 0
         self.total_distance_travelled = 0
         self.total_distance_travelled_ICE = 0
         self.ICE_users = 0 
         self.EV_users = 0
+        
         self.new_ICE_cars_bought = 0
         self.new_EV_cars_bought = 0
   
@@ -1003,6 +1029,7 @@ class Social_Network:
             self.quality_vals_EV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
             self.efficiency_vals_EV.append(vehicle_chosen.Eff_omega_a_t)
             self.production_cost_vals_EV.append(vehicle_chosen.ProdCost_t)
+            self.total_driving_emissions_EV += car_driving_emissions 
             self.EV_users += 1
             
         self.total_utility +=  utility
@@ -1010,12 +1037,12 @@ class Social_Network:
             
         if isinstance(vehicle_chosen, PersonalCar):
             self.second_hand_users +=1
-
-        
+      
     def set_up_time_series_social_network(self):
         #"""
         self.history_driving_emissions = []
         self.history_driving_emissions_ICE = []
+        self.history_driving_emissions_EV = []
         self.history_production_emissions = []
         self.history_total_emissions = []
         self.history_total_utility = []
@@ -1076,6 +1103,9 @@ class Social_Network:
         self.history_zero_util_count = []
     def save_timeseries_data_social_network(self):
 
+
+        self.update_EV_stock()
+
         #INDIVIDUALS LEVEL DATA
 
 
@@ -1109,6 +1139,7 @@ class Social_Network:
         #SUMS
         self.history_driving_emissions.append(self.total_driving_emissions)
         self.history_driving_emissions_ICE.append(self.total_driving_emissions_ICE)
+        self.history_driving_emissions_EV.append(self.total_driving_emissions_EV)
         self.history_production_emissions.append(self.total_production_emissions)
         self.history_total_emissions.append(self.total_production_emissions + self.total_driving_emissions)
         self.history_total_utility.append(self.total_utility)
@@ -1167,6 +1198,7 @@ class Social_Network:
 
         self.history_zero_util_count.append(self.zero_util_count)
         #print("self.zero_util_count",self.zero_util_count)
+    
     def update_emisisons(self, vehicle_chosen, driven_distance):      
         
         emissions_flow =   (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_t
@@ -1177,12 +1209,12 @@ class Social_Network:
             self.emissions_cumulative += vehicle_chosen.emissions
             self.emissions_flow += vehicle_chosen.emissions
 
-    def update_prices_and_emissions(self):
+    def update_prices_and_emissions_intensity(self):
         #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
         for car in self.current_vehicles:
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
-            elif car.transportType == 3:#EV
+            elif car.transportType == 3:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
@@ -1193,7 +1225,7 @@ class Social_Network:
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
         self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1215,15 +1247,19 @@ class Social_Network:
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
         self.used_rebate = used_rebate
+        self.electricity_price_subsidy = electricity_price_subsidy
+        
+
 
         #update new tech and prices
         self.second_hand_cars, self.new_cars = second_hand_cars, new_cars
         self.all_vehicles_available = self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT
 
-        self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
- 
+        self.update_prices_and_emissions_intensity()#UPDATE: the prices and emissions intensities of cars which are currently owned
         self.current_vehicles = self.update_VehicleUsers()
-        self.update_EV_stock()
-        #print(self.total_driving_emissions)
+        
+        self.EV_stock_prop = sum(1 if car.transportType == 3 else 0 for car in self.current_vehicles)/self.num_individuals#NEED FOR OPTIMISATION, measures the uptake EVS
+
+        self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
         return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits
