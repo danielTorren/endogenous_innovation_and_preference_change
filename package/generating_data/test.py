@@ -1,9 +1,98 @@
-if __name__ == '__main__':
-    list1 = ["asdas"]
-    
-    list2 = [[1.76695282e+03, 1.08039481e+00, 1.01907511e+04], [1.73523524e+03, 1.08539034e+00, 1.35179629e+04], [1.75552714e+03, 1.03120455e+00, 1.23415711e+04], [1.61819278e+03, 1.03991044e+00, 1.33712924e+04], [1.75200928e+03, 1.07183869e+00, 1.13997292e+04], [1.73617201e+03, 1.08119901e+00, 1.00137826e+04], [1.76093993e+03, 1.07321260e+00, 1.31001211e+04], [1.65228918e+03, 1.09700184e+00, 1.27723554e+04], [1.73836653e+03, 1.05148398e+00, 8.85507080e+03], [1.86744499e+03, 1.05696971e+00, 1.14908390e+04], [1.75875528e+03, 1.06699725e+00, 1.24008519e+04], [1.87330248e+03, 9.93994204e-01, 1.15901083e+04], [1.73027978e+03, 1.00941694e+00, 1.23180000e+04], [1.67189630e+03, 1.07386204e+00, 1.30728838e+04], [1.66614945e+03, 1.03263905e+00, 1.30444990e+04]]
-    # Sort both lists and compare
-    same_data = sorted(list1) == sorted(list2)
+import numpy as np
+import matplotlib.pyplot as plt
 
-    print(same_data)  # True
+# Parameters for the utility function
+Q_v_t = 3000  # Scaling factor for utility
+alpha = 0.5    # Rate of diminishing marginal utility
+c_ICE_t = 0.12   # Cost per km   
+beta_i = 0.5  # Cost parameter
+gamma_i = 0.5 # Emission parameter
+e_ICE_t =0.26599820413049985    # Emission per km
+omega_v_t = 1.03 # Scaling factor for cost
+d_max = 5000  # Maximum distance
+
+# Define the utility function
+def utility_function(d_i_t):
+    cost = beta_i * c_ICE_t + gamma_i * e_ICE_t
+    utility = Q_v_t * (1 - np.exp(-alpha * d_i_t / d_max)) - d_i_t * cost / omega_v_t
+    return utility
+
+# Generate a range of distances
+distances = np.linspace(0, d_max, 500)
+utilities = utility_function(distances)
+
+# Define the first-order derivative of the utility function
+def derivative_utility_function(d_i_t):
+    cost = beta_i * c_ICE_t + gamma_i * e_ICE_t
+    dU_dd = Q_v_t * (alpha / d_max) * np.exp(-alpha * d_i_t / d_max) - cost / omega_v_t
+    return dU_dd
+
+
+# Adjust the parameters to ensure the optimal distance is around 1400 km
+from scipy.optimize import minimize_scalar
+
+# Define a function to find the optimal distance
+def find_optimal_distance(alpha_val):
+    cost = beta_i * c_ICE_t + gamma_i * e_ICE_t
+
+    # Utility function with alpha as a parameter
+    def utility_function_alpha(d_i_t):
+        return Q_v_t * (1 - np.exp(-alpha_val * d_i_t / d_max)) - d_i_t * cost / omega_v_t
+
+    # Derivative of utility function
+    def derivative_utility_function_alpha(d_i_t):
+        return Q_v_t * (alpha_val / d_max) * np.exp(-alpha_val * d_i_t / d_max) - cost / omega_v_t
+
+    # Find the optimal distance by solving the derivative equals zero
+    res = minimize_scalar(lambda d: -utility_function_alpha(d), bounds=(0, d_max), method='bounded')
+    return res.x
+
+# Iteratively adjust alpha to target an optimal distance around 1400 km
+target_distance = 1400
+alpha_range = np.linspace(0.1, 1, 100)
+
+optimal_alpha = None
+for alpha_val in alpha_range:
+    optimal_dist = find_optimal_distance(alpha_val)
+    if abs(optimal_dist - target_distance) < 50:  # Allowable margin
+        optimal_alpha = alpha_val
+        break
+
+# Update alpha with the found value
+if optimal_alpha is not None:
+    alpha = optimal_alpha
+
+# Recalculate utility and derivative with the updated alpha
+utilities = utility_function(distances)
+derivatives = derivative_utility_function(distances)
+
+# Plot the updated utility function and its derivative
+fig2, axs2 = plt.subplots(2, 1, figsize=(10, 12))
+
+# Plot the utility function
+axs2[0].plot(distances, utilities, label='Utility Function', color='blue')
+axs2[0].axvline(d_max, color='r', linestyle='--', label='$d_{max}$')
+axs2[0].set_title('Adjusted Utility Function vs Distance Driven', fontsize=14)
+axs2[0].set_xlabel('Distance Driven (km)', fontsize=12)
+axs2[0].set_ylabel('Utility', fontsize=12)
+axs2[0].legend()
+axs2[0].grid(True)
+
+# Plot the first-order derivative
+axs2[1].plot(distances, derivatives, label='First-Order Derivative', color='green', linestyle='--')
+axs2[1].axvline(d_max, color='r', linestyle='--', label='$d_{max}$')
+axs2[1].set_title('First-Order Derivative of Adjusted Utility Function', fontsize=14)
+axs2[1].set_xlabel('Distance Driven (km)', fontsize=12)
+axs2[1].set_ylabel('Derivative Value', fontsize=12)
+axs2[1].legend()
+axs2[1].grid(True)
+
+# Adjust layout and show the plots
+plt.tight_layout()
+plt.show()
+
+# Output the optimal alpha and corresponding distance
+optimal_alpha, find_optimal_distance(optimal_alpha)
+
+
 

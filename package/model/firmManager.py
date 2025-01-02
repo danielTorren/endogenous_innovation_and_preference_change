@@ -36,13 +36,13 @@ class Firm_Manager:
         self.parameters_car_EV = parameters_car_EV 
 
         #PRICE, NOT SURE IF THIS IS NECESSARY
-        self.beta_threshold = 0.5#parameters_firm_manager["beta_threshold"]
-        self.beta_val_empty_upper = (1+self.beta_threshold)/2
-        self.beta_val_empty_lower = (1-self.beta_threshold)/2
+        self.beta_threshold = parameters_firm_manager["beta_threshold"]
+        self.beta_val_empty_upper =  parameters_firm_manager["beta_val_empty_upper"]
+        self.beta_val_empty_lower =  parameters_firm_manager["beta_val_empty_lower"]
         
-        self.gamma_threshold = 0.5#parameters_firm_manager["gamma_threshold"]
-        self.gamma_val_empty_upper = (1+self.gamma_threshold)/2
-        self.gamma_val_empty_lower = (1-self.gamma_threshold)/2
+        self.gamma_threshold = parameters_firm_manager["gamma_threshold"]
+        self.gamma_val_empty_upper = parameters_firm_manager["gamma_val_empty_upper"]
+        self.gamma_val_empty_lower = parameters_firm_manager["gamma_val_empty_upper"]
 
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 

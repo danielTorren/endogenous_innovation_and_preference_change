@@ -26,12 +26,54 @@ class NKModel:
         self.max_Efficiency = parameters["max_Efficiency"]
         self.max_Cost = parameters["max_Cost"]
 
+        self.alpha = parameters["alpha"]
+        self.r = parameters["r"]
+        self.delta =  parameters["delta"]
+        self.median_beta = parameters["median_beta"]
+        self.median_gamma = parameters["median_gamma"]
+        self.fuel_cost = parameters["fuel_cost"]
+        self.e_t = parameters["e_t"]
+
         self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
         self.max_vec = np.asarray([self.max_Quality,self.max_Efficiency, self.max_Cost])
 
         self.fitness_landscape = self.generate_fitness_landscape()
 
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string()
+
+    def calc_present_utility_minimum_single(self, quality, eff, prod_cost):
+        """assuem all cars are new to simplify, assume 0 carbon price, assume emissiosn intensities and prices from t = 0"""
+        #DISTANCE
+                # Compute numerator for all vehicles
+        beta = self.median_beta
+        gamma = self.median_gamma
+        
+        numerator = (
+            self.alpha * quality
+        ) 
+        denominator = (
+            ((beta/eff) * (self.fuel_cost)) +
+            ((gamma/ eff) * self.e_t)
+        )  # Shape: (num_individuals, num_vehicles)
+
+        # Calculate optimal distance matrix for each individual-vehicle pair
+        d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
+
+        #present UTILITY
+        # Compute cost component based on transport type, with conditional operations
+        cost_component = (beta/ eff) * (self.fuel_cost) + ((gamma/ eff) * self.e_t)
+        # Compute the commuting utility for each individual-vehicle pair
+        present_utility_vec = np.maximum(
+            0,
+            quality*(d_i_t_vec ** self.alpha) - d_i_t_vec * cost_component
+        )
+
+        # Save the base utility
+        #B_vec = present_utility_vec/(self.r + (np.log(1+self.delta))/(1-self.alpha))
+        B_vec = present_utility_vec*(1+self.r) / ((1+self.r) - (1 - self.delta)**(1/(1 - self.alpha)))
+        approx_fitness = B_vec - beta*prod_cost
+
+        return approx_fitness
 
 
     def find_min_fitness_string(self):
@@ -55,12 +97,14 @@ class NKModel:
             binary_string = format(i, f'0{self.N}b')
             design = np.array(list(map(int, binary_string)))
             attributes = self.calculate_fitness(design)
-            fitness = np.sum(attributes)
+            fitness =  self.calc_present_utility_minimum_single(attributes[0],  attributes[1], attributes[2])
+            #fitness = np.sum(attributes)
             attributes_dict[binary_string] = attributes
-
             if fitness < min_fitness:
                 min_fitness = fitness
                 min_fitness_string = binary_string
+
+        #print("min_fitness", min_fitness,  attributes_dict[min_fitness_string])
 
         return min_fitness_string, min_fitness, attributes_dict
 

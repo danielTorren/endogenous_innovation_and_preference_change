@@ -117,6 +117,16 @@ def plot_ev_consider_rate(social_network, time_series, fileName, dpi=600):
     format_plot(ax, "EV Consideration Rate Over Time", "Time Step", "EV Consider Rate", legend=False)
     save_and_show(fig, fileName, "ev_consider_rate", dpi)
 
+def plot_ev_consider_adoption_rate( base_params,social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, social_network.history_consider_ev_rate, marker='o', label = "Consider")
+    ax.plot(time_series, social_network.history_ev_adoption_rate, marker='o', label = "Adopt")
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
+    save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
+
+
 def plot_tranport_users(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, social_network.history_ICE_users, label='ICE', marker='o')
@@ -204,7 +214,7 @@ def plot_vehicle_attribute_time_series(social_network, time_series, fileName, dp
     fig.suptitle("Vehicle Attributes Over Time")
     save_and_show(fig, fileName, "vehicle_attribute_time_series", dpi)
 
-def plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, file_name, dpi=600):
+def plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi=600):
     """
     Plots time series of Quality, Efficiency, and Production Cost for both ICE and EV vehicles
     with means and confidence intervals.
@@ -269,8 +279,8 @@ def plot_vehicle_attribute_time_series_by_type(base_params, social_network, time
     plt.tight_layout()
 
     # Save and show the plot
-    save_path = f"{file_name}/vehicle_attribute_time_series_ICE_EV.png"
-    fig.savefig(save_path, dpi=dpi, format="png")
+    save_and_show(fig, fileName, "vehicle_attribute_time_series_ICE_EV", dpi)
+
 
 def plot_research_time_series_multiple_firms(firms, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -1107,7 +1117,7 @@ def plot_transport_users_stacked_rich_poor(social_network, time_series, fileName
     plt.tight_layout()
     save_and_show(fig, fileName, "transport_users_stacked_rich_poor", dpi)
 
-def plot_transport_users_stacked_two_by_four(social_network, time_series, fileName, percentiles, dpi=600):
+def plot_transport_users_stacked_two_by_four(base_params,social_network, time_series, fileName, percentiles, dpi=600):
     """
     Plots transport user proportions in a 2x4 layout: each column represents a vector (Beta, Gamma, Chi, Origin),
     with rich in the upper row and poor in the lower row.
@@ -1130,7 +1140,7 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
     data = np.asarray(social_network.history_transport_type_individual).T
 
     # Create a grid of subplots (2 rows x 4 columns)
-    fig, axs = plt.subplots(2, 4, figsize=(10, 8), sharex=True, sharey=True)
+    fig, axs = plt.subplots(2, 3, figsize=(10, 8), sharex=True, sharey=True)
     
     # Iterate through general vectors and plot
     for i, (label, vec) in enumerate(vectors.items()):
@@ -1147,7 +1157,7 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
         axs[0, i].stackplot(time_series, rich_ice, rich_ev,
                             labels=['ICE', 'EV'],
                             alpha=0.8)
-        axs[0, i].set_title(f"{label} - Top {100 - percentiles[label]}%")
+        axs[0, i].set_title(f"{label} -Values Below {percentiles[label]}% - {round(threshold,2)}")
         #axs[0, i].set_ylabel("Proportion")
         #axs[0, i].legend(loc="upper left")
         
@@ -1155,9 +1165,11 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
         axs[1, i].stackplot(time_series, poor_ice, poor_ev,
                             labels=['ICE', 'EV'],
                             alpha=0.8)
-        axs[1, i].set_title(f"{label} - Bottom {percentiles[label]}%")
+        axs[1, i].set_title(f"{label} -Values Above {percentiles[label]}% - {round(threshold,2)}")
         #axs[1, i].set_ylabel("Proportion")
         #axs[1, i].legend(loc="upper left")
+        add_vertical_lines(axs[0, i], base_params)
+        add_vertical_lines(axs[1, i], base_params)
     
     fig.supylabel("Proportion")
     fig.supxlabel("Time Step")
@@ -1166,7 +1178,7 @@ def plot_transport_users_stacked_two_by_four(social_network, time_series, fileNa
     plt.tight_layout()
     save_and_show(fig, fileName, "transport_users_stacked_two_by_four", dpi)
 
-def plot_mean_emissions_one_row(social_network, time_series, fileName, percentiles, dpi=600):
+def plot_mean_emissions_one_row(base_params, social_network, time_series, fileName, percentiles, dpi=600):
     """
     Plots mean emissions in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
     with rich and poor plotted together and distinguished by a legend.
@@ -1197,7 +1209,7 @@ def plot_mean_emissions_one_row(social_network, time_series, fileName, percentil
         return mean, ci
 
     # Create a single row of subplots (1 row x 4 columns)
-    fig, axs = plt.subplots(1, 4, figsize=(20, 5), sharex=True, sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharex=True, sharey=True)
     
     # Iterate through general vectors and plot
     for i, (label, vec) in enumerate(vectors.items()):
@@ -1211,15 +1223,16 @@ def plot_mean_emissions_one_row(social_network, time_series, fileName, percentil
         poor_mean, poor_ci = compute_mean_and_ci(poor_indices)
         
         # Plot mean and CI for rich
-        axs[i].plot(time_series, rich_mean, label=f"{label} - Top {100 - percentiles[label]}%", color="blue")
+        axs[i].plot(time_series, rich_mean, label=f"{label} -Values Below {percentiles[label]}% - {round(threshold,2)}", color="blue")
         axs[i].fill_between(time_series, rich_mean - rich_ci, rich_mean + rich_ci, color="blue", alpha=0.2)
         
         # Plot mean and CI for poor
-        axs[i].plot(time_series, poor_mean, label=f"{label} - Bottom {percentiles[label]}%", color="red")
+        axs[i].plot(time_series, poor_mean, label=f"{label} -Values Above {percentiles[label]}% - {round(threshold,2)}", color="red")
         axs[i].fill_between(time_series, poor_mean - poor_ci, poor_mean + poor_ci, color="red", alpha=0.2)
         
         axs[i].set_title(label)
         axs[i].legend(loc="upper left")
+        add_vertical_lines(axs[i], base_params)
     
     
     fig.supylabel("Driving Emissions")
@@ -1230,7 +1243,7 @@ def plot_mean_emissions_one_row(social_network, time_series, fileName, percentil
     save_and_show(fig, fileName, "mean_driving_emissions_one_row", dpi)
 
 
-def plot_mean_distance_one_row(social_network, time_series, fileName, percentiles, dpi=600):
+def plot_mean_distance_one_row(base_params, social_network, time_series, fileName, percentiles, dpi=600):
     """
     Plots mean distance in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
     with rich and poor plotted together and distinguished by a legend.
@@ -1261,7 +1274,7 @@ def plot_mean_distance_one_row(social_network, time_series, fileName, percentile
         return mean, ci
 
     # Create a single row of subplots (1 row x 4 columns)
-    fig, axs = plt.subplots(1, 4, figsize=(20, 5), sharex=True, sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharex=True, sharey=True)
     
     # Iterate through general vectors and plot
     for i, (label, vec) in enumerate(vectors.items()):
@@ -1275,15 +1288,16 @@ def plot_mean_distance_one_row(social_network, time_series, fileName, percentile
         poor_mean, poor_ci = compute_mean_and_ci(poor_indices)
         
         # Plot mean and CI for rich
-        axs[i].plot(time_series, rich_mean, label=f"{label} - Top {100 - percentiles[label]}%", color="blue")
+        axs[i].plot(time_series, rich_mean, label=f"{label} -Values Below {percentiles[label]}% - {round(threshold,2)}", color="blue")
         axs[i].fill_between(time_series, rich_mean - rich_ci, rich_mean + rich_ci, color="blue", alpha=0.2)
         
         # Plot mean and CI for poor
-        axs[i].plot(time_series, poor_mean, label=f"{label} - Bottom {percentiles[label]}%", color="red")
+        axs[i].plot(time_series, poor_mean, label=f"{label} -Values Above {percentiles[label]}% - {round(threshold,2)}", color="red")
         axs[i].fill_between(time_series, poor_mean - poor_ci, poor_mean + poor_ci, color="red", alpha=0.2)
         
         axs[i].set_title(label)
         axs[i].legend(loc="upper left")
+        add_vertical_lines(axs[i], base_params)
     
     fig.supylabel("Mean Distance")
     fig.supxlabel("Time Step")
@@ -1293,7 +1307,7 @@ def plot_mean_distance_one_row(social_network, time_series, fileName, percentile
     save_and_show(fig, fileName, "mean_distance_one_row", dpi)
 
 
-def plot_mean_utility_one_row(social_network, time_series, fileName, percentiles, dpi=600):
+def plot_mean_utility_one_row(base_params, social_network, time_series, fileName, percentiles, dpi=600):
     """
     Plots mean utility in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
     with rich and poor plotted together and distinguished by a legend.
@@ -1324,7 +1338,7 @@ def plot_mean_utility_one_row(social_network, time_series, fileName, percentiles
         return mean, ci
 
     # Create a single row of subplots (1 row x 4 columns)
-    fig, axs = plt.subplots(1, 4, figsize=(20, 5), sharex=True, sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(20, 5), sharex=True, sharey=True)
     
     # Iterate through general vectors and plot
     for i, (label, vec) in enumerate(vectors.items()):
@@ -1338,15 +1352,16 @@ def plot_mean_utility_one_row(social_network, time_series, fileName, percentiles
         poor_mean, poor_ci = compute_mean_and_ci(poor_indices)
         
         # Plot mean and CI for rich
-        axs[i].plot(time_series, rich_mean, label=f"{label} - Top {100 - percentiles[label]}%", color="blue")
+        axs[i].plot(time_series, rich_mean, label=f"{label} -Values Below {percentiles[label]}% - {round(threshold,2)}", color="blue")
         axs[i].fill_between(time_series, rich_mean - rich_ci, rich_mean + rich_ci, color="blue", alpha=0.2)
         
         # Plot mean and CI for poor
-        axs[i].plot(time_series, poor_mean, label=f"{label} - Bottom {percentiles[label]}%", color="red")
+        axs[i].plot(time_series, poor_mean, label=f"{label} -Values Above {percentiles[label]}% - {round(threshold,2)}", color="red")
         axs[i].fill_between(time_series, poor_mean - poor_ci, poor_mean + poor_ci, color="red", alpha=0.2)
         
         axs[i].set_title(label)
         axs[i].legend(loc="upper left")
+        add_vertical_lines(axs[i], base_params)
     
     fig.supylabel("Mean Utility")
     fig.supxlabel("Time Step")
@@ -1388,12 +1403,11 @@ def plot_conditional_transport_users_4x4(
 
     # Create a grid of subplots (4x4 layout)
     fig, axs = plt.subplots(2, 4, figsize=(12, 12), sharex=True, sharey=True)
-
+    for i,test in  enumerate(condition_combinations):
+        print(i,test)
+    quit()
     for i, (beta_cond, gamma_cond, chi_cond) in enumerate(condition_combinations):
-        
-        
-        row, col = divmod(i, 2)
-        ax = axs[row, col]
+        print(i)
 
         # Compute indices for the current condition combination
         beta_threshold = np.percentile(vectors['Beta'], percentiles['Beta'])
@@ -1423,6 +1437,10 @@ def plot_conditional_transport_users_4x4(
         )
 
         #print("SEGEMENT COUNT", len(combined_indices))
+
+        row, col = divmod(i, 2)
+        ax = axs[row, col]
+
         # Compute proportions for the combined indices
         if len(combined_indices) > 0:
             ice_prop, ev_prop = compute_proportions(combined_indices, data)
@@ -1879,6 +1897,61 @@ def plot_num_bought_by_type(base_params, social_network, fileName, dpi = 600):
     ax.legend()
     save_and_show(fig, fileName, "plot_num_bought_by_type", dpi)
 
+def plot_fuel_costs_verus_carbon_price_kWhr(base_params,controller, fileName, dpi = 600):
+
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+
+    carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+    total_ice = controller.gas_price_california_vec + carbon_tax_paid[:-1]
+
+    ax.plot(controller.electricity_price_vec, label = "Fuel cost per kWhr, EV")
+    ax.plot(controller.gas_price_california_vec, label = "Fuel cost per kWhr, ICE")
+    ax.plot(carbon_tax_paid , label = "carbon tax cost per kWhr, ICE")
+    ax.plot(total_ice, label = "TOTAL cost per kWhr, ICE")
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("Dollars per kWhr")
+
+    add_vertical_lines(ax, base_params)
+    
+    ax.legend()
+    save_and_show(fig, fileName, "plot_fuel_costs_verus_carbon_price_kWhr", dpi)
+
+def plot_fuel_costs_verus_carbon_price_km(base_params,controller, fileName, dpi = 600):
+
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+
+    carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+    total_ice = controller.gas_price_california_vec + carbon_tax_paid[:-1]
+
+    Eff_omega_a_t_ICE_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_ICE])
+    Eff_omega_a_t_EV_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_EV])
+    #Eff_omega_a_t_ICE_median = np.median(controller.social_network.history_efficiency_ICE, axis = 0)
+    #Eff_omega_a_t_EV_median = np.median(controller.social_network.history_efficiency_EV, axis = 0)
+
+    ax.plot(controller.electricity_price_vec[:-1]/Eff_omega_a_t_EV_median, label = "Fuel cost per km, EV")
+    ax.plot(controller.gas_price_california_vec[:-1]/Eff_omega_a_t_ICE_median, label = "Fuel cost per km, ICE")
+    ax.plot(carbon_tax_paid[:-2]/Eff_omega_a_t_ICE_median , label = "carbon tax cost per km, ICE")
+    ax.plot(total_ice[:-1]/Eff_omega_a_t_ICE_median, label = "TOTAL cost per km, ICE")
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("Dollars per km")
+
+    add_vertical_lines(ax, base_params)
+    
+    ax.legend()
+    save_and_show(fig, fileName, "plot_fuel_costs_verus_carbon_price_km", dpi)
+
+def plot_zero_util_count(base_params, social_network, fileName, dpi = 600):
+
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    ax.plot(social_network.history_zero_util_count)
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("pop zero util count")
+
+    add_vertical_lines(ax, base_params)
+    
+    ax.legend()
+    save_and_show(fig, fileName, "plot_zero_util_count", dpi)
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -1893,11 +1966,17 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
     
+    plot_zero_util_count(base_params, social_network, fileName, dpi)
+    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+
     # All plot function calls
-    #"""
-    #"""
-    plot_num_bought_by_type(base_params, social_network, fileName, dpi)
-    plot_calibration_data(data_controller, time_series, fileName)
+
+    #plot_fuel_costs_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
+
+    #plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
+
+    #plot_num_bought_by_type(base_params, social_network, fileName, dpi)
+    #plot_calibration_data(data_controller, time_series, fileName)
 
     #plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
@@ -1905,8 +1984,7 @@ def main(fileName, dpi=600):
 
     #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
-    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
@@ -1914,16 +1992,16 @@ def main(fileName, dpi=600):
     #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
     #plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
 
-
     #plot_history_median_price(base_params, social_network, fileName, dpi)
     #plot_history_mean_price(base_params, social_network, fileName, dpi)
     #plot_history_count_buy(base_params, social_network, fileName, dpi)
-    plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
 
     #plot_total_utility(social_network, time_series, fileName, dpi)
     
     #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
     #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
+    #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
     #plot_vehicle_attribute_time_series(social_network, time_series, fileName, dpi)
@@ -1931,7 +2009,7 @@ def main(fileName, dpi=600):
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
     #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    plot_preferences(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_car_sale_prop(social_network, time_series, fileName, dpi)
@@ -1943,14 +2021,13 @@ def main(fileName, dpi=600):
     
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
     #plot_segment_count_grid(firm_manager, time_series, fileName)
-
 
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
@@ -1966,39 +2043,39 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
-    """
-    percentiles = {'Beta': 50, 'Gamma': 50, 'Chi': 50}
-    plot_transport_users_stacked_two_by_four(social_network, time_series, fileName, percentiles)
-    plot_mean_emissions_one_row(social_network, time_series, fileName, percentiles)
-    plot_mean_distance_one_row(social_network, time_series, fileName, percentiles)
-    plot_mean_utility_one_row(social_network, time_series, fileName, percentiles)
+    #"""
+    #percentiles = {'Beta': base_params["parameters_firm_manager"]["beta_threshold_percentile"], 'Gamma': base_params["parameters_firm_manager"]["gamma_threshold_percentile"], 'Chi': 50}
+    #plot_transport_users_stacked_two_by_four(base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_emissions_one_row(base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_distance_one_row(base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_utility_one_row(base_params,social_network, time_series, fileName, percentiles)
 
-    plot_conditional_transport_users_4x4(social_network, time_series, fileName, percentiles)
+    #plot_conditional_transport_users_4x4(base_params,social_network, time_series, fileName, percentiles)
     
     #PLOT ACTUAL VALUES USED
-    plot_time_series_controller(data_controller.history_gas_price, time_series,"Gas price","gas_price", fileName)
-    plot_time_series_controller(data_controller.history_electricity_price, time_series,"Electricity price","electricity_price", fileName)
-    plot_time_series_controller(data_controller.history_electricity_emissions_intensity, time_series,"Electricity emissions intensity","electricity_emissions_intensity", fileName)
+    #plot_time_series_controller(data_controller.history_gas_price, time_series,"Gas price","gas_price", fileName)
+    #plot_time_series_controller(data_controller.history_electricity_price, time_series,"Electricity price","electricity_price", fileName)
+    #plot_time_series_controller(data_controller.history_electricity_emissions_intensity, time_series,"Electricity emissions intensity","electricity_emissions_intensity", fileName)
     #plot_time_series_controller(data_controller.history_rebate, time_series,"EV rebate","rebate", fileName)
     #plot_time_series_controller(data_controller.history_used_rebate, time_series,"Used EV rebate","used_rebate", fileName)
-    plot_carbon_price(data_controller, time_series, fileName)
 
     #plot_social_network(social_network, fileName)
-    """
+    
+    #plot_carbon_price(data_controller, time_series, fileName)
 
     #CHECKING OUTPUTS
 
-    calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    #calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
+    #EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
 
-    emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
+    #emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
     #plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_22_28_06__29_12_2024")
+    main("results/single_experiment_11_44_59__02_01_2025")

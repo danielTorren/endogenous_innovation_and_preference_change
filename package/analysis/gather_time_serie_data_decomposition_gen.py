@@ -12,6 +12,10 @@ def main(fileName):
     social_network = controller.social_network
     policy_duration = base_params["duration_future"]
 
+    print(social_network.history_mean_efficiency_vals_EV, len(social_network.history_mean_efficiency_vals_EV))
+    print(social_network.history_mean_efficiency_vals_ICE, len(social_network.history_mean_efficiency_vals_ICE))
+    quit()
+
     outputs = {
         "history_ev_prop": np.array(social_network.history_EV_users[-policy_duration:]) / social_network.num_individuals,
         "history_mean_distance_EV": np.nanmean(np.asarray(social_network.history_distance_individual_EV[-policy_duration:]).T, axis=0),
@@ -27,6 +31,8 @@ def main(fileName):
         "history_driving_emissions_EV": np.array(social_network.history_driving_emissions_EV[-policy_duration:]),
         "history_total_emissions": np.asarray(social_network.history_total_emissions[-policy_duration:])
     }
+
+    #need average efficieny of ice and ev beign DRIVEn, USED
 
     save_object(outputs, fileName + "/Data", "outputs")
 

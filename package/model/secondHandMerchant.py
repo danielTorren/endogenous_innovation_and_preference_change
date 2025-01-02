@@ -1,7 +1,8 @@
 import numpy as np
-from pyro import param
 
 class SecondHandMerchant:
+
+
     def __init__(self, unique_id, parameters_second_hand):
         self.id = unique_id
         self.cars_on_sale = []
@@ -69,17 +70,35 @@ class SecondHandMerchant:
             self.alpha * vehicle_dict_vecs["Quality_a_t"] *
             ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"])
         ) 
-        denominator = (
+
+        denominator =np.where(
+            vehicle_dict_vecs["transportType"] == 3,
+            (
+            ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"])) +
+            ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+            ),
+            (
             ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
             ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        )  # Shape: (num_individuals, num_vehicles)
+            )
+        )
+
+        #denominator = (
+        #    ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
+        #    ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        #)  # Shape: (num_individuals, num_vehicles)
 
         # Calculate optimal distance matrix for each individual-vehicle pair
         d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
-        cost_component = (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        cost_component =np.where(
+            vehicle_dict_vecs["transportType"] == 3,
+            (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]),
+            (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        )
+        #cost_component = (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
         # Compute the commuting utility for each individual-vehicle pair
         present_utility_vec = np.maximum(
             0,
@@ -107,13 +126,22 @@ class SecondHandMerchant:
 
         #DISTANCE
         numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t
-        denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) +
+        
+        if vehicle.transportType == 3:
+            denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c) +
+                    (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
+        else:
+            denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) +
                     (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
 
         d_i_t = (numerator / denominator) ** (1 / (1 - self.alpha))
 
         #present UTILITY
-        cost_component = (beta / vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t
+        if vehicle.transportType == 3:
+            cost_component = (beta / vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c) + (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t
+        else:
+            cost_component = (beta / vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t
+        
         utility = vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
 
         # Ensure utility is non-negative
@@ -170,17 +198,36 @@ class SecondHandMerchant:
             self.alpha * vehicle_dict_vecs["Quality_a_t"] *
             ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"])
         ) 
-        denominator = (
+        
+        denominator =np.where(
+            vehicle_dict_vecs["transportType"] == 3,
+            (
+            ((self.median_beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"])) +
+            ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+            ),
+            (
             ((self.median_beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
             ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        )  # Shape: (num_individuals, num_vehicles)
+            )
+        )
+
+        #denominator = (
+        #    ((self.median_beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
+        #    ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        #)  # Shape: (num_individuals, num_vehicles)
 
         # Calculate optimal distance matrix for each individual-vehicle pair
         d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
-        cost_component = (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        
+        cost_component =np.where(
+            vehicle_dict_vecs["transportType"] == 3,
+            (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]),
+            (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
+        )
+        #cost_component = (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
         # Compute the commuting utility for each individual-vehicle pair
         present_utility_vec = np.maximum(
             0,

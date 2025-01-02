@@ -35,7 +35,7 @@ if __name__ == "__main__":
     "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future":156,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "end_time":276,
+        "end_time":432,#RUN to 2035
         "rebate": 10000,
         "used_rebate": 1000,
         "rebate_count_cap": 70000,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         "States":{
             "Gas_price": "Current",
             "Electricity_price": "Current",
-            "Grid_emissions_intensity": "Decarbonised"
+            "Grid_emissions_intensity": "Weaker"
         },
         "Values":{
             "Gas_price":{
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -98,7 +98,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 0.2,
+                    "Carbon_price": 0.3,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -164,19 +164,19 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "remove_seed": 48,
-        "age_limit_second_hand": 3,
+        "age_limit_second_hand": 12,#3,
         "max_num_cars": 5000,
         "burn_in_second_hand_market": 12,
         "fixed_alternative_mark_up": 0.2
     },
     "parameters_ICE":{
-        "landscape_seed": 18, 
+        "landscape_seed": 22, 
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.002,
+        "delta": 0.01,#0.002,
         "transportType": 2,
         "min_Quality": 0,
         "max_Quality": 15,
@@ -194,7 +194,7 @@ if __name__ == "__main__":
         "production_emissions":9000,
         "transportType": 3,
         "min_Quality": 0,
-        "max_Quality": 7,
+        "max_Quality": 15,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -202,7 +202,9 @@ if __name__ == "__main__":
         "init_tech_seed": 99,
         "J": 30,
         "init_car_age_max": 240,
-        "time_steps_tracking_market_data":12
+        "time_steps_tracking_market_data":12,
+        "beta_threshold_percentile": 20,
+        "gamma_threshold_percentile": 50
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -215,7 +217,7 @@ if __name__ == "__main__":
         "init_price_multiplier": 1
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 1000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -229,7 +231,7 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.7,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car": 0.083
