@@ -10,6 +10,8 @@ class Firm:
         self.t_firm = 0
         self.production_change_bool = 0
         self.policy_distortion = 0
+        self.zero_profit_options_prod = 0
+        self.zero_profit_options_research = 0
 
         #DELETE THIS LATER
         self.prod_counter =0
@@ -358,14 +360,17 @@ class Firm:
 
         # Compute the softmax probabilities
         lambda_profits = profits**self.lambda_pow        
-        sum_prob = np.sum(lambda_profits)
+        sum_profit = np.sum(lambda_profits)
+
         len_vehicles = len(car_list)#literally just cos i do it 3 times
         
-        if sum_prob == 0:
+        if sum_profit == 0:
+            self.zero_profit_options_research = 1
             #print("random choice")
             selected_index = self.random_state.choice(len_vehicles)#pick one
         else:
-            probabilities = lambda_profits/np.sum(sum_prob)
+            self.zero_profit_options_research = 0
+            probabilities = lambda_profits/sum_profit
             #print("probabilities",probabilities)
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
         # Select a vehicle based on the computed probabilities
@@ -549,7 +554,7 @@ class Firm:
                 profit_matrix[i, j] = car.expected_profit_segments[segment_code]
         
         if not np.any(profit_matrix): #PROFIT IS ALL 0, pick up to 
-
+            self.zero_profit_options_prod = 1
             if len(technologies) > self.num_cars_production:
                 #print("ALL ZEROS AND MORE THAN NUM CARS PRODUCTION")
                 vehicles_selected = technologies[:self.num_cars_production]
@@ -561,7 +566,7 @@ class Firm:
             for i, vehicle in enumerate(vehicles_selected):
                 price_options = vehicle.optimal_price_segments.values()
                 lowest_price = min(price_options)
-                vehicle.car = lowest_price
+                vehicle.price = lowest_price
 
             if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
                 self.selected_vehicle_segment_counts = {}
@@ -569,6 +574,7 @@ class Firm:
                     segment_code_str = format(segment_code, '03b')
                     self.selected_vehicle_segment_counts[segment_code_str] = np.nan
         else:
+            self.zero_profit_options_prod = 0
             selected_vehicles = []  # To store selected vehicles
 
             # Iterate until all segments are covered or the max number of cars are chosen
@@ -696,11 +702,11 @@ class Firm:
         list_technology_memory = self.calc_utility_cars_segments(market_data, list_technology_memory)#utility of all the cars for all the segments
         
         list_technology_memory = self.calc_predicted_profit_segments_production(market_data, list_technology_memory)#calculte the predicted profit of each segment 
-        print("list_technology_memory",list_technology_memory)
-        print("expected_profit_segments", [car.expected_profit_segments for car in list_technology_memory])
+        #print("list_technology_memory",list_technology_memory)
+        #print("expected_profit_segments", [car.expected_profit_segments for car in list_technology_memory])
         cars_selected = self.select_car_lambda_production(market_data, list_technology_memory)#pick the cars for each car
-        print("cars_selected",cars_selected)
-        print([car.price for car in cars_selected])
+        #print("cars_selected",cars_selected)
+        #print([car.price for car in cars_selected])
 
         for car in list_technology_memory:#put the cars that are in the list as selected
             if car in cars_selected:
@@ -765,14 +771,14 @@ class Firm:
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
 
-        print("start tiem step",self.t_firm, self.firm_id)
+        #print("start tiem step",self.t_firm, self.firm_id)
         #print("before ON SALE", self.cars_on_sale)
         #print("before meom", self.list_technology_memory_ICE)
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
         #update cars to sell   
         if self.random_state.rand() < self.prob_change_production:
-            print("change production",self.t_firm, self.firm_id)
+            #print("change production",self.t_firm, self.firm_id)
             self.cars_on_sale = self.choose_cars_segments(market_data)
             self.production_change_bool = 1
             self.prod_counter += 1
@@ -781,7 +787,7 @@ class Firm:
         self.update_memory_timer()
 
         if self.random_state.rand() < self.prob_innovate:
-            print("INNOVATE", self.t_firm, self.firm_id)
+            #print("INNOVATE", self.t_firm, self.firm_id)
             self.innovate(market_data)
             self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DAT
             self.research_counter += 1
@@ -793,7 +799,7 @@ class Firm:
 
         #print("after ON SALE", self.cars_on_sale)
         #print("after MEMORY", self.list_technology_memory_ICE)
-        print([car.price for car in self.cars_on_sale])
+        #print([car.price for car in self.cars_on_sale])
 
         return self.cars_on_sale
 

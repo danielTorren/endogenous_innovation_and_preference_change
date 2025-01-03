@@ -12,6 +12,8 @@ class Firm_Manager:
 
         self.policy_distortion = 0
 
+        self.zero_profit_options_prod_sum = 0
+
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
@@ -192,9 +194,13 @@ class Firm_Manager:
     def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy):
         cars_on_sale_all_firms = []
         segment_U_sums = defaultdict(float)
+        self.zero_profit_options_prod_sum = 0
+        self.zero_profit_options_research_sum = 0
 
         #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate)
         for firm in self.firms_list:
+            self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
+            self.zero_profit_options_research_sum += firm.zero_profit_options_research
             cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
@@ -335,6 +341,8 @@ class Firm_Manager:
         self.history_cars_on_sale_price = []
 
         self.history_market_data = []
+        self.history_zero_profit_options_prod_sum = []
+        self.history_zero_profit_options_research_sum = []
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
@@ -354,6 +362,9 @@ class Firm_Manager:
         self.history_cars_on_sale_EV_prop.append(count_transport_type_3)
 
         self.history_market_data.append(copy.deepcopy(self.market_data))
+
+        self.history_zero_profit_options_prod_sum.append(self.zero_profit_options_prod_sum/self.J)
+        self.history_zero_profit_options_research_sum.append(self.zero_profit_options_research_sum/self.J)
 
     def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
         for firm in self.firms_list:

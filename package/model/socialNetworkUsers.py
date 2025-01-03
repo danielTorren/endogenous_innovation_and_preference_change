@@ -206,7 +206,7 @@ class Social_Network:
         
         self.new_bought_vehicles = []#track list of new vehicles
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
-    
+        
         #########################################################
         #LIMIT CALCULATION FOR THOSE THAT DONT NEED TO SWTICH
         # 1) Determine which users can switch
@@ -220,6 +220,7 @@ class Social_Network:
             self.emissions_flow = 0#MEASURIBNG THE FLOW
             self.zero_util_count = 0 #are people actually choosing or beign forced to choose the same
             self.num_switchers = num_switchers
+            self.drive_min_num = 0
 
         self.sub_beta_vec = self.beta_vec[switcher_indices]
         self.sub_gamma_vec = self.gamma_vec[switcher_indices]
@@ -269,7 +270,10 @@ class Social_Network:
                 self.keep_car += 1
                 utility = full_CV_utility_vec[person_index]
                 self.update_counters(person_index, user.vehicle, driven_distance, utility)
+                if driven_distance == self.d_i_min_vec[person_index]:
+                    self.drive_min_num +=1 
 
+                
         ##################################################################
         #SWITCHERS
 
@@ -340,6 +344,8 @@ class Social_Network:
                 self.update_emisisons(vehicle_chosen, driven_distance)
                 utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)
+                if driven_distance == self.d_i_min_vec[person_index]:
+                    self.drive_min_num +=1 
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow_history.append(self.emissions_flow)
@@ -436,7 +442,6 @@ class Social_Network:
         #SWICHING_CLAUSE
         if not np.any(individual_specific_util):#NO car option all zero, THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
             #keep current car
-            #print("ALL CARS TERRIBLE")
             choice_index = index_current_cars_start + reduced_person_index
             self.zero_util_count += 1
         else:
@@ -570,51 +575,6 @@ class Social_Network:
 
         return vehicle_dict_vecs
 
-    def filter_vehicle_dict_for_switchers(
-        self,
-        vehicle_dict_vecs: dict[str, np.ndarray],
-        list_vehicles: list,
-        switcher_indices: np.ndarray
-    ) -> tuple[dict[str, np.ndarray], list]:
-        """
-        Filter an already-built 'vehicle_dict_vecs' so that it only includes
-        rows corresponding to vehicles whose 'owner_id' is in 'switcher_indices'.
-
-        Parameters
-        ----------
-        vehicle_dict_vecs : dict[str, np.ndarray]
-            A dictionary of arrays (e.g. from gen_current_vehicle_dict_vecs),
-            where each array has the same length = number_of_vehicles.
-        list_vehicles : list
-            The original list of vehicles in the same order used to build 'vehicle_dict_vecs'.
-        switcher_indices : np.ndarray
-            Array of user IDs who can switch (e.g., from np.where(switch_draws)[0]).
-
-        Returns
-        -------
-        filtered_vehicle_dict : dict[str, np.ndarray]
-            The same dictionary, but sliced down to only rows for switcher-owned vehicles.
-        filtered_vehicles : list
-            A filtered list of the actual vehicle objects corresponding to those owners.
-        """
-
-        # 1) Build an array of owner IDs for each vehicle in the same order used in vehicle_dict_vecs
-        owner_ids = np.array([vehicle.owner_id for vehicle in list_vehicles], dtype=int)
-
-        # 2) Create a boolean mask that is True if the owner is in switcher_indices
-        #    (Note: np.isin will check for membership in switcher_indices)
-        mask = np.isin(owner_ids, switcher_indices)
-
-        # 3) Apply this mask to each array in vehicle_dict_vecs
-        filtered_vehicle_dict = {}
-        for key, arr in vehicle_dict_vecs.items():
-            filtered_vehicle_dict[key] = arr[mask]
-
-        # 4) Also build a filtered list of vehicle objects
-        filtered_vehicles = [v for (v, keep) in zip(list_vehicles, mask) if keep]
-
-        return filtered_vehicle_dict, filtered_vehicles
-
     def vectorised_optimal_distance_current(self, vehicle_dict_vecs, beta_vec, gamma_vec):
         """
         Only does it for the 1 car, calculate the optimal distance for each individual considering only their corresponding vehicle.
@@ -698,6 +658,51 @@ class Social_Network:
             car_options = self.new_cars
 
         return utilities_matrix, car_options, d_matrix
+
+    def filter_vehicle_dict_for_switchers(
+        self,
+        vehicle_dict_vecs: dict[str, np.ndarray],
+        list_vehicles: list,
+        switcher_indices: np.ndarray
+    ) -> tuple[dict[str, np.ndarray], list]:
+        """
+        Filter an already-built 'vehicle_dict_vecs' so that it only includes
+        rows corresponding to vehicles whose 'owner_id' is in 'switcher_indices'.
+
+        Parameters
+        ----------
+        vehicle_dict_vecs : dict[str, np.ndarray]
+            A dictionary of arrays (e.g. from gen_current_vehicle_dict_vecs),
+            where each array has the same length = number_of_vehicles.
+        list_vehicles : list
+            The original list of vehicles in the same order used to build 'vehicle_dict_vecs'.
+        switcher_indices : np.ndarray
+            Array of user IDs who can switch (e.g., from np.where(switch_draws)[0]).
+
+        Returns
+        -------
+        filtered_vehicle_dict : dict[str, np.ndarray]
+            The same dictionary, but sliced down to only rows for switcher-owned vehicles.
+        filtered_vehicles : list
+            A filtered list of the actual vehicle objects corresponding to those owners.
+        """
+
+        # 1) Build an array of owner IDs for each vehicle in the same order used in vehicle_dict_vecs
+        owner_ids = np.array([vehicle.owner_id for vehicle in list_vehicles], dtype=int)
+
+        # 2) Create a boolean mask that is True if the owner is in switcher_indices
+        #    (Note: np.isin will check for membership in switcher_indices)
+        mask = np.isin(owner_ids, switcher_indices)
+
+        # 3) Apply this mask to each array in vehicle_dict_vecs
+        filtered_vehicle_dict = {}
+        for key, arr in vehicle_dict_vecs.items():
+            filtered_vehicle_dict[key] = arr[mask]
+
+        # 4) Also build a filtered list of vehicle objects
+        filtered_vehicles = [v for (v, keep) in zip(list_vehicles, mask) if keep]
+
+        return filtered_vehicle_dict, filtered_vehicles
 
     def gen_vehicle_dict_vecs_new_cars(self, list_vehicles):
         """Generate a dictionary of vehicle property arrays with improved performance."""
@@ -785,12 +790,18 @@ class Social_Network:
         # Use in-place modification to save memor
         U_a_i_t_matrix = base_utility_matrix - price_adjustment
 
+        #if self.t_social_network in (400, 100):
+        #    print("second hand")
+        #    print("ratio of components",np.mean(base_utility_matrix) , np.mean(price_adjustment))
+
+
         return U_a_i_t_matrix, d_i_t
     
     def vectorised_calculate_utility_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_i_min_vec):
         # Compute shared base utility components
         d_i_t = np.maximum(d_i_min_vec[:, np.newaxis], self.vectorised_optimal_distance_cars(vehicle_dict_vecs, beta_vec, gamma_vec))
         
+
         commuting_util_matrix = self.vectorised_commuting_utility_cars(vehicle_dict_vecs, d_i_t, beta_vec, gamma_vec)
 
         #base_utility_matrix = commuting_util_matrix / (self.r + (np.log(1 + vehicle_dict_vecs["delta"])/(1 - self.alpha)))
@@ -809,6 +820,15 @@ class Social_Network:
         # Use in-place modification to save memory
         emissions_penalty = np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"])
         U_a_i_t_matrix = base_utility_matrix - price_adjustment - emissions_penalty
+
+        #print("ratio of components",base_utility_matrix , price_adjustment , emissions_penalty )
+        #if self.t_social_network in (400, 100):
+        #    print("new car")
+        #    print("ratio of components",np.mean(base_utility_matrix) , np.mean(price_adjustment) , np.mean(emissions_penalty) )
+
+
+
+
         return U_a_i_t_matrix, d_i_t
     
     def vectorised_optimal_distance_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec):
@@ -854,7 +874,9 @@ class Social_Network:
             (beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"]) + ((gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]),
             (beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
         )
-
+        #if self.t_social_network in (400, 100):
+        #    print(self.t_social_network)
+        #    print("beta vs gamam bit", np.mean((beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) , np.mean( ((gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])))
         #cost_component = (beta_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma_vec[:, np.newaxis]/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
 
         # Compute the commuting utility for each individual-vehicle pair
@@ -864,6 +886,8 @@ class Social_Network:
             vehicle_dict_vecs["Quality_a_t"] * ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]) * (d_i_t ** self.alpha) - d_i_t * cost_component
         )  # Shape: (num_individuals, num_vehicles)
 
+        #if self.t_social_network in (400, 100):
+        #   print("quality vs cost",np.mean(vehicle_dict_vecs["Quality_a_t"] * ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]) * (d_i_t ** self.alpha)), np.mean( - d_i_t * cost_component))
         return commuting_utility_matrix  # Shape: (num_individuals, num_vehicles)
 
     ####################################################################################################################################
@@ -991,6 +1015,9 @@ class Social_Network:
       
     def set_up_time_series_social_network(self):
         #"""
+
+        self.history_utility_components = []
+
         self.history_prop_EV = []
         self.history_driving_emissions = []
         self.history_driving_emissions_ICE = []
@@ -1056,6 +1083,7 @@ class Social_Network:
 
         self.history_mean_efficiency_vals_EV = []
         self.history_mean_efficiency_vals_ICE = []
+        self.history_drive_min_num = []
 
     def save_timeseries_data_social_network(self):
 
@@ -1064,10 +1092,12 @@ class Social_Network:
 
         #INDIVIDUALS LEVEL DATA
 
+        #self.history_utility_components.append(self.utility_components_single_person)
 
         #self.history_quality_index.append(self.quality_index)
         self.history_count_buy.append([self.keep_car, self.buy_new_car, self.buy_second_hand_car])
 
+        self.history_drive_min_num.append(self.drive_min_num/self.num_individuals)
         mean_price_new = np.mean([vehicle.price for vehicle in self.new_cars])
         median_price_new = np.median([vehicle.price for vehicle in self.new_cars])
         if self.second_hand_cars:
@@ -1157,7 +1187,6 @@ class Social_Network:
         self.history_second_hand_merchant_price_paid.append(self.second_hand_merchant_price_paid)
 
         self.history_zero_util_count.append(self.zero_util_count/self.num_switchers)
-        #print("self.zero_util_count",self.zero_util_count)
     
     def update_EV_stock(self):
         #CALC EV STOCK
@@ -1220,4 +1249,7 @@ class Social_Network:
         
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
+        #if self.t_social_network == 400:
+        #    quit()
+        
         return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

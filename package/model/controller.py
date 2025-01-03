@@ -526,6 +526,7 @@ class Controller:
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
     
         self.ICE_landscape = NKModel(parameters_ICE)
+        #print("ICE LANDSCAPE", self.ICE_landscape.min_fitness_string, self.ICE_landscape.min_fitness, self.ICE_landscape.attributes_dict[self.ICE_landscape.min_fitness_string])
 
     def setup_EV_landscape(self, parameters_EV):
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
@@ -537,6 +538,8 @@ class Controller:
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
     
         self.EV_landscape = NKModel(parameters_EV)
+        #print("EV LANDSCAPE", self.EV_landscape.min_fitness_string, self.EV_landscape.min_fitness, self.EV_landscape.attributes_dict[self.EV_landscape.min_fitness_string])
+        #quit()
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]

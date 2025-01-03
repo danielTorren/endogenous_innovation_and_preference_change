@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "compression_factor_state": 1,
     "choice_seed": 9,
     "ev_research_start_time": 60,
-    "ev_production_start_time": 108,
+    "ev_production_start_time": 60,#108,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -176,12 +176,12 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.01,#0.002,
+        "delta": 0.001,#0.002,
         "transportType": 2,
-        "min_Quality": 0,
-        "max_Quality": 15,
-        "min_Efficiency": 0.5,
-        "max_Efficiency": 1.5,
+        "min_Quality": 5,
+        "max_Quality": 20,
+        "min_Efficiency": 0.2,#0.5,
+        "max_Efficiency": 0.55,#1.5,
         "min_Cost": 5000,
         "max_Cost": 30000
     },
@@ -193,8 +193,8 @@ if __name__ == "__main__":
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
-        "min_Quality": 0,
-        "max_Quality": 15,
+        "min_Quality": 5,
+        "max_Quality": 20,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -203,7 +203,7 @@ if __name__ == "__main__":
         "J": 30,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "beta_threshold_percentile": 20,
+        "beta_threshold_percentile": 50,#20,
         "gamma_threshold_percentile": 50
     },
     "parameters_firm":{
@@ -217,7 +217,7 @@ if __name__ == "__main__":
         "init_price_multiplier": 1
     },
     "parameters_social_network":{
-        "num_individuals": 1000,
+        "num_individuals": 3000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         "WTP_mean": 210,
         "WTP_sd": 175,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.8,
+        "a_innovativeness": 0.9,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car": 0.083
@@ -243,7 +243,26 @@ if __name__ == "__main__":
         "mu": 0.5
     }
 }
-
+    
+    policy_bool = False
+    if policy_bool:
+        base_params[ "parameters_policies"]["States"] = {
+            "Carbon_price": "Zero",
+            "Discriminatory_corporate_tax": "High",
+            "Electricity_subsidy": "High",
+            "Adoption_subsidy": "High",
+            "Production_subsidy": "High",
+            "Research_subsidy": "High"
+        }
+    else:
+        base_params[ "parameters_policies"]["States"] = {
+            "Carbon_price": "Zero",
+            "Discriminatory_corporate_tax": "Zero",
+            "Electricity_subsidy": "Zero",
+            "Adoption_subsidy": "Zero",
+            "Production_subsidy": "Zero",
+            "Research_subsidy": "Zero"
+        }
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
 
