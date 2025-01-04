@@ -62,6 +62,7 @@ def generate_data(parameters: dict,print_simu = 0):
             "SIMULATION time taken: %s minutes" % ((time.time() - start_time) / 60),
             "or %s s" % ((time.time() - start_time)),
         )
+        
     return controller
 
 def load_in_controller(controller_load, base_params_future):

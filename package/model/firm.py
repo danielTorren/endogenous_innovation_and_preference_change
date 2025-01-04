@@ -16,6 +16,8 @@ class Firm:
         #DELETE THIS LATER
         self.prod_counter =0
         self.research_counter =0
+
+        self.segment_codes = parameters_firm["segment_codes"]
         
         self.save_timeseries_data_state = parameters_firm["save_timeseries_data_state"]
         self.compression_factor_state = parameters_firm["compression_factor_state"]
@@ -94,22 +96,18 @@ class Firm:
     def set_car_init_price_and_U(self):
         for car in self.cars_on_sale:
             car.price = car.ProdCost_t*self.init_price_multiplier
-            for segment_code in range(8):
-                # Binary representation of the segment code (4-bit string)
-                segment_code_str = format(segment_code, '03b')
+            for segment_code in self.segment_codes:
                 # Add data for the segment
-                car.optimal_price_segments[segment_code_str] = car.price
-                car.car_base_utility_segments[segment_code_str] = self.init_U_sum
+                car.optimal_price_segments[segment_code] = car.price
+                car.car_base_utility_segments[segment_code] = self.init_U_sum
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
         for car in self.list_technology_memory_EV:
             car.price = car.ProdCost_t*self.init_price_multiplier
-            for segment_code in range(8):
-                # Binary representation of the segment code (4-bit string)
-                segment_code_str = format(segment_code, '03b')
+            for segment_code in self.segment_codes:
                 # Add data for the segment
-                car.optimal_price_segments[segment_code_str] = car.price
-                car.car_base_utility_segments[segment_code_str] = self.init_U_sum
+                car.optimal_price_segments[segment_code] = car.price
+                car.car_base_utility_segments[segment_code] = self.init_U_sum
 
     def optimal_distance(self, vehicle, beta, gamma):
         """
@@ -214,11 +212,13 @@ class Firm:
            
             beta_s =  segment_data["beta_s_t"]
             gamma_s = segment_data["gamma_s_t"]
+            
+            # Unpack the tuple
+            b_idx, g_idx, e_idx = segment_code  # if your codes are (b, g, e)
 
             for car in vehicle_list:
                 price_s = car.optimal_price_segments[segment_code]#price for that specific segment
-
-                if (car.transportType == 2) or all((segment_code[2] == str(1), car.transportType == 3)):#THE EV ADOPTION BIT GOES SECOND LAST
+                if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                     #ADD IN A SUBSIDY
                     if car.transportType == 3:
                         utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *(price_s - self.rebate) - gamma_s * car.emissions
@@ -287,7 +287,8 @@ class Firm:
             # Calculate profit for each segment
             for segment_code, segment_data in market_data.items():
 
-                consider_ev = segment_code[2] == str(1)  # Determine if the segment considers EVs
+                b_idx, g_idx, e_idx = segment_code
+                consider_ev = (e_idx == 1) # Determine if the segment considers EVs
 
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
                 if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
@@ -490,8 +491,8 @@ class Firm:
 
             # Calculate profit for each segment
             for segment_code, segment_data in market_data.items():
-
-                consider_ev = segment_code[2] == str(1)  # Determine if the segment considers EVs
+                b_idx, g_idx, e_idx = segment_code
+                consider_ev = (e_idx == 1) # Determine if the segment considers EVs
 
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
                 if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
@@ -570,9 +571,8 @@ class Firm:
 
             if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
                 self.selected_vehicle_segment_counts = {}
-                for segment_code in range(8):
-                    segment_code_str = format(segment_code, '03b')
-                    self.selected_vehicle_segment_counts[segment_code_str] = np.nan
+                for segment_code in self.segment_codes:
+                    self.selected_vehicle_segment_counts[segment_code] = np.nan
         else:
             self.zero_profit_options_prod = 0
             selected_vehicles = []  # To store selected vehicles
@@ -603,9 +603,9 @@ class Firm:
                         beta_s = market_data[segment_code]["beta_s_t"]
                         gamma_s = market_data[segment_code]["gamma_s_t"]
 
-                        if (selected_vehicle.transportType == 2) or all(
-                            (segment_code[2] == str(1), selected_vehicle.transportType == 3)
-                        ):
+                        b_idx, g_idx, e_idx = segment_code
+                        consider_ev = (e_idx == 1)
+                        if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
                                 utility_segment_U = (
                                     selected_vehicle.car_base_utility_segments[segment_code]
@@ -734,9 +734,8 @@ class Firm:
             self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
         else:
             self.selected_vehicle_segment_counts = {}
-            for segment_code in range(8):
-                segment_code_str = format(segment_code, '03b')
-                self.selected_vehicle_segment_counts[segment_code_str] = np.nan
+            for segment_code in self.segment_codes:
+                self.selected_vehicle_segment_counts[segment_code] = np.nan
             self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
 
         if self.research_bool == 1:

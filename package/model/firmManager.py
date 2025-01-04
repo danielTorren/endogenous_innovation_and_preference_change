@@ -4,6 +4,7 @@ from package.model.carModel import CarModel
 from package.model.personalCar import PersonalCar
 from package.model.firm import Firm
 from collections import defaultdict
+import itertools
 
 class Firm_Manager:
     def __init__(self, parameters_firm_manager: dict, parameters_firm: dict, parameters_car_ICE: dict, parameters_car_EV: dict, ICE_landscape: dict, EV_landscape: dict):
@@ -13,6 +14,7 @@ class Firm_Manager:
         self.policy_distortion = 0
 
         self.zero_profit_options_prod_sum = 0
+
 
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
         self.J = int(round(parameters_firm_manager["J"]))
@@ -28,6 +30,10 @@ class Firm_Manager:
         self.rebate_count_cap = parameters_firm_manager["rebate_count_cap_adjusted"]
 
         self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
+
+        self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
+
+        self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
 
         #landscapes
         self.landscape_ICE = ICE_landscape
@@ -106,7 +112,7 @@ class Firm_Manager:
 
         self.parameters_firm["universal_model_repo_EV"] = self.universal_model_repo_EV
         self.parameters_firm["universal_model_repo_ICE"] = self.universal_model_repo_ICE
-
+        self.parameters_firm["segment_codes"] = self.all_segment_codes
         #Create the firms, these store the data but dont do anything otherwise
         self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.innovation_seed_list[j]) for j in range(self.J)]
 
@@ -127,67 +133,113 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return cars_on_sale_all_firms
 
-    def input_social_network_data(self, beta_vec, environmental_awareness_vec,consider_ev_vec):
+    ###########################################################################################################
+
+        ###########################################################################################################
+    # BETA-SEGMETING LOGIC
+
+    def input_social_network_data(self, beta_vec, environmental_awareness_vec, consider_ev_vec, beta_bins):
+        """
+        Set up the individual-level vectors. 
+        We'll convert:
+          - beta_vec into 5 segments (0..4)
+          - gamma_vec into binary (0..1)
+          - consider_ev_vec is presumably 0..1
+        """
         self.beta_vec = beta_vec
         self.gamma_vec = environmental_awareness_vec
         self.consider_ev_vec = consider_ev_vec
 
-        # Convert beta and gamma arrays to binary based on threshold values
-        self.beta_binary = (self.beta_vec > self.beta_threshold).astype(int)
+        # Convert beta into 5 segments
+        
+        # Suppose your beta values are roughly in [0, 1].  If not, pick different bin edges.
+        self.beta_bins = beta_bins#np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.01])  
+        # np.digitize returns an integer from 1..len(self.beta_bins)-1
+        # so we subtract 1 to get 0..4
+        self.beta_segment_idx = np.digitize(self.beta_vec, self.beta_bins) - 1  
+        # Now each entry in self.beta_segment_idx is in {0,1,2,3,4}.
+
+        # Convert gamma to 0 or 1 based on threshold
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
     def generate_market_data(self):
-        """Used once at the start of model run, need to generate the counts then the market data without U then calc U and add it in!"""
+        """
 
-        segment_codes = (self.beta_binary << 2) | (self.gamma_binary << 1) | (self.consider_ev_vec << 0)
+        For each segment code, we store:
+         - I_s_t     (count of individuals)
+         - beta_s_t  (average beta)
+         - gamma_s_t (average gamma)
+         - U_sum     (will be computed after we calculate utilities)
+        """
+        # 1) Build a dictionary for ALL possible combos
+        
+        self.market_data = {}
+        for code in self.all_segment_codes:
+            self.market_data[code] = {
+                "I_s_t": 0,
+                "beta_s_t": 0.0,
+                "gamma_s_t": 0.0,
+                "U_sum": 0.0,
+                "history_I_s_t": [],
+                "history_U_sum": []
+            }
 
-        segment_counts = np.bincount(segment_codes, minlength=8)
-        # Store the counts for each of the segments as binary strings ('0000' to '1111')
-        self.market_data = {format(i, '03b'): {"I_s_t":segment_counts[i]} for i in range(8)}
+        # 2) Count how many individuals fall into each segment code
+        #    also sum up their beta, gamma for averages
+        segment_counts = defaultdict(int)
+        beta_sums = defaultdict(float)
+        gamma_sums = defaultdict(float)
 
-        #DEAL WITH BETA AND GAMMA
-        # Iterate over all possible segments (0 to 7)
-        for segment_code in self.market_data.keys():
-            # Identify the indices of individuals belonging to the current segment
-            indices = np.where(segment_codes == segment_code)[0]
+        # Go through each individual
+        for i in range(self.num_individuals):
+            b_idx = self.beta_segment_idx[i]         # in [0..4]
+            g_idx = self.gamma_binary[i]             # in [0..1]
+            e_idx = self.consider_ev_vec[i]          # in [0..1]
+            seg_code = (b_idx, g_idx, e_idx)
 
-            # If there are individuals in the segment, calculate average beta and gamma
-            if len(indices) > 0:
-                avg_beta = np.mean(self.beta_vec[indices])
-                avg_gamma = np.mean(self.gamma_vec[indices])
+            segment_counts[seg_code] += 1
+            beta_sums[seg_code] += self.beta_vec[i]
+            gamma_sums[seg_code] += self.gamma_vec[i]
+
+        # 3) Compute averages for each segment
+        for code in self.all_segment_codes:
+            count = segment_counts[code]
+            if count > 0:
+                avg_beta = beta_sums[code] / count
+                avg_gamma = gamma_sums[code] / count
             else:
-                if segment_code[0] == str(1):
+                #FIX THIS SO THAT THE CORRECT BETA VALUE IS CHOSEN!
+                b_idx, g_idx, _ = code
+                if b_idx >= 2:
                     avg_beta = self.beta_val_empty_upper
                 else:
                     avg_beta = self.beta_val_empty_lower
-                    
-                if segment_code[1]  == str(1):
+
+                if g_idx == 1:
                     avg_gamma = self.gamma_val_empty_upper
                 else:
                     avg_gamma = self.gamma_val_empty_lower
 
-            # Add data for the segment
-            self.market_data[segment_code]["beta_s_t"] =  avg_beta
-            self.market_data[segment_code]["gamma_s_t"] =  avg_gamma
+            self.market_data[code]["I_s_t"] = count
+            self.market_data[code]["beta_s_t"] = avg_beta
+            self.market_data[code]["gamma_s_t"] = avg_gamma
 
-            self.market_data[segment_code]["history_I_s_t"] = []
-            self.market_data[segment_code]["history_U_sum"] = []
-
-        #NEED TO HAVE MARKET DATA WITHOUT THE U SUM IN ORDER TO CALCULATE U SUM
-        #CALC THE U SUM DATA
-        for firm in self.firms_list:#CREATE THE UTILITY SEGMENT DATA
+        # 4) Now we need to compute the initial U_sum for each segment
+        for firm in self.firms_list:
             firm.calc_utility_cars_segments(self.market_data, self.cars_on_sale_all_firms)
 
-        segment_U_sums = defaultdict(float)#GET SUM U NOW
+        # 5) Sum up the utilities across all cars for each segment
+        segment_U_sums = defaultdict(float)
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
-                for segment, U in car.car_utility_segments_U.items():
-                    segment_U_sums[segment] += U 
+                for code, Uval in car.car_utility_segments_U.items():
+                    segment_U_sums[code] += Uval
 
-        #ADD IN THE U SUM DATA
-        for segment_code in self.market_data.keys():
-            self.market_data[segment_code]["U_sum"] =  segment_U_sums[segment_code]
-        
+        # 6) Store the U_sum in market_data
+        for code in self.all_segment_codes:
+            self.market_data[code]["U_sum"] = segment_U_sums[code]
+
+
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
@@ -210,53 +262,39 @@ class Firm_Manager:
 
         return cars_on_sale_all_firms, segment_U_sums
 
-    def update_market_data(self, sums_U_segment):
-        """Update market data with segment counts and sums U for each segment"""
-
-        # Calculate segment codes based on the provided binary vecs
-        segment_codes = (self.beta_binary << 2) | (self.gamma_binary << 1) | (self.consider_ev_vec << 0)
-        # Calculate segment counts
-        segment_counts = np.bincount(segment_codes, minlength=8)
-
-        for i in range(8):
-            segment_code = format(i, '03b')
-            
-            self.market_data[segment_code]["I_s_t"] = segment_counts[i]
-            self.market_data[segment_code]["U_sum"] = sums_U_segment[segment_code]
-
     def update_market_data_moving_average(self, sums_U_segment):
-        """Update market data with the moving average of segment counts and sums U for each segment over the last 12 time steps."""
+        """
+        If you still want a moving average approach:
+        """
+        segment_counts = defaultdict(int)
+        for i in range(self.num_individuals):
+            b_idx = self.beta_segment_idx[i]
+            g_idx = self.gamma_binary[i]
+            e_idx = self.consider_ev_vec[i]
+            code = (b_idx, g_idx, e_idx)
+            segment_counts[code] += 1
 
-        # Calculate segment codes based on the provided binary vecs
-        segment_codes = (self.beta_binary << 2) | (self.gamma_binary << 1) | (self.consider_ev_vec << 0)
-        # Calculate segment counts
-        segment_counts = np.bincount(segment_codes, minlength=8)
+        self.total_U_sum = 0.0
 
-        self.total_U_sum = 0
-
-        # Update each segment's moving average
-        for i in range(8):
-            segment_code = format(i, '03b')
-
+        for code in self.market_data.keys():
             # Append current values to history
-            self.market_data[segment_code]["history_I_s_t"].append(segment_counts[i])
-            self.market_data[segment_code]["history_U_sum"].append(sums_U_segment[segment_code])
+            self.market_data[code]["history_I_s_t"].append(segment_counts[code])
+            self.market_data[code]["history_U_sum"].append(sums_U_segment[code])
 
-            # Trim history to the last 12 time steps
-            if len(self.market_data[segment_code]["history_I_s_t"]) > self.time_steps_tracking_market_data:
-                self.market_data[segment_code]["history_I_s_t"].pop(0)
-            if len(self.market_data[segment_code]["history_U_sum"]) > self.time_steps_tracking_market_data:
-                self.market_data[segment_code]["history_U_sum"].pop(0)
+            # Trim history to the last N time steps
+            if len(self.market_data[code]["history_I_s_t"]) > self.time_steps_tracking_market_data:
+                self.market_data[code]["history_I_s_t"].pop(0)
+            if len(self.market_data[code]["history_U_sum"]) > self.time_steps_tracking_market_data:
+                self.market_data[code]["history_U_sum"].pop(0)
 
             # Calculate moving averages
-            moving_avg_I_s_t = np.mean(self.market_data[segment_code]["history_I_s_t"])
-            moving_avg_U_sum = np.mean(self.market_data[segment_code]["history_U_sum"])
+            moving_avg_I_s_t = np.mean(self.market_data[code]["history_I_s_t"])
+            moving_avg_U_sum = np.mean(self.market_data[code]["history_U_sum"])
 
             # Store the moving averages
-            self.market_data[segment_code]["I_s_t"] = moving_avg_I_s_t
-            self.market_data[segment_code]["U_sum"] = moving_avg_U_sum
+            self.market_data[code]["I_s_t"] = moving_avg_I_s_t
+            self.market_data[code]["U_sum"] = moving_avg_U_sum
 
-            # Update total U sum
             self.total_U_sum += moving_avg_U_sum
 
     ######################################################################################################################

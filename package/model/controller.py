@@ -55,7 +55,8 @@ class Controller:
         self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)        
 
         #pass information across one time
-        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec)
+        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
+
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
 
@@ -124,7 +125,19 @@ class Controller:
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
-        
+        #print(self.beta_vec)
+        unique_beta_vals, counts = np.unique(self.beta_vec, return_counts=True)
+        #self.beta_bins_count,self.beta_bins = np.histogram(self.beta_vec, bins=self.parameters_firm_manager["num_beta_segments"])
+
+        # Add a small delta to the start and end to ensure proper binning
+        delta = (unique_beta_vals[1] - unique_beta_vals[0]) / 2
+        self.beta_bins = np.concatenate([
+            [unique_beta_vals[0] - delta],  # Lower edge
+            unique_beta_vals[:-1] + delta,  # Midpoints
+            [unique_beta_vals[-1] + delta]  # Upper edge
+        ])
+
+
         #GAMMA
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
         self.WTP_mean = self.parameters_social_network["WTP_mean"]
@@ -214,8 +227,8 @@ class Controller:
 
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
-        self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price)
-        self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price)
+        self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
+        self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
         if self.parameters_controller["EV_rebate_state"]:#IF TRUE IMPLEMENTED
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
@@ -272,6 +285,7 @@ class Controller:
         self.Discriminatory_corporate_tax_state =  self.parameters_controller["parameters_policies"]["States"]["Discriminatory_corporate_tax"]
         self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
+        self.Adoption_subsidy_used_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy_used"]
         self.Production_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Production_subsidy"]
         self.Research_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Research_subsidy"]
 
@@ -318,16 +332,22 @@ class Controller:
         # Adoption subsidy calculation
         if self.Adoption_subsidy_state == "Zero":
             self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["rebate"]
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["used_rebate"]
         elif self.Adoption_subsidy_state == "Low":
             self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["rebate"]
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["used_rebate"]
         elif self.Adoption_subsidy_state == "High":
             self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["rebate"]
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["used_rebate"]
         else:
             raise ValueError("Invalid Adoption subsidy state")
         self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
+
+        if self.Adoption_subsidy_used_state == "Zero":
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["rebate"]
+        elif self.Adoption_subsidy_used_state == "Low":
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["rebate"]
+        elif self.Adoption_subsidy_used_state == "High":
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["rebate"]
+        else:
+            raise ValueError("Invalid Adoption subsidy state")
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
 
         # Production_subsidy calculation
@@ -430,8 +450,16 @@ class Controller:
             self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
             self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
             self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
-            self.rebate_time_series = np.concatenate((self.pre_future_rebate_time_series,self.rebate_time_series_future ), axis=None) 
-            self.used_rebate_time_series = np.concatenate((self.pre_future_used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+            
+            #self.rebate_time_series = np.concatenate((self.pre_future_rebate_time_series,self.rebate_time_series_future ), axis=None) 
+            #self.used_rebate_time_series = np.concatenate((self.pre_future_used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+
+            #FOR REBATE THE POLICY IS ADDITIONAL TO THE ONE THAT EXISTS SO ADD IT ON TOP NOT CONCATINATED
+            self.rebate_time_series =  self.pre_future_rebate_time_series  
+            self.rebate_time_series[self.duration_burn_in + self.duration_no_carbon_price:] += self.rebate_time_series_future
+
+            self.used_rebate_time_series = self.pre_future_used_rebate_time_series
+            self.used_rebate_time_series[self.duration_burn_in + self.duration_no_carbon_price:] += self.used_rebate_time_series_future
 
             self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
             self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 

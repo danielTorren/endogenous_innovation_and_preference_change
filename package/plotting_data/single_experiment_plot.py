@@ -524,34 +524,71 @@ def plot_history_attributes_cars_on_sale_all_firms_alt(social_network, time_seri
     # Save and display the plot
     save_and_show(fig, fileName, "atributeshistory.png", 600) 
 
-def plot_segment_count_grid(firm_manager,time_series, fileName):
-    fig, axes = plt.subplots(2, 4, figsize=(10, 10), sharex=True, sharey=True)
+def plot_segment_count_grid(firm_manager, time_series, fileName):
+    """
+    Plots the count of individuals in each segment over time in a grid layout.
 
+    Parameters:
+        firm_manager: Object containing historical segment data.
+        time_series: List or array of time steps.
+        fileName: Path to save the plot.
+    """
+    import itertools
 
-    data_trans = np.asarray(firm_manager.history_segment_count).T
-    num_segments = data_trans.shape[0]
+    # Retrieve the segment codes
+    num_beta_segments = firm_manager.num_beta_segments
+    all_segment_codes = list(itertools.product(range(num_beta_segments), range(2), range(2)))
 
-    for i, data in enumerate(data_trans):
-        if i >= 8:  # Limit to the first 8 segments if there are more
-            break
-        row, col = divmod(i, 2)
-        ax = axes[row, col]
-        segment_code = format(i, '03b')
-        
-        ax.plot(time_series, data, label=f"Segment {segment_code}")
+    # Initialize a dictionary to store aggregated segment counts over time
+    segment_counts = {code: [] for code in all_segment_codes}
 
-        ax.legend(loc='upper right')
+    # Organize segment data
+    for t, segment_data in enumerate(firm_manager.history_segment_count):
+        for segment_idx, count in enumerate(segment_data):
+            segment_code = all_segment_codes[segment_idx]
+            if segment_code not in segment_counts:
+                segment_counts[segment_code] = []
+            # Ensure the list for this segment has enough time steps
+            while len(segment_counts[segment_code]) <= t:
+                segment_counts[segment_code].append(0)
+            segment_counts[segment_code][t] += count
+
+    # Ensure all segment counts have the same length as the time series
+    max_time_steps = len(time_series)
+    for segment in segment_counts:
+        while len(segment_counts[segment]) < max_time_steps:
+            segment_counts[segment].append(0)
+
+    # Determine the number of rows and columns for the grid
+    num_segments = len(segment_counts)
+    cols = 4
+    rows = (num_segments + cols - 1) // cols  # Ceiling division for rows
+
+    # Create subplots
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharex=True, sharey=True)
+    axes = axes.flatten()
+
+    # Plot each segment
+    for i, (segment, counts) in enumerate(segment_counts.items()):
+        ax = axes[i]
+        ax.plot(time_series, counts, label=f"Segment {segment}")
+        ax.legend(loc='upper right', fontsize='small')
         ax.grid()
+        ax.set_title(f"Segment {segment}")
 
-    # Adjust layout
+    # Remove unused axes
+    for j in range(len(segment_counts), len(axes)):
+        fig.delaxes(axes[j])
+
+    # Add labels and adjust layout
     fig.supxlabel("Time Step")
-    fig.supylabel("# Segment")
+    fig.supylabel("Segment Count")
     plt.tight_layout()
-    # Save the figure with a new name
+
+    # Save the plot
     save_path = os.path.join(fileName, "Plots")
     ensure_directory_exists(save_path)
-    save_and_show(fig, fileName, "segment_count_grid.png", 600)    
-
+    save_and_show(fig, fileName, "segment_count_grid", 600)
 
 def plot_car_sale_prop(social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -562,8 +599,6 @@ def plot_car_sale_prop(social_network, time_series, fileName, dpi=600):
     ax.legend()
     format_plot(ax, "New versus Second hand cars", "Time Step", "# Cars bought", legend=False)
     save_and_show(fig, fileName, "num_cars_bought_type", dpi)      
-
-import matplotlib.pyplot as plt
 
 def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600):
     """
@@ -1242,7 +1277,6 @@ def plot_mean_emissions_one_row(base_params, social_network, time_series, fileNa
     #plt.tight_layout()
     save_and_show(fig, fileName, "mean_driving_emissions_one_row", dpi)
 
-
 def plot_mean_distance_one_row(base_params, social_network, time_series, fileName, percentiles, dpi=600):
     """
     Plots mean distance in a single row layout: each column represents a vector (Beta, Gamma, Chi, Origin),
@@ -1305,7 +1339,6 @@ def plot_mean_distance_one_row(base_params, social_network, time_series, fileNam
     # Adjust layout and save
     #plt.tight_layout()
     save_and_show(fig, fileName, "mean_distance_one_row", dpi)
-
 
 def plot_mean_utility_one_row(base_params, social_network, time_series, fileName, percentiles, dpi=600):
     """
@@ -1473,6 +1506,339 @@ def plot_conditional_transport_users_4x4(
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space at the top for the legend
     save_and_show(fig, fileName, "conditional_transport_users_4x4_conditions", dpi)
 
+def plot_transport_users_beta_gamma_chi(
+    firm_manager,
+    base_params,
+    social_network,
+    time_series,
+    fileName,
+    percentiles,
+    dpi=600
+):
+    """
+    Create two separate plots:
+    1. Beta bins: 5 subplots across one row (Beta Bin 0-4).
+    2. Gamma and Chi: 4 subplots in two rows (Rich and Poor for Gamma and Chi).
+    """
+
+    # 1) Prepare data (ICE vs. EV) for each time step, shape = (num_individuals, num_time_steps).
+    data = np.asarray(social_network.history_transport_type_individual).T
+
+    def compute_proportions(indices, data_array):
+        """
+        Returns two arrays: proportion_ICE, proportion_EV
+        Each array is length = len(time_series)
+        """
+        sub_data = data_array[indices, :]  # shape = (#selected, time_steps)
+
+        ice_counts = np.sum(sub_data == 2, axis=0)
+        ev_counts = np.sum(sub_data == 3, axis=0)
+        total = len(indices)
+
+        if total == 0:
+            return np.zeros(sub_data.shape[1]), np.zeros(sub_data.shape[1])
+
+        prop_ice = ice_counts / total
+        prop_ev = ev_counts / total
+        return prop_ice, prop_ev
+
+    # Beta bins
+    beta_bin_idx = firm_manager.beta_segment_idx
+
+    # Gamma and Chi thresholds
+    gamma_threshold = np.percentile(social_network.gamma_vec, percentiles["Gamma"])
+    chi_threshold = np.percentile(social_network.chi_vec, percentiles["Chi"])
+
+    gamma_rich_indices = np.where(social_network.gamma_vec <= gamma_threshold)[0]
+    gamma_poor_indices = np.where(social_network.gamma_vec > gamma_threshold)[0]
+    chi_rich_indices = np.where(social_network.chi_vec <= chi_threshold)[0]
+    chi_poor_indices = np.where(social_network.chi_vec > chi_threshold)[0]
+
+    # --------------------------------------------------------------------------
+    # Plot 1: Beta bins (5 subplots in one row)
+    # --------------------------------------------------------------------------
+    fig1, axs1 = plt.subplots(1, 5, figsize=(20, 5), sharex=True, sharey=True)
+
+    for bin_val in range(5):
+        bin_indices = np.where(beta_bin_idx == bin_val)[0]
+        bin_ice, bin_ev = compute_proportions(bin_indices, data)
+
+        axs1[bin_val].stackplot(time_series, bin_ice, bin_ev, labels=['ICE', 'EV'], alpha=0.8)
+        axs1[bin_val].set_title(f"Beta Bin {bin_val}")
+        add_vertical_lines(axs1[bin_val], base_params)
+
+    fig1.supylabel("Proportion")
+    fig1.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig1, fileName, "transport_users_beta_bins", dpi)
+
+    # --------------------------------------------------------------------------
+    # Plot 2: Gamma and Chi (4 subplots in two rows)
+    # --------------------------------------------------------------------------
+    fig2, axs2 = plt.subplots(2, 2, figsize=(12, 8), sharex=True, sharey=True)
+
+    # Gamma Rich
+    gamma_rich_ice, gamma_rich_ev = compute_proportions(gamma_rich_indices, data)
+    axs2[0, 0].stackplot(time_series, gamma_rich_ice, gamma_rich_ev, labels=['ICE', 'EV'], alpha=0.8)
+    axs2[0, 0].set_title(f"Gamma <= {round(gamma_threshold,2)}")
+    add_vertical_lines(axs2[0, 0], base_params)
+
+    # Gamma Poor
+    gamma_poor_ice, gamma_poor_ev = compute_proportions(gamma_poor_indices, data)
+    axs2[1, 0].stackplot(time_series, gamma_poor_ice, gamma_poor_ev, labels=['ICE', 'EV'], alpha=0.8)
+    axs2[1, 0].set_title(f"Gamma > {round(gamma_threshold,2)}")
+    add_vertical_lines(axs2[1, 0], base_params)
+
+    # Chi Rich
+    chi_rich_ice, chi_rich_ev = compute_proportions(chi_rich_indices, data)
+    axs2[0, 1].stackplot(time_series, chi_rich_ice, chi_rich_ev, labels=['ICE', 'EV'], alpha=0.8)
+    axs2[0, 1].set_title(f"Chi <= {round(chi_threshold,2)}")
+    add_vertical_lines(axs2[0, 1], base_params)
+
+    # Chi Poor
+    chi_poor_ice, chi_poor_ev = compute_proportions(chi_poor_indices, data)
+    axs2[1, 1].stackplot(time_series, chi_poor_ice, chi_poor_ev, labels=['ICE', 'EV'], alpha=0.8)
+    axs2[1, 1].set_title(f"Chi > {round(chi_threshold,2)}")
+    add_vertical_lines(axs2[1, 1], base_params)
+
+    fig2.supylabel("Proportion")
+    fig2.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig2, fileName, "transport_users_gamma_chi", dpi)
+
+
+def plot_mean_emissions_beta_gamma_chi_split(
+    firm_manager,
+    base_params,
+    social_network,
+    time_series,
+    fileName,
+    percentiles,
+    dpi=600
+):
+    emissions_data = np.asarray(social_network.history_driving_emissions_individual).T
+
+    def compute_mean_and_ci(indices):
+        selected_data = emissions_data[indices]
+        mean = np.mean(selected_data, axis=0)
+        se = stats.sem(selected_data, axis=0)
+        ci = se * stats.t.ppf((1 + 0.95) / 2, len(indices) - 1)
+        return mean, ci
+
+    beta_bin_idx = firm_manager.beta_segment_idx
+    gamma_threshold = np.percentile(social_network.gamma_vec, percentiles["Gamma"])
+    chi_threshold = np.percentile(social_network.chi_vec, percentiles["Chi"])
+
+    gamma_rich_indices = np.where(social_network.gamma_vec <= gamma_threshold)[0]
+    gamma_poor_indices = np.where(social_network.gamma_vec > gamma_threshold)[0]
+    chi_rich_indices = np.where(social_network.chi_vec <= chi_threshold)[0]
+    chi_poor_indices = np.where(social_network.chi_vec > chi_threshold)[0]
+
+    # Beta bins figure
+    fig_beta, axs_beta = plt.subplots(1, 5, figsize=(20, 5), sharex=True, sharey=True)
+    for bin_val in range(5):
+        bin_indices = np.where(beta_bin_idx == bin_val)[0]
+        mean, ci = compute_mean_and_ci(bin_indices)
+        axs_beta[bin_val].plot(time_series, mean, label=f"Beta Bin {bin_val}", color="blue")
+        axs_beta[bin_val].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+        axs_beta[bin_val].set_title(f"Beta Bin {bin_val}")
+        add_vertical_lines(axs_beta[bin_val], base_params)
+
+    fig_beta.supylabel("Mean Driving Emissions")
+    fig_beta.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig_beta, fileName, "mean_emissions_beta_bins", dpi)
+
+    # Gamma and Chi figure
+    fig_gc, axs_gc = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
+    # Gamma
+    mean, ci = compute_mean_and_ci(gamma_rich_indices)
+    axs_gc[0, 0].plot(time_series, mean, label="Gamma Rich", color="blue")
+    axs_gc[0, 0].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+    axs_gc[0, 0].set_title("Gamma Rich")
+    add_vertical_lines(axs_gc[0, 0], base_params)
+
+    mean, ci = compute_mean_and_ci(gamma_poor_indices)
+    axs_gc[1, 0].plot(time_series, mean, label="Gamma Poor", color="red")
+    axs_gc[1, 0].fill_between(time_series, mean - ci, mean + ci, color="red", alpha=0.2)
+    axs_gc[1, 0].set_title("Gamma Poor")
+    add_vertical_lines(axs_gc[1, 0], base_params)
+
+    # Chi
+    mean, ci = compute_mean_and_ci(chi_rich_indices)
+    axs_gc[0, 1].plot(time_series, mean, label="Chi Rich", color="blue")
+    axs_gc[0, 1].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+    axs_gc[0, 1].set_title("Chi Rich")
+    add_vertical_lines(axs_gc[0, 1], base_params)
+
+    mean, ci = compute_mean_and_ci(chi_poor_indices)
+    axs_gc[1, 1].plot(time_series, mean, label="Chi Poor", color="red")
+    axs_gc[1, 1].fill_between(time_series, mean - ci, mean + ci, color="red", alpha=0.2)
+    axs_gc[1, 1].set_title("Chi Poor")
+    add_vertical_lines(axs_gc[1, 1], base_params)
+
+    fig_gc.supylabel("Mean Driving Emissions")
+    fig_gc.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig_gc, fileName, "mean_emissions_gamma_chi", dpi)
+
+def plot_mean_distance_beta_gamma_chi_split(
+    firm_manager,
+    base_params,
+    social_network,
+    time_series,
+    fileName,
+    percentiles,
+    dpi=600
+):
+    """
+    Plots mean distance for Beta bins in one figure and Gamma/Chi in another figure.
+    """
+    # Extract distance data
+    distance_data = np.asarray(social_network.history_distance_individual).T
+
+    def compute_mean_and_ci(indices):
+        selected_data = distance_data[indices]
+        mean = np.mean(selected_data, axis=0)
+        se = stats.sem(selected_data, axis=0)
+        ci = se * stats.t.ppf((1 + 0.95) / 2, len(indices) - 1)
+        return mean, ci
+
+    beta_bin_idx = firm_manager.beta_segment_idx
+    gamma_threshold = np.percentile(social_network.gamma_vec, percentiles["Gamma"])
+    chi_threshold = np.percentile(social_network.chi_vec, percentiles["Chi"])
+
+    gamma_rich_indices = np.where(social_network.gamma_vec <= gamma_threshold)[0]
+    gamma_poor_indices = np.where(social_network.gamma_vec > gamma_threshold)[0]
+    chi_rich_indices = np.where(social_network.chi_vec <= chi_threshold)[0]
+    chi_poor_indices = np.where(social_network.chi_vec > chi_threshold)[0]
+
+    # Beta bins figure
+    fig_beta, axs_beta = plt.subplots(1, 5, figsize=(20, 5), sharex=True, sharey=True)
+    for bin_val in range(5):
+        bin_indices = np.where(beta_bin_idx == bin_val)[0]
+        mean, ci = compute_mean_and_ci(bin_indices)
+        axs_beta[bin_val].plot(time_series, mean, label=f"Beta Bin {bin_val}", color="blue")
+        axs_beta[bin_val].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+        axs_beta[bin_val].set_title(f"Beta Bin {bin_val}")
+        add_vertical_lines(axs_beta[bin_val], base_params)
+
+    fig_beta.supylabel("Mean Distance")
+    fig_beta.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig_beta, fileName, "mean_distance_beta_bins", dpi)
+
+    # Gamma and Chi figure
+    fig_gc, axs_gc = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
+    # Gamma
+    mean, ci = compute_mean_and_ci(gamma_rich_indices)
+    axs_gc[0, 0].plot(time_series, mean, label="Gamma Rich", color="blue")
+    axs_gc[0, 0].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+    axs_gc[0, 0].set_title("Gamma Rich")
+    add_vertical_lines(axs_gc[0, 0], base_params)
+
+    mean, ci = compute_mean_and_ci(gamma_poor_indices)
+    axs_gc[1, 0].plot(time_series, mean, label="Gamma Poor", color="red")
+    axs_gc[1, 0].fill_between(time_series, mean - ci, mean + ci, color="red", alpha=0.2)
+    axs_gc[1, 0].set_title("Gamma Poor")
+    add_vertical_lines(axs_gc[1, 0], base_params)
+
+    # Chi
+    mean, ci = compute_mean_and_ci(chi_rich_indices)
+    axs_gc[0, 1].plot(time_series, mean, label="Chi Rich", color="blue")
+    axs_gc[0, 1].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+    axs_gc[0, 1].set_title("Chi Rich")
+    add_vertical_lines(axs_gc[0, 1], base_params)
+
+    mean, ci = compute_mean_and_ci(chi_poor_indices)
+    axs_gc[1, 1].plot(time_series, mean, label="Chi Poor", color="red")
+    axs_gc[1, 1].fill_between(time_series, mean - ci, mean + ci, color="red", alpha=0.2)
+    axs_gc[1, 1].set_title("Chi Poor")
+    add_vertical_lines(axs_gc[1, 1], base_params)
+
+    fig_gc.supylabel("Mean Distance")
+    fig_gc.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig_gc, fileName, "mean_distance_gamma_chi", dpi)
+
+def plot_mean_utility_beta_gamma_chi_split(
+    firm_manager,
+    base_params,
+    social_network,
+    time_series,
+    fileName,
+    percentiles,
+    dpi=600
+):
+    """
+    Plots mean utility for Beta bins in one figure and Gamma/Chi in another figure.
+    """
+    # Extract utility data
+    utility_data = np.asarray(social_network.history_utility_individual).T
+
+    def compute_mean_and_ci(indices):
+        selected_data = utility_data[indices]
+        mean = np.mean(selected_data, axis=0)
+        se = stats.sem(selected_data, axis=0)
+        ci = se * stats.t.ppf((1 + 0.95) / 2, len(indices) - 1)
+        return mean, ci
+
+    beta_bin_idx = firm_manager.beta_segment_idx
+    gamma_threshold = np.percentile(social_network.gamma_vec, percentiles["Gamma"])
+    chi_threshold = np.percentile(social_network.chi_vec, percentiles["Chi"])
+
+    gamma_rich_indices = np.where(social_network.gamma_vec <= gamma_threshold)[0]
+    gamma_poor_indices = np.where(social_network.gamma_vec > gamma_threshold)[0]
+    chi_rich_indices = np.where(social_network.chi_vec <= chi_threshold)[0]
+    chi_poor_indices = np.where(social_network.chi_vec > chi_threshold)[0]
+
+    # Beta bins figure
+    fig_beta, axs_beta = plt.subplots(1, 5, figsize=(20, 5), sharex=True, sharey=True)
+    for bin_val in range(5):
+        bin_indices = np.where(beta_bin_idx == bin_val)[0]
+        mean, ci = compute_mean_and_ci(bin_indices)
+        axs_beta[bin_val].plot(time_series, mean, label=f"Beta Bin {bin_val}", color="blue")
+        axs_beta[bin_val].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+        axs_beta[bin_val].set_title(f"Beta Bin {bin_val}")
+        add_vertical_lines(axs_beta[bin_val], base_params)
+
+    fig_beta.supylabel("Mean Utility")
+    fig_beta.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig_beta, fileName, "mean_utility_beta_bins", dpi)
+
+    # Gamma and Chi figure
+    fig_gc, axs_gc = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
+    # Gamma
+    mean, ci = compute_mean_and_ci(gamma_rich_indices)
+    axs_gc[0, 0].plot(time_series, mean, label="Gamma Rich", color="blue")
+    axs_gc[0, 0].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+    axs_gc[0, 0].set_title("Gamma Rich")
+    add_vertical_lines(axs_gc[0, 0], base_params)
+
+    mean, ci = compute_mean_and_ci(gamma_poor_indices)
+    axs_gc[1, 0].plot(time_series, mean, label="Gamma Poor", color="red")
+    axs_gc[1, 0].fill_between(time_series, mean - ci, mean + ci, color="red", alpha=0.2)
+    axs_gc[1, 0].set_title("Gamma Poor")
+    add_vertical_lines(axs_gc[1, 0], base_params)
+
+    # Chi
+    mean, ci = compute_mean_and_ci(chi_rich_indices)
+    axs_gc[0, 1].plot(time_series, mean, label="Chi Rich", color="blue")
+    axs_gc[0, 1].fill_between(time_series, mean - ci, mean + ci, color="blue", alpha=0.2)
+    axs_gc[0, 1].set_title("Chi Rich")
+    add_vertical_lines(axs_gc[0, 1], base_params)
+
+    mean, ci = compute_mean_and_ci(chi_poor_indices)
+    axs_gc[1, 1].plot(time_series, mean, label="Chi Poor", color="red")
+    axs_gc[1, 1].fill_between(time_series, mean - ci, mean + ci, color="red", alpha=0.2)
+    axs_gc[1, 1].set_title("Chi Poor")
+    add_vertical_lines(axs_gc[1, 1], base_params)
+
+    fig_gc.supylabel("Mean Utility")
+    fig_gc.supxlabel("Time Step")
+    plt.tight_layout()
+    save_and_show(fig_gc, fileName, "mean_utility_gamma_chi", dpi)
 
 
 #################################################################################################################################################
@@ -2036,11 +2402,11 @@ def main(fileName, dpi=600):
 
     # All plot function calls
 
-    plot_fuel_costs_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
+    #plot_fuel_costs_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
 
-    plot_fuel_emissions_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
+    #plot_fuel_emissions_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
 
-    plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
+    #plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
 
     #plot_num_bought_by_type(base_params, social_network, fileName, dpi)
     #plot_calibration_data(data_controller, time_series, fileName)
@@ -2091,7 +2457,7 @@ def main(fileName, dpi=600):
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
-    #plot_segment_count_grid(firm_manager, time_series, fileName)
+    plot_segment_count_grid(firm_manager, time_series, fileName)
 
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
@@ -2106,16 +2472,22 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     #"""
     #percentiles = {'Beta': base_params["parameters_firm_manager"]["beta_threshold_percentile"], 'Gamma': base_params["parameters_firm_manager"]["gamma_threshold_percentile"], 'Chi': 50}
+    percentiles = {'Gamma': base_params["parameters_firm_manager"]["gamma_threshold_percentile"], 'Chi': 50}
     #plot_transport_users_stacked_two_by_four(base_params,social_network, time_series, fileName, percentiles)
     #plot_mean_emissions_one_row(base_params,social_network, time_series, fileName, percentiles)
     #plot_mean_distance_one_row(base_params,social_network, time_series, fileName, percentiles)
     #plot_mean_utility_one_row(base_params,social_network, time_series, fileName, percentiles)
+
+    #plot_transport_users_beta_gamma_chi(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_emissions_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_distance_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_utility_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
 
     #plot_conditional_transport_users_4x4(base_params,social_network, time_series, fileName, percentiles)
     
@@ -2142,4 +2514,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_11_49_24__03_01_2025")
+    main("results/single_experiment_19_13_55__03_01_2025")

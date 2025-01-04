@@ -205,7 +205,7 @@ def main(
     future_time_steps = base_params["duration_future"]#REMOVE TO RUN SINGLE RUN FOR CONSISTENCY, THEN PUT BACK IN FOR POLICY ANALYSIS
     base_params["duration_future"] = 0   
 
-    root = "endogenous_polict_intensity"
+    root = "endogenous_policy_intensity_single"
 
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
@@ -253,7 +253,7 @@ def main(
 
 if __name__ == "__main__":
     results = main(
-        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy.json",
+        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single.json",
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
