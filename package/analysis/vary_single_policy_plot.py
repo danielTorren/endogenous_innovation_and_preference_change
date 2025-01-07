@@ -68,5 +68,5 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/grid_search_policy_intensity_00_08_07__05_01_2025")
+    main("results/grid_search_policy_intensity_00_36_01__05_01_2025")
 

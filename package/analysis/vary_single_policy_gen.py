@@ -119,7 +119,7 @@ def main(
     future_time_steps = base_params["duration_future"]
     base_params["duration_future"] = 0
 
-    file_name = produce_name_datetime("grid_search_policy_intensity")
+    file_name = produce_name_datetime("vary_single_policy_gen")
     print("File Name:", file_name)
 
     base_params_list = params_list_with_seed(base_params)
@@ -135,7 +135,7 @@ def main(
 
     print("FINISHED RUNS")
 
-    #save_object(controller_list, file_name + "/Data", "controller_list")
+    save_object(controller_list, file_name + "/Data", "controller_list")
     save_object(base_params, file_name + "/Data", "base_params")
 
     base_params["duration_future"] = future_time_steps
