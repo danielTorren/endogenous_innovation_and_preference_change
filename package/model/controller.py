@@ -78,6 +78,7 @@ class Controller:
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
         self.parameters_second_hand = parameters_controller["parameters_second_hand"]
+        
         self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]
 
         self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
@@ -125,9 +126,8 @@ class Controller:
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
-        #print(self.beta_vec)
+
         unique_beta_vals, counts = np.unique(self.beta_vec, return_counts=True)
-        #self.beta_bins_count,self.beta_bins = np.histogram(self.beta_vec, bins=self.parameters_firm_manager["num_beta_segments"])
 
         # Add a small delta to the start and end to ensure proper binning
         delta = (unique_beta_vals[1] - unique_beta_vals[0]) / 2
@@ -144,23 +144,13 @@ class Controller:
         self.WTP_sd = self.parameters_social_network["WTP_sd"]
         self.car_lifetime_months = self.parameters_social_network["car_lifetime_months"]
         WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
-        self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = 0, a_max = np.inf)
+        self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
         self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
-        #self.gamma_vec = np.zeros(self.num_individuals)
-        #gamma_vec = np.ones(self.num_individuals)
-        #gamma_vec[-1] = 0
-        #self.gamma_vec = gamma_vec
-        #ETA
-
-        #d min
-        d_i_min_vec_uncapped  = self.random_state_gamma.normal(loc = self.parameters_social_network["d_i_min"], scale = self.parameters_social_network["d_i_min_sd"], size = self.num_individuals)
-        self.d_i_min_vec = np.clip(d_i_min_vec_uncapped , a_min = 0, a_max = np.inf)
 
         #social network data
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["chi_vec"] = self.chi_vec 
-        self.parameters_social_network["d_i_min_vec"] = self.d_i_min_vec 
         self.parameters_social_network["beta_median"] = np.median(self.beta_vec)
         self.parameters_social_network["gamma_median"] = np.median(self.beta_vec)
 
@@ -172,7 +162,7 @@ class Controller:
         self.parameters_firm_manager["gamma_threshold"] = np.percentile(self.beta_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
         self.parameters_firm_manager["gamma_val_empty_upper"] = np.percentile(self.gamma_vec , self.parameters_firm_manager["gamma_threshold_percentile"]/2)
         self.parameters_firm_manager["gamma_val_empty_upper"] = np.percentile(self.gamma_vec,  self.parameters_firm_manager["gamma_threshold_percentile"]+ (1-self.parameters_firm_manager["gamma_threshold_percentile"])/2)
-
+        
     def generate_beta_values_quintiles(self,n, quintile_incomes):
         """
         Generate a list of beta values for n agents based on quintile incomes.
@@ -226,7 +216,7 @@ class Controller:
     def manage_calibration(self):
 
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-        
+
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
@@ -430,6 +420,7 @@ class Controller:
         self.calibration_electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
         self.calibration_electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
 
+
         self.manage_burn_in()
 
         self.manage_calibration()
@@ -513,6 +504,7 @@ class Controller:
         self.parameters_firm["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
+        self.parameters_firm["d_max"] = self.parameters_social_network["d_max"]
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -539,6 +531,7 @@ class Controller:
         self.parameters_social_network["used_rebate"] = self.used_rebate 
         self.parameters_social_network["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
         self.parameters_social_network["used_rebate_low"] = self.parameters_rebate_calibration["used_rebate_low"]
+        self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -552,9 +545,8 @@ class Controller:
         parameters_ICE["median_gamma"] = 0.5
         parameters_ICE["fuel_cost"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-    
+        parameters_ICE["d_max"]= self.parameters_social_network["d_max"]
         self.ICE_landscape = NKModel(parameters_ICE)
-        #print("ICE LANDSCAPE", self.ICE_landscape.min_fitness_string, self.ICE_landscape.min_fitness, self.ICE_landscape.attributes_dict[self.ICE_landscape.min_fitness_string])
 
     def setup_EV_landscape(self, parameters_EV):
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
@@ -564,14 +556,15 @@ class Controller:
         parameters_EV["median_gamma"] = 0.5#representative 
         parameters_EV["fuel_cost"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
-    
+        parameters_EV["d_max"]= self.parameters_social_network["d_max"]
         self.EV_landscape = NKModel(parameters_EV)
-        #print("EV LANDSCAPE", self.EV_landscape.min_fitness_string, self.EV_landscape.min_fitness, self.EV_landscape.attributes_dict[self.EV_landscape.min_fitness_string])
-        #quit()
+
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
+        self.parameters_second_hand["d_max"] = self.parameters_social_network["d_max"]
+        self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
@@ -681,13 +674,13 @@ class Controller:
 
     def next_step(self):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
-        #print("TIME STEP", self.t_controller)
+
+        print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms, U_sum_total = self.update_firms()
         self.second_hand_cars = self.get_second_hand_cars(U_sum_total)
 
-        #print([car.price for car in self.cars_on_sale_all_firms])
         self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()

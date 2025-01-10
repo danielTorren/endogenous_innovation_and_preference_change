@@ -33,6 +33,7 @@ class NKModel:
         self.median_gamma = parameters["median_gamma"]
         self.fuel_cost = parameters["fuel_cost"]
         self.e_t = parameters["e_t"]
+        self.d_max = parameters["d_max"]
 
         self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
         self.max_vec = np.asarray([self.max_Quality,self.max_Efficiency, self.max_Cost])
@@ -47,31 +48,17 @@ class NKModel:
                 # Compute numerator for all vehicles
         beta = self.median_beta
         gamma = self.median_gamma
-        
-        numerator = (
-            self.alpha * quality
-        ) 
-        denominator = (
-            ((beta/eff) * (self.fuel_cost)) +
-            ((gamma/ eff) * self.e_t)
-        )  # Shape: (num_individuals, num_vehicles)
-
-        # Calculate optimal distance matrix for each individual-vehicle pair
-        d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
-        cost_component = (beta/ eff) * (self.fuel_cost) + ((gamma/ eff) * self.e_t)
-        # Compute the commuting utility for each individual-vehicle pair
-        present_utility_vec = np.maximum(
-            0,
-            quality*(d_i_t_vec ** self.alpha) - d_i_t_vec * cost_component
-        )
+        X = (beta * self.fuel_cost + gamma * self.e_t)/ eff
+
+        # Compute commuting utility for individual-vehicle pairs
+        driving_utility = quality/(self.alpha*X +1)
 
         # Save the base utility
-        #B_vec = present_utility_vec/(self.r + (np.log(1+self.delta))/(1-self.alpha))
-        B_vec = present_utility_vec*(1+self.r) / ((1+self.r) - (1 - self.delta)**(1/(1 - self.alpha)))
-        approx_fitness = B_vec - beta*prod_cost
+        B = driving_utility*((1+self.r)/(self.r + self.delta))
+        approx_fitness = B/(beta*prod_cost)
 
         return approx_fitness
 

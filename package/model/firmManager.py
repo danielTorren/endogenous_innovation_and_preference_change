@@ -169,7 +169,7 @@ class Firm_Manager:
          - I_s_t     (count of individuals)
          - beta_s_t  (average beta)
          - gamma_s_t (average gamma)
-         - U_sum     (will be computed after we calculate utilities)
+         - W     (will be computed after we calculate utilities)
         """
         # 1) Build a dictionary for ALL possible combos
         
@@ -179,9 +179,9 @@ class Firm_Manager:
                 "I_s_t": 0,
                 "beta_s_t": 0.0,
                 "gamma_s_t": 0.0,
-                "U_sum": 0.0,
+                "W": 0.0,
                 "history_I_s_t": [],
-                "history_U_sum": []
+                "history_W": []
             }
 
         # 2) Count how many individuals fall into each segment code
@@ -224,20 +224,20 @@ class Firm_Manager:
             self.market_data[code]["beta_s_t"] = avg_beta
             self.market_data[code]["gamma_s_t"] = avg_gamma
 
-        # 4) Now we need to compute the initial U_sum for each segment
+        # 4) Now we need to compute the initial W for each segment
         for firm in self.firms_list:
             firm.calc_utility_cars_segments(self.market_data, self.cars_on_sale_all_firms)
 
         # 5) Sum up the utilities across all cars for each segment
-        segment_U_sums = defaultdict(float)
+        segment_W = defaultdict(float)
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
-                for code, Uval in car.car_utility_segments_U.items():
-                    segment_U_sums[code] += Uval
+                for code, U in car.car_utility_segments_U.items():
+                    segment_W[code] += U**2
 
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
-            self.market_data[code]["U_sum"] = segment_U_sums[code]
+            self.market_data[code]["W"] = segment_W[code]
 
 
     ############################################################################################################################################################
@@ -245,7 +245,7 @@ class Firm_Manager:
 
     def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy):
         cars_on_sale_all_firms = []
-        segment_U_sums = defaultdict(float)
+        segment_W = defaultdict(float)
         self.zero_profit_options_prod_sum = 0
         self.zero_profit_options_research_sum = 0
 
@@ -258,11 +258,11 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
-                    segment_U_sums[segment] += U
+                    segment_W[segment] += U**2
 
-        return cars_on_sale_all_firms, segment_U_sums
+        return cars_on_sale_all_firms, segment_W
 
-    def update_market_data_moving_average(self, sums_U_segment):
+    def update_market_data_moving_average(self, W_segment):
         """
         If you still want a moving average approach:
         """
@@ -274,28 +274,28 @@ class Firm_Manager:
             code = (b_idx, g_idx, e_idx)
             segment_counts[code] += 1
 
-        self.total_U_sum = 0.0
+        self.total_W = 0.0
 
         for code in self.market_data.keys():
             # Append current values to history
             self.market_data[code]["history_I_s_t"].append(segment_counts[code])
-            self.market_data[code]["history_U_sum"].append(sums_U_segment[code])
+            self.market_data[code]["history_W"].append(W_segment[code])
 
             # Trim history to the last N time steps
             if len(self.market_data[code]["history_I_s_t"]) > self.time_steps_tracking_market_data:
                 self.market_data[code]["history_I_s_t"].pop(0)
-            if len(self.market_data[code]["history_U_sum"]) > self.time_steps_tracking_market_data:
-                self.market_data[code]["history_U_sum"].pop(0)
+            if len(self.market_data[code]["history_W"]) > self.time_steps_tracking_market_data:
+                self.market_data[code]["history_W"].pop(0)
 
             # Calculate moving averages
             moving_avg_I_s_t = np.mean(self.market_data[code]["history_I_s_t"])
-            moving_avg_U_sum = np.mean(self.market_data[code]["history_U_sum"])
+            moving_avg_W = np.mean(self.market_data[code]["history_W"])
 
             # Store the moving averages
             self.market_data[code]["I_s_t"] = moving_avg_I_s_t
-            self.market_data[code]["U_sum"] = moving_avg_U_sum
+            self.market_data[code]["W"] = moving_avg_W
 
-            self.total_U_sum += moving_avg_U_sum
+            self.total_W += moving_avg_W
 
     ######################################################################################################################
 
@@ -421,10 +421,10 @@ class Firm_Manager:
 
         self.discriminatory_corporate_tax = discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
-        self.cars_on_sale_all_firms, sums_U_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.cars_on_sale_all_firms, W_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         #self.update_market_data(sums_U_segment)
-        self.update_market_data_moving_average(sums_U_segment)
+        self.update_market_data_moving_average(W_segment)
 
-        return self.cars_on_sale_all_firms, self.total_U_sum
+        return self.cars_on_sale_all_firms, self.total_W

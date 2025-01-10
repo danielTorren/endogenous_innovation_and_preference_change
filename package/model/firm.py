@@ -23,6 +23,7 @@ class Firm:
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.id_generator = parameters_firm["IDGenerator_firms"]  
 
+        self.d_max = parameters_firm["d_max"]
         self.num_cars_production =   parameters_firm["num_cars_production"]  
         self.firm_id = firm_id
         #ICE
@@ -56,7 +57,7 @@ class Firm:
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
 
-        self.init_U_sum = self.parameters_firm["init_U_sum"]
+        self.init_U = self.parameters_firm["init_U"]
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
         self.carbon_price =  self.parameters_firm["carbon_price"]
@@ -99,7 +100,7 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.init_U_sum
+                car.car_base_utility_segments[segment_code] = self.init_U
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
         for car in self.list_technology_memory_EV:
@@ -107,66 +108,14 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.init_U_sum
+                car.car_base_utility_segments[segment_code] = self.init_U
 
-    def optimal_distance(self, vehicle, beta, gamma):
-        """
-        Calculate the optimal distance based on the vehicle properties.
+    def calc_driving_utility(self, Quality_a_t, L_a_t, X):
 
-        Parameters:
-        vehicle (Vehicle): The vehicle for which the optimal distance is calculated.
+        # Compute commuting utility for individual-vehicle pairs
+        utility = Quality_a_t * ((1 - self.delta) ** L_a_t)/(self.alpha*X +1)
 
-        Returns:
-        float: The calculated optimal distance, d^*_{a,i,t}.
-        """
-
-        numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t
-        if vehicle.transportType == 3:
-            denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c) +
-                        (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
-        else:
-            denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) +
-                        (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
-
-        # Compute optimal distance
-        if denominator == 0:
-            raise ValueError("The denominator is zero, adjust the parameters to avoid division by zero.")
-
-        optimal_d = (numerator / denominator) ** (1 / (1 - self.alpha))
-        
-        return optimal_d
-
-    def calc_commuting_utility(self, vehicle, d_i_t, beta_s, gamma_s):
-        """
-        Calculate the commuting utility based on different conditions.
-
-        Parameters:
-        vehicle (Vehicle): The vehicle being considered for commuting.
-        d_i_t (float): Distance traveled during a time-step.
-        beta_s (float): Price sensitivity parameter for the segment.
-        gamma_s (float): Environmental sensitivity parameter for the segment.
-
-        Returns:
-        float: The calculated commuting utility u_{a,i,t}.
-        """
-        Quality_a_t = vehicle.Quality_a_t
-        delta = vehicle.delta
-        L_a_t = vehicle.L_a_t
-        Eff_omega_a_t = vehicle.Eff_omega_a_t
-        e_t = vehicle.e_t
-        fuel_cost_c = vehicle.fuel_cost_c
-
-        # Calculate commuting utility based on conditions for z
-        if vehicle.transportType == 3:
-            cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c) + (gamma_s/ Eff_omega_a_t) * e_t
-        else:
-            cost_component = (beta_s / Eff_omega_a_t) * (fuel_cost_c + self.carbon_price*e_t) + (gamma_s/ Eff_omega_a_t) * e_t
-        utility = Quality_a_t * (1 - delta) ** L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
-
-        # Ensure utility is non-negative
-        utility_final = max(0, utility)
-
-        return utility_final
+        return utility
 
     def calc_optimal_price_cars(self, market_data, car_list): 
         """Calculate the optimal price for each car in the car list based on market data. USED WHEN FIRST STUDYING A CAR"""
@@ -183,26 +132,27 @@ class Firm:
             for segment_code, segment_data in market_data.items():
                 beta_s = segment_data["beta_s_t"]
                 gamma_s = segment_data["gamma_s_t"]
-                U_sum = segment_data["U_sum"]
+                W_s_t = segment_data["W"]
  
-                # Calculate optimal distance for the given segment
-                d_i_t = self.optimal_distance(car, beta_s, gamma_s)
-                car.car_distance_segments[segment_code] = d_i_t  # Save the calculated distance
-
+                        # Calculate commuting utility based on conditions for z
+                if car.transportType == 3:
+                    X = (beta_s * car.fuel_cost_c + gamma_s * car.e_t)/car.Eff_omega_a_t
+                else:
+                    X = (beta_s * (car.fuel_cost_c + self.carbon_price*car.e_t) + gamma_s * car.e_t)/car.Eff_omega_a_t
                 # Calculate the commuting  utility for the given segment
-                utility_segment = self.calc_commuting_utility(car, d_i_t, beta_s, gamma_s)
+                driving_utility = self.calc_driving_utility(car.Quality_a_t, car.L_a_t, X)
 
                 # Save the base utility
-                #B = utility_segment/(self.r + (np.log(1+self.delta))/(1-self.alpha))
-                B = utility_segment*(1+self.r) / ((1+self.r) - (1 - self.delta)**(1/(1 - self.alpha)))
+                U = driving_utility*((1+self.r)/(self.r + self.delta))
 
-                car.car_base_utility_segments[segment_code] = B
+                car.car_base_utility_segments[segment_code] = U
 
-                inside_component = U_sum*(U_sum + B - gamma_s*E_m - beta_s*C_m )
+                inside_component = W_s_t ** 2 * ((gamma_s * E_m) ** 2 + (beta_s * C_m) ** 2 +  2 * C_m * E_m) + W_s_t + U
+            
                 if inside_component < 0 or self.t_firm == 1:
                     car.optimal_price_segments[segment_code] = C_m#STOP NEGATIVE SQUARE ROOTS
                 else:
-                    car.optimal_price_segments[segment_code] = max(C_m,(U_sum  + B - gamma_s * E_m - np.sqrt(inside_component) )/beta_s )
+                    car.optimal_price_segments[segment_code] = max(C_m,(beta_s * C_m * W_s_t + np.sqrt(inside_component))/(beta_s*W_s_t) )
 
         return car_list
     
@@ -221,9 +171,10 @@ class Firm:
                 if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                     #ADD IN A SUBSIDY
                     if car.transportType == 3:
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *(price_s - self.rebate) - gamma_s * car.emissions
+                        price_adjust = np.maximum(0,price_s - self.rebate)
+                        utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_adjust + gamma_s * car.emissions)
                     else:
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
+                        utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_s + gamma_s * car.emissions)
                     #utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
                     #print(self.t_firm, self.firm_id,segment_code,car.car_base_utility_segments[segment_code], utility_segment_U ,price_s)
@@ -300,13 +251,13 @@ class Firm:
                         profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t)
                     
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
-                    U_sum = segment_data["U_sum"]
+                    W = segment_data["W"]
                     
                     # Expected profit calculation
                     utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
 
                     #print(vehicle.car_utility_segments_U[segment_code])
-                    utility_proportion = ((utility_car)**self.kappa)/((U_sum + utility_car)**self.kappa)
+                    utility_proportion = ((utility_car)**self.kappa)/((W + utility_car)**self.kappa)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -504,12 +455,12 @@ class Firm:
                         profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t)
 
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
-                    U_sum = segment_data["U_sum"]
+                    W = segment_data["W"]
                     
                     # Expected profit calculation
                     utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
 
-                    utility_proportion = ((utility_car)**self.kappa)/((U_sum + utility_car)**self.kappa)
+                    utility_proportion = ((utility_car)**self.kappa)/((W + utility_car**self.kappa))
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -602,22 +553,13 @@ class Firm:
 
                         beta_s = market_data[segment_code]["beta_s_t"]
                         gamma_s = market_data[segment_code]["gamma_s_t"]
-
                         b_idx, g_idx, e_idx = segment_code
-                        consider_ev = (e_idx == 1)
+
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
-                                utility_segment_U = (
-                                    selected_vehicle.car_base_utility_segments[segment_code]
-                                    - beta_s * (selected_vehicle.optimal_price_segments[segment_code] - self.rebate)
-                                    - gamma_s * selected_vehicle.emissions
-                                )
+                                utility_segment_U = selected_vehicle.car_base_utility_segments[segment_code]/(beta_s * (selected_vehicle.optimal_price_segments[segment_code] + self.rebate) +  gamma_s * selected_vehicle.emissions)
                             else:
-                                utility_segment_U = (
-                                    selected_vehicle.car_base_utility_segments[segment_code]
-                                    - beta_s * selected_vehicle.optimal_price_segments[segment_code]
-                                    - gamma_s * selected_vehicle.emissions
-                                )
+                                utility_segment_U = selected_vehicle.car_base_utility_segments[segment_code]/(beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)
                             selected_vehicle.car_utility_segments_U[segment_code] = utility_segment_U
                         else:
                             selected_vehicle.car_utility_segments_U[segment_code] = 0
@@ -628,11 +570,8 @@ class Firm:
                             profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - (selected_vehicle.ProdCost_t)
 
                         I_s_t = market_data[segment_code]["I_s_t"]
-                        U_sum = market_data[segment_code]["U_sum"]
-                        utility_proportion = (
-                            (selected_vehicle.car_utility_segments_U[segment_code] ** self.kappa)
-                            / ((U_sum + selected_vehicle.car_utility_segments_U[segment_code]) ** self.kappa)
-                        )
+                        W = market_data[segment_code]["W"]
+                        utility_proportion = (selected_vehicle.car_utility_segments_U[segment_code] ** self.kappa)/ (W + selected_vehicle.car_utility_segments_U[segment_code]**self.kappa)
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                         if selected_vehicle.transportType == 3:  # EV
@@ -702,11 +641,8 @@ class Firm:
         list_technology_memory = self.calc_utility_cars_segments(market_data, list_technology_memory)#utility of all the cars for all the segments
         
         list_technology_memory = self.calc_predicted_profit_segments_production(market_data, list_technology_memory)#calculte the predicted profit of each segment 
-        #print("list_technology_memory",list_technology_memory)
-        #print("expected_profit_segments", [car.expected_profit_segments for car in list_technology_memory])
+
         cars_selected = self.select_car_lambda_production(market_data, list_technology_memory)#pick the cars for each car
-        #print("cars_selected",cars_selected)
-        #print([car.price for car in cars_selected])
 
         for car in list_technology_memory:#put the cars that are in the list as selected
             if car in cars_selected:
@@ -770,9 +706,6 @@ class Firm:
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
 
-        #print("start tiem step",self.t_firm, self.firm_id)
-        #print("before ON SALE", self.cars_on_sale)
-        #print("before meom", self.list_technology_memory_ICE)
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
         #update cars to sell   
@@ -794,11 +727,6 @@ class Firm:
         if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()
             self.research_bool = 0
-
-
-        #print("after ON SALE", self.cars_on_sale)
-        #print("after MEMORY", self.list_technology_memory_ICE)
-        #print([car.price for car in self.cars_on_sale])
 
         return self.cars_on_sale
 

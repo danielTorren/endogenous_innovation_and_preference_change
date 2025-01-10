@@ -187,12 +187,12 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.001,#0.002,
+        "delta": 0.07,#0.002,
         "transportType": 2,
         "min_Quality": 0,
-        "max_Quality": 15,
-        "min_Efficiency": 0.2,#0.5,
-        "max_Efficiency": 0.55,#1.5,
+        "max_Quality": 1560,
+        "min_Efficiency": 0.5,
+        "max_Efficiency": 1.5,
         "min_Cost": 5000,
         "max_Cost": 30000
     },
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         "production_emissions":9000,
         "transportType": 3,
         "min_Quality": 0,
-        "max_Quality": 15,
+        "max_Quality": 1560,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -225,16 +225,17 @@ if __name__ == "__main__":
         "lambda_pow": 5,
         "innovation_seed": 77,
         "num_cars_production": 16,
-        "init_U_sum": 10e7,
-        "init_price_multiplier": 1
+        "init_U": 10e10,
+        "init_price_multiplier": 10
     },
     "parameters_social_network":{
-        "num_individuals": 5000,
+        "num_individuals": 3000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
         "social_network_seed": 66,
+        "d_max": 10000,
         "d_min_seed": 45,
         "d_i_min": 700,
         "d_i_min_sd": 700,
@@ -242,6 +243,7 @@ if __name__ == "__main__":
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
+        "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
         "a_innovativeness": 1,
         "b_innovativeness": 1,
@@ -250,7 +252,7 @@ if __name__ == "__main__":
     },
     "parameters_vehicle_user":{
         "kappa":10,
-        "alpha": 0.5,
+        "alpha": 17184,#0.5,
         "r": 0.00417,
         "mu": 0.5
     }
@@ -269,7 +271,7 @@ if __name__ == "__main__":
         }
     else:
         base_params[ "parameters_policies"]["States"] = {
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -283,7 +285,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName)

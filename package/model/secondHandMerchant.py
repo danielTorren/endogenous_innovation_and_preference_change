@@ -17,6 +17,8 @@ class SecondHandMerchant:
         self.burn_in_second_hand_market = parameters_second_hand["burn_in_second_hand_market"]
         self.fixed_alternative_mark_up = parameters_second_hand["fixed_alternative_mark_up"]
         self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
+        self.d_max = parameters_second_hand["d_max"]
+        self.delta = parameters_second_hand["delta"]
 
         self.spent = 0
         self.income = 0
@@ -34,8 +36,6 @@ class SecondHandMerchant:
             "Quality_a_t": [], 
             "Eff_omega_a_t": [], 
             "price": [], 
-            "delta": [], 
-            "production_emissions": [],
             "fuel_cost_c": [], 
             "e_t": [],
             "L_a_t": [],
@@ -48,8 +48,6 @@ class SecondHandMerchant:
             vehicle_dict_vecs["Quality_a_t"].append(vehicle.Quality_a_t)
             vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
             vehicle_dict_vecs["price"].append(vehicle.price)
-            vehicle_dict_vecs["delta"].append(vehicle.delta)
-            vehicle_dict_vecs["production_emissions"].append(vehicle.emissions)
             vehicle_dict_vecs["fuel_cost_c"].append(vehicle.fuel_cost_c)
             vehicle_dict_vecs["e_t"].append(vehicle.e_t)
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
@@ -62,186 +60,64 @@ class SecondHandMerchant:
 
         return vehicle_dict_vecs
     
-    def calc_car_price_vec(self, vehicle_dict_vecs, beta, gamma, U_sum):
+    def calc_driving_utility_direct(self, Quality_a_t_vec,L_a_t_vec, X):
 
-        #DISTANCE
-                # Compute numerator for all vehicles
-        numerator = (
-            self.alpha * vehicle_dict_vecs["Quality_a_t"] *
-            ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"])
-        ) 
+        utility_vec = Quality_a_t_vec * ((1 - self.delta) ** L_a_t_vec)/(self.alpha*X +1)
 
-        denominator =np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (
-            ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"])) +
-            ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-            ),
-            (
-            ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-            ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-            )
-        )
-
-        #denominator = (
-        #    ((beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-        #    ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        #)  # Shape: (num_individuals, num_vehicles)
-
-        # Calculate optimal distance matrix for each individual-vehicle pair
-        d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
+        return utility_vec
+    
+    def calc_car_price_vec(self, vehicle_dict_vecs, beta, gamma, W_s_t):
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
-        cost_component =np.where(
+        X = np.where(
             vehicle_dict_vecs["transportType"] == 3,
-            (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]),
-            (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        )
-        #cost_component = (beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        # Compute the commuting utility for each individual-vehicle pair
-        present_utility_vec = np.maximum(
-            0,
-            vehicle_dict_vecs["Quality_a_t"] * ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]) * (d_i_t_vec ** self.alpha) - d_i_t_vec * cost_component
+            (beta *vehicle_dict_vecs["fuel_cost_c"] + gamma * vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"],
+            (beta * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + gamma* vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"]
         )
 
-        # Save the base utility
-        #B_vec = present_utility_vec/(self.r + (np.log(1+vehicle_dict_vecs["delta"]))/(1-self.alpha))
-        B_vec = present_utility_vec*(1+self.r) / ((1+self.r) - (1 - vehicle_dict_vecs["delta"])**(1/(1 - self.alpha)))
+        driving_utility_vec = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X)
 
-        inside_component = U_sum*(U_sum + B_vec - beta*vehicle_dict_vecs["cost_second_hand_merchant"])
+        U_vec = driving_utility_vec*((1+self.r)/(self.r + self.delta))
 
+        inside_component = W_s_t ** 2 *(beta * vehicle_dict_vecs["cost_second_hand_merchant"]) ** 2 + W_s_t + U_vec
+        
         # Adjust the component to avoid negative square roots
         inside_component_adjusted = np.maximum(inside_component, 0)  # Replace negatives with 0
 
         price_vec = np.where(
             inside_component < 0,
             vehicle_dict_vecs["cost_second_hand_merchant"],
-            np.maximum(vehicle_dict_vecs["cost_second_hand_merchant"], (U_sum  + B_vec - np.sqrt(inside_component_adjusted) )/beta)
+            np.maximum(vehicle_dict_vecs["cost_second_hand_merchant"],(beta * vehicle_dict_vecs["cost_second_hand_merchant"] * W_s_t + np.sqrt( inside_component_adjusted))/(beta*W_s_t))
         )
 
         return price_vec
     
-    def calc_car_price_single(self, vehicle, beta, gamma, U_sum):
+    def calc_driving_utility_direct_single(self, Quality_a_t, L_a_t, X):
 
-        #DISTANCE
-        numerator = self.alpha * vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t
-        
-        if vehicle.transportType == 3:
-            denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c) +
-                    (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
-        else:
-            denominator = ((beta/vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) +
-                    (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t)
+        driving_utility = Quality_a_t*(1-self.delta)**(L_a_t)/(self.alpha*X +1)
 
-        d_i_t = (numerator / denominator) ** (1 / (1 - self.alpha))
+        return driving_utility
+    
+    def calc_car_price_single(self, vehicle, beta, gamma, W_s_t):
 
         #present UTILITY
         if vehicle.transportType == 3:
-            cost_component = (beta / vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c) + (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t
+            X = (beta *vehicle.fuel_cost_c + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t
         else:
-            cost_component = (beta / vehicle.Eff_omega_a_t) * (vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + (gamma/vehicle.Eff_omega_a_t) * vehicle.e_t
+            X = (beta *(vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t 
         
-        utility = vehicle.Quality_a_t * (1 - vehicle.delta) ** vehicle.L_a_t * (d_i_t ** self.alpha) - d_i_t * cost_component
-
-        # Ensure utility is non-negative
-        utility_final = max(0, utility)
-
-        # Save the base utility
-        #B = utility_final/(self.r + (np.log(1+vehicle.delta))/(1-self.alpha))
-        B = utility_final*(1+self.r) / ((1+self.r) - (1 - vehicle.delta)**(1/(1 - self.alpha)))
-
-        inside_component = U_sum*(U_sum + B - beta*vehicle.cost_second_hand_merchant)
+        driving_utility = self.calc_driving_utility_direct_single( vehicle.Quality_a_t, vehicle.L_a_t, X)
+        U = driving_utility*((1+self.r)/(self.r + self.delta))#treat it as a current car, NO EMISSIOSN COST OR PURCHASSE COST? 
+            
+        inside_component = W_s_t ** 2 * ((gamma * vehicle.emissions) ** 2 + (beta * vehicle.cost_second_hand_merchant) ** 2 +  2 * vehicle.cost_second_hand_merchant * vehicle.emissions) + W_s_t + U
+        
         if inside_component < 0:
             price = vehicle.cost_second_hand_merchant
         else:
-            price = max(vehicle.cost_second_hand_merchant,(U_sum  + B - np.sqrt(inside_component) )/beta)
+            price = max(vehicle.cost_second_hand_merchant,(beta * vehicle.cost_second_hand_merchant * W_s_t + np.sqrt(inside_component))/(beta*W_s_t) )
 
         return price
-
-#######################################################################################
-    def gen_current_vehicle_dict_vecs_utility(self, list_vehicles):
-        # Extract properties using list comprehensions
-        quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
-        eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
-        price = np.array([vehicle.price for vehicle in list_vehicles])
-        delta = np.array([vehicle.delta for vehicle in list_vehicles])
-        production_emissions = np.array([vehicle.emissions for vehicle in list_vehicles])
-        transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
-        l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
-
-        # Vectorized updates for fuel cost and emissions intensity
-        fuel_cost_c = np.where(transport_type == 2, self.gas_price, self.electricity_price)
-        e_t = np.where(transport_type == 2, 0, self.electricity_emissions_intensity)
-
-        # Create the dictionary directly with NumPy arrays
-        vehicle_dict_vecs = {
-            "Quality_a_t": quality_a_t,
-            "Eff_omega_a_t": eff_omega_a_t,
-            "price": price,
-            "delta": delta,
-            "production_emissions": production_emissions,
-            "fuel_cost_c": fuel_cost_c,
-            "e_t": e_t,
-            "L_a_t": l_a_t,
-            "transportType": transport_type
-        }
-
-        return vehicle_dict_vecs
-    
-    def calc_market_state_utility(self, vehicle_on_sale):
-
-        vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs_utility(vehicle_on_sale)
-        #DISTANCE
-                # Compute numerator for all vehicles
-        numerator = (
-            self.alpha * vehicle_dict_vecs["Quality_a_t"] *
-            ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"])
-        ) 
-        
-        denominator =np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (
-            ((self.median_beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"])) +
-            ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-            ),
-            (
-            ((self.median_beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-            ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-            )
-        )
-
-        #denominator = (
-        #    ((self.median_beta/vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"])) +
-        #    ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        #)  # Shape: (num_individuals, num_vehicles)
-
-        # Calculate optimal distance matrix for each individual-vehicle pair
-        d_i_t_vec = (numerator / denominator) ** (1 / (1 - self.alpha))
-
-        #present UTILITY
-        # Compute cost component based on transport type, with conditional operations
-        
-        cost_component =np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"]),
-            (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        )
-        #cost_component = (self.median_beta/ vehicle_dict_vecs["Eff_omega_a_t"]) * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + ((self.median_gamma/ vehicle_dict_vecs["Eff_omega_a_t"]) * vehicle_dict_vecs["e_t"])
-        # Compute the commuting utility for each individual-vehicle pair
-        present_utility_vec = np.maximum(
-            0,
-            vehicle_dict_vecs["Quality_a_t"] * ((1 - vehicle_dict_vecs["delta"]) ** vehicle_dict_vecs["L_a_t"]) * (d_i_t_vec ** self.alpha) - d_i_t_vec * cost_component
-        )
-
-        # Save the base utility
-        B_vec = present_utility_vec*(1+self.r) / ((1+self.r) - (1 - vehicle_dict_vecs["delta"])**(1/(1 - self.alpha)))
-
-        sum_utilities = np.sum(B_vec)
-
-        return  sum_utilities
-
-    ################################################################################################
 
     def update_stock_contents(self):
         #check len of list
@@ -263,13 +139,6 @@ class SecondHandMerchant:
         for i, vehicle in enumerate(self.cars_on_sale):
             #price = min((1+self.price_adjust_monthly)*vehicle.price , max((1 -self.price_adjust_monthly)*vehicle.price , price_vec[i]))
             vehicle.price = price_vec[i]
-
-    def update_stock_contents_old(self):
-        for vehicle in self.cars_on_sale:        
-            if vehicle.second_hand_counter > self.age_limit_second_hand:
-                self.remove_car(vehicle)
-            else:
-                vehicle.price = self.calc_car_price(vehicle, self.median_beta, self.median_gamma, self.U_sum)
 
     def add_to_stock(self,vehicle):
         #add new car to stock
@@ -323,7 +192,6 @@ class SecondHandMerchant:
         self.age_second_hand_car_removed = []
         
         self.U_sum = U_sum
-        #self.U_sum = self.calc_market_state_utility(vehicle_on_sale)
 
         if self.cars_on_sale:
             self.update_stock_contents()

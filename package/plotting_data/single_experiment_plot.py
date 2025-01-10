@@ -2378,6 +2378,35 @@ def plot_history_history_drive_min_num(base_params, social_network, fileName, dp
     ax.legend()
     save_and_show(fig, fileName, "history_drive_min_num", dpi)
 
+def emissions_decomposed(social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
+    
+
+    # Right plot: Stacked area plot for ICE and EV emissions
+    driving_ICE = np.cumsum(social_network.history_driving_emissions_ICE)
+    driving_EV = np.cumsum(social_network.history_driving_emissions_EV)
+    production_ICE = np.cumsum(social_network.history_production_emissions_ICE)
+    production_EV = np.cumsum(social_network.history_production_emissions_EV)
+    
+    ax.stackplot(
+        time_series, 
+        driving_ICE, 
+        driving_EV, 
+        production_ICE, 
+        production_EV,
+        labels=['Driving Emissions ICE', 'Driving Emissions EV', 'Production Emissions ICE', 'Production Emissions EV']
+    )
+    ax.plot(time_series, np.cumsum(social_network.history_total_emissions), 
+                 label='Total Emissions', color='black', linewidth=1.5)
+    ax.set_title("Cumulative Emissions by Source")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Cumulative Emissions")
+    ax.legend()
+
+    # Format and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, "emissions_decomposed", dpi)
+
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -2393,12 +2422,13 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
     
-    #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
+    emissions_decomposed(social_network, time_series, fileName, dpi)
 
+    #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
     #plot_zero_util_count(base_params, social_network, fileName, dpi)
     #plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
     #plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
-    #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
     # All plot function calls
 
@@ -2417,7 +2447,7 @@ def main(fileName, dpi=600):
 
     #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
@@ -2443,7 +2473,7 @@ def main(fileName, dpi=600):
     #plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
 
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     #plot_total_profit(firm_manager, time_series, fileName, dpi)
@@ -2457,7 +2487,7 @@ def main(fileName, dpi=600):
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
-    plot_segment_count_grid(firm_manager, time_series, fileName)
+    #plot_segment_count_grid(firm_manager, time_series, fileName)
 
     #THIS TAKES FOREVER AND IS NOT VERY INSIGHTFUL
     #history_car_cum_distances(social_network, time_series, fileName, dpi=600)
@@ -2472,7 +2502,7 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
@@ -2514,4 +2544,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_19_13_55__03_01_2025")
+    main("results/single_experiment_13_35_03__08_01_2025")

@@ -199,3 +199,16 @@ def parallel_run_multi_run(
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_data)(i) for i in params_dict)
 
     return res
+
+##########################################################################################################################
+def generate_sensitivity_output_flat(params: dict):
+    data = generate_data(params)
+    return data.emissions_cumulative
+
+def parallel_run_sa(
+    params_dict: list[dict],
+):
+
+    num_cores = multiprocessing.cpu_count()
+    results_emissions_stock = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_sensitivity_output_flat)(i) for i in params_dict)
+    return np.asarray(results_emissions_stock)

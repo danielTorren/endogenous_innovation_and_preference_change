@@ -32,7 +32,6 @@ class CarModel:
         self.car_base_utility_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?
         self.car_utility_segments_U = {}  #Capital U
         self.expected_profit_segments = {} 
-        self.car_distance_segments = {}
         self.expected_profit = 0#used by firms to choose cars
         self.actual_profit = 0#used to pick what car to research 
         
