@@ -33,6 +33,7 @@ class Social_Network:
         self.beta_median = parameters_social_network["beta_median"] 
         self.gamma_median = parameters_social_network["gamma_median"]
         self.delta = parameters_social_network["delta"]
+        self.nu = parameters_social_network["nu"]
 
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
@@ -374,10 +375,7 @@ class Social_Network:
         )#avoid repeated calculations
 
         driving_utility = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_vec)
-        U_vec = driving_utility*((1+self.r)/(self.r + self.delta))
-        
-        price_optimal_vec = U_vec/self.beta_median
-        price_vec_negative = price_optimal_vec*(1-self.mu)
+        price_vec_negative = (driving_utility*(1+self.r)/((self.r + self.delta)*self.beta_median))*(1-self.mu)
         price_vec = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
 
         for i, vehicle in enumerate(filtered_vehicles):
@@ -431,6 +429,9 @@ class Social_Network:
         else:#at leat 1 non zero probability
             # Calculate the probability of choosing each vehicle              
             sum_prob = np.sum(individual_specific_util)
+            #print(person_index, individual_specific_util, sum_prob)
+            #if self.t_social_network == 2:
+            #    quit()
             probability_choose = individual_specific_util / sum_prob
             choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)
@@ -532,7 +533,8 @@ class Social_Network:
         
         #utility_vec_L_adjusted =  np.maximum(commuting_util_vec_L, 0)
         U_a_i_t_vec_raw = driving_utility_vec*((1+self.r)/(self.r + self.delta))
-        U_a_i_t_vec = np.maximum(0, U_a_i_t_vec_raw)
+        U_a_i_t_vec = np.exp(self.nu*(U_a_i_t_vec_raw))
+        #U_a_i_t_vec = np.maximum(0, U_a_i_t_vec_raw)
 
         CV_utilities_matrix = np.diag(U_a_i_t_vec)
 
@@ -748,8 +750,11 @@ class Social_Network:
         )
         
         # Use in-place modification to save memor
-        U_a_i_t_matrix = lifetime_utility/(np.multiply(beta_vec[:, np.newaxis], price_difference.T))
-        U_a_i_t_matrix_final = np.maximum(0,U_a_i_t_matrix)
+        
+        #U_a_i_t_matrix = lifetime_utility/(np.multiply(beta_vec[:, np.newaxis], price_difference.T))
+        #U_a_i_t_matrix_final = np.maximum(0,U_a_i_t_matrix)
+
+        U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))))
 
         return U_a_i_t_matrix_final, d_i_t_L
     
@@ -777,9 +782,10 @@ class Social_Network:
         price_beta = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
         price_adjust = np.maximum(0,price_beta)
 
-        U_a_i_t_matrix = lifetime_utility/(price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))
+        U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))))
+        #U_a_i_t_matrix = lifetime_utility/(price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))
         
-        U_a_i_t_matrix_final = np.maximum(0,U_a_i_t_matrix)
+        #U_a_i_t_matrix_final = np.maximum(0,U_a_i_t_matrix)
 
         return U_a_i_t_matrix_final, d_i_t_L
     

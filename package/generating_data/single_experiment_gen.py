@@ -21,7 +21,7 @@ def main(
     pyperclip.copy(fileName)
     print("fileName:", fileName)
 
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
+    controller = generate_data(base_params, print_simu= 0)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
     print("uptake",  controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 0.2,
+                    "Carbon_price": 1,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -187,10 +187,10 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.07,#0.002,
+        "delta": 0.001,#0.002,
         "transportType": 2,
-        "min_Quality": 0,
-        "max_Quality": 1560,
+        "min_Quality": 100,
+        "max_Quality": 300,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -204,8 +204,8 @@ if __name__ == "__main__":
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
-        "min_Quality": 0,
-        "max_Quality": 1560,
+        "min_Quality": 100,
+        "max_Quality": 300,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -225,8 +225,8 @@ if __name__ == "__main__":
         "lambda_pow": 5,
         "innovation_seed": 77,
         "num_cars_production": 16,
-        "init_U": 10e10,
-        "init_price_multiplier": 10
+        "init_U": 10e5,
+        "init_price_multiplier": 3
     },
     "parameters_social_network":{
         "num_individuals": 3000,
@@ -235,7 +235,7 @@ if __name__ == "__main__":
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
         "social_network_seed": 66,
-        "d_max": 10000,
+        "d_max": 2000,
         "d_min_seed": 45,
         "d_i_min": 700,
         "d_i_min_sd": 700,
@@ -245,16 +245,17 @@ if __name__ == "__main__":
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 1,
+        "a_innovativeness": 0.4,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
         "kappa":10,
-        "alpha": 17184,#0.5,
+        "alpha": 0.57,#17184,#0.5,
         "r": 0.00417,
-        "mu": 0.5
+        "mu": 0.5,
+        "nu": 10e-5
     }
 }
     
@@ -271,7 +272,7 @@ if __name__ == "__main__":
         }
     else:
         base_params[ "parameters_policies"]["States"] = {
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",

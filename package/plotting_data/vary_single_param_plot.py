@@ -59,16 +59,18 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
             )
 
         # Format each subplot
-        ax.set_title(f"{name_property} = {delta}")
-        ax.set_xlabel("Time Step")
-        if i == 0:
-            ax.set_ylabel("Mean User Distance")
+        ax.set_title(f"{delta}")
+        #ax.set_xlabel("Time Step")
+        #if i == 0:
+        #    ax.set_ylabel("Mean User Distance")
 
         # Add a legend if desired (or only in one subplot)
         #ax.legend()
 
+    fig.supxlabel("Time Step")
+    fig.supylabel("Mean User Distance")
     # Adjust layout
-    plt.tight_layout()
+    #plt.tight_layout()
 
     # Save and show
     fig.savefig(f"{fileName}/user_distance_multi_{property_save}.png", dpi=dpi)
@@ -101,16 +103,20 @@ def plot_ev_prop(data_array, property_values_list, fileName, name_property, prop
             ax.plot(time_series, data , label=f"Seed {seed+1}", alpha=0.7)
 
         # Format each subplot
-        ax.set_title(f"{name_property} = {delta}")
-        ax.set_xlabel("Time Step")
-        if i == 0:
-            ax.set_ylabel("EV prop")
+        ax.set_title(f"{delta}")
+        #ax.set_xlabel("Time Step")
+        #if i == 0:
+        #    ax.set_ylabel("EV prop")
+
+        ax.grid()
 
         # Add a legend if desired (or only in one subplot)
         #ax.legend()
 
+    fig.supxlabel("Time Step")
+    fig.supylabel("EV prop")
     # Adjust layout
-    plt.tight_layout()
+    #plt.tight_layout()
 
     # Save and show
     fig.savefig(f"{fileName}/user_ev_prop_multi_{property_save}.png", dpi=dpi)
@@ -171,16 +177,19 @@ def plot_age(data_array, property_values_list, fileName, name_property, property
             )
 
         # Format each subplot
-        ax.set_title(f"{name_property} = {delta}")
-        ax.set_xlabel("Time Step")
-        if i == 0:
-            ax.set_ylabel("Car Age")
+        ax.set_title(f"{delta}")
+        #ax.set_xlabel("Time Step")
+        #if i == 0:
+        #    ax.set_ylabel("Car Age")
 
         # Add a legend if desired (or only in one subplot)
         #ax.legend()
 
+    fig.supxlabel("Time Step")
+    fig.supylabel("Car Age")
+
     # Adjust layout
-    plt.tight_layout()
+    #plt.tight_layout()
 
     # Save and show
     fig.savefig(f"{fileName}/user_age_multi_{property_save}.png", dpi=dpi)
@@ -212,16 +221,19 @@ def plot_emissions(data_array, property_values_list, fileName, name_property, pr
             ax.plot(time_series, data , label=f"Seed {seed+1}", alpha=0.7)
 
         # Format each subplot
-        ax.set_title(f"{name_property} = {delta}")
-        ax.set_xlabel("Time Step")
-        if i == 0:
-            ax.set_ylabel("Emisisons")
+        ax.set_title(f"{delta}")
+        #ax.set_xlabel("Time Step")
+        #if i == 0:
+        #    ax.set_ylabel("Emisisons")
 
         # Add a legend if desired (or only in one subplot)
         #ax.legend()
 
+    fig.supxlabel("Time Step")
+    fig.supylabel("Emisisons")
+
     # Adjust layout
-    plt.tight_layout()
+    #plt.tight_layout()
 
     # Save and show
     fig.savefig(f"{fileName}/emissions_{property_save}.png", dpi=dpi)
@@ -267,14 +279,15 @@ def plot_price(data_array, property_values_list, fileName, name_property, proper
             ax_new.set_ylabel("Price (New)")
             ax_second_hand.set_ylabel("Price (Second-hand)")
 
-        ax_second_hand.set_xlabel("Time Step")
+        #ax_second_hand.set_xlabel("Time Step")
 
         # Add a legend if desired (or only in one subplot)
         #ax_new.legend()
         #ax_second_hand.legend()
+    fig.supxlabel("Time Step")
 
     # Adjust layout
-    plt.tight_layout()
+    ##plt.tight_layout()
 
     # Save and show
     fig.savefig(f"{fileName}/price_{property_save}.png", dpi=dpi)
@@ -310,4 +323,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_15_22_47__21_12_2024")
+    main("results/single_param_vary_16_38_02__10_01_2025")

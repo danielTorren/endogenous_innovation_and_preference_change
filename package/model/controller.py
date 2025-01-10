@@ -377,11 +377,11 @@ class Controller:
 
     def calculate_price_at_time(self, t):
         if self.future_carbon_price_policy > 0 and self.duration_future > 0:
-            if t < self.duration_burn_in + self.duration_no_carbon_price:
+            if t < (self.duration_burn_in + self.duration_no_carbon_price):
                 return 0
             
-            if t >= self.duration_burn_in + self.duration_no_carbon_price:
-                relative_time = t - self.duration_no_carbon_price
+            if t >= (self.duration_burn_in + self.duration_no_carbon_price):
+                relative_time = t - (self.duration_burn_in  + self.duration_no_carbon_price)
                 return self.calculate_growth(
                     relative_time, 
                     self.duration_future,
@@ -505,6 +505,7 @@ class Controller:
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
         self.parameters_firm["d_max"] = self.parameters_social_network["d_max"]
+        self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -532,6 +533,7 @@ class Controller:
         self.parameters_social_network["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
         self.parameters_social_network["used_rebate_low"] = self.parameters_rebate_calibration["used_rebate_low"]
         self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
+        self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -546,6 +548,7 @@ class Controller:
         parameters_ICE["fuel_cost"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         parameters_ICE["d_max"]= self.parameters_social_network["d_max"]
+        self.parameters_ICE["nu"] = self.parameters_vehicle_user["nu"]
         self.ICE_landscape = NKModel(parameters_ICE)
 
     def setup_EV_landscape(self, parameters_EV):
@@ -557,14 +560,17 @@ class Controller:
         parameters_EV["fuel_cost"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
         parameters_EV["d_max"]= self.parameters_social_network["d_max"]
+        self.parameters_EV["nu"] = self.parameters_vehicle_user["nu"]
         self.EV_landscape = NKModel(parameters_EV)
-
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
         self.parameters_second_hand["d_max"] = self.parameters_social_network["d_max"]
         self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
+        self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
+        self.parameters_second_hand["nu"] = self.parameters_vehicle_user["nu"]
+
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
@@ -675,7 +681,7 @@ class Controller:
     def next_step(self):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
-        print("TIME STEP", self.t_controller)
+        #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms, U_sum_total = self.update_firms()

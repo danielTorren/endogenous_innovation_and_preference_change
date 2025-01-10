@@ -34,6 +34,7 @@ class NKModel:
         self.fuel_cost = parameters["fuel_cost"]
         self.e_t = parameters["e_t"]
         self.d_max = parameters["d_max"]
+        self.nu = parameters["nu"]
 
         self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
         self.max_vec = np.asarray([self.max_Quality,self.max_Efficiency, self.max_Cost])
@@ -58,8 +59,10 @@ class NKModel:
 
         # Save the base utility
         B = driving_utility*((1+self.r)/(self.r + self.delta))
-        approx_fitness = B/(beta*prod_cost)
-
+        #print("B - beta*prod_cost", B - beta*prod_cost)
+        approx_fitness = np.exp(self.nu*(B - beta*prod_cost))
+        
+        #print("approx_fitness",approx_fitness)
         return approx_fitness
 
 
@@ -92,7 +95,7 @@ class NKModel:
                 min_fitness_string = binary_string
 
         #print("min_fitness", min_fitness,  attributes_dict[min_fitness_string])
-
+        #quit()
         return min_fitness_string, min_fitness, attributes_dict
 
     def generate_fitness_landscape(self):

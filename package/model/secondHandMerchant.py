@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import lambertw
 
 class SecondHandMerchant:
 
@@ -19,6 +20,8 @@ class SecondHandMerchant:
         self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
         self.d_max = parameters_second_hand["d_max"]
         self.delta = parameters_second_hand["delta"]
+        self.kappa = parameters_second_hand["kappa"]
+        self.nu = parameters_second_hand["nu"]
 
         self.spent = 0
         self.income = 0
@@ -78,20 +81,28 @@ class SecondHandMerchant:
 
         driving_utility_vec = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X)
 
-        U_vec = driving_utility_vec*((1+self.r)/(self.r + self.delta))
+        B_vec = driving_utility_vec*((1+self.r)/(self.r + self.delta))
 
-        inside_component = W_s_t ** 2 *(beta * vehicle_dict_vecs["cost_second_hand_merchant"]) ** 2 + W_s_t + U_vec
+        Arg_vec = (np.exp(self.kappa*self.nu*(B_vec - beta*vehicle_dict_vecs["cost_second_hand_merchant"] )- 1.0)) / W_s_t
+        LW_vec   = lambertw(Arg_vec, 0).real  # principal branch
+        P_vec = vehicle_dict_vecs["cost_second_hand_merchant"] + (1.0 + LW_vec) / (self.kappa *self.nu* beta)
+
+        #if P < vehicle.cost_second_hand_merchant:
+        #    print(P,vehicle.cost_second_hand_merchant, Arg)
+        #    raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
+        
+        #inside_component = W_s_t ** 2 *(beta * vehicle_dict_vecs["cost_second_hand_merchant"]) ** 2 + W_s_t + U_vec
         
         # Adjust the component to avoid negative square roots
-        inside_component_adjusted = np.maximum(inside_component, 0)  # Replace negatives with 0
+        #inside_component_adjusted = np.maximum(inside_component, 0)  # Replace negatives with 0
 
-        price_vec = np.where(
-            inside_component < 0,
-            vehicle_dict_vecs["cost_second_hand_merchant"],
-            np.maximum(vehicle_dict_vecs["cost_second_hand_merchant"],(beta * vehicle_dict_vecs["cost_second_hand_merchant"] * W_s_t + np.sqrt( inside_component_adjusted))/(beta*W_s_t))
-        )
+        #price_vec = np.where(
+        #    inside_component < 0,
+        #    vehicle_dict_vecs["cost_second_hand_merchant"],
+        #    np.maximum(vehicle_dict_vecs["cost_second_hand_merchant"],(beta * vehicle_dict_vecs["cost_second_hand_merchant"] * W_s_t + np.sqrt( inside_component_adjusted))/(beta*W_s_t))
+        #)
 
-        return price_vec
+        return P_vec
     
     def calc_driving_utility_direct_single(self, Quality_a_t, L_a_t, X):
 
@@ -108,16 +119,24 @@ class SecondHandMerchant:
             X = (beta *(vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t 
         
         driving_utility = self.calc_driving_utility_direct_single( vehicle.Quality_a_t, vehicle.L_a_t, X)
-        U = driving_utility*((1+self.r)/(self.r + self.delta))#treat it as a current car, NO EMISSIOSN COST OR PURCHASSE COST? 
+        B = driving_utility*((1+self.r)/(self.r + self.delta))#treat it as a current car, NO EMISSIOSN COST OR PURCHASSE COST? 
             
-        inside_component = W_s_t ** 2 * ((gamma * vehicle.emissions) ** 2 + (beta * vehicle.cost_second_hand_merchant) ** 2 +  2 * vehicle.cost_second_hand_merchant * vehicle.emissions) + W_s_t + U
-        
-        if inside_component < 0:
-            price = vehicle.cost_second_hand_merchant
-        else:
-            price = max(vehicle.cost_second_hand_merchant,(beta * vehicle.cost_second_hand_merchant * W_s_t + np.sqrt(inside_component))/(beta*W_s_t) )
+        Arg = (np.exp(self.kappa*self.nu*(B - beta*vehicle.cost_second_hand_merchant )- 1.0)) / W_s_t
+        LW   = lambertw(Arg, 0)  # principal branch
+        P = vehicle.cost_second_hand_merchant + (1.0 + LW) / (self.kappa *self.nu* beta)
 
-        return price
+        if P < vehicle.cost_second_hand_merchant:
+            print(P,vehicle.cost_second_hand_merchant, Arg)
+            raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
+        
+        #inside_component = W_s_t ** 2 * ((gamma * vehicle.emissions) ** 2 + (beta * vehicle.cost_second_hand_merchant) ** 2 +  2 * vehicle.cost_second_hand_merchant * vehicle.emissions) + W_s_t + U
+        
+        #if inside_component < 0:
+        #    price = vehicle.cost_second_hand_merchant
+        #else:
+        #    price = max(vehicle.cost_second_hand_merchant,(beta * vehicle.cost_second_hand_merchant * W_s_t + np.sqrt(inside_component))/(beta*W_s_t) )
+
+        return P
 
     def update_stock_contents(self):
         #check len of list

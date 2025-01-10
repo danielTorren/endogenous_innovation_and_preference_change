@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import lambertw
 from package.model.carModel import CarModel
 
 class Firm:
@@ -23,6 +24,7 @@ class Firm:
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.id_generator = parameters_firm["IDGenerator_firms"]  
 
+        self.nu = parameters_firm["nu"]
         self.d_max = parameters_firm["d_max"]
         self.num_cars_production =   parameters_firm["num_cars_production"]  
         self.firm_id = firm_id
@@ -143,16 +145,29 @@ class Firm:
                 driving_utility = self.calc_driving_utility(car.Quality_a_t, car.L_a_t, X)
 
                 # Save the base utility
-                U = driving_utility*((1+self.r)/(self.r + self.delta))
+                U = driving_utility*((1+self.r)/(self.r + self.delta)) 
 
                 car.car_base_utility_segments[segment_code] = U
 
-                inside_component = W_s_t ** 2 * ((gamma_s * E_m) ** 2 + (beta_s * C_m) ** 2 +  2 * C_m * E_m) + W_s_t + U
-            
-                if inside_component < 0 or self.t_firm == 1:
-                    car.optimal_price_segments[segment_code] = C_m#STOP NEGATIVE SQUARE ROOTS
-                else:
-                    car.optimal_price_segments[segment_code] = max(C_m,(beta_s * C_m * W_s_t + np.sqrt(inside_component))/(beta_s*W_s_t) )
+                #print("self.kapp*(U - beta_s*C_m - gamma_s*E_m)", self.kappa*(U - beta_s*C_m - gamma_s*E_m))
+                #quit()
+                Arg = (np.exp(self.kappa*self.nu*(U - beta_s*C_m - gamma_s*E_m)- 1.0)) / W_s_t
+                #print(Arg)
+                LW   = lambertw(Arg, 0).real  # principal branch
+                #print(LW)
+                P = C_m + (1.0 + LW) / (self.kappa *self.nu* beta_s)
+
+                if P < C_m:
+                    print(P,C_m, Arg)
+                    raise ValueError("P LESS THAN C")
+                #CHECK THAT THIS IS POSITIVE AND MORE THAN C
+                car.optimal_price_segments[segment_code] = P
+                #inside_component = W_s_t ** 2 * ((gamma_s * E_m) ** 2 + (beta_s * C_m) ** 2 +  2 * C_m * E_m) + W_s_t + B
+                
+                #if inside_component < 0 or self.t_firm == 1:
+                ##    car.optimal_price_segments[segment_code] = C_m#STOP NEGATIVE SQUARE ROOTS
+                #else:
+                #    car.optimal_price_segments[segment_code] = max(C_m,(beta_s * C_m * W_s_t + np.sqrt(inside_component))/(beta_s*W_s_t) )
 
         return car_list
     
@@ -170,11 +185,16 @@ class Firm:
                 price_s = car.optimal_price_segments[segment_code]#price for that specific segment
                 if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                     #ADD IN A SUBSIDY
+                    #print("(car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions))", (car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)))
+                    #quit()
                     if car.transportType == 3:
                         price_adjust = np.maximum(0,price_s - self.rebate)
-                        utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_adjust + gamma_s * car.emissions)
+
+                        #utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_adjust + gamma_s * car.emissions)
+                        utility_segment_U  = np.exp(self.nu*(car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)))
                     else:
-                        utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_s + gamma_s * car.emissions)
+                        #utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_s + gamma_s * car.emissions)
+                        utility_segment_U  = np.exp(self.nu*(car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)))
                     #utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
                     #print(self.t_firm, self.firm_id,segment_code,car.car_base_utility_segments[segment_code], utility_segment_U ,price_s)
@@ -257,7 +277,7 @@ class Firm:
                     utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
 
                     #print(vehicle.car_utility_segments_U[segment_code])
-                    utility_proportion = ((utility_car)**self.kappa)/((W + utility_car)**self.kappa)
+                    utility_proportion = ((utility_car)**self.kappa)/(W + utility_car**self.kappa)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -327,9 +347,6 @@ class Firm:
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
         # Select a vehicle based on the computed probabilities
         selected_vehicle = car_list[selected_index]
-
-        #print("selected_vehicle",selected_vehicle)
-        #quit()
 
         return selected_vehicle
 
@@ -557,9 +574,9 @@ class Firm:
 
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
-                                utility_segment_U = selected_vehicle.car_base_utility_segments[segment_code]/(beta_s * (selected_vehicle.optimal_price_segments[segment_code] + self.rebate) +  gamma_s * selected_vehicle.emissions)
+                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] + self.rebate) +  gamma_s * selected_vehicle.emissions)))
                             else:
-                                utility_segment_U = selected_vehicle.car_base_utility_segments[segment_code]/(beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)
+                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)))
                             selected_vehicle.car_utility_segments_U[segment_code] = utility_segment_U
                         else:
                             selected_vehicle.car_utility_segments_U[segment_code] = 0
