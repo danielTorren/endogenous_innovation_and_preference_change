@@ -92,7 +92,7 @@ if __name__ == '__main__':
         "age_limit_second_hand": 3,
         "max_num_cars": 5000,
         "burn_in_second_hand_market": 12,#12,#first year no second hand cars
-        "fixed_alternative_mark_up": 0.2
+
     },
     "parameters_ICE":{
         "landscape_seed": 18, 

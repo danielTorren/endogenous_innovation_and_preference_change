@@ -474,6 +474,8 @@ class Social_Network:
                 user.vehicle = vehicle_chosen
                 user.vehicle.last_price_paid = user.vehicle.price
                 self.second_hand_merchant.income += user.vehicle.price
+                self.second_hand_merchant.assets += (user.vehicle.price - user.vehicle.cost_second_hand_merchant)
+
 
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_second_hand.append(user.vehicle.price)

@@ -14,9 +14,7 @@ class SecondHandMerchant:
 
         self.alpha = parameters_second_hand["alpha"]
         self.r = parameters_second_hand["r"]
-        self.max_num_cars = parameters_second_hand["max_num_cars"]
         self.burn_in_second_hand_market = parameters_second_hand["burn_in_second_hand_market"]
-        self.fixed_alternative_mark_up = parameters_second_hand["fixed_alternative_mark_up"]
         self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
         self.d_max = parameters_second_hand["d_max"]
         self.delta = parameters_second_hand["delta"]
@@ -25,7 +23,9 @@ class SecondHandMerchant:
 
         self.spent = 0
         self.income = 0
+        self.assets = 0
         self.profit = 0
+        self.scrap_loss = 0
 
     def calc_median(self, beta_vec, gamma_vec):
         self.median_beta =  np.median(beta_vec)
@@ -87,21 +87,6 @@ class SecondHandMerchant:
         LW_vec   = lambertw(Arg_vec, 0).real  # principal branch
         P_vec = vehicle_dict_vecs["cost_second_hand_merchant"] + (1.0 + LW_vec) / (self.kappa *self.nu* beta)
 
-        #if P < vehicle.cost_second_hand_merchant:
-        #    print(P,vehicle.cost_second_hand_merchant, Arg)
-        #    raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
-        
-        #inside_component = W_s_t ** 2 *(beta * vehicle_dict_vecs["cost_second_hand_merchant"]) ** 2 + W_s_t + U_vec
-        
-        # Adjust the component to avoid negative square roots
-        #inside_component_adjusted = np.maximum(inside_component, 0)  # Replace negatives with 0
-
-        #price_vec = np.where(
-        #    inside_component < 0,
-        #    vehicle_dict_vecs["cost_second_hand_merchant"],
-        #    np.maximum(vehicle_dict_vecs["cost_second_hand_merchant"],(beta * vehicle_dict_vecs["cost_second_hand_merchant"] * W_s_t + np.sqrt( inside_component_adjusted))/(beta*W_s_t))
-        #)
-
         return P_vec
     
     def calc_driving_utility_direct_single(self, Quality_a_t, L_a_t, X):
@@ -128,27 +113,16 @@ class SecondHandMerchant:
         if P < vehicle.cost_second_hand_merchant:
             print(P,vehicle.cost_second_hand_merchant, Arg)
             raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
-        
-        #inside_component = W_s_t ** 2 * ((gamma * vehicle.emissions) ** 2 + (beta * vehicle.cost_second_hand_merchant) ** 2 +  2 * vehicle.cost_second_hand_merchant * vehicle.emissions) + W_s_t + U
-        
-        #if inside_component < 0:
-        #    price = vehicle.cost_second_hand_merchant
-        #else:
-        #    price = max(vehicle.cost_second_hand_merchant,(beta * vehicle.cost_second_hand_merchant * W_s_t + np.sqrt(inside_component))/(beta*W_s_t) )
 
         return P
 
     def update_stock_contents(self):
-        #check len of list
-        if len(self.cars_on_sale) > self.max_num_cars:
-            cars_to_remove = self.random_state_second_hand.choice(self.max_num_cars, self.max_num_cars - self.cars_on_sale)#RANDOMLY REMOVE CARS FROM THE SALE LIST
-            for vehicle in cars_to_remove:
-             self.age_second_hand_car_removed.append(vehicle.L_a_t)
-            self.cars_on_sale.remove(cars_to_remove)
-    
+        #check len of list    
         for vehicle in self.cars_on_sale:       
             if vehicle.second_hand_counter > self.age_limit_second_hand:
                 self.age_second_hand_car_removed.append(vehicle.L_a_t)
+                self.assets -= vehicle.cost_second_hand_merchant
+                self.scrap_loss += vehicle.cost_second_hand_merchant
                 self.cars_on_sale.remove(vehicle)
                 
         data_dicts = self.gen_vehicle_dict_vecs(self.cars_on_sale)
@@ -171,15 +145,22 @@ class SecondHandMerchant:
         self.cars_on_sale.remove(vehicle)
 
 ############################################################################################
-
     def set_up_time_series_social_network(self):
         self.history_num_second_hand = []
+        self.history_spent = []
+        self.history_income = []
+        self.history_assets = []
         self.history_profit = []
+        self.history_scrap_loss = []
         self.history_age_second_hand_car_removed = []
 
     def save_timeseries_second_hand_merchant(self):
         self.history_num_second_hand.append(len(self.cars_on_sale))
-        self.history_profit.append(self.profit )
+        self.history_spent.append(self.spent)
+        self.history_income.append(self.income)
+        self.history_assets.append(self.assets)
+        self.history_profit.append(self.profit)
+        self.history_scrap_loss.append(self.scrap_loss)
         self.history_age_second_hand_car_removed.append(self.age_second_hand_car_removed)
 
 #########################################################################################

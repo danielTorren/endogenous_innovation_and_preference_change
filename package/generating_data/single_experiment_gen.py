@@ -175,10 +175,9 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "remove_seed": 48,
-        "age_limit_second_hand": 12,#3,
-        "max_num_cars": 5000,
+        "age_limit_second_hand": 36,#3,
         "burn_in_second_hand_market": 12,
-        "fixed_alternative_mark_up": 0.2
+
     },
     "parameters_ICE":{
         "landscape_seed": 22, 

@@ -1,3 +1,4 @@
+from cProfile import label
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -2058,10 +2059,14 @@ def plot_history_profit_second_hand(second_hand_merchant, fileName, dpi=600):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
-    data = np.asarray(second_hand_merchant.history_profit)
-    ax.plot(data)
+    ax.plot(np.asarray(second_hand_merchant.history_spent), label = "Spent")
+    ax.plot(np.asarray(second_hand_merchant.history_income), label = "Income")
+    ax.plot(np.asarray(second_hand_merchant.history_assets), label = "Assets")
+    ax.plot(np.asarray(second_hand_merchant.history_profit), label = "Profit")
+    ax.plot(np.asarray(second_hand_merchant.history_scrap_loss), label = "Scrap loss")
+    ax.legend()
     ax.set_xlabel("Time")
-    ax.set_ylabel("Profit Second Hand Merchant")
+    ax.set_ylabel("Cumulative Dollars")
     save_and_show(fig, fileName, "history_profit_second_hand", dpi)
 
 
@@ -2422,13 +2427,13 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
     
-    emissions_decomposed(social_network, time_series, fileName, dpi)
+    #emissions_decomposed(social_network, time_series, fileName, dpi)
 
     #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
-    plot_zero_util_count(base_params, social_network, fileName, dpi)
-    plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
-    plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
-    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    #plot_zero_util_count(base_params, social_network, fileName, dpi)
+    #plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
+    #plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
+    #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
     # All plot function calls
 
@@ -2438,18 +2443,18 @@ def main(fileName, dpi=600):
 
     #plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
 
-    plot_num_bought_by_type(base_params, social_network, fileName, dpi)
+    #plot_num_bought_by_type(base_params, social_network, fileName, dpi)
     #plot_calibration_data(data_controller, time_series, fileName)
 
     #plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plt.show()
 
-    #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
+    plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
-    #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
+    plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
     plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
     #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
@@ -2460,20 +2465,20 @@ def main(fileName, dpi=600):
     #plot_history_count_buy(base_params, social_network, fileName, dpi)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
 
-    plot_total_utility(social_network, time_series, fileName, dpi)
+    #plot_total_utility(social_network, time_series, fileName, dpi)
     
     #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
     #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
+    #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    plot_preferences(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
 
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     #plot_total_profit(firm_manager, time_series, fileName, dpi)
@@ -2481,7 +2486,7 @@ def main(fileName, dpi=600):
     
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
@@ -2502,7 +2507,7 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
@@ -2530,7 +2535,7 @@ def main(fileName, dpi=600):
 
     #plot_social_network(social_network, fileName)
     
-    plot_carbon_price(data_controller, time_series, fileName)
+    #plot_carbon_price(data_controller, time_series, fileName)
 
     #CHECKING OUTPUTS
 
@@ -2544,4 +2549,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_01_50__10_01_2025")
+    main("results/single_experiment_17_54_54__10_01_2025")

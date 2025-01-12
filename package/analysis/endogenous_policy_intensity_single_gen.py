@@ -105,6 +105,8 @@ def objective_function_wrapper(intensity_level, params, controller, policy_name,
     else:
         params["parameters_policies"]["Values"][policy_name]["High"] = intensity_level[0]
 
+    print("intensity_level", intensity_level)
+
     # Run simulation
     base_params_seeds = params_list_with_seed(params)
     EV_uptake_arr, total_cost_arr = single_policy_multi_seed_run(
@@ -113,13 +115,12 @@ def objective_function_wrapper(intensity_level, params, controller, policy_name,
     )
 
     # Compute mean values
-    mean_ev_uptake = np.mean(EV_uptake_arr)
+    mean_error = np.mean(target_ev_uptake - EV_uptake_arr)
     #mean_total_cost = np.mean(total_cost_arr)
-    print("intensity_level", intensity_level)
-    print("mean_ev_uptake", mean_ev_uptake)
-    print("abs(target_ev_uptake - mean_ev_uptake)", abs(target_ev_uptake - mean_ev_uptake))
+    print("EV_uptake_arr", EV_uptake_arr)
+    print("mean_error", abs(mean_error))
     # Compute the objective value
-    return abs(target_ev_uptake - mean_ev_uptake) #+ np.log(mean_total_cost)
+    return abs(mean_error) #+ np.log(mean_total_cost)
 
 def optimize_policy_intensity_minimize(
         params,
@@ -158,7 +159,12 @@ def optimize_policy_intensity_minimize(
         args=(params, controller, policy_name, target_ev_uptake),
         bounds=bounds,
         method="L-BFGS-B",
-        options={"maxiter": max_iterations}
+        options={
+            "maxiter": max_iterations,
+            "eps": 1e-2,      # Increase step size for numerical gradient
+            "ftol": 1e-6,
+            "gtol": 1e-6,
+        }
     )
 
     # Extract optimized intensity
@@ -256,10 +262,10 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single.json",
         policy_list = [
             "Carbon_price",
-            "Discriminatory_corporate_tax",
-            "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Production_subsidy",
-            "Research_subsidy"
+            #"Discriminatory_corporate_tax",
+            #"Electricity_subsidy",
+            #"Adoption_subsidy",
+            #"Production_subsidy",
+            #"Research_subsidy"
             ]
         )

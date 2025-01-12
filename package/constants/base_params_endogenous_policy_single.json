@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 8,
+    "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
@@ -7,11 +7,10 @@
     "compression_factor_state": 1,
     "choice_seed": 9,
     "ev_research_start_time": 60,
-    "ev_production_start_time": 108,
+    "ev_production_start_time": 60,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "end_time":276,
         "rebate": 10000,
         "used_rebate": 1000,
         "rebate_count_cap": 70000,
@@ -48,6 +47,7 @@
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
+            "Adoption_subsidy_used": "Zero",
             "Production_subsidy": "Zero",
             "Research_subsidy": "Zero"
         },
@@ -65,7 +65,7 @@
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 0.2,
+                    "Carbon_price": 0.18,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -93,16 +93,24 @@
             },
             "Adoption_subsidy":{
                 "Zero":{
-                    "rebate": 0,
-                    "used_rebate": 0
+                    "rebate": 0
                 },
                 "Low":{
-                    "rebate": 2500,
-                    "used_rebate": 500
+                    "rebate": 2500
                 },
                 "High":{
-                    "rebate": 10000,
-                    "used_rebate": 1000
+                    "rebate": 10000
+                }
+            },
+            "Adoption_subsidy_used":{
+                "Zero":{
+                    "rebate": 0
+                },
+                "Low":{
+                    "rebate": 500
+                },
+                "High":{
+                    "rebate": 1000
                 }
             },
             "Production_subsidy":{
@@ -131,10 +139,9 @@
     },
     "parameters_second_hand":{
         "remove_seed": 48,
-        "age_limit_second_hand": 3,
+        "age_limit_second_hand": 12,
         "max_num_cars": 5000,
-        "burn_in_second_hand_market": 12,
-        "fixed_alternative_mark_up": 0.2
+        "burn_in_second_hand_market": 12
     },
     "parameters_ICE":{
         "landscape_seed": 22, 
@@ -143,10 +150,10 @@
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.002,
+        "delta": 0.001,
         "transportType": 2,
-        "min_Quality": 0,
-        "max_Quality": 15,
+        "min_Quality": 100,
+        "max_Quality": 300,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -160,8 +167,8 @@
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
-        "min_Quality": 0,
-        "max_Quality": 15,
+        "min_Quality": 100,
+        "max_Quality": 300,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -169,7 +176,10 @@
         "init_tech_seed": 99,
         "J": 30,
         "init_car_age_max": 240,
-        "time_steps_tracking_market_data":12
+        "time_steps_tracking_market_data":12,
+        "beta_threshold_percentile": 50,
+        "gamma_threshold_percentile": 50,
+        "num_beta_segments": 5
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -177,17 +187,18 @@
         "prob_change_production": 0.083,
         "lambda_pow": 5,
         "innovation_seed": 77,
-        "num_cars_production": 8,
-        "init_U_sum": 10e7,
-        "init_price_multiplier": 1
+        "num_cars_production": 16,
+        "init_U": 10e5,
+        "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 1000,
+        "num_individuals": 10000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
         "social_network_seed": 66,
+        "d_max": 2000,
         "d_min_seed": 45,
         "d_i_min": 700,
         "d_i_min_sd": 700,
@@ -195,16 +206,18 @@
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
+        "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.95,
+        "a_innovativeness": 0.1,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
         "kappa":10,
-        "alpha": 0.5,
+        "alpha": 0.57,
         "r": 0.00417,
-        "mu": 0.5
+        "mu": 0.5,
+        "nu": 10e-5
     }
 }
