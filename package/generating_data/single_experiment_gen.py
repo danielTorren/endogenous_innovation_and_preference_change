@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,#156,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -52,10 +52,10 @@ if __name__ == "__main__":
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
-        "social_network_seed": 66,
+        "social_network_seed": 66
     },
     "ev_research_start_time": 60,
-    "ev_production_start_time": 60,#108,
+    "ev_production_start_time": 60,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -186,8 +186,8 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,#3,
-        "burn_in_second_hand_market": 12,
+        "age_limit_second_hand": 36,
+        "burn_in_second_hand_market": 12
     },
     "parameters_ICE":{
         "N": 15,
@@ -199,7 +199,7 @@ if __name__ == "__main__":
         "transportType": 2,
         "min_Price": 20000,
         "max_Price": 80000,
-        "min_Efficiency": 0.3,#0.867, 
+        "min_Efficiency": 0.3,
         "max_Efficiency": 1.444,
         "min_Cost": 5000,
         "max_Cost": 30000
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         "J": 30,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "beta_threshold_percentile": 50,#20,
+        "beta_threshold_percentile": 50,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 5
     },
