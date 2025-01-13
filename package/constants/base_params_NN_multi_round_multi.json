@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 20,
+    "seed_repetitions": 30,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
@@ -196,7 +196,7 @@
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 5000,
         "d_max": 4000,
         "d_min": 500,
         "SW_network_density": 0.05,
