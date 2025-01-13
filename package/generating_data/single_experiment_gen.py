@@ -91,7 +91,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 1,
+                    "Carbon_price": 15,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     "corporate_tax": 0.05
                 },
                 "High":{
-                    "corporate_tax": 0.2
+                    "corporate_tax": 1
                 }
             },
             "Electricity_subsidy":{                
@@ -133,10 +133,10 @@ if __name__ == "__main__":
                     "electricity_price_subsidy": 0
                 },
                 "Low":{
-                    "electricity_price_subsidy": 0.01
+                    "electricity_price_subsidy": 0.1
                 },
                 "High":{
-                    "electricity_price_subsidy": 0.1
+                    "electricity_price_subsidy": 1
                 }
             },
             "Adoption_subsidy":{

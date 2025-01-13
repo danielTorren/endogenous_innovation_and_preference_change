@@ -73,17 +73,22 @@ class SecondHandMerchant:
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
-        X = np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (beta *vehicle_dict_vecs["fuel_cost_c"] + gamma * vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"],
-            (beta * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + gamma* vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"]
-        )
+        X =(beta *vehicle_dict_vecs["fuel_cost_c"] + gamma * vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"]
 
         driving_utility_vec = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X)
 
         B_vec = driving_utility_vec*((1+self.r)/(self.r + self.delta))
 
-        Arg_vec = (np.exp(self.kappa*self.nu*(B_vec - beta*vehicle_dict_vecs["cost_second_hand_merchant"] )- 1.0)) / W_s_t
+        cost_price_vec = np.where(
+            vehicle_dict_vecs["transportType"] == 3,
+            np.maximum(0,vehicle_dict_vecs["cost_second_hand_merchant"] - self.used_rebate),
+            vehicle_dict_vecs["cost_second_hand_merchant"]
+        )
+
+        
+        Arg_vec = (np.exp(self.kappa*self.nu*(B_vec - beta*cost_price_vec)- 1.0)) / W_s_t
+
+
         LW_vec   = lambertw(Arg_vec, 0).real  # principal branch
         P_vec = vehicle_dict_vecs["cost_second_hand_merchant"] + (1.0 + LW_vec) / (self.kappa *self.nu* beta)
 
@@ -98,21 +103,20 @@ class SecondHandMerchant:
     def calc_car_price_single(self, vehicle, beta, gamma, W_s_t):
 
         #present UTILITY
-        if vehicle.transportType == 3:
-            X = (beta *vehicle.fuel_cost_c + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t
-        else:
-            X = (beta *(vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t 
+        X = (beta *vehicle.fuel_cost_c + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t
         
         driving_utility = self.calc_driving_utility_direct_single( vehicle.Quality_a_t, vehicle.L_a_t, X)
         B = driving_utility*((1+self.r)/(self.r + self.delta))#treat it as a current car, NO EMISSIOSN COST OR PURCHASSE COST? 
+        
+        if vehicle.transportType == 3:
+            cost_price = np.maximum(0,vehicle.cost_second_hand_merchant - self.used_rebate)
+        else:
+            cost_price = vehicle.cost_second_hand_merchant
             
-        Arg = (np.exp(self.kappa*self.nu*(B - beta*vehicle.cost_second_hand_merchant )- 1.0)) / W_s_t
+
+        Arg = (np.exp(self.kappa*self.nu*(B - beta*cost_price )- 1.0)) / W_s_t
         LW   = lambertw(Arg, 0)  # principal branch
         P = vehicle.cost_second_hand_merchant + (1.0 + LW) / (self.kappa *self.nu* beta)
-
-        if P < vehicle.cost_second_hand_merchant:
-            print(P,vehicle.cost_second_hand_merchant, Arg)
-            raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
 
         return P
 
@@ -180,12 +184,13 @@ class SecondHandMerchant:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicle_on_sale, carbon_price, U_sum):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicle_on_sale, carbon_price, U_sum, used_rebate):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.carbon_price = carbon_price
+        self.used_rebate = used_rebate
 
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 

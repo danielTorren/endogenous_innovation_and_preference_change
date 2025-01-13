@@ -124,11 +124,14 @@ class Firm:
 
         for car in car_list:
             E_m = car.emissions  # Emissions for the current car                                                  
-            C_m = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
+            C_m_cost = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
+            C_m_price = car.ProdCost_t 
 
             #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
             if car.transportType == 3:#EV
-                C_m  = car.ProdCost_t - self.production_subsidy
+                C_m_cost  = np.maximum(0,car.ProdCost_t - self.production_subsidy)
+                C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate))
+                
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -137,10 +140,9 @@ class Firm:
                 W_s_t = segment_data["W"]
  
                         # Calculate commuting utility based on conditions for z
-                if car.transportType == 3:
-                    X = (beta_s * car.fuel_cost_c + gamma_s * car.e_t)/car.Eff_omega_a_t
-                else:
-                    X = (beta_s * (car.fuel_cost_c + self.carbon_price*car.e_t) + gamma_s * car.e_t)/car.Eff_omega_a_t
+
+                X = (beta_s * car.fuel_cost_c + gamma_s * car.e_t)/car.Eff_omega_a_t
+
                 # Calculate the commuting  utility for the given segment
                 driving_utility = self.calc_driving_utility(car.Quality_a_t, car.L_a_t, X)
 
@@ -151,23 +153,14 @@ class Firm:
 
                 #print("self.kapp*(U - beta_s*C_m - gamma_s*E_m)", self.kappa*(U - beta_s*C_m - gamma_s*E_m))
                 #quit()
-                Arg = (np.exp(self.kappa*self.nu*(U - beta_s*C_m - gamma_s*E_m)- 1.0)) / W_s_t
+                Arg = (np.exp(self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
                 #print(Arg)
                 LW   = lambertw(Arg, 0).real  # principal branch
                 #print(LW)
-                P = C_m + (1.0 + LW) / (self.kappa *self.nu* beta_s)
+                P = C_m_cost + (1.0 + LW) / (self.kappa *self.nu* beta_s)
 
-                if P < C_m:
-                    print(P,C_m, Arg)
-                    raise ValueError("P LESS THAN C")
                 #CHECK THAT THIS IS POSITIVE AND MORE THAN C
                 car.optimal_price_segments[segment_code] = P
-                #inside_component = W_s_t ** 2 * ((gamma_s * E_m) ** 2 + (beta_s * C_m) ** 2 +  2 * C_m * E_m) + W_s_t + B
-                
-                #if inside_component < 0 or self.t_firm == 1:
-                ##    car.optimal_price_segments[segment_code] = C_m#STOP NEGATIVE SQUARE ROOTS
-                #else:
-                #    car.optimal_price_segments[segment_code] = max(C_m,(beta_s * C_m * W_s_t + np.sqrt(inside_component))/(beta_s*W_s_t) )
 
         return car_list
     
@@ -574,7 +567,8 @@ class Firm:
 
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
-                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] + self.rebate) +  gamma_s * selected_vehicle.emissions)))
+                                price_difference = np.maximum(0, selected_vehicle.optimal_price_segments[segment_code] - self.rebate)
+                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * price_difference +  gamma_s * selected_vehicle.emissions)))
                             else:
                                 utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)))
                             selected_vehicle.car_utility_segments_U[segment_code] = utility_segment_U

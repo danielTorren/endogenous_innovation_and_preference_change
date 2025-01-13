@@ -367,6 +367,48 @@ def plot_preferences(social_network, fileName, dpi=600):
     format_plot(ax, "Histogram of Beta, Gamma, and Chi Vectors", "Value", "Frequency")
     save_and_show(fig, fileName, "preferences", dpi)
 
+def plot_preferences_scatter(social_network, fileName, dpi=600):
+    """
+    Plots a scatter plot of Beta vs. Gamma, 
+    with Chi dictating the color of the dots.
+
+    :param social_network: An object containing the following attributes:
+                           - beta_vec: array-like (Beta values)
+                           - gamma_vec: array-like (Gamma values)
+                           - chi_vec: array-like (Chi values)
+    :param fileName:      String used for naming the output file
+    :param dpi:           Integer specifying the resolution (DPI) 
+    """
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Create a scatter plot, coloring points based on Chi
+    sc = ax.scatter(
+        social_network.beta_vec, 
+        social_network.gamma_vec, 
+        c=social_network.chi_vec, 
+        cmap='viridis', 
+        alpha=0.7
+    )
+    
+    # Add a colorbar to show the range of Chi values
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.set_label("Chi (EV Threshold)")
+    
+    # Label axes and set a title
+    ax.set_xlabel("Beta (Price)")
+    ax.set_ylabel("Gamma (Environmental)")
+    ax.set_title("Scatter Plot of Beta vs. Gamma (Color by Chi)")
+    
+    # If you already have a formatting function for plots, call it here:
+    # format_plot(ax, "Scatter Plot of Beta, Gamma, Chi Vectors", "Beta", "Gamma")
+
+    # Save (and/or show) the figure
+    # Replace save_and_show with your own function that saves and/or shows the figure
+    # For example:
+    save_and_show(fig, fileName, "preferences_scatter", dpi)
+
+
 def plot_sale_EV_prop(firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, firm_manager.history_cars_on_sale_EV_prop, label="EV")
@@ -2309,10 +2351,10 @@ def plot_fuel_costs_verus_carbon_price_kWhr(base_params,controller, fileName, dp
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
 
     carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-    total_ice = controller.gas_price_california_vec + carbon_tax_paid[:-1]
+    total_ice = controller.history_gas_price + carbon_tax_paid[:-2]
 
-    ax.plot(controller.electricity_price_vec, label = "Fuel cost per kWhr, EV")
-    ax.plot(controller.gas_price_california_vec, label = "Fuel cost per kWhr, ICE")
+    ax.plot(controller.history_electricity_price, label = "Fuel cost per kWhr, EV")
+    ax.plot(controller.history_gas_price, label = "Fuel cost per kWhr, ICE")
     ax.plot(carbon_tax_paid , label = "carbon tax cost per kWhr, ICE")
     ax.plot(total_ice, label = "TOTAL cost per kWhr, ICE")
     ax.set_xlabel("Months, 2010-2022")
@@ -2328,17 +2370,17 @@ def plot_fuel_costs_verus_carbon_price_km(base_params,controller, fileName, dpi 
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
 
     carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-    total_ice = controller.gas_price_california_vec + carbon_tax_paid[:-1]
+    total_ice = controller.history_gas_price + carbon_tax_paid[:-2]
 
     Eff_omega_a_t_ICE_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_ICE])
     Eff_omega_a_t_EV_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_EV])
     #Eff_omega_a_t_ICE_median = np.median(controller.social_network.history_efficiency_ICE, axis = 0)
     #Eff_omega_a_t_EV_median = np.median(controller.social_network.history_efficiency_EV, axis = 0)
 
-    ax.plot(controller.electricity_price_vec[:-1]/Eff_omega_a_t_EV_median, label = "Fuel cost per km, EV")
-    ax.plot(controller.gas_price_california_vec[:-1]/Eff_omega_a_t_ICE_median, label = "Fuel cost per km, ICE")
+    ax.plot(controller.history_electricity_price/Eff_omega_a_t_EV_median, label = "Fuel cost per km, EV")
+    ax.plot(controller.history_gas_price/Eff_omega_a_t_ICE_median, label = "Fuel cost per km, ICE")
     ax.plot(carbon_tax_paid[:-2]/Eff_omega_a_t_ICE_median , label = "carbon tax cost per km, ICE")
-    ax.plot(total_ice[:-1]/Eff_omega_a_t_ICE_median, label = "TOTAL cost per km, ICE")
+    #ax.plot(total_ice/Eff_omega_a_t_ICE_median[:-1], label = "TOTAL cost per km, ICE")
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("Dollars per km")
 
@@ -2473,7 +2515,7 @@ def main(fileName, dpi=600):
     #plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
 
 
-    emissions_decomposed(social_network, time_series, fileName, dpi)
+    #emissions_decomposed(social_network, time_series, fileName, dpi)
 
     #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
     #plot_zero_util_count(base_params, social_network, fileName, dpi)
@@ -2499,30 +2541,28 @@ def main(fileName, dpi=600):
 
     #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
-    #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
+    plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
-    #plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
+    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
     #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
-    #plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
+    plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
 
-    #plot_history_median_price(base_params, social_network, fileName, dpi)
-    #plot_history_mean_price(base_params, social_network, fileName, dpi)
+    plot_history_median_price(base_params, social_network, fileName, dpi)
+    plot_history_mean_price(base_params, social_network, fileName, dpi)
     #plot_history_count_buy(base_params, social_network, fileName, dpi)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
 
     #plot_total_utility(social_network, time_series, fileName, dpi)
-    
 
     #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
-    #plot_tranport_users(social_network, time_series, fileName, dpi)
-    
-    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
-    plot_preferences(social_network, fileName, dpi)
+    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    #plot_preferences_scatter(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
 
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     #plot_total_profit(firm_manager, time_series, fileName, dpi)
@@ -2579,7 +2619,7 @@ def main(fileName, dpi=600):
 
     #plot_social_network(social_network, fileName)
     
-    plot_carbon_price(data_controller, time_series, fileName)
+    #plot_carbon_price(data_controller, time_series, fileName)
 
     #CHECKING OUTPUTS
 
@@ -2587,4 +2627,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_02_05__13_01_2025")
+    main("results/single_experiment_18_23_29__13_01_2025")

@@ -284,7 +284,7 @@ class Controller:
     def manage_calibration(self):
 
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-
+        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
@@ -678,6 +678,8 @@ class Controller:
             self.second_hand_merchant.save_timeseries_second_hand_merchant()
             self.time_series.append(self.t_controller)
 
+            
+
             self.save_timeseries_controller()
 
 ##########################################################################################################################################
@@ -697,10 +699,16 @@ class Controller:
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
 
         #update_prices_and_emmisions
-        self.gas_price = self.gas_price_california_vec[self.t_controller]
-        self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
-        self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
+        #self.gas_price = self.gas_price_california_vec[self.t_controller]
+        self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
 
+        self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
+
+        self.electricity_price = self.electricity_price_vec[self.t_controller]*( 1 - self.electricity_price_subsidy)#its a percentage!
+        
+        self.electricity_price_subsidy_dollars = self.electricity_price_vec[self.t_controller]*self.electricity_price_subsidy
+        
+        #print("electricty prices",self.electricity_price , self.electricity_price_vec[self.t_controller], self.electricity_price_subsidy, self.electricity_price_subsidy_dollars)
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
@@ -724,12 +732,12 @@ class Controller:
     
     def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars)
 
         return consider_ev_vec, new_bought_vehicles
 
     def get_second_hand_cars(self,U_sum_total):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total)
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total, self.used_rebate)
 
         return self.second_hand_merchant.cars_on_sale
 
