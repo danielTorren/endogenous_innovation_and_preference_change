@@ -1,10 +1,10 @@
 from copy import deepcopy
 import json
 import numpy as np
-import numpy.typing as npt
 from joblib import Parallel, delayed
 import multiprocessing
-from package.resources.run import generate_data,load_in_controller
+from package.resources.run import load_in_controller, parallel_run_multi_run
+
 from package.resources.utility import (
     createFolder, 
     save_object, 
@@ -57,64 +57,38 @@ def params_list_with_seed(base_params):
     return base_params_list
 
 def single_policy_simulation(params, controller_load):
-
     data = load_in_controller(controller_load, params)#FIRST RUN
 
     EV_uptake = data.calc_EV_prop()
     policy_distortion = data.calc_total_policy_distortion()
     return EV_uptake, policy_distortion
 
-def single_policy_multi_seed_run(
-        params_list,
-        controller
-) -> npt.NDArray:
-    #res = [single_policy_simulation(params_list[i],deepcopy(controller)) for i in range(len(params_list))]
+
+def single_policy_with_seeds(params, controller_list):
+    """
+    Perform parallel execution of all policy scenarios and seeds.
+    """
     num_cores = multiprocessing.cpu_count()
-    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(single_policy_simulation)(params_list[i], deepcopy(controller)) for i in range(len(params_list)))
+
+    def run_scenario(scenario_params, controller):
+        controller_copy = deepcopy(controller)  # Ensure a clean state for this run
+        EV_uptake, total_cost, cum_em = single_policy_simulation(scenario_params, controller_copy)
+        return EV_uptake, total_cost, cum_em
+
+
+    res = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(run_scenario)(params, controller_list[i])  # No deepcopy here
+        for i in range(len(controller_list))
+    )
+
     EV_uptake_list, total_cost_list = zip(
         *res
     )
+    print("EV_uptake_list, total_cost_list", EV_uptake_list, total_cost_list)
     return np.asarray(EV_uptake_list), np.asarray(total_cost_list)
-
 ###########################################################################################################################
 
-def objective_function_wrapper(intensity_level, params, controller, policy_name, target_ev_uptake):
-    """
-    Wrapper for the objective function to be minimized.
-    Args:
-        intensity_level (float): Current policy intensity level (single value for this optimization).
-        params (dict): Policy parameters.
-        controller (object): Controller instance for running simulations.
-        policy_name (str): Policy being optimized.
-        target_ev_uptake (float): Target EV uptake to achieve.
-
-    Returns:
-        float: Value of the objective function to minimize.
-    """
-    # Update the policy intensity
-    if policy_name == "Carbon_price":
-        params["parameters_policies"]["Values"][policy_name]["High"]["Carbon_price"] = intensity_level[0]
-    else:
-        params["parameters_policies"]["Values"][policy_name]["High"] = intensity_level[0]
-
-    print("intensity_level", intensity_level)
-
-    # Run simulation
-    base_params_seeds = params_list_with_seed(params)
-    EV_uptake_arr, total_cost_arr = single_policy_multi_seed_run(
-        base_params_seeds,
-        controller
-    )
-
-    # Compute mean values
-    mean_error = np.mean(target_ev_uptake - EV_uptake_arr)
-    #mean_total_cost = np.mean(total_cost_arr)
-    print("EV_uptake_arr", EV_uptake_arr)
-    print("mean_error", abs(mean_error))
-    # Compute the objective value
-    return abs(mean_error) #+ np.log(mean_total_cost)
-
-def objective_function_wrapper_manual(intensity_level, params, controller, policy_name, target_ev_uptake):
+def objective_function_wrapper_manual(intensity_level, params, controller_list, policy_name, target_ev_uptake):
     """
     Wrapper for the objective function to be minimized.
     Args:
@@ -133,13 +107,11 @@ def objective_function_wrapper_manual(intensity_level, params, controller, polic
     else:
         params["parameters_policies"]["Values"][policy_name]["High"] = intensity_level
 
-    
-
     # Run simulation
-    base_params_seeds = params_list_with_seed(params)
-    EV_uptake_arr, total_cost_arr = single_policy_multi_seed_run(
-        base_params_seeds,
-        controller
+    #base_params_seeds = params_list_with_seed(params)
+    EV_uptake_arr, total_cost_arr = single_policy_with_seeds(
+        params,# base_params_seeds,
+        controller_list
     )
 
     # Compute mean values
@@ -151,7 +123,7 @@ def objective_function_wrapper_manual(intensity_level, params, controller, polic
     # Compute the objective value
     return mean_error, mean_EV_uptake , mean_total_cost
 
-def manual_optimization(params, controller, policy_name, intensity_level_init, target_ev_uptake, step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
+def manual_optimization(params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
     """
     Perform manual optimization with adaptive step size adjustment.
 
@@ -178,7 +150,7 @@ def manual_optimization(params, controller, policy_name, intensity_level_init, t
 
         # Calculate error, EV uptake, and total cost
         error, ev_uptake, total_cost = objective_function_wrapper_manual(
-            intensity, params, controller, policy_name, target_ev_uptake
+            intensity, params, controller_list, policy_name, target_ev_uptake
         )
 
         # Convergence check
@@ -204,7 +176,7 @@ def manual_optimization(params, controller, policy_name, intensity_level_init, t
 
 def optimize_policy_intensity_minimize(
         params,
-        controller,
+        controller_list,
         policy_name,
         intensity_level_init,
         target_ev_uptake=0.9,
@@ -234,7 +206,7 @@ def optimize_policy_intensity_minimize(
     bounds = [(bounds[0], bounds[1])]  # Single policy intensity bounds
     min_step_size, max_step_size= step_size_bounds
     # Optimize using scipy's minimize
-    optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(params, controller, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
+    optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
 
     print("Optimized_intensity, error", optimized_intensity, error, error,mean_ev_uptake, mean_total_cost)
 
@@ -277,10 +249,11 @@ def main(
     print("fileName:", fileName)
     ##################################################################################################
     #RUN BURN IN + CALIBRATION PERIOD FIRST:
-    controller = generate_data(base_params)  # run the simulation 
+    base_params_list = params_list_with_seed(base_params)
+    controller_list = parallel_run_multi_run(base_params_list)
 
     createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
+    #save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
 
     ##################################################################################################
@@ -305,7 +278,7 @@ def main(
 
         mean_ev_uptake, mean_total_cost, intensity_level = optimize_policy_intensity_minimize(
             params,
-            controller,
+            controller_list,
             policy_name,
             intensity_level_init,
             target_ev_uptake=0.9,
