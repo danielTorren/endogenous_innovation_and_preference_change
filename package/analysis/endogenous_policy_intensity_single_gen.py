@@ -270,10 +270,8 @@ def main(
     for i, policy_comb in enumerate(policy_combinations):
         policy_name, params = policy_comb
         print("policy_name",policy_name)
-        if policy_name == "Carbon_price":
-            intensity_level_init = 2#params["parameters_policies"]["Values"][policy_name]["High"]["Carbon_price"]
-        else:
-            intensity_level_init = params["parameters_policies"]["Values"][policy_name]["High"]
+
+        intensity_level_init = (bounds_dict[policy_name][0] + bounds_dict[policy_name][1])/2#start at teh middle
 
         initial_step_size = intensity_level_init*0.01#step size of 10%
 
