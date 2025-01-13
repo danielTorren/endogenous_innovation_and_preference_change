@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
+    "duration_future": 0,#156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 1,
+                    "Carbon_price": 20,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -242,7 +242,7 @@ if __name__ == "__main__":
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
         "a_innovativeness": 0.7,
-        "b_innovativeness": 1,
+        "b_innovativeness": 2,
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName)

@@ -2464,13 +2464,13 @@ def main(fileName, dpi=600):
     time_series = data_controller.time_series
     
 
-    plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
+    #plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
+    #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
 
     emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
-    plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
+    #plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
 
 
     emissions_decomposed(social_network, time_series, fileName, dpi)
@@ -2497,7 +2497,7 @@ def main(fileName, dpi=600):
 
     #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
@@ -2513,7 +2513,7 @@ def main(fileName, dpi=600):
     #plot_total_utility(social_network, time_series, fileName, dpi)
     
 
-    plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
+    #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
@@ -2530,7 +2530,7 @@ def main(fileName, dpi=600):
     
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
@@ -2551,7 +2551,7 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)

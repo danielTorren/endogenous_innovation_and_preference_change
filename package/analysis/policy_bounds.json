@@ -1,6 +1,6 @@
 {
     "bounds_dict":{
-        "Carbon_price": [0, 10],
+        "Carbon_price": [0, 20],
         "Discriminatory_corporate_tax": [0, 0.95],
         "Electricity_subsidy": [0, 1],
         "Adoption_subsidy": [0, 50000],
