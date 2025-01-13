@@ -48,15 +48,18 @@ def update_base_params_with_seed(base_params, seed):
     """
     seed_repetitions = base_params["seed_repetitions"]
     # VARY ALL THE SEEDS
-    base_params["parameters_firm_manager"]["init_tech_seed"] = seed + seed_repetitions
-    base_params["parameters_ICE"]["landscape_seed"] = seed + 2 * seed_repetitions
-    base_params["parameters_EV"]["landscape_seed"] = seed + 9 * seed_repetitions
-    base_params["parameters_social_network"]["social_network_seed"] = seed + 3 * seed_repetitions
-    base_params["parameters_social_network"]["network_structure_seed"] = seed + 4 * seed_repetitions
-    base_params["parameters_social_network"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-    base_params["parameters_social_network"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-    base_params["parameters_social_network"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
-    base_params["parameters_firm"]["innovation_seed"] = seed + 8 * seed_repetitions
+    base_params["seeds"]["init_tech_seed"] = seed + seed_repetitions
+    base_params["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
+    base_params["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
+    base_params["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
+    base_params["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+    base_params["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+    base_params["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+    base_params["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
+    base_params["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
+    base_params["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
+    base_params["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+    
     return base_params
 
 def run_single_simulation(theta, base_params, param_list):
@@ -180,9 +183,9 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.3, 0.8]},
+        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.4, 1]},
         {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.3, 2]},
-        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [5, 15]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [2,80]},
         #{"name": "prob_switch_car", "subdict": "parameters_social_network", "bounds": [0, 0.03]}
         #{"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},
         #{"name": "SW_K", "subdict": "parameters_social_network", "bounds": [20, 500]},

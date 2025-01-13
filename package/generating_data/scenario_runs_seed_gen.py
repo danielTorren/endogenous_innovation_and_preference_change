@@ -43,20 +43,22 @@ def expand_scenarios_with_seeds(scenarios, seed_list):
         scenario_seeds = []
         for seed in seed_list:
 
-            scenario_copy = deepcopy(scenario)
+            base_params_copy = deepcopy(scenario)
 
             # VARY ALL THE SEEDS
-            scenario_copy["parameters_firm_manager"]["init_tech_seed"] = seed + seed_repetitions
-            scenario_copy["parameters_ICE"]["landscape_seed"] = seed + 2 * seed_repetitions
-            scenario_copy["parameters_EV"]["landscape_seed"] = seed + 9 * seed_repetitions
-            scenario_copy["parameters_social_network"]["social_network_seed"] = seed + 3 * seed_repetitions
-            scenario_copy["parameters_social_network"]["network_structure_seed"] = seed + 4 * seed_repetitions
-            scenario_copy["parameters_social_network"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-            scenario_copy["parameters_social_network"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-            scenario_copy["parameters_social_network"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
-            scenario_copy["parameters_firm"]["innovation_seed"] = seed + 8 * seed_repetitions
+            base_params_copy["seeds"]["init_tech_seed"] = seed + seed_repetitions
+            base_params_copy["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
+            base_params_copy["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
+            base_params_copy["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
+            base_params_copy["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+            base_params_copy["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+            base_params_copy["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+            base_params_copy["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
+            base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
+            base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
+            base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
 
-            scenario_seeds.append(scenario_copy)
+            scenario_seeds.append(base_params_copy)
         expanded_scenarios.append(scenario_seeds)
     return expanded_scenarios
 

@@ -15,15 +15,17 @@ def update_base_params_with_seed(base_params, seed):
     """
     seed_repetitions = base_params["seed_repetitions"]
     # VARY ALL THE SEEDS
-    base_params["parameters_firm_manager"]["init_tech_seed"] = int(seed + seed_repetitions)
-    base_params["parameters_ICE"]["landscape_seed"] = int(seed + 2 * seed_repetitions)
-    base_params["parameters_EV"]["landscape_seed"] = int(seed + 9 * seed_repetitions)
-    base_params["parameters_social_network"]["social_network_seed"] = int(seed + 3 * seed_repetitions)
-    base_params["parameters_social_network"]["network_structure_seed"] = int(seed + 4 * seed_repetitions)
-    base_params["parameters_social_network"]["init_vals_environmental_seed"] = int(seed + 5 * seed_repetitions)
-    base_params["parameters_social_network"]["init_vals_innovative_seed"] = int(seed + 6 * seed_repetitions)
-    base_params["parameters_social_network"]["init_vals_price_seed"] = int(seed + 7 * seed_repetitions)
-    base_params["parameters_firm"]["innovation_seed"] = int(seed + 8 * seed_repetitions)
+    base_params["seeds"]["init_tech_seed"] = seed + seed_repetitions
+    base_params["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
+    base_params["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
+    base_params["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
+    base_params["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+    base_params["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+    base_params["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+    base_params["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
+    base_params["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
+    base_params["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
+    base_params["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
     return base_params
 
 
@@ -70,7 +72,7 @@ def main(
     params_list = produce_param_list(base_params, property_values_list, subdict, property_varied)
     
     print("TOTAL RUNS: ", len(params_list))
-    data_flat_distance, data_flat_ev_prop, data_flat_age, data_flat_price , data_flat_emissions = distance_ev_prop_age_price_emissions_parallel_run(params_list) 
+    data_flat_distance, data_flat_ev_prop, data_flat_age, data_flat_price , data_flat_emissions, data_flat_efficiency = distance_ev_prop_age_price_emissions_parallel_run(params_list) 
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
     data_array_distance = data_flat_distance.reshape(len(property_values_list),seed_repetitions, len(data_flat_distance[0]), base_params["parameters_social_network"]["num_individuals"])
@@ -78,6 +80,7 @@ def main(
     data_array_age = data_flat_age.reshape(len(property_values_list),seed_repetitions, len(data_flat_age[0]), base_params["parameters_social_network"]["num_individuals"])
     data_array_price = data_flat_price.reshape(len(property_values_list),seed_repetitions, len(data_flat_price[0]), 2)
     data_array_emissions = data_flat_emissions.reshape(len(property_values_list),seed_repetitions, len(data_flat_emissions[0]))
+    data_array_efficiency = data_flat_efficiency.reshape(len(property_values_list),seed_repetitions, len(data_flat_emissions[0]))
     
     createFolder(fileName)
 
@@ -86,6 +89,7 @@ def main(
     save_object(data_array_age , fileName + "/Data", "data_array_age")
     save_object(data_array_price , fileName + "/Data", "data_array_price")
     save_object(data_array_emissions  , fileName + "/Data", "data_array_emissions")
+    save_object(data_array_efficiency  , fileName + "/Data", "data_array_efficiency")
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(vary_single , fileName + "/Data", "vary_single")
 
@@ -93,6 +97,6 @@ def main(
 
 if __name__ == "__main__":
     results = main(
-        BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
+        BASE_PARAMS_LOAD="package/constants/base_params_vary_single_a_innov.json",
         VARY_LOAD ="package/constants/vary_single_a_innov.json", #"package/constants/vary_single_delta.json"
         )

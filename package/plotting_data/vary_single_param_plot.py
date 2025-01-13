@@ -293,6 +293,49 @@ def plot_price(data_array, property_values_list, fileName, name_property, proper
     fig.savefig(f"{fileName}/price_{property_save}.png", dpi=dpi)
 ################################################################################################
 
+def plot_efficiency(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+
+    num_deltas = data_array.shape[0]
+    num_seeds = data_array.shape[1]
+    time_steps = data_array.shape[2]
+
+    # Create time series array if you don't have one
+    time_series = np.arange(time_steps)
+
+    fig, axes = plt.subplots(nrows=1, ncols=num_deltas, figsize=(5 * num_deltas, 5), sharey=True)
+
+    # If there's only one delta, axes might not be an array
+    if num_deltas == 1:
+        axes = [axes]
+
+    for i, delta in enumerate(property_values_list):
+        ax = axes[i]
+
+        # For each seed, compute the mean over individuals and plot
+        for seed in range(num_seeds):
+            # data for this delta and seed: shape (time_steps, num_individuals)
+            data = data_array[i, seed, :]  # shape (time_steps, num_individuals)
+            # Plot mean and capture the line object
+            ax.plot(time_series, data , label=f"Seed {seed+1}", alpha=0.7)
+
+        # Format each subplot
+        ax.set_title(f"{delta}")
+        #ax.set_xlabel("Time Step")
+        #if i == 0:
+        #    ax.set_ylabel("Emisisons")
+
+        # Add a legend if desired (or only in one subplot)
+        #ax.legend()
+
+    fig.supxlabel("Time Step")
+    fig.supylabel("Efficiency ICE")
+
+    # Adjust layout
+    #plt.tight_layout()
+
+    # Save and show
+    fig.savefig(f"{fileName}/eff_{property_save}.png", dpi=dpi)
+
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -303,6 +346,7 @@ def main(fileName, dpi=600):
         data_array_age =  load_object(fileName + "/Data", "data_array_age")
         data_array_price =  load_object(fileName + "/Data", "data_array_price")
         data_array_emissions = load_object(fileName + "/Data", "data_array_emissions")
+        data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
         vary_single = load_object(fileName + "/Data", "vary_single")
         
     except FileNotFoundError:
@@ -318,9 +362,9 @@ def main(fileName, dpi=600):
     plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
     plot_price(data_array_price , property_values_list, fileName, name_property, property_save, 600)
     plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
-
+    plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_16_38_02__10_01_2025")
+    main("results/single_param_vary_13_47_46__13_01_2025")

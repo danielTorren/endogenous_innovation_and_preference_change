@@ -64,8 +64,8 @@ class Social_Network:
         self.adjacency_matrix, self.network = self.create_network()
         self.network_density = nx.density(self.network)
 
-        self.weighting_matrix = self._calc_weighting_matrix_attribute(self.beta_vec)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
-        
+        self.weighting_matrix = self._normlize_matrix(self.adjacency_matrix)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
+
         #Assume nobody adopts EV at the start, THIS MAY BE AN ISSUE
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
  
@@ -88,7 +88,6 @@ class Social_Network:
         self.d_max = parameters_social_network["d_max"]
 
     def init_network_settings(self, parameters_social_network):
-        self.selection_bias = parameters_social_network["selection_bias"]
         self.network_structure_seed = int(round(parameters_social_network["network_structure_seed"]))
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_network_density_input = parameters_social_network["SW_network_density"]
@@ -112,25 +111,6 @@ class Social_Network:
     def normalize_vec_sum(self, vec):
         return vec/sum(vec)
     
-    def _calc_weighting_matrix_attribute(self, attribute_array: np.ndarray) -> sp.csr_matrix:
-        """
-        Calculate weighting matrix based on attribute similarities.
-        
-        Args:
-            attribute_array (np.ndarray): Array of attributes for calculating weights
-            
-        Returns:
-            sp.csr_matrix: Sparse matrix of normalized weights
-        """
-        differences = attribute_array[self.row_indices_sparse] - attribute_array[self.col_indices_sparse]
-        weights = np.exp(-self.selection_bias * np.abs(differences))
-        non_diagonal_weighting_matrix = sp.csr_matrix(
-            (weights, (self.row_indices_sparse, self.col_indices_sparse)),
-            shape=self.adjacency_matrix.shape
-        )
-        norm_weighting_matrix = self._normlize_matrix(non_diagonal_weighting_matrix)
-
-        return norm_weighting_matrix
 
     def _normlize_matrix(self, matrix: sp.csr_matrix) -> sp.csr_matrix:
         """
@@ -1007,6 +987,8 @@ class Social_Network:
         self.history_mean_efficiency_vals_ICE = []
         self.history_drive_min_num = []
 
+        self.history_mean_efficiency_vals = []
+
     def save_timeseries_data_social_network(self):
 
 
@@ -1067,6 +1049,8 @@ class Social_Network:
         self.history_quality.append(self.quality_vals)
         self.history_efficiency.append(self.efficiency_vals)
         self.history_production_cost.append(self.production_cost_vals)
+
+        self.history_mean_efficiency_vals.append(np.mean(self.efficiency_vals))
 
         if self.quality_vals_ICE:
             self.history_quality_ICE.append(self.quality_vals_ICE)

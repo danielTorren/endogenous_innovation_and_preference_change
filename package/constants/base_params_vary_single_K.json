@@ -1,50 +1,14 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
-# imports
-from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
-
-def main(
-    base_params
-) -> str: 
-
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
-    print("fileName:", fileName)
-
-    controller = generate_data(base_params, print_simu= 0)  # run the simulation 
-    print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake",  controller.calc_EV_prop())
-    print("distortion",controller.calc_total_policy_distortion())
-    
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-    return fileName
-
-if __name__ == "__main__":
-
-    base_params = {
-    "seed_repetitions": 10,
+{
+    "seed_repetitions": 24,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,#156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
         "choice_seed": 9,
         "remove_seed": 48,
-        "landscape_seed_ICE": 26,
+        "landscape_seed_ICE": 22,
         "landscape_seed_EV": 14, 
         "init_tech_seed": 99,
         "innovation_seed": 77,
@@ -52,10 +16,10 @@ if __name__ == "__main__":
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
         "init_vals_price_seed": 8, 
-        "social_network_seed": 66,
+        "social_network_seed": 66
     },
     "ev_research_start_time": 60,
-    "ev_production_start_time": 60,#108,
+    "ev_production_start_time": 60,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -186,12 +150,12 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,#3,
-        "burn_in_second_hand_market": 12,
+        "age_limit_second_hand": 36,
+        "burn_in_second_hand_market": 12
     },
     "parameters_ICE":{
         "N": 15,
-        "K": 4,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
@@ -199,26 +163,28 @@ if __name__ == "__main__":
         "transportType": 2,
         "min_Price": 20000,
         "max_Price": 80000,
-        "min_Efficiency": 0.3,#0.867, 
+        "min_Efficiency": 0.3, 
         "max_Efficiency": 1.444,
         "min_Cost": 5000,
         "max_Cost": 30000
     },
     "parameters_EV":{
         "N": 15,
-        "K": 4,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
-        "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "min_Quality": 120,
+        "max_Quality": 350,
+        "min_Efficiency": 2,
+        "max_Efficiency": 8
     },
     "parameters_firm_manager": {
         "J": 30,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "beta_threshold_percentile": 50,#20,
+        "beta_threshold_percentile": 50,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 5
     },
@@ -233,54 +199,24 @@ if __name__ == "__main__":
     },
     "parameters_social_network":{
         "num_individuals": 1000,
-        "d_max": 4000,
-        "d_min": 500,
+        "d_max": 2000,
+        "d_min": 1000,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.7,
+        "a_innovativeness": 0.6,
         "b_innovativeness": 1,
+        "selection_bias": 5,
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
-        "kappa":30,
+        "kappa":50,
+        "alpha": 0.57,
         "r": 0.00417,
         "mu": 0.5,
         "nu": 10e-5
     }
 }
-    
-    policy_bool = False
-    if policy_bool:
-        base_params[ "parameters_policies"]["States"] = {
-            "Carbon_price": "High",
-            "Discriminatory_corporate_tax": "High",
-            "Electricity_subsidy": "High",
-            "Adoption_subsidy": "High",
-            "Adoption_subsidy_used": "High",
-            "Production_subsidy": "High",
-            "Research_subsidy": "High"
-        }
-    else:
-        base_params[ "parameters_policies"]["States"] = {
-            "Carbon_price": "High",
-            "Discriminatory_corporate_tax": "Zero",
-            "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "Zero",
-            "Adoption_subsidy_used": "Zero",
-            "Production_subsidy": "Zero",
-            "Research_subsidy": "Zero"
-        }
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
-
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 0
-
-    if RUN_PLOT:
-        plotting_main(fileName = fileName)

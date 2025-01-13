@@ -5,7 +5,19 @@
     "duration_future": 156,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
-    "choice_seed": 9,
+    "seeds":{
+        "choice_seed": 9,
+        "remove_seed": 48,
+        "landscape_seed_ICE": 22,
+        "landscape_seed_EV": 14, 
+        "init_tech_seed": 99,
+        "innovation_seed": 77,
+        "network_structure_seed": 8,
+        "init_vals_environmental_seed": 66,
+        "init_vals_innovative_seed":99, 
+        "init_vals_price_seed": 8, 
+        "social_network_seed": 66
+    },
     "ev_research_start_time": 60,
     "ev_production_start_time": 60,
     "EV_rebate_state": 1,
@@ -65,7 +77,7 @@
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 0.18,
+                    "Carbon_price": 1,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -138,13 +150,11 @@
         }
     },
     "parameters_second_hand":{
-        "remove_seed": 48,
-        "age_limit_second_hand": 12,
-        "max_num_cars": 5000,
+        "age_limit_second_hand": 36,
         "burn_in_second_hand_market": 12
     },
     "parameters_ICE":{
-        "landscape_seed": 22, 
+
         "N": 15,
         "K": 3,
         "A": 3,
@@ -160,7 +170,6 @@
         "max_Cost": 30000
     },
     "parameters_EV":{
-        "landscape_seed": 14,
         "N": 15,
         "K": 3,
         "A": 3,
@@ -173,7 +182,6 @@
         "max_Efficiency": 7
     },
     "parameters_firm_manager": {
-        "init_tech_seed": 99,
         "J": 30,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
@@ -186,29 +194,20 @@
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "lambda_pow": 5,
-        "innovation_seed": 77,
         "num_cars_production": 16,
         "init_U": 10e5,
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
-        "network_structure_seed": 8,
-        "init_vals_environmental_seed": 66,
-        "init_vals_innovative_seed":99, 
-        "init_vals_price_seed": 8, 
-        "social_network_seed": 66,
+        "num_individuals": 1000,
         "d_max": 2000,
-        "d_min_seed": 45,
-        "d_i_min": 700,
-        "d_i_min_sd": 700,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.1,
+        "a_innovativeness": 0.4,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car": 0.083

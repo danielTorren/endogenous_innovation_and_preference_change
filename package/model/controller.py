@@ -14,6 +14,10 @@ class Controller:
         self.unpack_controller_parameters(parameters_controller)
 
         self.gen_time_series_calibration_scenarios_policies()
+        self.gen_users_parameters()
+        self.calc_variables()
+
+
         self.update_time_series_data()
 
         self.setup_id_gen()
@@ -29,7 +33,7 @@ class Controller:
         self.setup_social_network_parameters()
         self.setup_vehicle_users_parameters()
 
-        self.gen_users_parameters()
+        
 
         self.gen_firms()
 
@@ -70,6 +74,8 @@ class Controller:
         
         #CONTROLLER PARAMETERS:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
+        self.set_seed()#PUT SEEEDS IN CORECT PLACE
+        
 
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_vehicle_user = parameters_controller["parameters_vehicle_user"]
@@ -81,8 +87,6 @@ class Controller:
         
         self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]
 
-        self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
-        self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
         self.parameters_EV["min_Cost"] = self.parameters_ICE["min_Cost"]
         self.parameters_EV["max_Cost"] = self.parameters_ICE["max_Cost"]
         self.parameters_EV["delta"] = self.parameters_ICE["delta"]
@@ -110,6 +114,67 @@ class Controller:
             raise ValueError("EV Production before research")
 
         self.time_steps_max = parameters_controller["time_steps_max"]
+
+    def set_seed(self):
+
+        self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
+        self.parameters_controller["parameters_ICE"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_ICE"]
+        self.parameters_controller["parameters_EV"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_EV"]
+        self.parameters_controller["parameters_social_network"]["social_network_seed"] = self.parameters_controller["seeds"]["social_network_seed"]
+        self.parameters_controller["parameters_social_network"]["network_structure_seed"] =self.parameters_controller["seeds"]["network_structure_seed"]
+        self.parameters_controller["parameters_social_network"]["init_vals_environmental_seed"] = self.parameters_controller["seeds"]["init_vals_environmental_seed"]
+        self.parameters_controller["parameters_social_network"]["init_vals_innovative_seed"] = self.parameters_controller["seeds"]["init_vals_innovative_seed"] 
+        self.parameters_controller["parameters_social_network"]["init_vals_price_seed"] = self.parameters_controller["seeds"]["init_vals_price_seed"]
+        self.parameters_controller["parameters_firm"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
+        self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
+        self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
+    
+    def calc_variables(self):
+        D_plus = self.parameters_social_network["d_max"]
+        D_minus = self.parameters_social_network["d_min"]
+         #ICE
+        beta_plus = np.max(self.beta_vec) # upper bound beta
+        gamma_plus = np.max(self.gamma_vec)# upper bound gamma
+        
+        c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
+        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
+        omega_minus = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
+
+        X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
+        alpha = (D_plus - D_minus) / (D_minus * X_plus)
+        self.parameters_vehicle_user["alpha"] = alpha
+
+        #SET Quality
+        W = 10e5
+        P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
+        C = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2
+        beta = np.median(self.beta_vec)
+        gamma = np.median(self.gamma_vec)
+        E = self.parameters_ICE["production_emissions"]
+
+        delta = self.parameters_ICE["delta"]
+        r = self.parameters_vehicle_user["r"]
+        c_minus = np.min(self.calibration_gas_price_california_vec)
+        c= (c_plus + c_minus)/2
+        omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
+        omega = (omega_plus + omega_minus)/2
+        X = (beta*c + gamma*e)/omega
+
+        term1 = np.log(W * (P - C) * self.parameters_vehicle_user["kappa"] * self.parameters_vehicle_user["nu"] * beta - 1)
+        term2 = beta * P + gamma * E
+        numerator = (term1 + term2) * (alpha * X + 1) * (r + delta)
+        denominator = (1 + r)
+        Q_vals = numerator / denominator
+        Q_minus = Q_vals[0]
+        Q_plus = Q_vals[1]
+
+        min_q =  Q_plus  - (4/3) * (Q_plus - Q_minus)
+        max_q = Q_plus  - (4/3) * (Q_plus - Q_minus) + (Q_plus - Q_minus) / 0.6
+
+        self.parameters_ICE["min_Quality"] = min_q
+        self.parameters_ICE["max_Quality"] = max_q
+        self.parameters_EV["min_Quality"] = min_q
+        self.parameters_EV["max_Quality"] = max_q
 
     def gen_users_parameters(self):
 

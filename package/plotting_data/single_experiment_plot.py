@@ -1,5 +1,6 @@
 from cProfile import label
 import os
+from matplotlib.lines import lineStyles
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
@@ -2239,6 +2240,41 @@ def plot_aggregated_segment_production_time_series(base_params, firms, fileName,
     # Save and show the plot
     save_and_show(fig, fileName, "aggregated_segment_production_time_series", dpi)
 
+def plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi = 600):
+    
+    data_time_series_ICE = np.asarray(social_network.history_driving_emissions_ICE)/np.asarray(social_network.history_ICE_users)
+    history_ICE_users = np.asarray(social_network.history_ICE_users)
+
+    # Replace 0 with np.nan in history_ICE_users
+    history_ICE_users = np.where(history_ICE_users == 0, np.nan, history_ICE_users)
+
+    # Perform the division
+    data_time_series_EV = np.asarray(social_network.history_driving_emissions_EV) / history_ICE_users
+
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    ax.plot(time_series, data_time_series_ICE, label = "ICE")
+    ax.plot(time_series, data_time_series_EV, label = "EV")
+    
+    #https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references
+
+    #GASOLINE = 4.29 metric tons CO2e/vehicle /year
+    # =  0.3575 metric tons CO2e/vehicle /month
+    # = 357.5 kg CO2e/vehicle/month 
+
+    #EVs
+    # = 1.13 metric tons CO2e/vehicle/year
+    # = 0.09416666666 metric tons CO2e/vehicle /month
+    # = 94.1666666667 kg CO2e/vehicle /month
+
+    ax.axhline(y = 357.5, label = "ICE real", color = "red", linestyle = "--")
+    ax.axhline(y = 94.1666666667, label = "EV real", color = "black", linestyle = "--")
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("Kg CO2 per vehicle")
+
+    #add_vertical_lines(ax, base_params)
+    
+    ax.legend(loc="center left")
+    save_and_show(fig, fileName, "plot_kg_co2_per_year_per_vehicle_by_type", dpi)
 
 def plot_emissions_intensity(base_params, real_data , social_network, time_series, fileName, dpi = 600):
     
@@ -2427,13 +2463,23 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
     
-    #emissions_decomposed(social_network, time_series, fileName, dpi)
+
+    plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
+    calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
+    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
+
+    emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
+    plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
+
+
+    emissions_decomposed(social_network, time_series, fileName, dpi)
 
     #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
     #plot_zero_util_count(base_params, social_network, fileName, dpi)
     #plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
     #plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
-    #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
     # All plot function calls
 
@@ -2448,32 +2494,30 @@ def main(fileName, dpi=600):
 
     #plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
-    #plt.show()
 
-    plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
+    #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
-    plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
+    #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
-    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
     #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
-    plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
+    #plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
 
-    plot_history_median_price(base_params, social_network, fileName, dpi)
-    plot_history_mean_price(base_params, social_network, fileName, dpi)
+    #plot_history_median_price(base_params, social_network, fileName, dpi)
+    #plot_history_mean_price(base_params, social_network, fileName, dpi)
     #plot_history_count_buy(base_params, social_network, fileName, dpi)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
 
     #plot_total_utility(social_network, time_series, fileName, dpi)
     
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
+
+    plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
     #plot_tranport_users(social_network, time_series, fileName, dpi)
     
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
 
     #plot_preferences(social_network, fileName, dpi)
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
@@ -2486,7 +2530,7 @@ def main(fileName, dpi=600):
     
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
-    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
@@ -2507,7 +2551,7 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
@@ -2539,14 +2583,8 @@ def main(fileName, dpi=600):
 
     #CHECKING OUTPUTS
 
-    calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
-
-    emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
-    #plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_54_54__10_01_2025")
+    main("results/single_experiment_12_02_05__13_01_2025")

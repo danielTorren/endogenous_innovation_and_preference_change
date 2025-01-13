@@ -57,16 +57,28 @@ def load_in_calibration_data():
     electricity_emissions_intensity_df["KgCO2 per Kilowatt-Hour"] = electricity_emissions_intensity_df["emissions_intensity_gco2_per_kwh"]/1000
 
     ###############################################################################
+    #WE CALIBRATE EFFICIENCY IN TWO WAY BOTH FROM THE INPUT AND OUTPUT SIDE TO CROSS CHECK 
 
     #What are the historical ranges of Cars in terms of efficiency (km/kWhr) us this to parameterise the omega limits on the landscape
     efficiency_and_power_df = pd.read_excel("package/calibration_data/efficiency_and_power.xlsx")
     efficiency_and_power_df["Date"] = pd.to_datetime( efficiency_and_power_df["Date"])
     efficiency_and_power_df.set_index('Date', inplace=True)
+    
     # Convert mpg to km/kWhr
+    
     km_to_miles = 1.60934
     gasoline_Kilowatt_Hour_per_gallon = 33.41 #Gasoline gallon equivalent (GGE)
     efficiency_and_power_df["km_per_kWhr"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*(km_to_miles/gasoline_Kilowatt_Hour_per_gallon)
     #"min_max_Efficiency":[0.5,1.5], historial min and max for period are (0.953754,1.252405)
+
+    #TO CALCULATE EFFICIENCY INDIRECLY TAKE THE MAX AND MIN VALUES OVER THE PERIOD FROM REAL WORLD DATA kgc02/km
+    #min = 0.221, max = 0.281 
+    # THEREFORE efficeicny = (kgC02/kwhr)/(kgc02/km)
+    #                        = (km/kwhr)
+    # min = 0.265988/0.281 = 0.94657651245, max = 0.265988/0.221 = 1.20356561086
+    # for lascaep take values = (0.867, 1.444)
+
+
 
     #What is the distance travelled by your typical car?
     average_gas_tank_size = 16#Gallons https://mechanicbase.com/cars/average-gas-tank-size/  https://millsequipment.com/blogs/blogs/understanding-average-fuel-tank-size-what-you-need-to-know
@@ -104,6 +116,9 @@ def load_in_calibration_data():
 
     #Emissions Gasoline - WE 
     gasoline_Kgco2_per_Kilowatt_Hour =  (gasoline_gco2_per_gallon/gasoline_Kilowatt_Hour_per_gallon)/1000
+    print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)
+    #ALT: #https://ww2.arb.ca.gov/sites/default/files/2020-06/basics-notes_1.pdf
+    #gasoline_Kgco2_per_Kilowatt_Hour =  93.23/(1000*0.2777778)
     #0.26599820413049985
     
     #print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)

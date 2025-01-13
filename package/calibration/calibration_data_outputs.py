@@ -94,7 +94,7 @@ def load_in_output_data():
     #EMISSIONS INTENSITY OF FLEET
     emissions_intensity_cars_df = pd.read_excel("package/calibration_data/emissions_intensity_cars.xlsx") 
     emisisons_intensity_cars_data = emissions_intensity_cars_df["gCO2e per mile"].to_numpy()
-    kg_CO2_per_km_vec = emisisons_intensity_cars_data*km_to_miles/1000
+    kg_CO2_per_km_vec = emisisons_intensity_cars_data/(km_to_miles*1000)
 
     return merged_data_filtered['EV Prop'].to_numpy(), kg_CO2_per_km_vec
 

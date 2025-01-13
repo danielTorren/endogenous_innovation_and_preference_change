@@ -18,7 +18,7 @@ def calc_B(u_star, r, delta):
     return u_star*(1+r)(r+delta)
 
 
-def calculate_Q(nu, W, P, C, k, beta, gamma, E, alpha, X, r, delta, L):
+def calculate_Q(nu, W, P, C, k, beta, gamma, E, alpha, X, r, delta):
     """
     Calculates Q based on the given formula:
     Q = [(ln(W(P-C)k * beta - 1) + beta*P + gamma*E) * (alpha*X + 1) * (r + delta)] 
@@ -28,7 +28,7 @@ def calculate_Q(nu, W, P, C, k, beta, gamma, E, alpha, X, r, delta, L):
         term1 = np.log(W * (P - C) * k * nu * beta - 1)
         term2 = beta * P + gamma * E
         numerator = (term1 + term2) * (alpha * X + 1) * (r + delta)
-        denominator = (1 - delta)**L * (1 + r)
+        denominator = (1 + r)
         Q = numerator / denominator
         return Q
     except Exception as e:
@@ -38,8 +38,8 @@ def calculate_Q(nu, W, P, C, k, beta, gamma, E, alpha, X, r, delta, L):
 
 def main():
     # Example values
-    D_plus = 2000
-    D_minus = 1000#100
+    D_plus = 4000
+    D_minus = 500#100
     print("D_plus", D_plus)
 
     #ICE
@@ -51,6 +51,7 @@ def main():
     c_plus = 0.16853363453157436
     e_minus = 0.26599820413049985#THEY ARE THE SAME
     e_plus = 0.26599820413049985
+
     omega_minus= 0.7#0.5 + 0.2*1
     omega_plus= 1.3#0.5 + 0.8*1
 
@@ -61,7 +62,6 @@ def main():
 
     E = 6000
     delta = 0.001
-    L = 0
 
     W_min, W_max = 1, 5
     W_points =  1000
@@ -70,7 +70,7 @@ def main():
     
     nu = 0.00001
 
-    P_values = [20000, 30000,50000,]
+    P_values = [20000, 30000,50000]
     X_plus = calc_X(beta_plus,c_plus,gamma_plus,e_plus, omega_minus)
     alpha = calculate_alpha(D_plus, D_minus, X_plus)
     print("alpha", alpha)
@@ -89,12 +89,9 @@ def main():
     #plt.show()
     #quit()
 
-
-    w = 1 # B/(AVE_B_Comp * beta *C): Proxy for how good is your product compared to the average competition
-    
     # Generate W and n values
     W_vals = np.logspace(W_min, W_max, W_points)
-    k_vals = np.arange(8, 15)
+    k_vals = np.arange(29, 32)
 
 
     Q_grids = []
@@ -103,7 +100,7 @@ def main():
         Q_grid = np.zeros((len(W_vals), len(k_vals)))
         for i, W in enumerate(W_vals):
             for j, k in enumerate(k_vals):
-                Q_grid[i, j] = calculate_Q(nu,W, P, cost, k, beta, gamma, E, alpha, X, r, delta, L)
+                Q_grid[i, j] = calculate_Q(nu,W, P, cost, k, beta, gamma, E, alpha, X, r, delta)
         Q_grids.append(Q_grid)
         #print(Q_grid)
 
