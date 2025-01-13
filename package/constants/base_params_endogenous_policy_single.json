@@ -196,7 +196,7 @@
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 5000,
         "d_max": 4000,
         "d_min": 500,
         "SW_network_density": 0.05,

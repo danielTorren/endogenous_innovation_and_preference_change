@@ -258,6 +258,7 @@ def main(
 
     ##################################################################################################
     
+    #ONLY NEED TO CHANGE ONE OF THE RUNS AS THE SEED DOESNT AFECT THE POLICY PART!
     base_params["duration_future"] = future_time_steps
 
     # Generate all pairs of policies
