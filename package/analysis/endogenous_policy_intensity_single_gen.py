@@ -72,8 +72,8 @@ def single_policy_with_seeds(params, controller_list):
 
     def run_scenario(scenario_params, controller):
         controller_copy = deepcopy(controller)  # Ensure a clean state for this run
-        EV_uptake, total_cost, cum_em = single_policy_simulation(scenario_params, controller_copy)
-        return EV_uptake, total_cost, cum_em
+        EV_uptake, total_cost = single_policy_simulation(scenario_params, controller_copy)
+        return EV_uptake, total_cost
 
 
     res = Parallel(n_jobs=num_cores, verbose=10)(
