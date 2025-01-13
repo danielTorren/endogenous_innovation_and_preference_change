@@ -4,7 +4,7 @@ import itertools
 from copy import deepcopy
 from joblib import Parallel, delayed
 import multiprocessing
-
+from package.analysis.endogenous_policy_intensity_single_gen import params_list_with_seed, optimize_policy_intensity_minimize
 from package.resources.run import load_in_controller, parallel_run_multi_run
 
 from package.resources.utility import (
@@ -67,7 +67,7 @@ def optimize_second_policy_with_first_fixed(
         intensity_level_init = policy2_init_guess,
         target_ev_uptake    = target_ev_uptake,
         bounds             = bounds_dict[policy2_name],
-        initial_step_size  = max(0.01, 0.1*policy2_init_guess),  # Example step size
+        initial_step_size  = policy2_init_guess*0.01,  # Example step size
         adaptive_factor    = 0.5,
         step_size_bounds   = step_size_dict[policy2_name]
     )
@@ -83,7 +83,6 @@ def policy_pair_sweep(
     controller_list,
     policy1_name,
     policy2_name,
-    single_policy_outcomes,
     bounds_dict,
     step_size_dict,
     target_ev_uptake = 0.9,
@@ -99,24 +98,15 @@ def policy_pair_sweep(
       - Return all (policy1_intensity, policy2_intensity, ev_uptake, total_cost).
     """
 
-    # We'll pull out single-policy "optimal" intensities you found earlier.
-    #   single_policy_outcomes[policy1_name] = [ev_uptake, total_cost, intensity]
-    #   single_policy_outcomes[policy2_name] = [ev_uptake, total_cost, intensity]
-    # Adjust to how your dictionary is actually structured.
-    p1_opt_intensity = single_policy_outcomes[policy1_name][2]
-    p2_opt_intensity = single_policy_outcomes[policy2_name][2]
-
     # min->max bounds for each policy
     p1_min, p1_max = bounds_dict[policy1_name]
-    if p1_max is None:
-        p1_max = p1_opt_intensity * 2.0  # or some fallback if unbounded
 
     # Create the array of policy1 intensities to test.
     # Sometimes you might want a logspace or custom steps if the range is large.
     p1_values = np.linspace(p1_min, p1_max, n_steps)
 
     # Initialize the guess for policy2 from single-policy optimum
-    p2_guess = p2_opt_intensity
+    p2_guess = bounds_dict[policy2_name][1]#start at the edge
 
     # We'll store the results for this pair in a list of dicts
     results_for_pair = []
@@ -172,7 +162,7 @@ def main_pair_optimization(
     with open(BOUNDS_LOAD) as f:
         policy_params_dict = json.load(f)
 
-    bounds_dict    = policy_params_dict["bounds_dict"]
+    bounds_dict = policy_params_dict["bounds_dict"]
     step_size_dict = policy_params_dict["step_size_dict"]
 
     # 2) Possibly run the calibration or "burn-in"
@@ -193,50 +183,6 @@ def main_pair_optimization(
     # Restore future duration
     base_params["duration_future"] = future_time_steps
 
-    # 3) Run single-policy optimization for each policy in policy_list
-    #    (similar to your existing code). 
-    #    We'll store them in 'single_policy_outcomes' so we can retrieve
-    #    the optimal intensities for each policy.
-    single_policy_outcomes = {}
-
-    for policy_name in policy_list:
-        # Because your single-policy code expects a scenario, etc.
-        # we replicate the approach from your prior code snippet:
-
-        # Make a copy
-        params_copy = deepcopy(base_params)
-        
-        # We need an initial guess. For Carbon_price vs. other policies:
-        if policy_name == "Carbon_price":
-            intensity_init = 2.0
-        else:
-            intensity_init = params_copy["parameters_policies"]["Values"][policy_name]["High"]
-        
-        initial_step_size = max(0.01, 0.1*intensity_init)
-
-        # Optimize
-        optimized_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity_minimize(
-            params_copy,
-            controller_list,
-            policy_name,
-            intensity_level_init = intensity_init,
-            target_ev_uptake     = target_ev_uptake,
-            bounds               = bounds_dict[policy_name],
-            initial_step_size    = initial_step_size,
-            adaptive_factor      = 0.5,
-            step_size_bounds     = step_size_dict[policy_name]
-        )
-
-        # Store result
-        single_policy_outcomes[policy_name] = [
-            mean_ev_uptake,
-            mean_total_cost,
-            optimized_intensity
-        ]
-
-    # Save single-policy outcomes
-    save_object(single_policy_outcomes, fileName + "/Data", "single_policy_outcomes")
-
     # 4) Now do *pairwise* sweeps
     policy_pairs = generate_unique_policy_pairs(policy_list)
     print("All unique pairs:", policy_pairs)
@@ -249,7 +195,6 @@ def main_pair_optimization(
             controller_list  = controller_list,
             policy1_name     = p1,
             policy2_name     = p2,
-            single_policy_outcomes = single_policy_outcomes,
             bounds_dict      = bounds_dict,
             step_size_dict   = step_size_dict,
             target_ev_uptake = target_ev_uptake,
@@ -268,7 +213,7 @@ def main_pair_optimization(
 if __name__ == "__main__":
     main_pair_optimization(
         BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single.json",
-        BOUNDS_LOAD      = "package/analysis/optimal_policy_bounds.json", 
+        BOUNDS_LOAD = "package/analysis/optimal_policy_bounds.json", 
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",

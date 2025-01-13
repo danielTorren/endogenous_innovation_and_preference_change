@@ -183,9 +183,12 @@ class Controller:
         #CHI
         self.a_innovativeness = self.parameters_social_network["a_innovativeness"]
         self.b_innovativeness = self.parameters_social_network["b_innovativeness"]
+        self.chi_max = self.parameters_social_network["chi_max"]
         self.random_state_chi = np.random.RandomState(self.parameters_social_network["init_vals_innovative_seed"])
         innovativeness_vec_init_unrounded = self.random_state_chi.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
-        self.chi_vec = np.round(innovativeness_vec_init_unrounded, 1)
+        chi_vec_raw = np.round(innovativeness_vec_init_unrounded, 1)
+        self.chi_vec = chi_vec_raw*self.chi_max
+
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
         #BETA

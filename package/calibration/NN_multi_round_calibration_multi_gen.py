@@ -184,7 +184,7 @@ def main(
 if __name__ == "__main__":
     parameters_list = [
         {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.4, 1]},
-        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.3, 3]},
+        {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.3, 2]},
         {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [2,80]},
         #{"name": "prob_switch_car", "subdict": "parameters_social_network", "bounds": [0, 0.03]}
         #{"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},

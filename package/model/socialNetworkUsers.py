@@ -93,6 +93,7 @@ class Social_Network:
         self.SW_network_density_input = parameters_social_network["SW_network_density"]
         self.SW_prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_K = int(round((self.num_individuals - 1) * self.SW_network_density_input))
+
         
     def set_init_cars_selection(self, parameters_social_network):
         """GIVE PEOPLE CARS NO CHOICE"""
@@ -409,9 +410,7 @@ class Social_Network:
         else:#at leat 1 non zero probability
             # Calculate the probability of choosing each vehicle              
             sum_prob = np.sum(individual_specific_util)
-            #print(person_index, individual_specific_util, sum_prob)
-            #if self.t_social_network == 2:
-            #    quit()
+
             probability_choose = individual_specific_util / sum_prob
             choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)

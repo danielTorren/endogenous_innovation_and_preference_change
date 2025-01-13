@@ -207,6 +207,7 @@
         "car_lifetime_months": 192,
         "a_innovativeness": 0.7,
         "b_innovativeness": 1,
+        "chi_max": 0.9,
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
