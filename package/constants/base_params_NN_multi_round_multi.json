@@ -3,7 +3,7 @@
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
-    "save_timeseries_data_state": 0,
+    "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
         "choice_seed": 9,
@@ -196,7 +196,7 @@
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 1000,
+        "num_individuals": 10000,
         "d_max": 4000,
         "d_min": 500,
         "SW_network_density": 0.05,
