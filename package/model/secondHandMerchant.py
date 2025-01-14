@@ -84,7 +84,7 @@ class SecondHandMerchant:
             np.maximum(0,vehicle_dict_vecs["cost_second_hand_merchant"] - self.used_rebate),
             vehicle_dict_vecs["cost_second_hand_merchant"]
         )
-
+        #cost_price_vec =vehicle_dict_vecs["cost_second_hand_merchant"]
         
         Arg_vec = (np.exp(self.kappa*self.nu*(B_vec - beta*cost_price_vec)- 1.0)) / W_s_t
 
@@ -112,6 +112,7 @@ class SecondHandMerchant:
             cost_price = np.maximum(0,vehicle.cost_second_hand_merchant - self.used_rebate)
         else:
             cost_price = vehicle.cost_second_hand_merchant
+        #cost_price = vehicle.cost_second_hand_merchant
             
 
         Arg = (np.exp(self.kappa*self.nu*(B - beta*cost_price )- 1.0)) / W_s_t

@@ -2518,9 +2518,9 @@ def main(fileName, dpi=600):
     #emissions_decomposed(social_network, time_series, fileName, dpi)
 
     #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
-    #plot_zero_util_count(base_params, social_network, fileName, dpi)
-    #plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
-    #plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
+    plot_zero_util_count(base_params, social_network, fileName, dpi)
+    plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
+    plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
     # All plot function calls
@@ -2535,11 +2535,11 @@ def main(fileName, dpi=600):
     #plot_calibration_data(data_controller, time_series, fileName)
 
     #plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
-    #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
+    plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
 
     #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
 
     plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
 
@@ -2552,7 +2552,7 @@ def main(fileName, dpi=600):
     #plot_history_count_buy(base_params, social_network, fileName, dpi)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
 
-    #plot_total_utility(social_network, time_series, fileName, dpi)
+    plot_total_utility(social_network, time_series, fileName, dpi)
 
     #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
 
@@ -2566,7 +2566,7 @@ def main(fileName, dpi=600):
 
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     #plot_total_profit(firm_manager, time_series, fileName, dpi)
-    #plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    plot_market_concentration(firm_manager, time_series, fileName, dpi)
     
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
@@ -2591,7 +2591,7 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
     
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
@@ -2627,4 +2627,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_18_23_29__13_01_2025")
+    main("results/single_experiment_13_01_57__14_01_2025")

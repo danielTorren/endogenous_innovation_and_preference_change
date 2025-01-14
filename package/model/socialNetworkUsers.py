@@ -8,6 +8,9 @@ from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
 
+from scipy.optimize import root_scalar
+from scipy.special import lambertw
+
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
@@ -265,6 +268,7 @@ class Social_Network:
         #THIS CAN BE DONE FOR THE SUBSET OF USERS
         CV_filtered_vechicles_dicts, CV_filtered_vehicles = self.filter_vehicle_dict_for_switchers(CV_vehicle_dict_vecs, self.current_vehicles, switcher_indices)
         utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec)
+        #second_hand_merchant_offer_price = self.calc_offer_prices_depreciated(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
         second_hand_merchant_offer_price = self.calc_offer_prices_max(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
         
   
@@ -345,21 +349,29 @@ class Social_Network:
         return utility_vec
 
     def calc_offer_prices_max(self, vehicle_dict_vecs, filtered_vehicles):
-        
+        """ Calc the price at which utility of user would be 0 and set offer based on that"""
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
         # Adjust costs based on transport type
+        last_price_paid_vec = np.asarray([car.last_price_paid for car in filtered_vehicles]) 
+
         X_vec = ((self.beta_median * vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_median * vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
 
 
         driving_utility = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_vec)
-        price_vec_negative = (driving_utility*(1+self.r)/((self.r + self.delta)*self.beta_median))*(1-self.mu)
-        price_vec = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
+        price_vec_negative = (driving_utility*(1+self.r)/(self.r + self.delta))*(1/self.beta_median)*(1-self.mu)
+        price_vec_max = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
+        price_vec = np.minimum(price_vec_max, last_price_paid_vec*(1-self.mu))
 
         for i, vehicle in enumerate(filtered_vehicles):
             vehicle.cost_second_hand_merchant = price_vec[i]
 
+        #print("self.t", self.t_social_network)
+        #print("price_vec/previous_cost vec", price_vec/np.asarray([car.last_price_paid for car in filtered_vehicles]))
+
         return price_vec
+
+
 
 ########################################################################################################
     
@@ -418,15 +430,13 @@ class Social_Network:
         # Handle consequences of the choice
         if user.user_id != vehicle_chosen.owner_id:  # New vehicle, not currently owned
             # Transfer the user's current vehicle to the second-hand merchant, if any
-            if isinstance(user.vehicle, PersonalCar):
+            if isinstance(user.vehicle, PersonalCar):#YOU SELL YOUR CAR?
                 self.second_hand_merchant.spent += user.vehicle.cost_second_hand_merchant
                 if user.vehicle.init_car or user.vehicle.cost_second_hand_merchant == 0:#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD 
                     user.vehicle.owner_id = -99#send to shadow realm
                     user.vehicle = None
                 else:
-
                     if self.t_social_network > self.burn_in_second_hand_market:
-                        
                         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                             self.second_hand_merchant_price_paid.append(user.vehicle.cost_second_hand_merchant)
                         
@@ -440,7 +450,8 @@ class Social_Network:
             
             if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
                 #USED ADOPTION SUBSIDY OPTIMIZATION
-                self.policy_distortion += self.used_rebate           
+                if vehicle_chosen.transportType == 3:
+                    self.policy_distortion += self.used_rebate           
 
                 #SET THE UTILITY TO 0 of that second hand car
                 utilities_kappa[:, choice_index] = 0
@@ -460,7 +471,8 @@ class Social_Network:
 
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
                 #ADOPTION SUBSIDY OPTIMIZATION
-                self.policy_distortion += self.rebate    
+                if vehicle_chosen.transportType == 3:
+                    self.policy_distortion += self.rebate    
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
@@ -471,7 +483,7 @@ class Social_Network:
                     self.buy_new_car+=1
             else:
                 raise(ValueError("invalid user transport behaviour"))
-        else:
+        else:#KEEP CAR
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.keep_car +=1#KEEP CURRENT CAR
 
@@ -1094,6 +1106,11 @@ class Social_Network:
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
         self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
 
+####################################################################################################################################
+    
+    def set_segement_properties(self,beta_segment_vec, gamma_segment_vec):
+        self.beta_segment_vec = beta_segment_vec
+        self.gamma_segment_vec = gamma_segment_vec
 
 ####################################################################################################################################
 
@@ -1106,7 +1123,7 @@ class Social_Network:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, U_matrix_on_sale):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1129,7 +1146,8 @@ class Social_Network:
         self.rebate = rebate
         self.used_rebate = used_rebate
         self.electricity_price_subsidy_dollars = electricity_price_subsidy_dollars
-        
+        self.U_matrix_on_sale = U_matrix_on_sale
+
         #update new tech and prices
         self.second_hand_cars, self.new_cars = second_hand_cars, new_cars
         self.all_vehicles_available = self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT

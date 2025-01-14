@@ -131,6 +131,7 @@ class Firm:
             if car.transportType == 3:#EV
                 C_m_cost  = np.maximum(0,car.ProdCost_t - self.production_subsidy)
                 C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate))
+                #C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy))
                 
 
             # Iterate over each market segment to calculate utilities and distances
@@ -175,22 +176,14 @@ class Firm:
             b_idx, g_idx, e_idx = segment_code  # if your codes are (b, g, e)
 
             for car in vehicle_list:
-                price_s = car.optimal_price_segments[segment_code]#price for that specific segment
+                price_s = car.optimal_price_segments[segment_code]#price for that specific segment, THIS ALREADY IS ADJUSTING FOR REBATES/SUBSIDIES!
                 if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
-                    #ADD IN A SUBSIDY
-                    #print("(car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions))", (car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)))
-                    #quit()
                     if car.transportType == 3:
-                        price_adjust = np.maximum(0,price_s - self.rebate)
-
-                        #utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_adjust + gamma_s * car.emissions)
-                        utility_segment_U  = np.exp(self.nu*(car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)))
-                    else:
-                        #utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_s + gamma_s * car.emissions)
                         utility_segment_U  = np.exp(self.nu*(car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)))
-                    #utility_segment_U  = car.car_base_utility_segments[segment_code] - beta_s *price_s - gamma_s * car.emissions
+                    else:
+                        utility_segment_U  = np.exp(self.nu*(car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)))
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
-                    #print(self.t_firm, self.firm_id,segment_code,car.car_base_utility_segments[segment_code], utility_segment_U ,price_s)
+
                 else:
                     car.car_utility_segments_U[segment_code] = 0 
         return vehicle_list

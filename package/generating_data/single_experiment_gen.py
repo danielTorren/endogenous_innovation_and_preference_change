@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
+    "duration_future": 0,#156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                     "rebate": 2500
                 },
                 "High":{
-                    "rebate": 10000
+                    "rebate": 50000
                 }
             },
             "Adoption_subsidy_used":{
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,
+        "age_limit_second_hand": 120,#36,
         "burn_in_second_hand_market": 12
     },
     "parameters_ICE":{
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 1000,
+        "num_individuals": 3000,
         "d_max": 4000,
         "d_min": 500,
         "SW_network_density": 0.05,
@@ -250,7 +250,7 @@ if __name__ == "__main__":
         "kappa":30,
         "r": 0.00417,
         "mu": 0.5,
-        "nu": 10e-5
+        "nu": 10e-8
     }
 }
     

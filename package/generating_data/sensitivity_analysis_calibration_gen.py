@@ -161,24 +161,12 @@ def main(
     )   
 
     #SW
-    base_params["network_type"] = "SW"
-    params_list_sa_SW = stochastic_produce_param_list_SA(
-        param_values, base_params, variable_parameters_dict
-    )
-    
-    #SBM
-    base_params["network_type"] = "SBM"
-    params_list_sa_SBM = stochastic_produce_param_list_SA(
+    params_list_sa  = stochastic_produce_param_list_SA(
         param_values, base_params, variable_parameters_dict
     )
 
-    #BA
-    base_params["network_type"] = "SF"
-    params_list_sa_SF = stochastic_produce_param_list_SA(
-        param_values, base_params, variable_parameters_dict
-    )
 
-    params_list_sa = params_list_sa_SW + params_list_sa_SBM + params_list_sa_SF
+    params_list_sa =
 
     print("Total runs: ", len(params_list_sa))
 
@@ -186,26 +174,47 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-    Y_emissions_stock_stochastic = parallel_run_sa(
+    Y_emissions_stock_stochastic, Y_ev_uptake_stochastic, Y_total_firm_profit_stochastic, Y_market_concentration_stochastic, Y_total_utility_stochastic,Y_mean_car_age_stochastic  = parallel_run_sa(
         params_list_sa
     )
 
-    len_y = int(len(params_list_sa_SW)/AV_reps)
+    createFolder(fileName)
+    
+    save_object(Y_emissions_stock_stochastic, fileName + "/Data", "Y_emissions_stock_stochastic")
+    save_object(Y_ev_uptake_stochastic, fileName + "/Data", "Y_ev_uptake_stochastic")
+    save_object(Y_total_firm_profit_stochastic, fileName + "/Data", "Y_total_firm_profit_stochastic")
+    save_object(Y_market_concentration_stochastic, fileName + "/Data", "Y_market_concentration_stochastic")
+    
+    len_y = int(len(params_list_sa)/AV_reps)
 
-    Y_emissions_stock_reshape = Y_emissions_stock_stochastic.reshape(3,len_y,AV_reps)
+    Y_emissions_stock_reshape = Y_emissions_stock_stochastic.reshape(len_y,AV_reps)
     Y_emissions_stock = np.mean(Y_emissions_stock_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
 
+    Y_ev_uptake_reshape = Y_ev_uptake_stochastic.reshape(len_y,AV_reps)
+    Y_ev_uptake = np.mean(Y_ev_uptake_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
 
-    createFolder(fileName)
+    Y_total_firm_profit_reshape = Y_total_firm_profit_stochastic.reshape(len_y,AV_reps)
+    Y_total_firm_profit = np.mean(Y_total_firm_profit_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+
+    Y_market_concentration_reshape = Y_market_concentration_stochastic.reshape(len_y,AV_reps)
+    Y_market_concentration = np.mean(Y_ev_uptake_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+
+
     
     save_object(base_params, fileName + "/Data", "base_params")
     #save_object(params_list_sa, fileName + "/Data", "params_list_sa")
     save_object(variable_parameters_dict, fileName + "/Data", "variable_parameters_dict")
     save_object(problem, fileName + "/Data", "problem")
-    save_object(Y_emissions_stock[0], fileName + "/Data", "Y_emissions_stock_SW")
-    save_object(Y_emissions_stock[1], fileName + "/Data", "Y_emissions_stock_SBM")
-    save_object(Y_emissions_stock[2], fileName + "/Data", "Y_emissions_stock_SF")
+
+    save_object(Y_emissions_stock, fileName + "/Data", "Y_emissions_stock")
     save_object(Y_emissions_stock_reshape, fileName + "/Data", "Y_emissions_stock_reshape")
+    save_object(Y_ev_uptake, fileName + "/Data", "Y_ev_uptake")
+    save_object(Y_ev_uptake_reshape, fileName + "/Data", "Y_ev_uptake_reshape")
+    save_object(Y_total_firm_profit, fileName + "/Data", "Y_total_firm_profit")
+    save_object(Y_total_firm_profit_reshape, fileName + "/Data", "Y_total_firm_profit_reshape")
+    save_object(Y_market_concentration, fileName + "/Data", "Y_market_concentration")
+    save_object(Y_market_concentration_reshape, fileName + "/Data", "Y_market_concentration_reshape")
+
     save_object(N_samples , fileName + "/Data","N_samples")
     save_object(calc_second_order, fileName + "/Data","calc_second_order")
 

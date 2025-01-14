@@ -233,12 +233,13 @@ class Firm_Manager:
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                    segment_W[code] += U**2
+                    segment_W[code] += U**self.kappa
 
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
 
+        #7) get the U of all cars on sale for all cars on sale
 
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
@@ -258,7 +259,7 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
-                    segment_W[segment] += U**2
+                    segment_W[segment] += U**self.kappa
 
         return cars_on_sale_all_firms, segment_W
 
@@ -297,6 +298,25 @@ class Firm_Manager:
 
             self.total_W += moving_avg_W
 
+    def compute_utilities_matrix(self):
+        # Step 1: Collect all cars into a single list
+        cars = [car for firm in self.firms_list for car in firm.cars_on_sale]
+
+        # Step 2: Determine the number of cars (M) and segments (S)
+        M = len(cars)
+        S = len(cars[0].car_utility_segments_U)  # Number of segments (assumes all cars have the same keys)
+
+        # Step 3: Create the utility matrix (M x S)
+        U_matrix = np.zeros((M, S))
+
+        # Step 4: Fill the matrix with utilities
+        for m, car in enumerate(cars):
+            utilities = np.array(list(car.car_utility_segments_U.values()))
+            U_matrix[m, :] = utilities
+
+        # Step 5: Return the matrix
+        return U_matrix
+    
     ######################################################################################################################
 
     def calc_total_profits(self, past_new_bought_vehicles):
@@ -427,4 +447,6 @@ class Firm_Manager:
         #self.update_market_data(sums_U_segment)
         self.update_market_data_moving_average(W_segment)
 
-        return self.cars_on_sale_all_firms, self.total_W
+        self.U_matrix_on_sale = self.compute_utilities_matrix()
+
+        return self.cars_on_sale_all_firms, self.total_W, self.U_matrix_on_sale

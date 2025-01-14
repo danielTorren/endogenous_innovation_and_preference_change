@@ -730,9 +730,9 @@ class Controller:
         cars_on_sale_all_firms, U_sum_total = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
         return cars_on_sale_all_firms, U_sum_total
     
-    def update_social_network(self):
+    def update_social_network(self, U_sum_total):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, U_sum_total)
 
         return consider_ev_vec, new_bought_vehicles
 
@@ -763,7 +763,7 @@ class Controller:
         self.cars_on_sale_all_firms, U_sum_total = self.update_firms()
         self.second_hand_cars = self.get_second_hand_cars(U_sum_total)
 
-        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
+        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network(U_sum_total)
 
         self.manage_saves()
 
