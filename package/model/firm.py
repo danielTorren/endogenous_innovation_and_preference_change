@@ -148,13 +148,13 @@ class Firm:
                 driving_utility = self.calc_driving_utility(car.Quality_a_t, car.L_a_t, X)
 
                 # Save the base utility
-                U = driving_utility*((1+self.r)/(self.r + self.delta)) 
+                B = driving_utility*((1+self.r)/(self.r + self.delta)) 
 
-                car.car_base_utility_segments[segment_code] = U
+                car.car_base_utility_segments[segment_code] = B
 
                 #print("self.kapp*(U - beta_s*C_m - gamma_s*E_m)", self.kappa*(U - beta_s*C_m - gamma_s*E_m))
                 #quit()
-                Arg = (np.exp(self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
+                Arg = (np.exp(self.kappa*self.nu*(B - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
                 #print(Arg)
                 LW   = lambertw(Arg, 0).real  # principal branch
                 #print(LW)

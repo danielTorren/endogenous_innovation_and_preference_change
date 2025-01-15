@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,#156,
+    "duration_future": 156,#156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 15,
+                    "Carbon_price": 10,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -187,7 +187,9 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 120,#36,
-        "burn_in_second_hand_market": 12
+        "burn_in_second_hand_market": 12,
+        "scrap_price": 1000,
+        "max_num_cars_prop": 0.3
     },
     "parameters_ICE":{
         "N": 15,
@@ -237,9 +239,9 @@ if __name__ == "__main__":
         "d_min": 500,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 210,
-        "WTP_sd": 175,
-        "gamma_epsilon": 1e-5,
+        "WTP_mean": 0,#210,
+        "WTP_sd": 0.0,#175,
+        "gamma_epsilon": 0,#1e-8,
         "car_lifetime_months": 192,
         "a_innovativeness": 0.7,
         "b_innovativeness": 1,
@@ -247,10 +249,10 @@ if __name__ == "__main__":
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{
-        "kappa":30,
+        "kappa": 1,#30,
         "r": 0.00417,
-        "mu": 0.5,
-        "nu": 10e-8
+        "mu": 0.2,
+        "nu": 1#1,#10e-4
     }
 }
     

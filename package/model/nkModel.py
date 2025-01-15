@@ -60,7 +60,7 @@ class NKModel:
         # Save the base utility
         B = driving_utility*((1+self.r)/(self.r + self.delta))
         #print("B - beta*prod_cost", B - beta*prod_cost)
-        approx_fitness = np.exp(self.nu*(B - beta*prod_cost))
+        approx_fitness = B - beta*prod_cost
         
         #print("approx_fitness",approx_fitness)
         return approx_fitness

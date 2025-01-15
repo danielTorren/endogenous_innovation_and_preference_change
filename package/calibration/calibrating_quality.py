@@ -25,7 +25,7 @@ def calculate_Q(nu, W, P, C, k, beta, gamma, E, alpha, X, r, delta):
         / [(1 - delta)^L * (1 + r)]
     """
     try:
-        term1 = np.log(W * (P - C) * k * nu * beta - 1)
+        term1 = (1/k)*np.log(W * (P - C) * k * nu * beta - 1)
         term2 = beta * P + gamma * E
         numerator = (term1 + term2) * (alpha * X + 1) * (r + delta)
         denominator = (1 + r)
@@ -45,8 +45,8 @@ def main():
     #ICE
     beta_plus = 1.0
     beta_minus = 0.25404965019667486
-    gamma_minus = 1.323175261441015e-08
-    gamma_plus = 3.9605791486638497
+    gamma_minus = 0#1.323175261441015e-08
+    gamma_plus = 0#3.9605791486638497
     c_minus = 0.05623261991186667
     c_plus = 0.16853363453157436
     e_minus = 0.26599820413049985#THEY ARE THE SAME
@@ -58,7 +58,7 @@ def main():
     r = 0.00417
 
     #nu = 1
-    cost = 10000
+    cost = 17000
 
     E = 6000
     delta = 0.001
@@ -72,14 +72,21 @@ def main():
 
     P_values = [20000, 30000,50000]
     X_plus = calc_X(beta_plus,c_plus,gamma_plus,e_plus, omega_minus)
+    print("X plus",X_plus)
     alpha = calculate_alpha(D_plus, D_minus, X_plus)
     print("alpha", alpha)
     beta = (beta_plus + beta_minus)/2
+    print("beta", beta)
     c= (c_plus + c_minus)/2
+    print("c", c)
     gamma= (gamma_plus + gamma_minus)/2
+    print("gamma", gamma)
     e = (e_plus + e_minus)/2
+    print("e", e)
     omega= (omega_plus + omega_minus)/2
+    print("omega", omega)
     X = calc_X(beta,c,gamma,e, omega)
+    print("X", X)
 
 
     #alpha_vec = np.logspace(-3, 4, 10000)

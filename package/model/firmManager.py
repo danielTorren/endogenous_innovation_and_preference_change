@@ -22,6 +22,7 @@ class Firm_Manager:
 
         #self.save_timeseries_data_state = parameters_firm_manager["save_timeseries_data_state"]
         #self.compression_factor_state = parameters_firm_manager["compression_factor_state"]
+
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.id_generator = parameters_firm_manager["IDGenerator_firms"]
         self.kappa = parameters_firm_manager["kappa"]
@@ -42,15 +43,10 @@ class Firm_Manager:
         #car paramets
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV 
-
-        #PRICE, NOT SURE IF THIS IS NECESSARY
-        self.beta_threshold = parameters_firm_manager["beta_threshold"]
-        self.beta_val_empty_upper =  parameters_firm_manager["beta_val_empty_upper"]
-        self.beta_val_empty_lower =  parameters_firm_manager["beta_val_empty_lower"]
         
         self.gamma_threshold = parameters_firm_manager["gamma_threshold"]
         self.gamma_val_empty_upper = parameters_firm_manager["gamma_val_empty_upper"]
-        self.gamma_val_empty_lower = parameters_firm_manager["gamma_val_empty_upper"]
+        self.gamma_val_empty_lower = parameters_firm_manager["gamma_val_empty_lower"]
 
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 
@@ -173,6 +169,7 @@ class Firm_Manager:
         """
         # 1) Build a dictionary for ALL possible combos
         
+        # 1) Build a dictionary for ALL possible combos
         self.market_data = {}
         for code in self.all_segment_codes:
             self.market_data[code] = {
@@ -185,12 +182,8 @@ class Firm_Manager:
             }
 
         # 2) Count how many individuals fall into each segment code
-        #    also sum up their beta, gamma for averages
         segment_counts = defaultdict(int)
-        beta_sums = defaultdict(float)
-        gamma_sums = defaultdict(float)
 
-        # Go through each individual
         for i in range(self.num_individuals):
             b_idx = self.beta_segment_idx[i]         # in [0..4]
             g_idx = self.gamma_binary[i]             # in [0..1]
@@ -198,31 +191,24 @@ class Firm_Manager:
             seg_code = (b_idx, g_idx, e_idx)
 
             segment_counts[seg_code] += 1
-            beta_sums[seg_code] += self.beta_vec[i]
-            gamma_sums[seg_code] += self.gamma_vec[i]
 
-        # 3) Compute averages for each segment
+        # 3) Compute midpoints for each segment
         for code in self.all_segment_codes:
             count = segment_counts[code]
-            if count > 0:
-                avg_beta = beta_sums[code] / count
-                avg_gamma = gamma_sums[code] / count
-            else:
-                #FIX THIS SO THAT THE CORRECT BETA VALUE IS CHOSEN!
-                b_idx, g_idx, _ = code
-                if b_idx >= 2:
-                    avg_beta = self.beta_val_empty_upper
-                else:
-                    avg_beta = self.beta_val_empty_lower
+            b_idx, g_idx, _ = code
 
-                if g_idx == 1:
-                    avg_gamma = self.gamma_val_empty_upper
-                else:
-                    avg_gamma = self.gamma_val_empty_lower
+            # Compute beta midpoint
+            beta_lower = self.beta_bins[b_idx]
+            beta_upper = self.beta_bins[b_idx + 1]
+            beta_midpoint = (beta_lower + beta_upper) / 2
 
+            # Compute gamma value based on binary index
+            gamma_value = self.gamma_val_empty_upper if g_idx == 1 else self.gamma_val_empty_lower
+
+            # Assign values to the market data
             self.market_data[code]["I_s_t"] = count
-            self.market_data[code]["beta_s_t"] = avg_beta
-            self.market_data[code]["gamma_s_t"] = avg_gamma
+            self.market_data[code]["beta_s_t"] = beta_midpoint
+            self.market_data[code]["gamma_s_t"] = gamma_value
 
         # 4) Now we need to compute the initial W for each segment
         for firm in self.firms_list:
@@ -250,7 +236,6 @@ class Firm_Manager:
         self.zero_profit_options_prod_sum = 0
         self.zero_profit_options_research_sum = 0
 
-        #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate)
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
@@ -298,7 +283,11 @@ class Firm_Manager:
 
             self.total_W += moving_avg_W
 
-    def compute_utilities_matrix(self):
+    def compute_utilities_vec_moving_average(self):
+        """
+        Compute the utilities vector for all cars using a rolling average approach,
+        where the rolling average is based on the mean values from each of the 12 steps.
+        """
         # Step 1: Collect all cars into a single list
         cars = [car for firm in self.firms_list for car in firm.cars_on_sale]
 
@@ -314,8 +303,26 @@ class Firm_Manager:
             utilities = np.array(list(car.car_utility_segments_U.values()))
             U_matrix[m, :] = utilities
 
-        # Step 5: Return the matrix
-        return U_matrix
+        # Calculate the mean of the current utility matrix
+        current_max = np.max(U_matrix, axis=0)
+
+        # Initialize or maintain history for rolling average
+        if not hasattr(self, "mean_history"):
+            self.mean_history = []
+
+        # Step 5: Store the current mean in history
+        self.mean_history.append(current_max)
+
+        # Trim history to the last 12 time steps
+        if len(self.mean_history) > self.time_steps_tracking_market_data:
+            self.mean_history.pop(0)
+
+        # Step 6: Calculate the rolling average using the mean of means
+        rolling_avg_means = np.mean(self.mean_history, axis=0)
+
+        return rolling_avg_means
+
+
     
     ######################################################################################################################
 
@@ -447,6 +454,6 @@ class Firm_Manager:
         #self.update_market_data(sums_U_segment)
         self.update_market_data_moving_average(W_segment)
 
-        self.U_matrix_on_sale = self.compute_utilities_matrix()
+        self.U_vec_on_sale = self.compute_utilities_vec_moving_average()
 
-        return self.cars_on_sale_all_firms, self.total_W, self.U_matrix_on_sale
+        return self.cars_on_sale_all_firms, self.U_vec_on_sale

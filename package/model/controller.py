@@ -7,6 +7,7 @@ from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
 import numpy as np
+import itertools
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -53,10 +54,7 @@ class Controller:
 
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
-        self.new_bought_vehicles = self.social_network.current_vehicles
-
-        #UPDATE SECOND HADN MERCHANT WITH THE DATA
-        self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)        
+        self.new_bought_vehicles = self.social_network.current_vehicles  
 
         #pass information across one time
         self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
@@ -134,47 +132,67 @@ class Controller:
         D_minus = self.parameters_social_network["d_min"]
          #ICE
         beta_plus = np.max(self.beta_vec) # upper bound beta
+        #print("beta_plus", beta_plus)
         gamma_plus = np.max(self.gamma_vec)# upper bound gamma
-        
+        #print("gamma_plus", gamma_plus)
         c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
+        #print("c_plus", c_plus)
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
+        #print("e", e)
         omega_minus = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
-
+        #print("omega_minus", omega_minus)
         X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
+        #print("X plus", X_plus)
         alpha = (D_plus - D_minus) / (D_minus * X_plus)
         self.parameters_vehicle_user["alpha"] = alpha
 
         #SET Quality
-        W = 10e5
+        W = 10e6#the value of this basically makes no difference to alpha, min q or max q
         P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
+        #print("P", P)
         C = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2
+        #print("C",C)
         beta = np.median(self.beta_vec)
+        #print("beta", beta)
         gamma = np.median(self.gamma_vec)
+        #print("gamma", gamma)
         E = self.parameters_ICE["production_emissions"]
 
         delta = self.parameters_ICE["delta"]
         r = self.parameters_vehicle_user["r"]
         c_minus = np.min(self.calibration_gas_price_california_vec)
-        c= (c_plus + c_minus)/2
+        #print("c minus", c_minus)
+        c = (c_plus + c_minus)/2
+        #print("c", c)
         omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
+        #print("omega_plus",omega_plus)
         omega = (omega_plus + omega_minus)/2
+        #print("omega", omega)
         X = (beta*c + gamma*e)/omega
+        #print("X", X)
 
-        term1 = np.log(W * (P - C) * self.parameters_vehicle_user["kappa"] * self.parameters_vehicle_user["nu"] * beta - 1)
-        term2 = beta * P + gamma * E
-        numerator = (term1 + term2) * (alpha * X + 1) * (r + delta)
-        denominator = (1 + r)
-        Q_vals = numerator / denominator
+        inside_log = W *(self.parameters_vehicle_user["kappa"] * self.parameters_vehicle_user["nu"] * beta*(P - C) - 1)
+        #print("more than 1",(self.parameters_vehicle_user["kappa"] * self.parameters_vehicle_user["nu"] * beta*(P - C))**(1/(self.parameters_vehicle_user["nu"]*self.parameters_vehicle_user["kappa"])))
+        #quit()
+        Q_vals = (alpha * X + 1) * (r + delta) * (np.log(inside_log**(1/(self.parameters_vehicle_user["nu"]*self.parameters_vehicle_user["kappa"]))) + beta * P + gamma * E) /  (1 + r) 
+
         Q_minus = Q_vals[0]
         Q_plus = Q_vals[1]
 
-        min_q =  Q_plus  - (4/3) * (Q_plus - Q_minus)
-        max_q = Q_plus  - (4/3) * (Q_plus - Q_minus) + (Q_plus - Q_minus) / 0.6
+        print("Q_vals", Q_vals)
+
+        min_q = (4*Q_minus - Q_plus)/3
+        max_q = (4*Q_plus - Q_minus)/3
 
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q
         self.parameters_EV["min_Quality"] = min_q
         self.parameters_EV["max_Quality"] = max_q
+
+        print("alpha", alpha)
+        print("min_q", min_q)
+        print("max_q", max_q)
+        #quit()
 
     def gen_users_parameters(self):
 
@@ -195,16 +213,11 @@ class Controller:
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
 
-        unique_beta_vals, counts = np.unique(self.beta_vec, return_counts=True)
+        self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
 
-        # Add a small delta to the start and end to ensure proper binning
-        delta = (unique_beta_vals[1] - unique_beta_vals[0]) / 2
-        self.beta_bins = np.concatenate([
-            [unique_beta_vals[0] - delta],  # Lower edge
-            unique_beta_vals[:-1] + delta,  # Midpoints
-            [unique_beta_vals[-1] + delta]  # Upper edge
-        ])
-
+        error = 0.001#just to make sure you catch everything
+        # Calculate the bin edges using quantiles
+        self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
 
         #GAMMA
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
@@ -214,23 +227,53 @@ class Controller:
         WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
         self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
         self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
+        #print("self.gamma_vec", self.gamma_vec)
 
         #social network data
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["chi_vec"] = self.chi_vec 
-        self.parameters_social_network["beta_median"] = np.median(self.beta_vec)
-        self.parameters_social_network["gamma_median"] = np.median(self.beta_vec)
 
         #firm data
-        self.parameters_firm_manager["beta_threshold"] = np.percentile(self.beta_vec, self.parameters_firm_manager["beta_threshold_percentile"])
-        self.parameters_firm_manager["beta_val_empty_upper"] = np.percentile(self.beta_vec, self.parameters_firm_manager["beta_threshold_percentile"]/2)
-        self.parameters_firm_manager["beta_val_empty_lower"] = np.percentile(self.beta_vec, self.parameters_firm_manager["beta_threshold_percentile"]+ (1-self.parameters_firm_manager["beta_threshold_percentile"])/2)
+        self.gamma_bins = np.linspace(min(self.gamma_vec) , max(self.gamma_vec), 2+1)#np.linspace(min(self.gamma_vec) - error, max(self.gamma_vec) + error, 2+1)
+
+        self.parameters_firm_manager["gamma_threshold"] = np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
         
-        self.parameters_firm_manager["gamma_threshold"] = np.percentile(self.beta_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
-        self.parameters_firm_manager["gamma_val_empty_upper"] = np.percentile(self.gamma_vec , self.parameters_firm_manager["gamma_threshold_percentile"]/2)
-        self.parameters_firm_manager["gamma_val_empty_upper"] = np.percentile(self.gamma_vec,  self.parameters_firm_manager["gamma_threshold_percentile"]+ (1-self.parameters_firm_manager["gamma_threshold_percentile"])/2)
-        
+        gamma_val_lower = (self.gamma_bins[1] + self.gamma_bins[0])/2
+        gamma_val_upper = (self.gamma_bins[2]  + self.gamma_bins[1])/2
+        self.parameters_firm_manager["gamma_val_empty_lower"] = gamma_val_lower
+        self.parameters_firm_manager["gamma_val_empty_upper"] = gamma_val_upper
+
+        #print(" gamma_val_lower,  gamma_val_upper", gamma_val_lower,  gamma_val_upper)
+
+        #create the beta and gamma vectors:
+        beta_values = []
+        gamma_values = []
+
+        segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
+
+        beta_segment_vals_set = set()
+        for code in segment_codes:
+            beta_idx, gamma_idx, _ = code  # Unpack the segment code
+
+            # Calculate the midpoint for the beta segment
+            beta_lower = self.beta_bins[beta_idx]
+            beta_upper = self.beta_bins[beta_idx + 1]
+            beta_midpoint = (beta_lower + beta_upper) / 2
+            #print("beta_midpoint", beta_midpoint)
+            beta_segment_vals_set.add(beta_midpoint)
+            
+            beta_values.append(beta_midpoint)
+
+            # Assign gamma value based on the binary index
+            gamma_value = gamma_val_upper if gamma_idx == 1 else gamma_val_lower
+            gamma_values.append(gamma_value)
+
+        #print("beta_midpoint, segments", self.num_beta_segments, beta_segment_vals_set)
+
+        self.beta_segment_vals = np.array(beta_values)
+        self.gamma_segment_vals = np.array(gamma_values)
+
     def generate_beta_values_quintiles(self,n, quintile_incomes):
         """
         Generate a list of beta values for n agents based on quintile incomes.
@@ -602,6 +645,9 @@ class Controller:
         self.parameters_social_network["used_rebate_low"] = self.parameters_rebate_calibration["used_rebate_low"]
         self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
         self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
+        self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
+        self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
+        self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -611,8 +657,8 @@ class Controller:
 
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
-        parameters_ICE["median_beta"] = 0.5
-        parameters_ICE["median_gamma"] = 0.5
+        parameters_ICE["median_beta"] = np.median(self.beta_vec)
+        parameters_ICE["median_gamma"] = np.median(self.gamma_vec)
         parameters_ICE["fuel_cost"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         parameters_ICE["d_max"]= self.parameters_social_network["d_max"]
@@ -623,8 +669,8 @@ class Controller:
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_EV["r"] = self.parameters_vehicle_user["r"]
         parameters_EV["delta"] = self.parameters_ICE["delta"]
-        parameters_EV["median_beta"] = 0.5#representative 
-        parameters_EV["median_gamma"] = 0.5#representative 
+        parameters_EV["median_beta"] = np.median(self.beta_vec)
+        parameters_EV["median_gamma"] = np.median(self.gamma_vec)
         parameters_EV["fuel_cost"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
         parameters_EV["d_max"]= self.parameters_social_network["d_max"]
@@ -638,7 +684,9 @@ class Controller:
         self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_second_hand["nu"] = self.parameters_vehicle_user["nu"]
-
+        self.parameters_second_hand["beta_segment_vals"] = self.beta_segment_vals 
+        self.parameters_second_hand["gamma_segment_vals"] = self.gamma_segment_vals 
+        self.parameters_second_hand["max_num_cars"] = int(np.round(self.parameters_social_network["num_individuals"] * self.parameters_second_hand["max_num_cars_prop"]))  
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
@@ -727,19 +775,19 @@ class Controller:
                 firm.policy_distortion = 0
 
     def update_firms(self):
-        cars_on_sale_all_firms, U_sum_total = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
-        return cars_on_sale_all_firms, U_sum_total
+        cars_on_sale_all_firms, U_vec_on_sale = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
+        return cars_on_sale_all_firms, U_vec_on_sale
     
-    def update_social_network(self, U_sum_total):
+    def update_social_network(self, U_vec_on_sale):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, U_sum_total)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, U_vec_on_sale)
 
         return consider_ev_vec, new_bought_vehicles
 
-    def get_second_hand_cars(self,U_sum_total):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total, self.used_rebate)
+    def get_second_hand_cars(self,U_vec_on_sale):
+        cars_on_sale = self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_vec_on_sale, self.used_rebate)
 
-        return self.second_hand_merchant.cars_on_sale
+        return cars_on_sale
 
     ################################################################################################
     #POLICY OUTPUTS
@@ -760,10 +808,10 @@ class Controller:
         #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
-        self.cars_on_sale_all_firms, U_sum_total = self.update_firms()
-        self.second_hand_cars = self.get_second_hand_cars(U_sum_total)
+        self.cars_on_sale_all_firms, U_vec_on_sale = self.update_firms()
+        self.second_hand_cars = self.get_second_hand_cars(U_vec_on_sale)
 
-        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network(U_sum_total)
+        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network(U_vec_on_sale)
 
         self.manage_saves()
 
