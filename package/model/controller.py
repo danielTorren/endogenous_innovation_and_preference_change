@@ -152,14 +152,14 @@ class Controller:
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["chi_vec"] = self.chi_vec 
         self.parameters_social_network["beta_median"] = np.median(self.beta_vec)
-        self.parameters_social_network["gamma_median"] = np.median(self.beta_vec)
+        self.parameters_social_network["gamma_median"] = np.median(self.gamma_vec)
 
         #firm data
         self.parameters_firm_manager["beta_threshold"] = np.percentile(self.beta_vec, self.parameters_firm_manager["beta_threshold_percentile"])
         self.parameters_firm_manager["beta_val_empty_upper"] = np.percentile(self.beta_vec, self.parameters_firm_manager["beta_threshold_percentile"]/2)
         self.parameters_firm_manager["beta_val_empty_lower"] = np.percentile(self.beta_vec, self.parameters_firm_manager["beta_threshold_percentile"]+ (1-self.parameters_firm_manager["beta_threshold_percentile"])/2)
         
-        self.parameters_firm_manager["gamma_threshold"] = np.percentile(self.beta_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
+        self.parameters_firm_manager["gamma_threshold"] = np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
         self.parameters_firm_manager["gamma_val_empty_upper"] = np.percentile(self.gamma_vec , self.parameters_firm_manager["gamma_threshold_percentile"]/2)
         self.parameters_firm_manager["gamma_val_empty_upper"] = np.percentile(self.gamma_vec,  self.parameters_firm_manager["gamma_threshold_percentile"]+ (1-self.parameters_firm_manager["gamma_threshold_percentile"])/2)
         

@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
+    "duration_future": 0,#156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 1,
+                    "Carbon_price": 10,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -259,27 +259,6 @@ if __name__ == "__main__":
     }
 }
     
-    policy_bool = False
-    if policy_bool:
-        base_params[ "parameters_policies"]["States"] = {
-            "Carbon_price": "High",
-            "Discriminatory_corporate_tax": "High",
-            "Electricity_subsidy": "High",
-            "Adoption_subsidy": "High",
-            "Adoption_subsidy_used": "High",
-            "Production_subsidy": "High",
-            "Research_subsidy": "High"
-        }
-    else:
-        base_params[ "parameters_policies"]["States"] = {
-            "Carbon_price": "High",
-            "Discriminatory_corporate_tax": "Zero",
-            "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "Zero",
-            "Adoption_subsidy_used": "Zero",
-            "Production_subsidy": "Zero",
-            "Research_subsidy": "Zero"
-        }
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
 

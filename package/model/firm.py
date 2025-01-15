@@ -125,10 +125,15 @@ class Firm:
         for car in car_list:
             E_m = car.emissions  # Emissions for the current car                                                  
             C_m = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
+            C_m_cost = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
+            C_m_price = car.ProdCost_t 
 
             #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
             if car.transportType == 3:#EV
                 C_m  = car.ProdCost_t - self.production_subsidy
+                C_m_cost  = np.maximum(0,car.ProdCost_t - self.production_subsidy)
+                C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate))
+                #C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy))
 
             # Iterate over each market segment to calculate utilities and distances
             for segment_code, segment_data in market_data.items():
@@ -151,11 +156,11 @@ class Firm:
 
                 #print("self.kapp*(U - beta_s*C_m - gamma_s*E_m)", self.kappa*(U - beta_s*C_m - gamma_s*E_m))
                 #quit()
-                Arg = (np.exp(self.kappa*self.nu*(U - beta_s*C_m - gamma_s*E_m)- 1.0)) / W_s_t
+                Arg = (np.exp(self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
                 #print(Arg)
                 LW   = lambertw(Arg, 0).real  # principal branch
                 #print(LW)
-                P = C_m + (1.0 + LW) / (self.kappa *self.nu* beta_s)
+                P = C_m_cost + (1.0 + LW) / (self.kappa *self.nu* beta_s)
 
                 if P < C_m:
                     print(P,C_m, Arg)
@@ -277,7 +282,7 @@ class Firm:
                     utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
 
                     #print(vehicle.car_utility_segments_U[segment_code])
-                    utility_proportion = ((utility_car)**self.kappa)/(W + utility_car**self.kappa)
+                    utility_proportion = (utility_car**self.kappa)/(W + utility_car**self.kappa)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -477,7 +482,7 @@ class Firm:
                     # Expected profit calculation
                     utility_car = max(0,vehicle.car_utility_segments_U[segment_code])
 
-                    utility_proportion = ((utility_car)**self.kappa)/((W + utility_car**self.kappa))
+                    utility_proportion = ((utility_car)**self.kappa)/(W + utility_car**self.kappa)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -574,10 +579,12 @@ class Firm:
 
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
-                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] + self.rebate) +  gamma_s * selected_vehicle.emissions)))
+                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] - self.rebate) +  gamma_s * selected_vehicle.emissions)))
                             else:
                                 utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)))
+                            
                             selected_vehicle.car_utility_segments_U[segment_code] = utility_segment_U
+
                         else:
                             selected_vehicle.car_utility_segments_U[segment_code] = 0
 
