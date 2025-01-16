@@ -8,6 +8,9 @@ from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
 
+from scipy.optimize import root_scalar
+from scipy.special import lambertw
+
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
@@ -30,10 +33,17 @@ class Social_Network:
         self.beta_vec = parameters_social_network["beta_vec"] 
         self.gamma_vec = parameters_social_network["gamma_vec"]
         self.chi_vec = parameters_social_network["chi_vec"]
-        self.beta_median = parameters_social_network["beta_median"] 
-        self.gamma_median = parameters_social_network["gamma_median"]
+
         self.delta = parameters_social_network["delta"]
         self.nu = parameters_social_network["nu"]
+        self.scrap_price = parameters_social_network["scrap_price"]
+
+        self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
+        self.gamma_segment_vec = parameters_social_network["gamma_segment_vals"] 
+
+        self.beta_median = np.median(self.beta_vec )
+        self.gamma_median = np.median(self.gamma_vec )
+
 
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
@@ -43,7 +53,6 @@ class Social_Network:
         self.emissions_flow = 0
         if self.save_timeseries_data_state:
             self.emissions_flow_history = []
-            
 
         self.init_network_settings(parameters_social_network)
 
@@ -64,8 +73,8 @@ class Social_Network:
         self.adjacency_matrix, self.network = self.create_network()
         self.network_density = nx.density(self.network)
 
-        self.weighting_matrix = self._calc_weighting_matrix_attribute(self.beta_vec)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
-        
+        self.weighting_matrix = self._normlize_matrix(self.adjacency_matrix)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
+
         #Assume nobody adopts EV at the start, THIS MAY BE AN ISSUE
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
  
@@ -88,12 +97,12 @@ class Social_Network:
         self.d_max = parameters_social_network["d_max"]
 
     def init_network_settings(self, parameters_social_network):
-        self.selection_bias = parameters_social_network["selection_bias"]
         self.network_structure_seed = int(round(parameters_social_network["network_structure_seed"]))
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_network_density_input = parameters_social_network["SW_network_density"]
         self.SW_prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_K = int(round((self.num_individuals - 1) * self.SW_network_density_input))
+
         
     def set_init_cars_selection(self, parameters_social_network):
         """GIVE PEOPLE CARS NO CHOICE"""
@@ -112,25 +121,6 @@ class Social_Network:
     def normalize_vec_sum(self, vec):
         return vec/sum(vec)
     
-    def _calc_weighting_matrix_attribute(self, attribute_array: np.ndarray) -> sp.csr_matrix:
-        """
-        Calculate weighting matrix based on attribute similarities.
-        
-        Args:
-            attribute_array (np.ndarray): Array of attributes for calculating weights
-            
-        Returns:
-            sp.csr_matrix: Sparse matrix of normalized weights
-        """
-        differences = attribute_array[self.row_indices_sparse] - attribute_array[self.col_indices_sparse]
-        weights = np.exp(-self.selection_bias * np.abs(differences))
-        non_diagonal_weighting_matrix = sp.csr_matrix(
-            (weights, (self.row_indices_sparse, self.col_indices_sparse)),
-            shape=self.adjacency_matrix.shape
-        )
-        norm_weighting_matrix = self._normlize_matrix(non_diagonal_weighting_matrix)
-
-        return norm_weighting_matrix
 
     def _normlize_matrix(self, matrix: sp.csr_matrix) -> sp.csr_matrix:
         """
@@ -263,7 +253,7 @@ class Social_Network:
             #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
             #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
             if user.vehicle.transportType == 3:
-                self.policy_distortion += (self.electricity_price_subsidy*driven_distance)/user.vehicle.Eff_omega_a_t
+                self.policy_distortion += (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
             else:
                 #NEEDED FOR OPTIMISATION, add the carbon price paid 
                 self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
@@ -284,11 +274,12 @@ class Social_Network:
         #THIS CAN BE DONE FOR THE SUBSET OF USERS
         CV_filtered_vechicles_dicts, CV_filtered_vehicles = self.filter_vehicle_dict_for_switchers(CV_vehicle_dict_vecs, self.current_vehicles, switcher_indices)
         utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec)
-        second_hand_merchant_offer_price = self.calc_offer_prices_max(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
-        
+        #second_hand_merchant_offer_price = self.calc_offer_prices_depreciated(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
+        self.second_hand_merchant_offer_price = self.calc_offer_prices_max(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
+
   
         # pass those indices to generate_utilities
-        utilities_buying_matrix_switchers, buying_vehicles_list, d_buying_matrix_switchers = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, second_hand_merchant_offer_price)
+        utilities_buying_matrix_switchers, buying_vehicles_list, d_buying_matrix_switchers = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price)
 
         # Preallocate the final utilities and distance matrices
         total_columns = utilities_buying_matrix_switchers.shape[1] + utilities_current_matrix.shape[1]#number of cars which is new+secodn hand + current in the switchers
@@ -338,7 +329,7 @@ class Social_Network:
             #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#NEEDED FOR OPTIMISATION of carbon tax
             #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
             if user.vehicle.transportType == 3:
-                self.policy_distortion += (self.electricity_price_subsidy*driven_distance)/user.vehicle.Eff_omega_a_t
+                self.policy_distortion += (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
             else:
                 #NEEDED FOR OPTIMISATION, add the carbon price paid 
                 self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
@@ -356,6 +347,37 @@ class Social_Network:
 
 #####################################################################################################
 
+    def calc_driving_utility_direct_new(self,Quality_a_t_vec,L_a_t_vec, X_matrix):
+
+        # Compute commuting utility for individual-vehicle pairs
+        B_matrix = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_matrix + 1)
+
+        return B_matrix
+
+    def calc_offer_prices_max_new(self, vehicle_dict_vecs, filtered_vehicles):
+        """ Calc the price at which utility of user would be 0 and set offer based on that"""
+        #present UTILITY
+        # Compute cost component based on transport type, with conditional operations
+        # Adjust costs based on transport type
+
+        X_matrix = ((self.beta_segment_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_segment_vec[:, np.newaxis]* vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
+        driving_utility_matrix = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_matrix)
+        B_s = (driving_utility_matrix*(1+self.r)/(self.r + self.delta))
+
+        #quit()
+        market_component = np.log(self.U_vec_on_sale)/(self.nu* self.beta_segment_vec)
+        Price_s = B_s/self.beta_segment_vec[:, np.newaxis] - market_component[:, np.newaxis]
+        Price_sale = np.max(Price_s, axis = 0)
+
+        Price_raw = Price_sale/(1+self.mu)
+        Offer_vec = np.maximum(Price_raw, self.scrap_price)
+
+        for i, vehicle in enumerate(filtered_vehicles):
+            vehicle.price_second_hand_merchant = Price_sale[i]
+            vehicle.cost_second_hand_merchant = Offer_vec[i]
+
+        return Offer_vec
+
     def calc_driving_utility_direct(self,Quality_a_t_vec,L_a_t_vec, X_vec):
 
         # Compute commuting utility for individual-vehicle pairs
@@ -368,21 +390,18 @@ class Social_Network:
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
         # Adjust costs based on transport type
-        X_vec = np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            ((self.beta_median * vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_median * vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"],
-            ((self.beta_median * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price * vehicle_dict_vecs["e_t"])) + (self.gamma_median * vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
-        )#avoid repeated calculations
+        X_vec = ((self.beta_median * vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_median * vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
+   
 
         driving_utility = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_vec)
         price_vec_negative = (driving_utility*(1+self.r)/((self.r + self.delta)*self.beta_median))*(1-self.mu)
-        price_vec = np.maximum(price_vec_negative, 0) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
+        price_vec = np.maximum(price_vec_negative, self.scrap_price) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
 
         for i, vehicle in enumerate(filtered_vehicles):
             vehicle.cost_second_hand_merchant = price_vec[i]
 
         return price_vec
-
+    
 ########################################################################################################
     
     def gen_mask(self, available_and_current_vehicles_list, consider_ev_vec):
@@ -429,9 +448,7 @@ class Social_Network:
         else:#at leat 1 non zero probability
             # Calculate the probability of choosing each vehicle              
             sum_prob = np.sum(individual_specific_util)
-            #print(person_index, individual_specific_util, sum_prob)
-            #if self.t_social_network == 2:
-            #    quit()
+
             probability_choose = individual_specific_util / sum_prob
             choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)
@@ -442,29 +459,23 @@ class Social_Network:
         # Handle consequences of the choice
         if user.user_id != vehicle_chosen.owner_id:  # New vehicle, not currently owned
             # Transfer the user's current vehicle to the second-hand merchant, if any
-            if isinstance(user.vehicle, PersonalCar):
-                self.second_hand_merchant.spent += user.vehicle.cost_second_hand_merchant
-                if user.vehicle.init_car or user.vehicle.cost_second_hand_merchant == 0:#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD 
+            if isinstance(user.vehicle, PersonalCar):#YOU SELL YOUR CAR?
+                if (user.vehicle.init_car) or (user.vehicle.cost_second_hand_merchant == self.scrap_price) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD 
                     user.vehicle.owner_id = -99#send to shadow realm
                     user.vehicle = None
                 else:
-
-                    if self.t_social_network > self.burn_in_second_hand_market:
-                        
-                        if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-                            self.second_hand_merchant_price_paid.append(user.vehicle.cost_second_hand_merchant)
-                        
-                        user.vehicle.owner_id = self.second_hand_merchant.id
-                        self.second_hand_merchant.add_to_stock(user.vehicle)
-                        user.vehicle = None
-
-                    else:#VANISH CAR TO THE ABYSS
-                        user.vehicle.owner_id = -99#send to shadow realm
-                        user.vehicle = None
+                    if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+                        self.second_hand_merchant.spent += user.vehicle.cost_second_hand_merchant
+                        self.second_hand_merchant_price_paid.append(user.vehicle.cost_second_hand_merchant)
+                    
+                    user.vehicle.owner_id = self.second_hand_merchant.id
+                    self.second_hand_merchant.add_to_stock(user.vehicle)
+                    user.vehicle = None
             
             if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
                 #USED ADOPTION SUBSIDY OPTIMIZATION
-                self.policy_distortion += self.used_rebate           
+                if vehicle_chosen.transportType == 3:
+                    self.policy_distortion += self.used_rebate           
 
                 #SET THE UTILITY TO 0 of that second hand car
                 utilities_kappa[:, choice_index] = 0
@@ -474,6 +485,8 @@ class Social_Network:
                 user.vehicle = vehicle_chosen
                 user.vehicle.last_price_paid = user.vehicle.price
                 self.second_hand_merchant.income += user.vehicle.price
+                #self.second_hand_merchant.assets += (user.vehicle.price - user.vehicle.cost_second_hand_merchant)
+
 
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_second_hand.append(user.vehicle.price)
@@ -482,7 +495,8 @@ class Social_Network:
 
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
                 #ADOPTION SUBSIDY OPTIMIZATION
-                self.policy_distortion += self.rebate    
+                if vehicle_chosen.transportType == 3:
+                    self.policy_distortion += self.rebate    
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
@@ -493,7 +507,7 @@ class Social_Network:
                     self.buy_new_car+=1
             else:
                 raise(ValueError("invalid user transport behaviour"))
-        else:
+        else:#KEEP CAR
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.keep_car +=1#KEEP CURRENT CAR
 
@@ -508,11 +522,7 @@ class Social_Network:
     def generate_distances_current(self, current_vehicles, beta_vec, gamma_vec):
         CV_vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs(current_vehicles)
         
-        X_vec = np.where(
-            CV_vehicle_dict_vecs["transportType"] == 3,
-            (beta_vec*CV_vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*CV_vehicle_dict_vecs["e_t"])/CV_vehicle_dict_vecs["Eff_omega_a_t"],
-            (beta_vec * (CV_vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*CV_vehicle_dict_vecs["e_t"]) + gamma_vec*CV_vehicle_dict_vecs["e_t"])/CV_vehicle_dict_vecs["Eff_omega_a_t"]
-        )
+        X_vec = (beta_vec*CV_vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*CV_vehicle_dict_vecs["e_t"])/CV_vehicle_dict_vecs["Eff_omega_a_t"]
 
         """THIS SHOULD IDEALLY NEVER BE 0, IF calibrated correctly"""
         d_i_t = np.maximum(0,self.vectorised_optimal_distance_current(X_vec))
@@ -523,11 +533,7 @@ class Social_Network:
         """
         Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
         """
-        X =np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (beta_vec * vehicle_dict_vecs["fuel_cost_c"] + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"],
-            (beta_vec* (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
-        )
+        X = (beta_vec * vehicle_dict_vecs["fuel_cost_c"] + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
         driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X)
         
@@ -572,6 +578,7 @@ class Social_Network:
     def vectorised_optimal_distance_current(self, X_vec):
 
         # Calculate optimal distance vec for each individual-vehicle pair
+
         optimal_distance_vec = self.d_max/(self.alpha*X_vec+ 1)
 
         return optimal_distance_vec  # Shape: (num_individuals,)
@@ -731,11 +738,7 @@ class Social_Network:
 
     def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price):
         # Compute shared base utility components
-        X_matrix =np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"],
-            (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
-        )
+        X_matrix = (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
         d_i_t_L = np.maximum(0, self.vectorised_optimal_distance_cars(X_matrix))
 
@@ -743,16 +746,14 @@ class Social_Network:
 
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
-        price_difference = np.where(
+
+        price_difference_raw = np.where(
             vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
             (vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate - second_hand_merchant_offer_price),  # Apply rebate
             vehicle_dict_vecs["price"][:, np.newaxis] - second_hand_merchant_offer_price  # No rebate
         )
-        
-        # Use in-place modification to save memor
-        
-        #U_a_i_t_matrix = lifetime_utility/(np.multiply(beta_vec[:, np.newaxis], price_difference.T))
-        #U_a_i_t_matrix_final = np.maximum(0,U_a_i_t_matrix)
+
+        price_difference = np.maximum(0, price_difference_raw)#HAS TO BE ZERO
 
         U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))))
 
@@ -760,11 +761,7 @@ class Social_Network:
     
     def vectorised_calculate_utility_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price):
 
-        X_matrix = np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"],
-            (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
-        )
+        X_matrix = (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
         d_i_t_L = np.maximum(0, self.vectorised_optimal_distance_cars(X_matrix))
 
@@ -773,19 +770,16 @@ class Social_Network:
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
         # Calculate price difference, applying rebate only for transportType == 3
-        price_difference = np.where(
+        price_difference_raw = np.where(
             vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
             (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis] - second_hand_merchant_offer_price),  # Apply rebate
             vehicle_dict_vecs["price"][:, np.newaxis] - second_hand_merchant_offer_price  # No rebate
         )
-        
-        price_beta = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
-        price_adjust = np.maximum(0,price_beta)
+        price_difference = np.maximum(0, price_difference_raw)
+        price_adjust = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
 
         U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))))
-        #U_a_i_t_matrix = lifetime_utility/(price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))
-        
-        #U_a_i_t_matrix_final = np.maximum(0,U_a_i_t_matrix)
+
 
         return U_a_i_t_matrix_final, d_i_t_L
     
@@ -1005,16 +999,17 @@ class Social_Network:
         self.history_mean_efficiency_vals_ICE = []
         self.history_drive_min_num = []
 
+        self.history_mean_efficiency_vals = []
+
+        self.history_second_hand_merchant_offer_price = []
+
     def save_timeseries_data_social_network(self):
 
 
         self.update_EV_stock()
 
-        #INDIVIDUALS LEVEL DATA
+        self.history_second_hand_merchant_offer_price.append(self.second_hand_merchant_offer_price)
 
-        #self.history_utility_components.append(self.utility_components_single_person)
-
-        #self.history_quality_index.append(self.quality_index)
         self.history_count_buy.append([self.keep_car, self.buy_new_car, self.buy_second_hand_car])
 
         self.history_drive_min_num.append(self.drive_min_num/self.num_individuals)
@@ -1065,6 +1060,8 @@ class Social_Network:
         self.history_quality.append(self.quality_vals)
         self.history_efficiency.append(self.efficiency_vals)
         self.history_production_cost.append(self.production_cost_vals)
+
+        self.history_mean_efficiency_vals.append(np.mean(self.efficiency_vals))
 
         if self.quality_vals_ICE:
             self.history_quality_ICE.append(self.quality_vals_ICE)
@@ -1125,7 +1122,6 @@ class Social_Network:
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
         self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
 
-
 ####################################################################################################################################
 
     def update_prices_and_emissions_intensity(self):
@@ -1137,7 +1133,7 @@ class Social_Network:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1159,8 +1155,9 @@ class Social_Network:
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
         self.used_rebate = used_rebate
-        self.electricity_price_subsidy = electricity_price_subsidy
-        
+        self.electricity_price_subsidy_dollars = electricity_price_subsidy_dollars
+        #self.U_vec_on_sale = U_vec_on_sale
+
         #update new tech and prices
         self.second_hand_cars, self.new_cars = second_hand_cars, new_cars
         self.all_vehicles_available = self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT

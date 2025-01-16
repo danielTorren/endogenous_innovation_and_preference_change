@@ -79,7 +79,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -176,9 +176,10 @@ if __name__ == "__main__":
     "parameters_second_hand":{
         "remove_seed": 48,
         "age_limit_second_hand": 12,#3,
-        "max_num_cars": 5000,
+        "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "fixed_alternative_mark_up": 0.2
+        "fixed_alternative_mark_up": 0.2,
+        "scrap_price": 1000
     },
     "parameters_ICE":{
         "landscape_seed": 22, 
@@ -236,9 +237,7 @@ if __name__ == "__main__":
         "init_vals_price_seed": 8, 
         "social_network_seed": 66,
         "d_max": 2000,
-        "d_min_seed": 45,
-        "d_i_min": 700,
-        "d_i_min_sd": 700,
+        "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,

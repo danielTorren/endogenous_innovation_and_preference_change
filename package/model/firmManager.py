@@ -44,13 +44,12 @@ class Firm_Manager:
         self.parameters_car_EV = parameters_car_EV 
 
         #PRICE, NOT SURE IF THIS IS NECESSARY
-        self.beta_threshold = parameters_firm_manager["beta_threshold"]
-        self.beta_val_empty_upper =  parameters_firm_manager["beta_val_empty_upper"]
-        self.beta_val_empty_lower =  parameters_firm_manager["beta_val_empty_lower"]
+        #self.beta_val_empty_upper =  parameters_firm_manager["beta_val_empty_upper"]
+        #self.beta_val_empty_lower =  parameters_firm_manager["beta_val_empty_lower"]
         
         self.gamma_threshold = parameters_firm_manager["gamma_threshold"]
         self.gamma_val_empty_upper = parameters_firm_manager["gamma_val_empty_upper"]
-        self.gamma_val_empty_lower = parameters_firm_manager["gamma_val_empty_upper"]
+        self.gamma_val_empty_lower = parameters_firm_manager["gamma_val_empty_lower"]
 
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 
@@ -171,8 +170,7 @@ class Firm_Manager:
          - gamma_s_t (average gamma)
          - W     (will be computed after we calculate utilities)
         """
-        # 1) Build a dictionary for ALL possible combos
-        
+         # 1) Build a dictionary for ALL possible combos
         self.market_data = {}
         for code in self.all_segment_codes:
             self.market_data[code] = {
@@ -185,12 +183,8 @@ class Firm_Manager:
             }
 
         # 2) Count how many individuals fall into each segment code
-        #    also sum up their beta, gamma for averages
         segment_counts = defaultdict(int)
-        beta_sums = defaultdict(float)
-        gamma_sums = defaultdict(float)
 
-        # Go through each individual
         for i in range(self.num_individuals):
             b_idx = self.beta_segment_idx[i]         # in [0..4]
             g_idx = self.gamma_binary[i]             # in [0..1]
@@ -198,31 +192,24 @@ class Firm_Manager:
             seg_code = (b_idx, g_idx, e_idx)
 
             segment_counts[seg_code] += 1
-            beta_sums[seg_code] += self.beta_vec[i]
-            gamma_sums[seg_code] += self.gamma_vec[i]
 
-        # 3) Compute averages for each segment
+        # 3) Compute midpoints for each segment
         for code in self.all_segment_codes:
             count = segment_counts[code]
-            if count > 0:
-                avg_beta = beta_sums[code] / count
-                avg_gamma = gamma_sums[code] / count
-            else:
-                #FIX THIS SO THAT THE CORRECT BETA VALUE IS CHOSEN!
-                b_idx, g_idx, _ = code
-                if b_idx >= 2:
-                    avg_beta = self.beta_val_empty_upper
-                else:
-                    avg_beta = self.beta_val_empty_lower
+            b_idx, g_idx, _ = code
 
-                if g_idx == 1:
-                    avg_gamma = self.gamma_val_empty_upper
-                else:
-                    avg_gamma = self.gamma_val_empty_lower
+            # Compute beta midpoint
+            beta_lower = self.beta_bins[b_idx]
+            beta_upper = self.beta_bins[b_idx + 1]
+            beta_midpoint = (beta_lower + beta_upper) / 2
 
+            # Compute gamma value based on binary index
+            gamma_value = self.gamma_val_empty_upper if g_idx == 1 else self.gamma_val_empty_lower
+
+            # Assign values to the market data
             self.market_data[code]["I_s_t"] = count
-            self.market_data[code]["beta_s_t"] = avg_beta
-            self.market_data[code]["gamma_s_t"] = avg_gamma
+            self.market_data[code]["beta_s_t"] = beta_midpoint
+            self.market_data[code]["gamma_s_t"] = gamma_value
 
         # 4) Now we need to compute the initial W for each segment
         for firm in self.firms_list:
@@ -258,7 +245,7 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
                 for segment, U in car.car_utility_segments_U.items():
-                    segment_W[segment] += U**2
+                    segment_W[segment] += U**self.kappa
 
         return cars_on_sale_all_firms, segment_W
 
@@ -419,6 +406,8 @@ class Firm_Manager:
          
         self.carbon_price = carbon_price
 
+        #print("gas_price",gas_price)
+
         self.discriminatory_corporate_tax = discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         self.cars_on_sale_all_firms, W_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
@@ -426,5 +415,8 @@ class Firm_Manager:
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         #self.update_market_data(sums_U_segment)
         self.update_market_data_moving_average(W_segment)
+
+        #print(self.market_data)
+        #quit()
 
         return self.cars_on_sale_all_firms, self.total_W

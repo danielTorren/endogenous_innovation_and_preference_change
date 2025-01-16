@@ -22,10 +22,13 @@ class SecondHandMerchant:
         self.delta = parameters_second_hand["delta"]
         self.kappa = parameters_second_hand["kappa"]
         self.nu = parameters_second_hand["nu"]
+        self.scrap_price = parameters_second_hand["scrap_price"]
 
         self.spent = 0
         self.income = 0
+        self.assets = 0
         self.profit = 0
+        self.scrap_loss = 0
 
     def calc_median(self, beta_vec, gamma_vec):
         self.median_beta =  np.median(beta_vec)
@@ -73,11 +76,7 @@ class SecondHandMerchant:
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
-        X = np.where(
-            vehicle_dict_vecs["transportType"] == 3,
-            (beta *vehicle_dict_vecs["fuel_cost_c"] + gamma * vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"],
-            (beta * (vehicle_dict_vecs["fuel_cost_c"] + self.carbon_price*vehicle_dict_vecs["e_t"]) + gamma* vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"]
-        )
+        X = (beta *vehicle_dict_vecs["fuel_cost_c"] + gamma * vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"]
 
         driving_utility_vec = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X)
 
@@ -113,11 +112,8 @@ class SecondHandMerchant:
     def calc_car_price_single(self, vehicle, beta, gamma, W_s_t):
 
         #present UTILITY
-        if vehicle.transportType == 3:
-            X = (beta *vehicle.fuel_cost_c + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t
-        else:
-            X = (beta *(vehicle.fuel_cost_c + self.carbon_price*vehicle.e_t) + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t 
-        
+        X = (beta *vehicle.fuel_cost_c + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t
+
         driving_utility = self.calc_driving_utility_direct_single( vehicle.Quality_a_t, vehicle.L_a_t, X)
         B = driving_utility*((1+self.r)/(self.r + self.delta))#treat it as a current car, NO EMISSIOSN COST OR PURCHASSE COST? 
             
@@ -138,14 +134,8 @@ class SecondHandMerchant:
 
         return P
 
-    def update_stock_contents(self):
-        #check len of list
-        if len(self.cars_on_sale) > self.max_num_cars:
-            cars_to_remove = self.random_state_second_hand.choice(self.max_num_cars, self.max_num_cars - self.cars_on_sale)#RANDOMLY REMOVE CARS FROM THE SALE LIST
-            for vehicle in cars_to_remove:
-             self.age_second_hand_car_removed.append(vehicle.L_a_t)
-            self.cars_on_sale.remove(cars_to_remove)
-    
+    def update_stock_contents_old(self):
+
         for vehicle in self.cars_on_sale:       
             if vehicle.second_hand_counter > self.age_limit_second_hand:
                 self.age_second_hand_car_removed.append(vehicle.L_a_t)
@@ -158,6 +148,54 @@ class SecondHandMerchant:
         for i, vehicle in enumerate(self.cars_on_sale):
             #price = min((1+self.price_adjust_monthly)*vehicle.price , max((1 -self.price_adjust_monthly)*vehicle.price , price_vec[i]))
             vehicle.price = price_vec[i]
+
+        
+                #check len of list
+        if len(self.cars_on_sale) > self.max_num_cars:
+            cars_to_remove = self.random_state_second_hand.choice(self.cars_on_sale, self.max_num_cars - len(self.cars_on_sale))#RANDOMLY REMOVE CARS FROM THE SALE LIST
+            for vehicle in cars_to_remove:
+             self.age_second_hand_car_removed.append(vehicle.L_a_t)
+            self.cars_on_sale.remove(cars_to_remove)
+    
+    def update_stock_contents(self):
+        #check len of list    
+        for vehicle in self.cars_on_sale:       
+            if vehicle.second_hand_counter > self.age_limit_second_hand:
+                self.age_second_hand_car_removed.append(vehicle.L_a_t)
+                self.assets -= vehicle.cost_second_hand_merchant
+                self.scrap_loss += vehicle.cost_second_hand_merchant
+                self.cars_on_sale.remove(vehicle)
+
+        data_dicts = self.gen_vehicle_dict_vecs(self.cars_on_sale)
+        # Calculate the price vector
+        #price_vec = self.calc_car_price_vec(data_dicts)
+        price_vec = self.calc_car_price_vec(data_dicts, self.median_beta, self.median_gamma, self.U_sum)
+
+        # Vectorized approach to identify cars below the scrap price
+        below_scrap_mask = price_vec < self.scrap_price
+
+        # Remove cars below the scrap price
+        self.cars_on_sale = [
+            vehicle for i, vehicle in enumerate(self.cars_on_sale) if not below_scrap_mask[i]
+        ]
+
+        # Update the prices of the remaining cars
+        for i, vehicle in enumerate(self.cars_on_sale):
+            vehicle.price = price_vec[i]
+
+        #REMOVE EXCESS CARS
+        if len(self.cars_on_sale) > self.max_num_cars:
+            # Calculate how many cars to remove
+            num_cars_to_remove = len(self.cars_on_sale) - self.max_num_cars
+            # Randomly select cars to remove
+            cars_to_remove = self.random_state_second_hand.choice(
+                self.cars_on_sale, num_cars_to_remove, replace=False
+            )
+            # Add ages of removed cars
+            self.age_second_hand_car_removed.extend(vehicle.L_a_t for vehicle in cars_to_remove)
+            # Use list comprehension to filter out the cars to remove
+            self.cars_on_sale = [car for car in self.cars_on_sale if car not in cars_to_remove] 
+        
 
     def add_to_stock(self,vehicle):
         #add new car to stock
