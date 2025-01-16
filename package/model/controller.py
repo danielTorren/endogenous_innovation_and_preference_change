@@ -16,6 +16,7 @@ class Controller:
 
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
+        self.calc_variables()
 
         self.update_time_series_data()
 
@@ -84,8 +85,8 @@ class Controller:
         
         self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]
 
-        self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
-        self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
+        #self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
+        #self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
         self.parameters_EV["min_Cost"] = self.parameters_ICE["min_Cost"]
         self.parameters_EV["max_Cost"] = self.parameters_ICE["max_Cost"]
         self.parameters_EV["delta"] = self.parameters_ICE["delta"]
@@ -238,7 +239,75 @@ class Controller:
         self.random_state_beta.shuffle(beta_list)
         
         return np.asarray(beta_list)
-    
+
+    def calc_variables(self):
+        D_plus = self.parameters_social_network["d_max"]
+        D_minus = self.parameters_social_network["d_min"]
+         #ICE
+        beta_plus = np.max(self.beta_vec) # upper bound beta
+        #print("beta_plus", beta_plus)
+        gamma_plus = np.max(self.gamma_vec)# upper bound gamma
+        #print("gamma_plus", gamma_plus)
+        c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
+        #print("c_plus", c_plus)
+        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
+        #print("e", e)
+        omega_minus = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
+        #print("omega_minus", omega_minus)
+        X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
+        #print("X plus", X_plus)
+        alpha = (D_plus - D_minus) / (D_minus * X_plus)
+        self.parameters_vehicle_user["alpha"] = alpha
+
+        #SET Quality
+        W = 10e6#the value of this basically makes no difference to alpha, min q or max q
+        P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
+        #print("P", P)
+        C = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2
+        #print("C",C)
+        beta = np.median(self.beta_vec)
+        #print("beta", beta)
+        gamma = np.median(self.gamma_vec)
+        #print("gamma", gamma)
+        E = self.parameters_ICE["production_emissions"]
+
+        delta = self.parameters_ICE["delta"]
+        r = self.parameters_vehicle_user["r"]
+        c_minus = np.min(self.calibration_gas_price_california_vec)
+        #print("c minus", c_minus)
+        c = (c_plus + c_minus)/2
+        #print("c", c)
+        omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
+        #print("omega_plus",omega_plus)
+        omega = (omega_plus + omega_minus)/2
+        #print("omega", omega)
+        X = (beta*c + gamma*e)/omega
+        #print("X", X)
+
+        inside_log = W *(self.parameters_vehicle_user["kappa"]* beta*(P - C) - 1)
+        print("more than 1",(self.parameters_vehicle_user["kappa"] * beta*(P - C))**(1/(self.parameters_vehicle_user["kappa"])))
+        #quit()
+        Q_vals = (alpha * X + 1) * (r + delta) * (np.log(inside_log**(1/(self.parameters_vehicle_user["kappa"]))) + beta * P + gamma * E) /  (1 + r) 
+
+        Q_minus = Q_vals[0]
+        Q_plus = Q_vals[1]
+
+        print("Q_vals", Q_vals)
+
+        min_q = (4*Q_minus - Q_plus)/3
+        max_q = (4*Q_plus - Q_minus)/3
+
+        self.parameters_ICE["min_Quality"] = min_q
+        self.parameters_ICE["max_Quality"] = max_q
+        self.parameters_EV["min_Quality"] = min_q
+        self.parameters_EV["max_Quality"] = max_q
+
+        print("alpha", alpha)
+        print("min_q", min_q)
+        print("max_q", max_q)
+        #quit()
+
+
     #######################################################################################################################################
     def manage_burn_in(self):
         self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
