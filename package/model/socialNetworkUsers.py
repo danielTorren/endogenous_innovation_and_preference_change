@@ -347,14 +347,14 @@ class Social_Network:
 
 #####################################################################################################
 
-    def calc_driving_utility_direct_new(self,Quality_a_t_vec,L_a_t_vec, X_matrix):
+    def calc_driving_utility_direct(self,Quality_a_t_vec,L_a_t_vec, X_matrix):
 
         # Compute commuting utility for individual-vehicle pairs
         B_matrix = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_matrix + 1)
 
         return B_matrix
 
-    def calc_offer_prices_max_new(self, vehicle_dict_vecs, filtered_vehicles):
+    def calc_offer_prices_max(self, vehicle_dict_vecs, filtered_vehicles):
         """ Calc the price at which utility of user would be 0 and set offer based on that"""
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
@@ -368,6 +368,7 @@ class Social_Network:
         market_component = np.log(self.U_vec_on_sale)/(self.nu* self.beta_segment_vec)
         Price_s = B_s/self.beta_segment_vec[:, np.newaxis] - market_component[:, np.newaxis]
         Price_sale = np.max(Price_s, axis = 0)
+        self.max_index_segemnt = np.argmax(Price_s, axis = 0)
 
         Price_raw = Price_sale/(1+self.mu)
         Offer_vec = np.maximum(Price_raw, self.scrap_price)
@@ -378,14 +379,14 @@ class Social_Network:
 
         return Offer_vec
 
-    def calc_driving_utility_direct(self,Quality_a_t_vec,L_a_t_vec, X_vec):
+    def calc_driving_utility_direct_old(self,Quality_a_t_vec,L_a_t_vec, X_vec):
 
         # Compute commuting utility for individual-vehicle pairs
         utility_vec = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_vec + 1)
 
         return utility_vec
 
-    def calc_offer_prices_max(self, vehicle_dict_vecs, filtered_vehicles):
+    def calc_offer_prices_max_old(self, vehicle_dict_vecs, filtered_vehicles):
         
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
@@ -929,7 +930,7 @@ class Social_Network:
         #"""
 
         self.history_utility_components = []
-
+        self.history_max_index_segemnt = []
         self.history_prop_EV = []
         self.history_driving_emissions = []
         self.history_driving_emissions_ICE = []
@@ -1037,6 +1038,9 @@ class Social_Network:
         self.history_new_ICE_cars_bought.append(self.new_ICE_cars_bought)
         self.history_new_EV_cars_bought.append(self.new_EV_cars_bought)
 
+
+        self.history_max_index_segemnt.append(self.max_index_segemnt)
+
         #SUMS
         self.history_driving_emissions.append(self.total_driving_emissions)
         self.history_driving_emissions_ICE.append(self.total_driving_emissions_ICE)
@@ -1133,7 +1137,7 @@ class Social_Network:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, U_vec_on_sale):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1156,7 +1160,7 @@ class Social_Network:
         self.rebate = rebate
         self.used_rebate = used_rebate
         self.electricity_price_subsidy_dollars = electricity_price_subsidy_dollars
-        #self.U_vec_on_sale = U_vec_on_sale
+        self.U_vec_on_sale = U_vec_on_sale
 
         #update new tech and prices
         self.second_hand_cars, self.new_cars = second_hand_cars, new_cars

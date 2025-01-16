@@ -188,12 +188,10 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.001,
+        "delta": 0.01,
         "transportType": 2,
         "min_Price": 20000,
         "max_Price": 70000,
-        #"min_Quality": 100,
-        #"max_Quality": 300,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -207,8 +205,6 @@ if __name__ == "__main__":
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
-        #"min_Quality": 100,
-        #"max_Quality": 300,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
@@ -217,7 +213,6 @@ if __name__ == "__main__":
         "J": 30,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "beta_threshold_percentile": 50,#20,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 5
     },
@@ -243,20 +238,19 @@ if __name__ == "__main__":
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 210,
-        "WTP_sd": 175,
+        "WTP_mean": 100,#210,
+        "WTP_sd": 20,#175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
         "a_innovativeness": 1,
         "b_innovativeness": 1,
         "selection_bias": 5,
-        "prob_switch_car": 0.083
+        "prob_switch_car":0.027777 #0.083
     },
     "parameters_vehicle_user":{
         "kappa":5,
-        #"alpha": 0.57,#17184,#0.5,
         "r": 0.00417,
-        "mu": 0.5,
+        "mu": 0.5,#0.5,
         "nu": 10e-6
     }
 }

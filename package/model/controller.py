@@ -765,17 +765,17 @@ class Controller:
                 firm.policy_distortion = 0
 
     def update_firms(self):
-        cars_on_sale_all_firms, U_sum_total = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
-        return cars_on_sale_all_firms, U_sum_total
+        cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
+        return cars_on_sale_all_firms, U_sum_total, U_vec_on_sale
     
-    def update_social_network(self):
+    def update_social_network(self, U_vec_on_sale):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, U_vec_on_sale)
 
         return consider_ev_vec, new_bought_vehicles
 
-    def get_second_hand_cars(self,U_sum_total):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total)
+    def get_second_hand_cars(self,U_sum_total, U_vec_on_sale):
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total, U_vec_on_sale)
 
         return self.second_hand_merchant.cars_on_sale
 
@@ -792,16 +792,16 @@ class Controller:
         return EV_stock_prop
     ################################################################################################
 
-    def next_step(self):
+    def next_step(self,):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
         #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
-        self.cars_on_sale_all_firms, U_sum_total = self.update_firms()
-        self.second_hand_cars = self.get_second_hand_cars(U_sum_total)
+        self.cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.update_firms()
+        self.second_hand_cars = self.get_second_hand_cars(U_sum_total, U_vec_on_sale)
 
-        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
+        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network(U_vec_on_sale)
 
         self.manage_saves()
 

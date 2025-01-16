@@ -24,6 +24,10 @@ class SecondHandMerchant:
         self.nu = parameters_second_hand["nu"]
         self.scrap_price = parameters_second_hand["scrap_price"]
 
+        self.beta_segment_vec = parameters_second_hand["beta_segment_vals"] 
+        self.gamma_segment_vec = parameters_second_hand["gamma_segment_vals"] 
+
+
         self.spent = 0
         self.income = 0
         self.assets = 0
@@ -65,14 +69,15 @@ class SecondHandMerchant:
             vehicle_dict_vecs[key] = np.array(vehicle_dict_vecs[key])
 
         return vehicle_dict_vecs
-    
-    def calc_driving_utility_direct(self, Quality_a_t_vec,L_a_t_vec, X):
+
+####################################################################################################################################
+    def calc_driving_utility_direct_old(self, Quality_a_t_vec,L_a_t_vec, X):
 
         utility_vec = Quality_a_t_vec * ((1 - self.delta) ** L_a_t_vec)/(self.alpha*X +1)
 
         return utility_vec
     
-    def calc_car_price_vec(self, vehicle_dict_vecs, beta, gamma, W_s_t):
+    def calc_car_price_vec_old(self, vehicle_dict_vecs, beta, gamma, W_s_t):
 
         #present UTILITY
         # Compute cost component based on transport type, with conditional operations
@@ -103,7 +108,7 @@ class SecondHandMerchant:
 
         return P_vec
     
-    def calc_driving_utility_direct_single(self, Quality_a_t, L_a_t, X):
+    def calc_driving_utility_direct_single_old(self, Quality_a_t, L_a_t, X):
 
         driving_utility = Quality_a_t*(1-self.delta)**(L_a_t)/(self.alpha*X +1)
 
@@ -134,6 +139,32 @@ class SecondHandMerchant:
 
         return P
 
+    def calc_driving_utility_direct(self,Quality_a_t_vec,L_a_t_vec, X_matrix):
+
+        # Compute commuting utility for individual-vehicle pairs
+        B_matrix = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_matrix + 1)
+
+        return B_matrix
+
+    def calc_car_price_vec(self, vehicle_dict_vecs):
+        """ Calc the price at which utility of user would be 0 and set offer based on that"""
+        #present UTILITY
+        # Compute cost component based on transport type, with conditional operations
+        # Adjust costs based on transport type
+
+        X_matrix = ((self.beta_segment_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_segment_vec[:, np.newaxis]* vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
+        driving_utility_matrix = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_matrix)
+        B_s = (driving_utility_matrix*(1+self.r)/(self.r + self.delta))
+
+        #quit()
+        market_component = np.log(self.U_vec_on_sale)/(self.nu* self.beta_segment_vec)
+        Price_s = B_s/self.beta_segment_vec[:, np.newaxis] - market_component[:, np.newaxis]
+        Price_sale_vec = np.max(Price_s, axis = 0)
+
+        return Price_sale_vec
+    
+
+#########################################################################################################################
     def update_stock_contents_old(self):
 
         for vehicle in self.cars_on_sale:       
@@ -156,7 +187,8 @@ class SecondHandMerchant:
             for vehicle in cars_to_remove:
              self.age_second_hand_car_removed.append(vehicle.L_a_t)
             self.cars_on_sale.remove(cars_to_remove)
-    
+#############################################################################################################################
+
     def update_stock_contents(self):
         #check len of list    
         for vehicle in self.cars_on_sale:       
@@ -168,8 +200,8 @@ class SecondHandMerchant:
 
         data_dicts = self.gen_vehicle_dict_vecs(self.cars_on_sale)
         # Calculate the price vector
-        #price_vec = self.calc_car_price_vec(data_dicts)
-        price_vec = self.calc_car_price_vec(data_dicts, self.median_beta, self.median_gamma, self.U_sum)
+        price_vec = self.calc_car_price_vec(data_dicts)
+        #price_vec = self.calc_car_price_vec_old(data_dicts, self.median_beta, self.median_gamma, self.U_sum)
 
         # Vectorized approach to identify cars below the scrap price
         below_scrap_mask = price_vec < self.scrap_price
@@ -199,7 +231,8 @@ class SecondHandMerchant:
 
     def add_to_stock(self,vehicle):
         #add new car to stock
-        vehicle.price = self.calc_car_price_single(vehicle, self.median_beta, self.median_gamma, self.U_sum)
+        #vehicle.price = self.calc_car_price_single(vehicle, self.median_beta, self.median_gamma, self.U_sum)
+        vehicle.price = vehicle.price_second_hand_merchant
         vehicle.scenario = "second_hand"
         vehicle.second_hand_counter = 0
         self.cars_on_sale.append(vehicle)
@@ -237,13 +270,13 @@ class SecondHandMerchant:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicle_on_sale, carbon_price, U_sum):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicle_on_sale, carbon_price, U_sum, U_vec_on_sale):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.carbon_price = carbon_price
-
+        self.U_vec_on_sale = U_vec_on_sale
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []

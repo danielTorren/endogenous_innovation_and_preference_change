@@ -249,7 +249,7 @@ class Firm_Manager:
 
         return cars_on_sale_all_firms, segment_W
 
-    def update_market_data_moving_average(self, W_segment):
+    def update_market_data_moving_average_old(self, W_segment):
         """
         If you still want a moving average approach:
         """
@@ -283,6 +283,45 @@ class Firm_Manager:
             self.market_data[code]["W"] = moving_avg_W
 
             self.total_W += moving_avg_W
+    
+    def compute_utilities_vec_moving_average(self):
+        """
+        Compute the utilities vector for all cars using a rolling average approach,
+        where the rolling average is based on the mean values from each of the 12 steps.
+        """
+        # Step 1: Collect all cars into a single list
+        cars = [car for firm in self.firms_list for car in firm.cars_on_sale]
+
+        # Step 2: Determine the number of cars (M) and segments (S)
+        M = len(cars)
+        S = len(cars[0].car_utility_segments_U)  # Number of segments (assumes all cars have the same keys)
+
+        # Step 3: Create the utility matrix (M x S)
+        U_matrix = np.zeros((M, S))
+
+        # Step 4: Fill the matrix with utilities
+        for m, car in enumerate(cars):
+            utilities = np.array(list(car.car_utility_segments_U.values()))
+            U_matrix[m, :] = utilities
+
+        # Calculate the mean of the current utility matrix
+        current_max = np.max(U_matrix, axis=0)
+
+        # Initialize or maintain history for rolling average
+        if not hasattr(self, "mean_history"):
+            self.mean_history = []
+
+        # Step 5: Store the current mean in history
+        self.mean_history.append(current_max)
+
+        # Trim history to the last 12 time steps
+        if len(self.mean_history) > self.time_steps_tracking_market_data:
+            self.mean_history.pop(0)
+
+        # Step 6: Calculate the rolling average using the mean of means
+        rolling_avg_means = np.mean(self.mean_history, axis=0)
+
+        return rolling_avg_means
 
     ######################################################################################################################
 
@@ -414,9 +453,12 @@ class Firm_Manager:
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         #self.update_market_data(sums_U_segment)
-        self.update_market_data_moving_average(W_segment)
+        self.update_market_data_moving_average_old(W_segment)
+        self.U_vec_on_sale = self.compute_utilities_vec_moving_average()
 
         #print(self.market_data)
         #quit()
 
-        return self.cars_on_sale_all_firms, self.total_W
+        self.total_W = 1#DONT NEED THIS
+
+        return self.cars_on_sale_all_firms, self.total_W, self.U_vec_on_sale

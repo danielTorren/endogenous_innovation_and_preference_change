@@ -1,4 +1,6 @@
+from cProfile import label
 import os
+from matplotlib.lines import lineStyles
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
@@ -281,6 +283,124 @@ def plot_vehicle_attribute_time_series_by_type(base_params, social_network, time
     # Save and show the plot
     save_and_show(fig, fileName, "vehicle_attribute_time_series_ICE_EV", dpi)
 
+def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi=600):
+    """
+    Plots time series of Quality, Efficiency (separate for ICE and EV), 
+    and Production Cost for both ICE and EV with means and confidence intervals.
+
+    Args:
+        social_network (object): Contains the history of vehicle attributes for ICE and EV.
+        time_series (list): Time steps to plot on the x-axis.
+        file_name (str): Directory or file name to save the plots.
+        dpi (int): Resolution for saving the plots.
+    """
+    # Attributes for ICE and EV
+    attributes = {
+        "Quality": ("history_quality_ICE", "history_quality_EV"),
+        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV"),
+    }
+    efficiency_attributes = ("history_efficiency_ICE", "history_efficiency_EV")
+
+    fig = plt.figure(figsize=(10, 7))
+    gs = fig.add_gridspec(2, 2, height_ratios=[2, 1])  # Create a 2x2 grid layout
+
+    # Plot Quality (big plot, top-left)
+    ax_quality = fig.add_subplot(gs[0, 0])
+    plot_attribute(ax_quality, "Quality", attributes["Quality"], base_params, social_network, time_series)
+
+    # Plot Production Cost (big plot, top-right)
+    ax_cost = fig.add_subplot(gs[0, 1])
+    plot_attribute(ax_cost, "Production Cost", attributes["Production Cost"], base_params, social_network, time_series)
+
+    # Plot Efficiency ICE (bottom-left)
+    ax_efficiency_ice = fig.add_subplot(gs[1, 0])
+    plot_single_efficiency(
+        ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, social_network, time_series, color="blue"
+    )
+
+    # Plot Efficiency EV (bottom-right)
+    ax_efficiency_ev = fig.add_subplot(gs[1, 1])
+    plot_single_efficiency(
+        ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, social_network, time_series, color="green"
+    )
+
+    fig.suptitle("Vehicle Attributes (ICE and EV) Over Time")
+    plt.tight_layout()
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "vehicle_attribute_time_series_ICE_EV", dpi)
+
+
+def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, time_series):
+    """
+    Helper function to plot a single attribute (Quality or Production Cost).
+    """
+    add_vertical_lines(ax, base_params)
+    
+    # Extract histories for ICE and EV
+    ice_attr, ev_attr = attr_names
+    ice_history = getattr(social_network, ice_attr, [])
+    ev_history = getattr(social_network, ev_attr, [])
+
+    # Calculate means and confidence intervals
+    ice_means = [np.mean(values) if values else np.nan for values in ice_history]
+    ice_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ice_history]
+
+    ev_means = [np.mean(values) if values else np.nan for values in ev_history]
+    ev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ev_history]
+
+    # Plot ICE data
+    ax.plot(time_series, ice_means, label=f"ICE {attribute_name}", color="blue")
+    ax.fill_between(
+        time_series,
+        np.array(ice_means) - np.array(ice_confidence_intervals),
+        np.array(ice_means) + np.array(ice_confidence_intervals),
+        color="blue", alpha=0.2
+    )
+
+    # Plot EV data
+    ax.plot(time_series, ev_means, label=f"EV {attribute_name}", color="green")
+    ax.fill_between(
+        time_series,
+        np.array(ev_means) - np.array(ev_confidence_intervals),
+        np.array(ev_means) + np.array(ev_confidence_intervals),
+        color="green", alpha=0.2
+    )
+
+    # Set title and labels
+    ax.set_title(f"{attribute_name} Over Time")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel(attribute_name)
+    ax.grid()
+    ax.legend()
+
+
+def plot_single_efficiency(ax, title, attr_name, base_params, social_network, time_series, color):
+    """
+    Helper function to plot Efficiency for a single vehicle type (ICE or EV).
+    """
+    add_vertical_lines(ax, base_params)
+
+    history = getattr(social_network, attr_name, [])
+    means = [np.mean(values) if values else np.nan for values in history]
+    confidence_intervals = [1.96 * sem(values) if values else 0 for values in history]
+
+    # Plot data
+    ax.plot(time_series, means, label=title, color=color)
+    ax.fill_between(
+        time_series,
+        np.array(means) - np.array(confidence_intervals),
+        np.array(means) + np.array(confidence_intervals),
+        color=color, alpha=0.2
+    )
+
+    # Set title and labels
+    ax.set_title(title)
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Efficiency")
+    ax.grid()
+
+
 
 def plot_research_time_series_multiple_firms(firms, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -364,6 +484,48 @@ def plot_preferences(social_network, fileName, dpi=600):
     ax.hist(social_network.chi_vec, bins=30, alpha=0.5, label='Chi Vec (EV Threshold)')
     format_plot(ax, "Histogram of Beta, Gamma, and Chi Vectors", "Value", "Frequency")
     save_and_show(fig, fileName, "preferences", dpi)
+
+def plot_preferences_scatter(social_network, fileName, dpi=600):
+    """
+    Plots a scatter plot of Beta vs. Gamma, 
+    with Chi dictating the color of the dots.
+
+    :param social_network: An object containing the following attributes:
+                           - beta_vec: array-like (Beta values)
+                           - gamma_vec: array-like (Gamma values)
+                           - chi_vec: array-like (Chi values)
+    :param fileName:      String used for naming the output file
+    :param dpi:           Integer specifying the resolution (DPI) 
+    """
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Create a scatter plot, coloring points based on Chi
+    sc = ax.scatter(
+        social_network.beta_vec, 
+        social_network.gamma_vec, 
+        c=social_network.chi_vec, 
+        cmap='viridis', 
+        alpha=0.7
+    )
+    
+    # Add a colorbar to show the range of Chi values
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.set_label("Chi (EV Threshold)")
+    
+    # Label axes and set a title
+    ax.set_xlabel("Beta (Price)")
+    ax.set_ylabel("Gamma (Environmental)")
+    ax.set_title("Scatter Plot of Beta vs. Gamma (Color by Chi)")
+    
+    # If you already have a formatting function for plots, call it here:
+    # format_plot(ax, "Scatter Plot of Beta, Gamma, Chi Vectors", "Beta", "Gamma")
+
+    # Save (and/or show) the figure
+    # Replace save_and_show with your own function that saves and/or shows the figure
+    # For example:
+    save_and_show(fig, fileName, "preferences_scatter", dpi)
+
 
 def plot_sale_EV_prop(firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -2058,10 +2220,14 @@ def plot_history_profit_second_hand(second_hand_merchant, fileName, dpi=600):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
-    data = np.asarray(second_hand_merchant.history_profit)
-    ax.plot(data)
+    ax.plot(np.asarray(second_hand_merchant.history_spent), label = "Spent")
+    ax.plot(np.asarray(second_hand_merchant.history_income), label = "Income")
+    ax.plot(np.asarray(second_hand_merchant.history_assets), label = "Assets")
+    ax.plot(np.asarray(second_hand_merchant.history_profit), label = "Profit")
+    ax.plot(np.asarray(second_hand_merchant.history_scrap_loss), label = "Scrap loss")
+    ax.legend()
     ax.set_xlabel("Time")
-    ax.set_ylabel("Profit Second Hand Merchant")
+    ax.set_ylabel("Cumulative Dollars")
     save_and_show(fig, fileName, "history_profit_second_hand", dpi)
 
 
@@ -2234,6 +2400,41 @@ def plot_aggregated_segment_production_time_series(base_params, firms, fileName,
     # Save and show the plot
     save_and_show(fig, fileName, "aggregated_segment_production_time_series", dpi)
 
+def plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi = 600):
+    
+    data_time_series_ICE = np.asarray(social_network.history_driving_emissions_ICE)/np.asarray(social_network.history_ICE_users)
+    history_ICE_users = np.asarray(social_network.history_ICE_users)
+
+    # Replace 0 with np.nan in history_ICE_users
+    history_ICE_users = np.where(history_ICE_users == 0, np.nan, history_ICE_users)
+
+    # Perform the division
+    data_time_series_EV = np.asarray(social_network.history_driving_emissions_EV) / history_ICE_users
+
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    ax.plot(time_series, data_time_series_ICE, label = "ICE")
+    ax.plot(time_series, data_time_series_EV, label = "EV")
+    
+    #https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references
+
+    #GASOLINE = 4.29 metric tons CO2e/vehicle /year
+    # =  0.3575 metric tons CO2e/vehicle /month
+    # = 357.5 kg CO2e/vehicle/month 
+
+    #EVs
+    # = 1.13 metric tons CO2e/vehicle/year
+    # = 0.09416666666 metric tons CO2e/vehicle /month
+    # = 94.1666666667 kg CO2e/vehicle /month
+
+    ax.axhline(y = 357.5, label = "ICE real", color = "red", linestyle = "--")
+    ax.axhline(y = 94.1666666667, label = "EV real", color = "black", linestyle = "--")
+    ax.set_xlabel("Months, 2010-2022")
+    ax.set_ylabel("Kg CO2 per vehicle")
+
+    #add_vertical_lines(ax, base_params)
+    
+    ax.legend(loc="center left")
+    save_and_show(fig, fileName, "plot_kg_co2_per_year_per_vehicle_by_type", dpi)
 
 def plot_emissions_intensity(base_params, real_data , social_network, time_series, fileName, dpi = 600):
     
@@ -2268,10 +2469,10 @@ def plot_fuel_costs_verus_carbon_price_kWhr(base_params,controller, fileName, dp
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
 
     carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-    total_ice = controller.gas_price_california_vec + carbon_tax_paid[:-1]
+    total_ice = controller.history_gas_price + carbon_tax_paid[:-2]
 
-    ax.plot(controller.electricity_price_vec, label = "Fuel cost per kWhr, EV")
-    ax.plot(controller.gas_price_california_vec, label = "Fuel cost per kWhr, ICE")
+    ax.plot(controller.history_electricity_price, label = "Fuel cost per kWhr, EV")
+    ax.plot(controller.history_gas_price, label = "Fuel cost per kWhr, ICE")
     ax.plot(carbon_tax_paid , label = "carbon tax cost per kWhr, ICE")
     ax.plot(total_ice, label = "TOTAL cost per kWhr, ICE")
     ax.set_xlabel("Months, 2010-2022")
@@ -2287,17 +2488,17 @@ def plot_fuel_costs_verus_carbon_price_km(base_params,controller, fileName, dpi 
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
 
     carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-    total_ice = controller.gas_price_california_vec + carbon_tax_paid[:-1]
+    total_ice = controller.history_gas_price + carbon_tax_paid[:-2]
 
     Eff_omega_a_t_ICE_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_ICE])
     Eff_omega_a_t_EV_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_EV])
     #Eff_omega_a_t_ICE_median = np.median(controller.social_network.history_efficiency_ICE, axis = 0)
     #Eff_omega_a_t_EV_median = np.median(controller.social_network.history_efficiency_EV, axis = 0)
 
-    ax.plot(controller.electricity_price_vec[:-1]/Eff_omega_a_t_EV_median, label = "Fuel cost per km, EV")
-    ax.plot(controller.gas_price_california_vec[:-1]/Eff_omega_a_t_ICE_median, label = "Fuel cost per km, ICE")
+    ax.plot(controller.history_electricity_price/Eff_omega_a_t_EV_median, label = "Fuel cost per km, EV")
+    ax.plot(controller.history_gas_price/Eff_omega_a_t_ICE_median, label = "Fuel cost per km, ICE")
     ax.plot(carbon_tax_paid[:-2]/Eff_omega_a_t_ICE_median , label = "carbon tax cost per km, ICE")
-    ax.plot(total_ice[:-1]/Eff_omega_a_t_ICE_median, label = "TOTAL cost per km, ICE")
+    #ax.plot(total_ice/Eff_omega_a_t_ICE_median[:-1], label = "TOTAL cost per km, ICE")
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("Dollars per km")
 
@@ -2407,6 +2608,53 @@ def emissions_decomposed(social_network, time_series, fileName, dpi=600):
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed", dpi)
 
+def plot_history_second_hand_merchant_offer_price(base_params,social_network, time_series, fileName, dpi=600):
+    
+    # Flatten the data
+
+    time_points_new = []
+    prices_new = []
+    
+    for i, price_list in enumerate(social_network.history_second_hand_merchant_offer_price):
+        time_points_new .extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+        prices_new.extend(price_list)  # Add all prices for the current time step
+    
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(time_points_new, prices_new, marker='o', alpha=0.7)
+    #ax.set_title("Second hand merchant offer price")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Second hand merchant offer price")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_history_second_hand_merchant_offer_price", dpi)   
+
+def plot_history_max_index_segemnt(base_params,social_network, time_series, fileName, dpi=600):
+    
+    # Flatten the data
+
+    time_points_new = []
+    prices_new = []
+    
+    for i, price_list in enumerate(social_network.history_max_index_segemnt):
+        time_points_new .extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+        prices_new.extend(price_list)  # Add all prices for the current time step
+    
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(time_points_new, prices_new, marker='o', alpha=0.7)
+    #ax.set_title("Second hand merchant offer price")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Second hadn index selected")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_history_max_index_segemnt", dpi)  
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -2422,13 +2670,58 @@ def main(fileName, dpi=600):
     second_hand_merchant = data_controller.second_hand_merchant
     time_series = data_controller.time_series
     
-    emissions_decomposed(social_network, time_series, fileName, dpi)
 
-    #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
-    plot_zero_util_count(base_params, social_network, fileName, dpi)
-    plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
-    plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
+    #plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
+    calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
+    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
+
+    emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
+    #plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
+
+    plot_history_max_index_segemnt(base_params,social_network, time_series, fileName, dpi=600)
+
+    #emissions_decomposed(social_network, time_series, fileName, dpi)
+
+
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+
+    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+
+    #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
+
+    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
+    plot_history_second_hand_merchant_offer_price(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
+    plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
+
+    #plot_history_median_price(base_params, social_network, fileName, dpi)
+    #plot_history_mean_price(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+
+    #plot_total_utility(social_network, time_series, fileName, dpi)
+
+    #plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
+
+    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
+    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
+    #plot_preferences_scatter(social_network, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
+    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
+    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
+
+    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
+    #plot_total_profit(firm_manager, time_series, fileName, dpi)
+    plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    
+    #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
+    #plot_zero_util_count(base_params, social_network, fileName, dpi)
+    #plot_history_zero_profit_options_prod_sum(base_params, firm_manager, fileName, dpi)
+    #plot_history_zero_profit_options_research_sum(base_params, firm_manager, fileName, dpi)
+
+    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
     # All plot function calls
 
@@ -2443,46 +2736,11 @@ def main(fileName, dpi=600):
 
     #plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
-    #plt.show()
 
-    #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
-
-    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
-
-    #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
-
-    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
-    #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
-    plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
-
-    plot_history_median_price(base_params, social_network, fileName, dpi)
-    plot_history_mean_price(base_params, social_network, fileName, dpi)
-    #plot_history_count_buy(base_params, social_network, fileName, dpi)
-    #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
-
-    plot_total_utility(social_network, time_series, fileName, dpi)
-    
-    #plot_ev_adoption_rate(social_network, time_series, fileName, dpi)
-    #plot_ev_consider_rate(social_network, time_series, fileName, dpi)
-    plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
-    #plot_tranport_users(social_network, time_series, fileName, dpi)
-    
-    #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
-    #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
-
-    plot_preferences(social_network, fileName, dpi)
-    #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
-    #plot_history_research_type(firm_manager, time_series, fileName, dpi)
-    plot_car_sale_prop(social_network, time_series, fileName, dpi)
-
-    #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
-    #plot_total_profit(firm_manager, time_series, fileName, dpi)
-    #plot_market_concentration(firm_manager, time_series, fileName, dpi)
-    
-    #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
+    plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
+    plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
@@ -2502,8 +2760,8 @@ def main(fileName, dpi=600):
 
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
-    
+    #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     #"""
     #plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     #"""
@@ -2530,18 +2788,12 @@ def main(fileName, dpi=600):
 
     #plot_social_network(social_network, fileName)
     
-    plot_carbon_price(data_controller, time_series, fileName)
+    #plot_carbon_price(data_controller, time_series, fileName)
 
     #CHECKING OUTPUTS
 
-    calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
-
-    emissions_per_km_2000_22 = calibration_data_output["kg_CO2_per_km"]
-    #plot_emissions_intensity(base_params, emissions_per_km_2000_22 , social_network, time_series, fileName, dpi)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_01_50__10_01_2025")
+    main("results/single_experiment_11_49_15__16_01_2025")
