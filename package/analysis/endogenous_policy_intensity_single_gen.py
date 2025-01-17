@@ -295,7 +295,7 @@ def main(
 
 if __name__ == "__main__":
     results = main(
-        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single.json",
+        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single_gen.json",
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",

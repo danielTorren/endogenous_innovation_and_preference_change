@@ -74,6 +74,7 @@ class Controller:
         
         #CONTROLLER PARAMETERS:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
+        self.set_seed()#PUT SEEEDS IN CORECT PLACE
 
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_vehicle_user = parameters_controller["parameters_vehicle_user"]
@@ -114,6 +115,21 @@ class Controller:
             raise ValueError("EV Production before research")
 
         self.time_steps_max = parameters_controller["time_steps_max"]
+
+    def set_seed(self):
+
+        self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
+        self.parameters_controller["parameters_ICE"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_ICE"]
+        self.parameters_controller["parameters_EV"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_EV"]
+        self.parameters_controller["parameters_social_network"]["social_network_seed"] = self.parameters_controller["seeds"]["social_network_seed"]
+        self.parameters_controller["parameters_social_network"]["network_structure_seed"] =self.parameters_controller["seeds"]["network_structure_seed"]
+        self.parameters_controller["parameters_social_network"]["init_vals_environmental_seed"] = self.parameters_controller["seeds"]["init_vals_environmental_seed"]
+        self.parameters_controller["parameters_social_network"]["init_vals_innovative_seed"] = self.parameters_controller["seeds"]["init_vals_innovative_seed"] 
+        self.parameters_controller["parameters_social_network"]["init_vals_price_seed"] = self.parameters_controller["seeds"]["init_vals_price_seed"]
+        self.parameters_controller["parameters_firm"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
+        self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
+        self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
+    
 
     def gen_users_parameters(self):
 
