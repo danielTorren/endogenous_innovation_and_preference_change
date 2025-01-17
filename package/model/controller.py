@@ -243,83 +243,49 @@ class Controller:
     def calc_variables(self):
         D_plus = self.parameters_social_network["d_max"]
         D_minus = self.parameters_social_network["d_min"]
-         #ICE
+        
         beta_plus = np.max(self.beta_vec) # upper bound beta
-        #print("beta_plus", beta_plus)
         gamma_plus = np.max(self.gamma_vec)# upper bound gamma
-        #print("gamma_plus", gamma_plus)
         c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
-        #print("c_plus", c_plus)
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
-        #print("e", e)
         omega_minus = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
-        #print("omega_minus", omega_minus)
         X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
-        #print("X plus", X_plus)
         alpha = (D_plus - D_minus) / (D_minus * X_plus)
         self.parameters_vehicle_user["alpha"] = alpha
 
         #SET Quality
         W = 10e6#the value of this basically makes no difference to alpha, min q or max q
         P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
-        #print("P", P)
         C = np.asarray([self.parameters_ICE["min_Cost"], (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2])
-        #print("C",C)
         beta = np.asarray([np.median(self.beta_vec),np.min(self.beta_vec)])
-        #print("beta", beta)
-        gamma = np.max(self.gamma_vec)#np.median(self.gamma_vec)
+        gamma = np.max(self.gamma_vec)
 
-        #print("gamma", gamma)
         E = self.parameters_ICE["production_emissions"]
 
         delta = self.parameters_ICE["delta"]
         r = self.parameters_vehicle_user["r"]
         c_minus = np.min(self.calibration_gas_price_california_vec)
-        #print("c minus", c_minus)
         c = (c_plus + c_minus)/2
-        #print("c", c)
         omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
-        #print("omega_plus",omega_plus)
         omega = (omega_plus + omega_minus)/2
-        #print("omega", omega)
         X = (beta*c + gamma*e)/omega
-        #print("X", X)
 
         inside_log = W *(self.parameters_vehicle_user["kappa"]* beta*(P - C) - 1)
         has_to_be_more_than_one = self.parameters_vehicle_user["kappa"]* beta*(P - C)
         if  any(item < 1 for item in has_to_be_more_than_one):
             raise Exception("Costs too large relative to price")
-        #print("more than 1",(self.parameters_vehicle_user["kappa"] * beta*(P - C))**(1/(self.parameters_vehicle_user["kappa"])))
-        #quit()
+
         Q_vals = (alpha * X + 1) * (r + delta) * (np.log(inside_log**(1/(self.parameters_vehicle_user["kappa"]))) + beta * P + gamma * E) /  (1 + r) 
-
-        #Q_minus = Q_vals[0]
-        #Q_plus = Q_vals[1]
-
-        #print("Q_vals", Q_vals)
-
-        #min_q = np.maximum(0,(4*Q_minus - Q_plus)/3)#SET MINIUM TO ZERO
-        #max_q = (4*Q_plus - Q_minus)/3
-
         
         max_q_poor = (4*Q_vals[0] - 0)/3
         max_q_rich = (4*Q_vals[1] - 0)/3
 
         max_q = (max_q_poor + max_q_rich)/2
-        print("max_q_poor", max_q_poor)
-        print("max_q_rich ", max_q_rich )
-        print("max_q ", max_q )
 
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
         self.parameters_EV["min_Quality"] = 0#min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
-
-        #print("alpha", alpha)
-        #print("min_q", #min_q)
-        #print("max_q", #max_q)
-        #quit()
-
 
     #######################################################################################################################################
     def manage_burn_in(self):

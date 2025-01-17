@@ -192,15 +192,17 @@ def main(
             "Carbon_price",
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Production_subsidy",
-            "Research_subsidy"
-            ]
+            "Adoption_subsidy"
+            ],
+        bounds_LOAD = "package/analysis/policy_bounds.json",
     ) -> str: 
 
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
+    
+    with open(bounds_LOAD) as f:
+        bounds_policies = json.load(f)
     
     future_time_steps = base_params["duration_future"]#REMOVE TO RUN SINGLE RUN FOR CONSISTENCY, THEN PUT BACK IN FOR POLICY ANALYSIS
     base_params["duration_future"] = 0   
@@ -242,7 +244,7 @@ def main(
             policy_name,
             intensity_level_init,
             target_ev_uptake=0.9,
-            bounds=(0, np.inf)
+            bounds=bounds_policies[policy_name]
         )
         
         policy_outcomes[policy_name] = [mean_ev_uptake, mean_total_cost, intensity_level]
@@ -258,8 +260,6 @@ if __name__ == "__main__":
             "Carbon_price",
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Production_subsidy",
-            "Research_subsidy"
+            "Adoption_subsidy"
             ]
         )

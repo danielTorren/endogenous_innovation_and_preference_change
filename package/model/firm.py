@@ -132,7 +132,7 @@ class Firm:
 
             #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
             if car.transportType == 3:#EV
-                C_m  = car.ProdCost_t - self.production_subsidy
+                #C_m  = car.ProdCost_t - self.production_subsidy
                 C_m_cost  = np.maximum(0,car.ProdCost_t - self.production_subsidy)
                 C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate + self.rebate_calibration))
                 #C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy))
@@ -277,9 +277,9 @@ class Firm:
 
                     # Calculate profit for this vehicle and segment
                     if is_ev:#PRODUCTION SUBSIDY
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t - self.production_subsidy) # + self.carbon_price*vehicle.emissions 
+                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t - self.production_subsidy) # + self.carbon_price*vehicle.emissions 
                     else:
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t)
+                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t)
                     
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
                     W = segment_data["W"]
@@ -299,11 +299,12 @@ class Firm:
 
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
-            
+                    #print("vehicle.expected_profit_segments[segment_code]", vehicle.expected_profit_segments[segment_code], is_ev)
                 else:
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     expected_profit = self.research_subsidy
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
+                    #print("vehicle.expected_profit_segments[segment_code]", vehicle.expected_profit_segments[segment_code], is_ev)
 
         return  car_list
     
@@ -485,9 +486,9 @@ class Firm:
 
                     # Calculate profit for this vehicle and segment
                     if is_ev:#PRODUCTION SUBSIDY
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t - self.production_subsidy) # + self.carbon_price*vehicle.emissions 
+                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t - self.production_subsidy) # + self.carbon_price*vehicle.emissions 
                     else:
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - (vehicle.ProdCost_t)
+                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t)
 
                     I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
                     W = segment_data["W"]
@@ -602,9 +603,9 @@ class Firm:
                             selected_vehicle.car_utility_segments_U[segment_code] = 0
 
                         if selected_vehicle.transportType == 3:#PRODUCTION SUBSIDY
-                            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - (selected_vehicle.ProdCost_t - self.production_subsidy)
+                            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t - self.production_subsidy)
                         else:
-                            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - (selected_vehicle.ProdCost_t)
+                            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t)
 
                         I_s_t = market_data[segment_code]["I_s_t"]
                         W = market_data[segment_code]["W"]

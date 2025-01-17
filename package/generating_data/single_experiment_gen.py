@@ -37,7 +37,7 @@ if __name__ == "__main__":
     base_params = {
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,#156,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "choice_seed": 9,
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             "Adoption_subsidy": "Zero",
             "Adoption_subsidy_used": "Zero",
             "Production_subsidy": "Zero",
-            "Research_subsidy": "Zero"
+            "Research_subsidy": "High"
         },
         "Values":{
             "Carbon_price":{
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                     "corporate_tax": 0.05
                 },
                 "High":{
-                    "corporate_tax": 0.2
+                    "corporate_tax": 0.99
                 }
             },
             "Electricity_subsidy":{                
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                     "electricity_price_subsidy": 0.01
                 },
                 "High":{
-                    "electricity_price_subsidy": 0.1
+                    "electricity_price_subsidy": 1
                 }
             },
             "Adoption_subsidy":{
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                     "rebate": 2500
                 },
                 "High":{
-                    "rebate": 10000
+                    "rebate": 50000
                 }
             },
             "Adoption_subsidy_used":{
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                     "rebate": 500
                 },
                 "High":{
-                    "rebate": 1000
+                    "rebate": 200000
                 }
             },
             "Production_subsidy":{
@@ -152,7 +152,7 @@ if __name__ == "__main__":
                     "rebate": 2500
                 },
                 "High":{
-                    "rebate": 5000
+                    "rebate": 80000
                 }
             },
             "Research_subsidy":{
@@ -163,7 +163,7 @@ if __name__ == "__main__":
                     "rebate": 2500
                 },
                 "High":{
-                    "rebate": 5000
+                    "rebate": 20000
                 }
             }
         }
@@ -238,7 +238,7 @@ if __name__ == "__main__":
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.9,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car":0.083
@@ -257,7 +257,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
 
     if RUN_PLOT:
         plotting_main(fileName = fileName)
