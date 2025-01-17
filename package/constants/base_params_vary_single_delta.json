@@ -156,7 +156,7 @@
         "delta": 0.005,
         "transportType": 2,
         "min_Price": 20000,
-        "max_Price": 100000,
+        "max_Price": 120000,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -179,7 +179,7 @@
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 5
+        "num_beta_segments": 4
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -207,13 +207,13 @@
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.65,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":8,
+        "kappa":10,
         "r": 0.00417,
         "mu": 0.5,
         "nu": 10e-6

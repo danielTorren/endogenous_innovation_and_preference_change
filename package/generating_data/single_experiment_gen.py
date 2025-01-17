@@ -35,7 +35,6 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future": 0,#156,
@@ -49,10 +48,6 @@ if __name__ == "__main__":
         "start_time": 120,
         "rebate": 10000,
         "used_rebate": 1000,
-        "rebate_count_cap": 70000,
-        "pop": 39370000,
-        "rebate_low": 2500,
-        "used_rebate_low": 1000
     },
     "parameters_scenarios":{
         "States":{
@@ -175,7 +170,7 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "remove_seed": 48,
-        "age_limit_second_hand": 12,#3,
+        "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "fixed_alternative_mark_up": 0.2,
@@ -192,7 +187,7 @@ if __name__ == "__main__":
         "delta": 0.005,
         "transportType": 2,
         "min_Price": 20000,
-        "max_Price": 100000,
+        "max_Price": 120000,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -243,13 +238,13 @@ if __name__ == "__main__":
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 1,
+        "a_innovativeness": 0.9,
         "b_innovativeness": 1,
         "selection_bias": 5,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":1,#8,
+        "kappa":10,
         "r": 0.00417,
         "mu": 0.5,
         "nu": 10e-6

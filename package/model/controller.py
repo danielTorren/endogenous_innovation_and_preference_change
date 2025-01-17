@@ -265,9 +265,10 @@ class Controller:
         #print("P", P)
         C = np.asarray([self.parameters_ICE["min_Cost"], (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2])
         #print("C",C)
-        beta = np.max(self.beta_vec)#np.median(self.beta_vec)
+        beta = np.asarray([np.median(self.beta_vec),np.min(self.beta_vec)])
         #print("beta", beta)
         gamma = np.max(self.gamma_vec)#np.median(self.gamma_vec)
+
         #print("gamma", gamma)
         E = self.parameters_ICE["production_emissions"]
 
@@ -275,11 +276,11 @@ class Controller:
         r = self.parameters_vehicle_user["r"]
         c_minus = np.min(self.calibration_gas_price_california_vec)
         #print("c minus", c_minus)
-        c = c_minus#(c_plus + c_minus)/2
+        c = (c_plus + c_minus)/2
         #print("c", c)
         omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
         #print("omega_plus",omega_plus)
-        omega = omega_plus#(omega_plus + omega_minus)/2
+        omega = (omega_plus + omega_minus)/2
         #print("omega", omega)
         X = (beta*c + gamma*e)/omega
         #print("X", X)
@@ -292,22 +293,31 @@ class Controller:
         #quit()
         Q_vals = (alpha * X + 1) * (r + delta) * (np.log(inside_log**(1/(self.parameters_vehicle_user["kappa"]))) + beta * P + gamma * E) /  (1 + r) 
 
-        Q_minus = Q_vals[0]
-        Q_plus = Q_vals[1]
+        #Q_minus = Q_vals[0]
+        #Q_plus = Q_vals[1]
 
         #print("Q_vals", Q_vals)
 
-        min_q = np.maximum(0,(4*Q_minus - Q_plus)/3)#SET MINIUM TO ZERO
-        max_q = (4*Q_plus - Q_minus)/3
+        #min_q = np.maximum(0,(4*Q_minus - Q_plus)/3)#SET MINIUM TO ZERO
+        #max_q = (4*Q_plus - Q_minus)/3
 
-        self.parameters_ICE["min_Quality"] = min_q
-        self.parameters_ICE["max_Quality"] = max_q
-        self.parameters_EV["min_Quality"] = min_q
-        self.parameters_EV["max_Quality"] = max_q
+        
+        max_q_poor = (4*Q_vals[0] - 0)/3
+        max_q_rich = (4*Q_vals[1] - 0)/3
+
+        max_q = (max_q_poor + max_q_rich)/2
+        print("max_q_poor", max_q_poor)
+        print("max_q_rich ", max_q_rich )
+        print("max_q ", max_q )
+
+        self.parameters_ICE["min_Quality"] = 0#min_q
+        self.parameters_ICE["max_Quality"] = max_q #max_q
+        self.parameters_EV["min_Quality"] = 0#min_q
+        self.parameters_EV["max_Quality"] = max_q #max_q
 
         #print("alpha", alpha)
-        #print("min_q", min_q)
-        #print("max_q", max_q)
+        #print("min_q", #min_q)
+        #print("max_q", #max_q)
         #quit()
 
 

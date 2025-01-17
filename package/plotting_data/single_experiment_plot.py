@@ -2773,10 +2773,10 @@ def main(fileName, dpi=600):
     #plot_mean_distance_one_row(base_params,social_network, time_series, fileName, percentiles)
     #plot_mean_utility_one_row(base_params,social_network, time_series, fileName, percentiles)
 
-    plot_transport_users_beta_gamma_chi(firm_manager,base_params,social_network, time_series, fileName, percentiles)
-    plot_mean_emissions_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
-    plot_mean_distance_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
-    plot_mean_utility_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_transport_users_beta_gamma_chi(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_emissions_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_distance_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
+    #plot_mean_utility_beta_gamma_chi_split(firm_manager,base_params,social_network, time_series, fileName, percentiles)
 
     #plot_conditional_transport_users_4x4(base_params,social_network, time_series, fileName, percentiles)
     
