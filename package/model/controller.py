@@ -804,6 +804,7 @@ class Controller:
         self.duration_future = self.parameters_controller["duration_future"]
         self.time_steps_max = self.parameters_controller["time_steps_max"]
 
+        self.manage_calibration()
         self.manage_scenario()
         self.manage_policies() 
 
@@ -813,6 +814,12 @@ class Controller:
         
         self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.rebate_time_series_future), axis=None) 
         self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.used_rebate_time_series_future), axis=None) 
+
+        
+        #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
+        self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
+        self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
+
 
         self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
         self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
