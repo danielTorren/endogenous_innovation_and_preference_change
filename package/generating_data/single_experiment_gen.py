@@ -21,7 +21,7 @@ def main(
     pyperclip.copy(fileName)
     print("fileName:", fileName)
 
-    controller = generate_data(base_params, print_simu= 0)  # run the simulation 
+    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
     print("uptake",  controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
@@ -35,36 +35,19 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_repetitions": 10,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,#156,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "seeds":{
-        "choice_seed": 9,
-        "remove_seed": 48,
-        "landscape_seed_ICE": 26,
-        "landscape_seed_EV": 14, 
-        "init_tech_seed": 99,
-        "innovation_seed": 77,
-        "network_structure_seed": 8,
-        "init_vals_environmental_seed": 66,
-        "init_vals_innovative_seed":99, 
-        "init_vals_price_seed": 8, 
-        "social_network_seed": 66
-    },
+    "choice_seed": 9,
     "ev_research_start_time": 60,
-    "ev_production_start_time": 60,
+    "ev_production_start_time": 60,#
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
         "rebate": 10000,
         "used_rebate": 1000,
-        "rebate_count_cap": 70000,
-        "pop": 39370000,
-        "rebate_low": 2500,
-        "used_rebate_low": 1000
     },
     "parameters_scenarios":{
         "States":{
@@ -91,13 +74,13 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
             "Adoption_subsidy_used": "Zero",
             "Production_subsidy": "Zero",
-            "Research_subsidy": "Zero"
+            "Research_subsidy": "High"
         },
         "Values":{
             "Carbon_price":{
@@ -113,7 +96,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 10,
+                    "Carbon_price": 2,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -125,7 +108,7 @@ if __name__ == "__main__":
                     "corporate_tax": 0.05
                 },
                 "High":{
-                    "corporate_tax": 1
+                    "corporate_tax": 0.99
                 }
             },
             "Electricity_subsidy":{                
@@ -133,7 +116,7 @@ if __name__ == "__main__":
                     "electricity_price_subsidy": 0
                 },
                 "Low":{
-                    "electricity_price_subsidy": 0.1
+                    "electricity_price_subsidy": 0.01
                 },
                 "High":{
                     "electricity_price_subsidy": 1
@@ -158,7 +141,7 @@ if __name__ == "__main__":
                     "rebate": 500
                 },
                 "High":{
-                    "rebate": 1000
+                    "rebate": 200000
                 }
             },
             "Production_subsidy":{
@@ -169,7 +152,7 @@ if __name__ == "__main__":
                     "rebate": 2500
                 },
                 "High":{
-                    "rebate": 5000
+                    "rebate": 80000
                 }
             },
             "Research_subsidy":{
@@ -180,35 +163,40 @@ if __name__ == "__main__":
                     "rebate": 2500
                 },
                 "High":{
-                    "rebate": 5000
+                    "rebate": 20000
                 }
             }
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 120,#36,
+        "remove_seed": 48,
+        "age_limit_second_hand": 12,
+        "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
+        "fixed_alternative_mark_up": 0.2,
         "scrap_price": 1000,
-        "max_num_cars_prop": 0.3
+        "prob_update_second_hand_ols": 0.083
     },
     "parameters_ICE":{
+        "landscape_seed": 22, 
         "N": 15,
-        "K": 4,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.001,
+        "delta": 0.005,
         "transportType": 2,
         "min_Price": 20000,
-        "max_Price": 80000,
-        "min_Efficiency": 0.3,
-        "max_Efficiency": 1.444,
+        "max_Price": 120000,
+        "min_Efficiency": 0.5,
+        "max_Efficiency": 1.5,
         "min_Cost": 5000,
         "max_Cost": 30000
     },
     "parameters_EV":{
+        "landscape_seed": 14,
         "N": 15,
-        "K": 4,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
         "production_emissions":9000,
@@ -217,42 +205,49 @@ if __name__ == "__main__":
         "max_Efficiency": 7
     },
     "parameters_firm_manager": {
-        "J": 30,
+        "init_tech_seed": 99,
+        "J": 10,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "beta_threshold_percentile": 50,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 5
+        "num_beta_segments": 4
     },
     "parameters_firm":{
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "lambda_pow": 5,
+        "innovation_seed": 77,
         "num_cars_production": 16,
         "init_U": 10e5,
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
-        "d_max": 4000,
+        "num_individuals": 5000,
+        "network_structure_seed": 8,
+        "init_vals_environmental_seed": 66,
+        "init_vals_innovative_seed":99, 
+        "init_vals_price_seed": 8, 
+        "social_network_seed": 66,
+        "d_max": 3000,
         "d_min": 500,
+        "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 0,#210,
-        "WTP_sd": 0.0,#175,
-        "gamma_epsilon": 0,#1e-8,
+        "WTP_mean": 210,
+        "WTP_sd": 175,
+        "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.7,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
-        "chi_max": 0.9,
-        "prob_switch_car": 0.083
+        "selection_bias": 5,
+        "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa": 1,#30,
+        "kappa":10,
         "r": 0.00417,
-        "mu": 0.2,
-        "nu": 1#1,#10e-4
+        "mu": 0.5,
+        "nu": 10e-6
     }
 }
     
@@ -262,7 +257,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
 
     if RUN_PLOT:
         plotting_main(fileName = fileName)

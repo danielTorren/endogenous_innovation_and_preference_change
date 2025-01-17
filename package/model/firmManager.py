@@ -22,13 +22,11 @@ class Firm_Manager:
 
         #self.save_timeseries_data_state = parameters_firm_manager["save_timeseries_data_state"]
         #self.compression_factor_state = parameters_firm_manager["compression_factor_state"]
-
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.id_generator = parameters_firm_manager["IDGenerator_firms"]
         self.kappa = parameters_firm_manager["kappa"]
         self.num_individuals = parameters_firm_manager["num_individuals"]
 
-        self.rebate_count_cap = parameters_firm_manager["rebate_count_cap_adjusted"]
 
         self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
 
@@ -43,6 +41,10 @@ class Firm_Manager:
         #car paramets
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV 
+
+        #PRICE, NOT SURE IF THIS IS NECESSARY
+        #self.beta_val_empty_upper =  parameters_firm_manager["beta_val_empty_upper"]
+        #self.beta_val_empty_lower =  parameters_firm_manager["beta_val_empty_lower"]
         
         self.gamma_threshold = parameters_firm_manager["gamma_threshold"]
         self.gamma_val_empty_upper = parameters_firm_manager["gamma_val_empty_upper"]
@@ -167,9 +169,7 @@ class Firm_Manager:
          - gamma_s_t (average gamma)
          - W     (will be computed after we calculate utilities)
         """
-        # 1) Build a dictionary for ALL possible combos
-        
-        # 1) Build a dictionary for ALL possible combos
+         # 1) Build a dictionary for ALL possible combos
         self.market_data = {}
         for code in self.all_segment_codes:
             self.market_data[code] = {
@@ -225,21 +225,21 @@ class Firm_Manager:
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
 
-        #7) get the U of all cars on sale for all cars on sale
 
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
-    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy):
+    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         cars_on_sale_all_firms = []
         segment_W = defaultdict(float)
         self.zero_profit_options_prod_sum = 0
         self.zero_profit_options_research_sum = 0
 
+        #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate)
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
-            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)
+            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
             for car in cars_on_sale:
@@ -248,7 +248,7 @@ class Firm_Manager:
 
         return cars_on_sale_all_firms, segment_W
 
-    def update_market_data_moving_average(self, W_segment):
+    def update_market_data_moving_average_old(self, W_segment):
         """
         If you still want a moving average approach:
         """
@@ -282,7 +282,7 @@ class Firm_Manager:
             self.market_data[code]["W"] = moving_avg_W
 
             self.total_W += moving_avg_W
-
+    
     def compute_utilities_vec_moving_average(self):
         """
         Compute the utilities vector for all cars using a rolling average approach,
@@ -322,8 +322,6 @@ class Firm_Manager:
 
         return rolling_avg_means
 
-
-    
     ######################################################################################################################
 
     def calc_total_profits(self, past_new_bought_vehicles):
@@ -384,16 +382,6 @@ class Firm_Manager:
     def add_social_network(self,social_network):
         self.social_network = social_network
 
-    def handle_limited_rebate(self):#THIS BLOCKS FIRMS IF THEY RECIEVE TOO MUCH REBATE
-        for vehicle in self.past_new_bought_vehicles:
-            if vehicle.transport_type == 3:
-                vehicle.firm.EVs_sold += 1
-        
-        for firm in self.firms_list:
-            if firm.EVs_sold > self.rebate_count_cap:
-                self.social_network.add_firm_rebate_exclusion_set(firm.firm_id)
-                print("firm got to the limit:", self.t_firm_manager,firm.firm_id)
-
     #####################################################################################################################
 
     def set_up_time_series_firm_manager(self):
@@ -437,7 +425,7 @@ class Firm_Manager:
 
     #####################################################################################################################
 
-    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy):
+    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         
         self.t_firm_manager += 1
         
@@ -446,14 +434,20 @@ class Firm_Manager:
          
         self.carbon_price = carbon_price
 
+        #print("gas_price",gas_price)
+
         self.discriminatory_corporate_tax = discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
-        self.cars_on_sale_all_firms, W_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.cars_on_sale_all_firms, W_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
     
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         #self.update_market_data(sums_U_segment)
-        self.update_market_data_moving_average(W_segment)
-
+        self.update_market_data_moving_average_old(W_segment)
         self.U_vec_on_sale = self.compute_utilities_vec_moving_average()
 
-        return self.cars_on_sale_all_firms, self.U_vec_on_sale
+        #print(self.market_data)
+        #quit()
+
+        self.total_W = 1#DONT NEED THIS
+
+        return self.cars_on_sale_all_firms, self.total_W, self.U_vec_on_sale

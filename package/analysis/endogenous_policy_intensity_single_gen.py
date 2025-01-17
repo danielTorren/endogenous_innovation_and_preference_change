@@ -273,7 +273,7 @@ def main(
 
         intensity_level_init = (bounds_dict[policy_name][0] + bounds_dict[policy_name][1])/2#start at teh middle
 
-        initial_step_size = intensity_level_init*0.01#step size of 10%
+        initial_step_size = intensity_level_init*0.01#step size of 1%
 
         mean_ev_uptake, mean_total_cost, intensity_level = optimize_policy_intensity_minimize(
             params,
@@ -301,7 +301,6 @@ if __name__ == "__main__":
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
             "Adoption_subsidy",
-            "Production_subsidy",
-            "Research_subsidy"
-            ]
+            ],
+            BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json"
         )
