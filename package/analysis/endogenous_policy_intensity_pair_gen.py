@@ -212,7 +212,7 @@ def main_pair_optimization(
 ###############################################################################
 if __name__ == "__main__":
     main_pair_optimization(
-        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_pair_gen6.json",
+        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_pair_gen.json",
         BOUNDS_LOAD = "package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list = [
             "Carbon_price",
