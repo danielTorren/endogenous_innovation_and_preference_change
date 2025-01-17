@@ -401,65 +401,65 @@ class Controller:
 
         # Discriminatory_corporate_tax calculation
         if self.Discriminatory_corporate_tax_state == "Zero":
-            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Zero"]["corporate_tax"]
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Zero"]
         elif self.Discriminatory_corporate_tax_state == "Low":
-            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Low"]["corporate_tax"]
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Low"]
         elif self.Discriminatory_corporate_tax_state == "High":
-            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["High"]["corporate_tax"]
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["High"]
         else:
             raise ValueError("Invalid Discriminatory_corporate_tax state")
         self.discriminatory_corporate_tax_time_series_future = np.asarray([self.Discriminatory_corporate_tax]*self.duration_future)
 
         # Electricity_subsidy calculation
         if self.Electricity_subsidy_state == "Zero":
-            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Zero"]["electricity_price_subsidy"]
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Zero"]
         elif self.Electricity_subsidy_state == "Low":
-            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Low"]["electricity_price_subsidy"]
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Low"]
         elif self.Electricity_subsidy_state == "High":
-            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["High"]["electricity_price_subsidy"]
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["High"]
         else:
             raise ValueError("Invalid electricity_price_subsidy state")
         self.electricity_price_subsidy_time_series_future = np.asarray([self.Electricity_subsidy]*self.duration_future)
 
         # Adoption subsidy calculation
         if self.Adoption_subsidy_state == "Zero":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["rebate"]
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]
         elif self.Adoption_subsidy_state == "Low":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["rebate"]
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]
         elif self.Adoption_subsidy_state == "High":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["rebate"]
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]
         else:
             raise ValueError("Invalid Adoption subsidy state")
         self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
 
         if self.Adoption_subsidy_used_state == "Zero":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]["rebate"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]
         elif self.Adoption_subsidy_used_state == "Low":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]["rebate"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]
         elif self.Adoption_subsidy_used_state == "High":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]["rebate"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]
         else:
             raise ValueError("Invalid Adoption subsidy state")
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
 
         # Production_subsidy calculation
         if self.Production_subsidy_state == "Zero":
-            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Zero"]["rebate"]
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Zero"]
         elif self.Production_subsidy_state == "Low":
-            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Low"]["rebate"]
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Low"]
         elif self.Production_subsidy_state == "High":
-            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["High"]["rebate"]
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["High"]
         else:
             raise ValueError("Invalid Production_subsidy state")
         self.production_subsidy_time_series_future = np.asarray([self.Production_subsidy]*self.duration_future)
 
         # Research_subsidy calculation
         if self.Research_subsidy_state == "Zero":
-            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Zero"]["rebate"]
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Zero"]
         elif self.Research_subsidy_state == "Low":
-            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Low"]["rebate"]
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Low"]
         elif self.Research_subsidy_state == "High":
-            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["High"]["rebate"]
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["High"]
         else:
             raise ValueError("Invalid Research_subsidy state")
         self.research_subsidy_time_series_future = np.asarray([self.Research_subsidy]*self.duration_future)

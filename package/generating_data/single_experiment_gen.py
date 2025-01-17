@@ -113,70 +113,34 @@ if __name__ == "__main__":
                 }
             },
             "Discriminatory_corporate_tax":{
-                "Zero":{
-                    "corporate_tax": 0
-                },
-                "Low":{
-                    "corporate_tax": 0.05
-                },
-                "High":{
-                    "corporate_tax": 0.99
-                }
+                "Zero": 0,
+                "Low":0.05,
+                "High":0.99
             },
             "Electricity_subsidy":{                
-                "Zero":{
-                    "electricity_price_subsidy": 0
-                },
-                "Low":{
-                    "electricity_price_subsidy": 0.01
-                },
-                "High":{
-                    "electricity_price_subsidy": 1
-                }
+                "Zero":0,
+                "Low": 0.01,
+                "High": 1
             },
             "Adoption_subsidy":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 2500
-                },
-                "High":{
-                    "rebate": 50000
-                }
+                "Zero": 0,
+                "Low": 2500,
+                "High":50000
             },
             "Adoption_subsidy_used":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 500
-                },
-                "High":{
-                    "rebate": 200000
-                }
+                "Zero":0,
+                "Low":500,
+                "High":200000
             },
             "Production_subsidy":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 2500
-                },
-                "High":{
-                    "rebate": 80000
-                }
+                "Zero":0,
+                "Low":2500,
+                "High":80000
             },
             "Research_subsidy":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 2500
-                },
-                "High":{
-                    "rebate": 20000
-                }
+                "Zero":0,
+                "Low":2500,
+                "High":20000
             }
         }
     },

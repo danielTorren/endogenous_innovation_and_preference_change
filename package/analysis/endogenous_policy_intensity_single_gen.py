@@ -223,8 +223,8 @@ def main(
         BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
         BOUNDS_LOAD="package/analysis/policy_bounds.json", 
         policy_list = [
-            "Carbon_price",
             "Discriminatory_corporate_tax",
+            "Carbon_price",
             "Electricity_subsidy",
             "Adoption_subsidy",
             "Production_subsidy",
