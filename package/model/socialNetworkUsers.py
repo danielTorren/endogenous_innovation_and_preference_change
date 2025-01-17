@@ -18,17 +18,11 @@ class Social_Network:
 
         self.policy_distortion = 0#NEED FOR OPTIMISATION, measures the distortion from policies
         
-        self.used_firm_rebate_exclusion_set = set()
-        self.firm_rebate_exclusion_set = set()
-
         self.rebate = parameters_social_network["rebate"]
         self.used_rebate = parameters_social_network["used_rebate"]
 
         self.rebate_calibration = parameters_social_network["rebate"]
         self.used_rebate_calibration = parameters_social_network["used_rebate"]
-
-        self.rebate_low = parameters_social_network["rebate_low"]
-        self.used_rebate_low = parameters_social_network["used_rebate_low"]
 
         self.prob_switch_car = parameters_social_network["prob_switch_car"]
 
@@ -784,8 +778,7 @@ class Social_Network:
         l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
 
-        #have one value for rebate low and another which is the high rebate
-        rebate_vec = np.where([vehicle.firm.firm_id in self.firm_rebate_exclusion_set for vehicle in list_vehicles], self.rebate_low, self.rebate)
+        rebate_vec = np.where(transport_type == 3, self.rebate_calibration + self.rebate, 0)
 
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
@@ -815,8 +808,7 @@ class Social_Network:
         l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
 
-        #have one value for rebate low and another which is the high rebate
-        used_rebate_vec = np.where([vehicle.firm.firm_id in self.used_firm_rebate_exclusion_set for vehicle in list_vehicles], self.used_rebate_low, self.used_rebate)
+        used_rebate_vec = np.where(transport_type == 3, self.used_rebate_calibration + self.used_rebate, 0)
 
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
@@ -843,12 +835,7 @@ class Social_Network:
 
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
-
-        price_difference_raw = np.where(
-            vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
-            (vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate - second_hand_merchant_offer_price),  # Apply rebate
-            vehicle_dict_vecs["price"][:, np.newaxis] - second_hand_merchant_offer_price  # No rebate
-        )
+        price_difference_raw = vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate - second_hand_merchant_offer_price
 
         price_difference = np.maximum(0, price_difference_raw)#HAS TO BE ZERO
 
@@ -866,17 +853,13 @@ class Social_Network:
 
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
-        # Calculate price difference, applying rebate only for transportType == 3
-        price_difference_raw = np.where(
-            vehicle_dict_vecs["transportType"][:, np.newaxis] == 3,  # Check transportType
-            (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis] - second_hand_merchant_offer_price),  # Apply rebate
-            vehicle_dict_vecs["price"][:, np.newaxis] - second_hand_merchant_offer_price  # No rebate
-        )
+        # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
+        price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis] - second_hand_merchant_offer_price)  # Apply rebate
+
         price_difference = np.maximum(0, price_difference_raw)
         price_adjust = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
 
         U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))))
-
 
         return U_a_i_t_matrix_final, d_i_t_L
     
@@ -894,21 +877,6 @@ class Social_Network:
         driving_utility_matrix_raw = Quality_a_t_vec * ((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_matrix + 1)
 
         return driving_utility_matrix_raw  # Shape: (num_individuals, num_vehicles)
-
-    ####################################################################################################################################
-    #REBATE POLICIES
-
-    def add_firm_rebate_exclusion_set(self, firm_id):
-        self.firm_rebate_exclusion_set.add(firm_id)
-
-    def add_used_firm_rebate_exclusion_set(self, firm_id):
-        self.used_firm_rebate_exclusion_set.add(firm_id)
-    
-    def remove_firm_rebate_exclusion_set(self, firm_id):
-        self.firm_rebate_exclusion_set.remove(firm_id)
-
-    def remove_used_firm_rebate_exclusion_set(self, firm_id):
-        self.used_firm_rebate_exclusion_set.remove(firm_id)
 
     ################################################################################################################################
     

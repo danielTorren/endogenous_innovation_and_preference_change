@@ -7,6 +7,8 @@ class Firm:
         
 
         self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
+        self.rebate_calibration = parameters_firm["rebate_calibration"]
+        
 
         self.t_firm = 0
         self.production_change_bool = 0
@@ -132,7 +134,7 @@ class Firm:
             if car.transportType == 3:#EV
                 C_m  = car.ProdCost_t - self.production_subsidy
                 C_m_cost  = np.maximum(0,car.ProdCost_t - self.production_subsidy)
-                C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate))
+                C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate + self.rebate_calibration))
                 #C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy))
 
             # Iterate over each market segment to calculate utilities and distances
@@ -197,7 +199,7 @@ class Firm:
                     #print("(car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions))", (car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)))
                     #quit()
                     if car.transportType == 3:
-                        price_adjust = np.maximum(0,price_s - self.rebate)
+                        price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
 
                         #utility_segment_U  = car.car_base_utility_segments[segment_code]/(beta_s *price_adjust + gamma_s * car.emissions)
                         utility_segment_U  = np.exp(self.nu*(car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)))
@@ -590,7 +592,7 @@ class Firm:
 
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
-                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] - self.rebate) +  gamma_s * selected_vehicle.emissions)))
+                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] - (self.rebate + self.rebate_calibration)) +  gamma_s * selected_vehicle.emissions)))
                             else:
                                 utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)))
                             
@@ -729,7 +731,7 @@ class Firm:
                 car.e_t = self.electricity_emissions_intensity
         return car_list
 
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
@@ -737,6 +739,7 @@ class Firm:
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
+        self.rebate_calibration = rebate_calibration
         self.discriminatory_corporate_tax =  discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
@@ -749,7 +752,6 @@ class Firm:
             self.cars_on_sale = self.choose_cars_segments(market_data)
             self.production_change_bool = 1
             self.prod_counter += 1
-
 
         self.update_memory_timer()
 

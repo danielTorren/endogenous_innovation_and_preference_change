@@ -543,8 +543,7 @@ class Controller:
         #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
         self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
         self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
-        print("self.rebate_calibration_time_series", len(self.rebate_calibration_time_series))
-        
+
         if self.full_run_state:
             self.manage_scenario()
             self.manage_policies() 
@@ -568,6 +567,9 @@ class Controller:
             self.electricity_price_vec = self.pre_future_electricity_price_vec 
             self.electricity_emissions_intensity_vec = self.pre_future_electricity_emissions_intensity_vec
             
+            self.rebate_time_series =  np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.used_rebate_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+
             self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.discriminatory_corporate_tax_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
@@ -589,8 +591,6 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = int(round(self.parameters_vehicle_user["kappa"]))
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
-        self.rebate_users_per_pop = self.parameters_social_network["num_individuals"]/self.parameters_rebate_calibration["pop"]
-        self.parameters_firm_manager["rebate_count_cap_adjusted"] = self.parameters_rebate_calibration["rebate_count_cap"]*self.rebate_users_per_pop
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -607,7 +607,8 @@ class Controller:
         self.parameters_firm["electricity_price"] = self.electricity_price
         self.parameters_firm["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_firm["rebate"] = self.rebate 
-        self.parameters_firm["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
+        self.parameters_firm["rebate_calibration"] = self.rebate_calibration
+
         self.parameters_firm["d_max"] = self.parameters_social_network["d_max"]
         self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
 
@@ -632,10 +633,12 @@ class Controller:
         self.parameters_social_network["gas_price"] = self.gas_price
         self.parameters_social_network["electricity_price"] = self.electricity_price
         self.parameters_social_network["electricity_emissions_intensity"] = self.electricity_emissions_intensity
+        
         self.parameters_social_network["rebate"] = self.rebate 
-        self.parameters_social_network["used_rebate"] = self.used_rebate 
-        self.parameters_social_network["rebate_low"] = self.parameters_rebate_calibration["rebate_low"]
-        self.parameters_social_network["used_rebate_low"] = self.parameters_rebate_calibration["used_rebate_low"]
+        self.parameters_social_network["used_rebate"] = self.used_rebate
+        self.parameters_social_network["rebate_calibration"] = self.rebate_calibration 
+        self.parameters_social_network["used_rebate_calibration"] = self.used_rebate_calibration 
+
         self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
         self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
@@ -749,6 +752,7 @@ class Controller:
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]
+
         self.used_rebate_calibration = self.used_rebate_calibration_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
 
@@ -756,15 +760,6 @@ class Controller:
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
         self.research_subsidy = self.research_subsidy_time_series[self.t_controller]
 
-        #HANDLE REBATE EXCLUSION, REMOVE ALL THE FIRMS FROM THE LIST, RESET THE COMULATIVE COST OF POLICY
-        if self.t_controller == self.duration_burn_in + self.duration_no_carbon_price:
-            for firm_id in self.social_network.firm_rebate_exclusion_set:
-                self.social_network.remove_firm_rebate_exclusion_set(firm_id)
-
-            self.social_network.policy_distortion = 0
-            self.firm_manager.policy_distortion = 0
-            for firm in self.firm_manager.firms_list:
-                firm.policy_distortion = 0
 
     def update_firms(self):
         cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy, self.rebate_calibration)
@@ -823,8 +818,9 @@ class Controller:
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
-        self.rebate_time_series = np.concatenate((self.pre_future_rebate_time_series,self.rebate_time_series_future ), axis=None) 
-        self.used_rebate_time_series = np.concatenate((self.pre_future_used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
+        
+        self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.rebate_time_series_future), axis=None) 
+        self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.used_rebate_time_series_future), axis=None) 
 
         self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
         self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 

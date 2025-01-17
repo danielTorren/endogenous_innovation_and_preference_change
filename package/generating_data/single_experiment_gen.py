@@ -249,7 +249,7 @@ if __name__ == "__main__":
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":8,
+        "kappa":1,#8,
         "r": 0.00417,
         "mu": 0.5,
         "nu": 10e-6
