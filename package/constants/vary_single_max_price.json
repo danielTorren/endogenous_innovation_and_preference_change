@@ -1,0 +1,5 @@
+{
+    "property_varied": "max_Price",
+    "subdict": "parameters_ICE",
+    "property_values_list": [90000,120000,160000,200000]
+}

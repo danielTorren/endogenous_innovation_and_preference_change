@@ -139,7 +139,7 @@ def distance_ev_prop_parallel_run(
 #########################################################################################
 def generate_multi(params):
     data = generate_data(params)
-    return data.social_network.history_distance_individual, data.social_network.history_prop_EV, data.social_network.history_car_age, data.social_network.history_mean_price, data.social_network.history_driving_emissions
+    return data.social_network.history_distance_individual, data.social_network.history_prop_EV, data.social_network.history_car_age, data.social_network.history_mean_price, data.social_network.history_driving_emissions, data.social_network.history_car_prices_sold_new
 #data_flat_age, data_flat_price , data_flat_emissions 
 
 def distance_ev_prop_age_price_emissions_parallel_run(
@@ -148,10 +148,10 @@ def distance_ev_prop_age_price_emissions_parallel_run(
     num_cores = multiprocessing.cpu_count()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_multi)(i) for i in params_dict)
-    distance_list, ev_prop_list, age_list, price_list, emissions_list = zip(
+    distance_list, ev_prop_list, age_list, price_list, emissions_list, history_car_prices_sold_new_list = zip(
         *res
     )
-    return np.asarray(distance_list), np.asarray(ev_prop_list), np.asarray(age_list) , np.asarray(price_list) , np.asarray(emissions_list) 
+    return np.asarray(distance_list), np.asarray(ev_prop_list), np.asarray(age_list) , np.asarray(price_list) , np.asarray(emissions_list) , history_car_prices_sold_new_list
 
 #########################################################################################
 

@@ -70,7 +70,7 @@ def main(
     params_list = produce_param_list(base_params, property_values_list, subdict, property_varied)
     
     print("TOTAL RUNS: ", len(params_list))
-    data_flat_distance, data_flat_ev_prop, data_flat_age, data_flat_price , data_flat_emissions = distance_ev_prop_age_price_emissions_parallel_run(params_list) 
+    data_flat_distance, data_flat_ev_prop, data_flat_age, data_flat_price , data_flat_emissions, data_car_prices_sold_new = distance_ev_prop_age_price_emissions_parallel_run(params_list) 
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
     data_array_distance = data_flat_distance.reshape(len(property_values_list),seed_repetitions, len(data_flat_distance[0]), base_params["parameters_social_network"]["num_individuals"])
@@ -89,10 +89,13 @@ def main(
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(vary_single , fileName + "/Data", "vary_single")
 
+    save_object(data_car_prices_sold_new, fileName + "/Data", "data_car_prices_sold_new")
+    
+
     return params_list
 
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_mu.json", #"package/constants/vary_single_delta.json"
+        VARY_LOAD ="package/constants/vary_single_a_innov.json",#
         )

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.special import lambertw
+from sklearn.linear_model import LinearRegression
 
 class SecondHandMerchant:
 
@@ -69,6 +70,29 @@ class SecondHandMerchant:
             vehicle_dict_vecs[key] = np.array(vehicle_dict_vecs[key])
 
         return vehicle_dict_vecs
+    
+    def gen_vehicle_dict_vecs_new_cars(self, list_vehicles):
+        # Initialize dictionary to hold lists of vehicle properties
+        vehicle_dict_vecs = {
+            "Quality_a_t": [], 
+            "Eff_omega_a_t": [], 
+            "price": [], 
+            "L_a_t": [],
+        }
+
+        # Iterate over each vehicle to populate the arrays
+        for vehicle in list_vehicles:
+            vehicle_dict_vecs["Quality_a_t"].append(vehicle.Quality_a_t)
+            vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
+            vehicle_dict_vecs["price"].append(vehicle.price)
+            vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
+
+        # convert lists to numpy arrays for vectorised operations
+        for key in vehicle_dict_vecs:
+            vehicle_dict_vecs[key] = np.array(vehicle_dict_vecs[key])
+
+        return vehicle_dict_vecs
+    
 
 ####################################################################################################################################
     def calc_driving_utility_direct_old(self, Quality_a_t_vec,L_a_t_vec, X):
@@ -162,31 +186,95 @@ class SecondHandMerchant:
         Price_sale_vec = np.max(Price_s, axis = 0)
 
         return Price_sale_vec
-    
 
-#########################################################################################################################
-    def update_stock_contents_old(self):
+    def calc_car_price_heuristic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_second_hand_cars):
 
-        for vehicle in self.cars_on_sale:       
-            if vehicle.second_hand_counter > self.age_limit_second_hand:
-                self.age_second_hand_car_removed.append(vehicle.L_a_t)
-                self.cars_on_sale.remove(vehicle)
-                
-        data_dicts = self.gen_vehicle_dict_vecs(self.cars_on_sale)
+        # Extract Quality, Efficiency, and Prices of first-hand cars
+        first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
+        first_hand_efficiency =  vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
+        first_hand_prices = vehicle_dict_vecs_new_cars["price"]
 
-        price_vec = self.calc_car_price_vec(data_dicts, self.median_beta, self.median_gamma, self.U_sum)
+        # Extract Quality, Efficiency, and Age of second-hand cars
+        second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
+        second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
+        second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
 
-        for i, vehicle in enumerate(self.cars_on_sale):
-            #price = min((1+self.price_adjust_monthly)*vehicle.price , max((1 -self.price_adjust_monthly)*vehicle.price , price_vec[i]))
-            vehicle.price = price_vec[i]
+        # Normalize Quality and Efficiency for both first-hand and second-hand cars
+        all_quality = np.concatenate([first_hand_quality, second_hand_quality])
+        all_efficiency = np.concatenate([first_hand_efficiency, second_hand_efficiency])
 
+        quality_min, quality_max = np.min(all_quality), np.max(all_quality)
+        efficiency_min, efficiency_max = np.min(all_efficiency), np.max(all_efficiency)
+
+        normalized_first_hand_quality = (first_hand_quality - quality_min) / (quality_max - quality_min)
+        normalized_first_hand_efficiency = (first_hand_efficiency - efficiency_min) / (efficiency_max - efficiency_min)
+
+        normalized_second_hand_quality = (second_hand_quality - quality_min) / (quality_max - quality_min)
+        normalized_second_hand_efficiency = (second_hand_efficiency - efficiency_min) / (efficiency_max - efficiency_min)
+
+        # Compute proximity (Euclidean distance) for all second-hand cars to all first-hand cars
+        diff_quality = normalized_second_hand_quality[:, np.newaxis] - normalized_first_hand_quality
+        diff_efficiency = normalized_second_hand_efficiency[:, np.newaxis] - normalized_first_hand_efficiency
+
+        distances = np.sqrt(diff_quality ** 2 + diff_efficiency ** 2)
+
+        # Find the closest first-hand car for each second-hand car
+        closest_idxs = np.argmin(distances, axis=1)
+
+        # Get the prices of the closest first-hand cars
+        closest_prices = first_hand_prices[closest_idxs]
+
+        # Adjust prices based on car age and depreciation
+        adjusted_prices = closest_prices * (1 - self.delta) ** second_hand_ages
+
+        return adjusted_prices
+
+    def generate_ols(self,vehicle_dict_vecs_new_cars):
+        """
+        Use OLS regression to predict second-hand car prices based on quality and efficiency of new cars.
         
-                #check len of list
-        if len(self.cars_on_sale) > self.max_num_cars:
-            cars_to_remove = self.random_state_second_hand.choice(self.cars_on_sale, self.max_num_cars - len(self.cars_on_sale))#RANDOMLY REMOVE CARS FROM THE SALE LIST
-            for vehicle in cars_to_remove:
-             self.age_second_hand_car_removed.append(vehicle.L_a_t)
-            self.cars_on_sale.remove(cars_to_remove)
+        Args:
+            vehicle_dict_vecs_new_cars: Dictionary of new car attributes (Quality, Efficiency, Price).
+            vehicle_dict_vecs_current_cars: Dictionary of second-hand car attributes (Quality, Efficiency, Age).
+        """
+        # Extract features and target variable from new cars
+        first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
+        first_hand_efficiency = vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
+        first_hand_prices = vehicle_dict_vecs_new_cars["price"]
+
+        # Combine features into a matrix
+        first_hand_features = np.column_stack((first_hand_quality, first_hand_efficiency))
+
+        # Fit OLS model
+        self.ols_model = LinearRegression()
+        self.ols_model.fit(first_hand_features, first_hand_prices)
+
+    def calc_car_price_ols(self, vehicle_dict_vecs_second_hand_cars):
+        """
+        Use OLS regression to predict second-hand car prices based on quality and efficiency of new cars.
+        
+        Args:
+            vehicle_dict_vecs_new_cars: Dictionary of new car attributes (Quality, Efficiency, Price).
+            vehicle_dict_vecs_current_cars: Dictionary of second-hand car attributes (Quality, Efficiency, Age).
+        """
+
+        # Extract features from second-hand cars
+        # Extract Quality, Efficiency, and Age of second-hand cars
+        second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
+        second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
+        second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
+
+        # Combine second-hand features into a matrix
+        second_hand_features = np.column_stack((second_hand_quality, second_hand_efficiency))
+
+        # Predict second-hand prices using the OLS model
+        predicted_prices = self.ols_model.predict(second_hand_features)
+
+        # Adjust prices for depreciation based on age
+        adjusted_prices = predicted_prices * (1 - self.delta) ** second_hand_ages
+
+        return adjusted_prices
+
 #############################################################################################################################
 
     def update_stock_contents(self):
@@ -198,10 +286,16 @@ class SecondHandMerchant:
                 self.scrap_loss += vehicle.cost_second_hand_merchant
                 self.cars_on_sale.remove(vehicle)
 
-        data_dicts = self.gen_vehicle_dict_vecs(self.cars_on_sale)
+        data_dicts_second_hand = self.gen_vehicle_dict_vecs(self.cars_on_sale)
         # Calculate the price vector
-        price_vec = self.calc_car_price_vec(data_dicts)
-        #price_vec = self.calc_car_price_vec_old(data_dicts, self.median_beta, self.median_gamma, self.U_sum)
+        data_dicts_new_cars = self.gen_vehicle_dict_vecs_new_cars(self.vehicles_on_sale)
+
+        price_vec = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
+
+        #price_vec = self.calc_car_price_ols(data_dicts_second_hand)
+
+        #price_vec = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
+        #price_vec = self.calc_car_price_vec_old( data_dicts_second_hand, self.median_beta, self.median_gamma, self.U_sum)
 
         # Vectorized approach to identify cars below the scrap price
         below_scrap_mask = price_vec < self.scrap_price
@@ -270,11 +364,12 @@ class SecondHandMerchant:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicle_on_sale, carbon_price, U_sum, U_vec_on_sale):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, carbon_price, U_sum, U_vec_on_sale):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
+        self.vehicles_on_sale = vehicles_on_sale
         self.carbon_price = carbon_price
         self.U_vec_on_sale = U_vec_on_sale
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)

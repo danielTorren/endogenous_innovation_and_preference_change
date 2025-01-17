@@ -148,7 +148,7 @@ class Controller:
         WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
         self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
         self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
-        #print("self.gamma_vec", self.gamma_vec)
+
 
         #social network data
         self.parameters_social_network["beta_vec"] = self.beta_vec 
@@ -263,11 +263,11 @@ class Controller:
         W = 10e6#the value of this basically makes no difference to alpha, min q or max q
         P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
         #print("P", P)
-        C = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2
+        C = np.asarray([self.parameters_ICE["min_Cost"], (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2])
         #print("C",C)
-        beta = np.median(self.beta_vec)
+        beta = np.max(self.beta_vec)#np.median(self.beta_vec)
         #print("beta", beta)
-        gamma = np.median(self.gamma_vec)
+        gamma = np.max(self.gamma_vec)#np.median(self.gamma_vec)
         #print("gamma", gamma)
         E = self.parameters_ICE["production_emissions"]
 
@@ -275,26 +275,29 @@ class Controller:
         r = self.parameters_vehicle_user["r"]
         c_minus = np.min(self.calibration_gas_price_california_vec)
         #print("c minus", c_minus)
-        c = (c_plus + c_minus)/2
+        c = c_minus#(c_plus + c_minus)/2
         #print("c", c)
         omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
         #print("omega_plus",omega_plus)
-        omega = (omega_plus + omega_minus)/2
+        omega = omega_plus#(omega_plus + omega_minus)/2
         #print("omega", omega)
         X = (beta*c + gamma*e)/omega
         #print("X", X)
 
         inside_log = W *(self.parameters_vehicle_user["kappa"]* beta*(P - C) - 1)
-        print("more than 1",(self.parameters_vehicle_user["kappa"] * beta*(P - C))**(1/(self.parameters_vehicle_user["kappa"])))
+        has_to_be_more_than_one = self.parameters_vehicle_user["kappa"]* beta*(P - C)
+        if  any(item < 1 for item in has_to_be_more_than_one):
+            raise Exception("Costs too large relative to price")
+        #print("more than 1",(self.parameters_vehicle_user["kappa"] * beta*(P - C))**(1/(self.parameters_vehicle_user["kappa"])))
         #quit()
         Q_vals = (alpha * X + 1) * (r + delta) * (np.log(inside_log**(1/(self.parameters_vehicle_user["kappa"]))) + beta * P + gamma * E) /  (1 + r) 
 
         Q_minus = Q_vals[0]
         Q_plus = Q_vals[1]
 
-        print("Q_vals", Q_vals)
+        #print("Q_vals", Q_vals)
 
-        min_q = (4*Q_minus - Q_plus)/3
+        min_q = np.maximum(0,(4*Q_minus - Q_plus)/3)#SET MINIUM TO ZERO
         max_q = (4*Q_plus - Q_minus)/3
 
         self.parameters_ICE["min_Quality"] = min_q
@@ -302,9 +305,9 @@ class Controller:
         self.parameters_EV["min_Quality"] = min_q
         self.parameters_EV["max_Quality"] = max_q
 
-        print("alpha", alpha)
-        print("min_q", min_q)
-        print("max_q", max_q)
+        #print("alpha", alpha)
+        #print("min_q", min_q)
+        #print("max_q", max_q)
         #quit()
 
 
@@ -536,9 +539,12 @@ class Controller:
         self.pre_future_gas_price_california_vec = np.concatenate((self.burn_in_gas_price_vec,self.calibration_gas_price_california_vec), axis=None) 
         self.pre_future_electricity_price_vec =  np.concatenate((self.burn_in_gas_price_vec,self.calibration_electricity_price_vec), axis=None) 
         self.pre_future_electricity_emissions_intensity_vec = np.concatenate((self.burn_in_gas_price_vec,self.calibration_electricity_emissions_intensity_vec), axis=None) 
-        self.pre_future_rebate_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) 
-        self.pre_future_used_rebate_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
-                
+        
+        #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
+        self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
+        self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
+        print("self.rebate_calibration_time_series", len(self.rebate_calibration_time_series))
+        
         if self.full_run_state:
             self.manage_scenario()
             self.manage_policies() 
@@ -549,15 +555,8 @@ class Controller:
             self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
             self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
             
-            #self.rebate_time_series = np.concatenate((self.pre_future_rebate_time_series,self.rebate_time_series_future ), axis=None) 
-            #self.used_rebate_time_series = np.concatenate((self.pre_future_used_rebate_time_series,self.used_rebate_time_series_future ), axis=None) 
-
-            #FOR REBATE THE POLICY IS ADDITIONAL TO THE ONE THAT EXISTS SO ADD IT ON TOP NOT CONCATINATED
-            self.rebate_time_series =  self.pre_future_rebate_time_series  
-            self.rebate_time_series[self.duration_burn_in + self.duration_no_carbon_price:] += self.rebate_time_series_future
-
-            self.used_rebate_time_series = self.pre_future_used_rebate_time_series
-            self.used_rebate_time_series[self.duration_burn_in + self.duration_no_carbon_price:] += self.used_rebate_time_series_future
+            self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.rebate_time_series_future), axis=None) 
+            self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.used_rebate_time_series_future), axis=None) 
 
             self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
             self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
@@ -568,9 +567,7 @@ class Controller:
             self.gas_price_california_vec = self.pre_future_gas_price_california_vec 
             self.electricity_price_vec = self.pre_future_electricity_price_vec 
             self.electricity_emissions_intensity_vec = self.pre_future_electricity_emissions_intensity_vec
-            self.rebate_time_series = self.pre_future_rebate_time_series 
-            self.used_rebate_time_series = self.pre_future_used_rebate_time_series
-                    
+            
             self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.discriminatory_corporate_tax_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
             self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
@@ -644,6 +641,8 @@ class Controller:
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
+        self.parameters_social_network["prob_update_second_hand_ols"] = self.parameters_second_hand["prob_update_second_hand_ols"]
+
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -748,8 +747,11 @@ class Controller:
         self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
 
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
+        self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]
+        self.used_rebate_calibration = self.used_rebate_calibration_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
+
         self.discriminatory_corporate_tax = self.discriminatory_corporate_tax_time_series[self.t_controller]
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
         self.research_subsidy = self.research_subsidy_time_series[self.t_controller]
@@ -765,12 +767,12 @@ class Controller:
                 firm.policy_distortion = 0
 
     def update_firms(self):
-        cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy)
+        cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy, self.rebate_calibration)
         return cars_on_sale_all_firms, U_sum_total, U_vec_on_sale
     
     def update_social_network(self, U_vec_on_sale):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, U_vec_on_sale)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, U_vec_on_sale, self.rebate_calibration, self.used_rebate_calibration)
 
         return consider_ev_vec, new_bought_vehicles
 

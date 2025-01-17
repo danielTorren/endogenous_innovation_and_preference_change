@@ -7,9 +7,7 @@ import numpy as np
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
-
-from scipy.optimize import root_scalar
-from scipy.special import lambertw
+from sklearn.linear_model import LinearRegression
 
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
@@ -25,6 +23,10 @@ class Social_Network:
 
         self.rebate = parameters_social_network["rebate"]
         self.used_rebate = parameters_social_network["used_rebate"]
+
+        self.rebate_calibration = parameters_social_network["rebate"]
+        self.used_rebate_calibration = parameters_social_network["used_rebate"]
+
         self.rebate_low = parameters_social_network["rebate_low"]
         self.used_rebate_low = parameters_social_network["used_rebate_low"]
 
@@ -40,6 +42,8 @@ class Social_Network:
 
         self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
         self.gamma_segment_vec = parameters_social_network["gamma_segment_vals"] 
+
+        self.prob_update_second_hand_ols = parameters_social_network["prob_update_second_hand_ols"]
 
         self.beta_median = np.median(self.beta_vec )
         self.gamma_median = np.median(self.gamma_vec )
@@ -271,12 +275,19 @@ class Social_Network:
         # 2) Shuffle only that subset of user indices
         shuffle_indices = self.random_state_social_network.permutation(switcher_indices)
 
+        self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
+
         #THIS CAN BE DONE FOR THE SUBSET OF USERS
         CV_filtered_vechicles_dicts, CV_filtered_vehicles = self.filter_vehicle_dict_for_switchers(CV_vehicle_dict_vecs, self.current_vehicles, switcher_indices)
         utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec)
         #second_hand_merchant_offer_price = self.calc_offer_prices_depreciated(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
-        self.second_hand_merchant_offer_price = self.calc_offer_prices_max(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
+        #self.second_hand_merchant_offer_price = self.calc_offer_prices_max(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
+        
+        self.second_hand_merchant_offer_price = self.calc_offer_prices_heursitic(self.NC_vehicle_dict_vecs, CV_filtered_vechicles_dicts, CV_filtered_vehicles)
 
+        #if self.random_state_social_network.rand() < self.prob_update_second_hand_ols or self.t_social_network == 1:#FIRST STEP
+        #    self.second_hand_merchant.generate_ols(self.NC_vehicle_dict_vecs)
+        #self.second_hand_merchant_offer_price = self.calc_offer_prices_ols(CV_filtered_vechicles_dicts, CV_filtered_vehicles)
   
         # pass those indices to generate_utilities
         utilities_buying_matrix_switchers, buying_vehicles_list, d_buying_matrix_switchers = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price)
@@ -379,6 +390,59 @@ class Social_Network:
 
         return Offer_vec
 
+    def calc_offer_prices_heursitic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_current_cars, current_cars):
+
+        # Extract Quality, Efficiency, and Prices of first-hand cars
+        first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
+        first_hand_efficiency =  vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
+        first_hand_prices = vehicle_dict_vecs_new_cars["price"]
+
+        # Extract Quality, Efficiency, and Age of second-hand cars
+        second_hand_quality = vehicle_dict_vecs_current_cars["Quality_a_t"]
+        second_hand_efficiency = vehicle_dict_vecs_current_cars["Eff_omega_a_t"]
+        second_hand_ages = vehicle_dict_vecs_current_cars["L_a_t"]
+
+        # Normalize Quality and Efficiency for both first-hand and second-hand cars
+        all_quality = np.concatenate([first_hand_quality, second_hand_quality])
+        all_efficiency = np.concatenate([first_hand_efficiency, second_hand_efficiency])
+
+        quality_min, quality_max = np.min(all_quality), np.max(all_quality)
+        efficiency_min, efficiency_max = np.min(all_efficiency), np.max(all_efficiency)
+
+        normalized_first_hand_quality = (first_hand_quality - quality_min) / (quality_max - quality_min)
+        normalized_first_hand_efficiency = (first_hand_efficiency - efficiency_min) / (efficiency_max - efficiency_min)
+
+        normalized_second_hand_quality = (second_hand_quality - quality_min) / (quality_max - quality_min)
+        normalized_second_hand_efficiency = (second_hand_efficiency - efficiency_min) / (efficiency_max - efficiency_min)
+
+        # Compute proximity (Euclidean distance) for all second-hand cars to all first-hand cars
+        diff_quality = normalized_second_hand_quality[:, np.newaxis] - normalized_first_hand_quality
+        diff_efficiency = normalized_second_hand_efficiency[:, np.newaxis] - normalized_first_hand_efficiency
+
+        distances = np.sqrt(diff_quality ** 2 + diff_efficiency ** 2)
+
+        # Find the closest first-hand car for each second-hand car
+        closest_idxs = np.argmin(distances, axis=1)
+
+        # Get the prices of the closest first-hand cars
+        closest_prices = first_hand_prices[closest_idxs]
+
+        # Adjust prices based on car age and depreciation
+        adjusted_prices = closest_prices * (1 - self.delta) ** second_hand_ages
+
+        # Calculate offer prices
+        offer_prices = adjusted_prices / (1 + self.mu)
+
+        # Ensure offer prices are not below the scrap price
+        offer_prices = np.maximum(offer_prices, self.scrap_price)
+
+        # Assign prices back to second-hand car objects
+        for i, car in enumerate(current_cars):
+            car.price_second_hand_merchant = adjusted_prices[i]
+            car.cost_second_hand_merchant = offer_prices[i]
+
+        return offer_prices
+
     def calc_driving_utility_direct_old(self,Quality_a_t_vec,L_a_t_vec, X_vec):
 
         # Compute commuting utility for individual-vehicle pairs
@@ -402,7 +466,39 @@ class Social_Network:
             vehicle.cost_second_hand_merchant = price_vec[i]
 
         return price_vec
-    
+
+    def calc_offer_prices_ols(self, vehicle_dict_vecs_current_cars, current_cars):
+
+        # Extract features from second-hand cars
+        current_cars_quality = vehicle_dict_vecs_current_cars["Quality_a_t"]
+        current_cars_efficiency = vehicle_dict_vecs_current_cars["Eff_omega_a_t"]
+        current_cars_ages = vehicle_dict_vecs_current_cars["L_a_t"]
+
+        # Combine second-hand features into a matrix
+        current_cars_features = np.column_stack((current_cars_quality, current_cars_efficiency))
+
+        # Predict second-hand prices using the OLS model
+        predicted_prices = self.second_hand_merchant.ols_model.predict(current_cars_features)
+
+        # Adjust prices for depreciation based on age
+        adjusted_prices = predicted_prices * (1 - self.delta) ** current_cars_ages
+
+        # Calculate offer prices
+        offer_prices = adjusted_prices / (1 + self.mu)
+
+        # Ensure offer prices are not below the scrap price
+        offer_prices = np.maximum(offer_prices, self.scrap_price)
+
+        # Assign prices back to the current cars dictionary
+                # Assign prices back to second-hand car objects
+        for i, car in enumerate(current_cars):
+            car.price_second_hand_merchant = adjusted_prices[i]
+            car.cost_second_hand_merchant = offer_prices[i]
+
+        return offer_prices
+
+
+
 ########################################################################################################
     
     def gen_mask(self, available_and_current_vehicles_list, consider_ev_vec):
@@ -597,8 +693,8 @@ class Social_Network:
 
 
         # Generate utilities and distances for new cars
-        NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
-        NC_utilities, d_NC = self.vectorised_calculate_utility_cars(NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price)
+        #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
+        NC_utilities, d_NC = self.vectorised_calculate_utility_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price)
 
 
         # Calculate the total columns needed for utilities and distance matrices
@@ -1039,7 +1135,7 @@ class Social_Network:
         self.history_new_EV_cars_bought.append(self.new_EV_cars_bought)
 
 
-        self.history_max_index_segemnt.append(self.max_index_segemnt)
+        #self.history_max_index_segemnt.append(self.max_index_segemnt)
 
         #SUMS
         self.history_driving_emissions.append(self.total_driving_emissions)
@@ -1137,7 +1233,7 @@ class Social_Network:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, U_vec_on_sale):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, U_vec_on_sale, rebate_calibration, used_rebate_calibration):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1159,6 +1255,8 @@ class Social_Network:
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
         self.used_rebate = used_rebate
+        self.rebate_calibration = rebate_calibration
+        self.used_rebate_calibration = used_rebate_calibration
         self.electricity_price_subsidy_dollars = electricity_price_subsidy_dollars
         self.U_vec_on_sale = U_vec_on_sale
 

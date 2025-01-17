@@ -293,6 +293,47 @@ def plot_price(data_array, property_values_list, fileName, name_property, proper
     fig.savefig(f"{fileName}/price_{property_save}.png", dpi=dpi)
 ################################################################################################
 
+def plot_prices_scatter_single_seed(base_params, data_list, property_values_list, fileName, name_property, property_save, dpi=600):
+    
+    #first index is th run/seed, second is time, third is the car prices
+    #print(len(data_array), len(data_array[0]), len(data_array[1]), len(data_array[0][0]))
+    #quit()
+    num_deltas = int(len(data_list)/base_params["seed_repetitions"])
+    #print("num_deltas", num_deltas)
+    num_seeds = base_params["seed_repetitions"]
+    time_steps = len(data_list[0])
+
+    # Create time series array if you don't have one
+    time_series = np.arange(time_steps)
+
+    # Create subplots with 2 rows per delta
+    fig, axes = plt.subplots(nrows=1, ncols=num_deltas, figsize=(5 * num_deltas, 10), sharex=True, sharey=False)
+
+    for i, value in enumerate(property_values_list):
+        ax = axes[i]
+        time_points_new = []
+        prices_new = []
+        
+        data = data_list[i*num_seeds]
+        for i, price_list in enumerate(data):
+            time_points_new .extend([time_series[i]] * len(price_list))  # Repeat the time step for each price
+            prices_new.extend(price_list)  # Add all prices for the current time step
+        
+        # Plot the data
+        ax.scatter(time_points_new, prices_new, marker='o', alpha=0.7, label = "New")
+        ax.set_title(f"{name_property} = {value} (New)")
+        ax.grid(True)
+
+
+    fig.supylabel("Car Price")
+    fig.supxlabel("Time Step")
+
+    # Adjust layout
+    ##plt.tight_layout()
+
+    # Save and show
+    fig.savefig(f"{fileName}/price_{property_save}.png", dpi=dpi)
+
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -304,7 +345,8 @@ def main(fileName, dpi=600):
         data_array_price =  load_object(fileName + "/Data", "data_array_price")
         data_array_emissions = load_object(fileName + "/Data", "data_array_emissions")
         vary_single = load_object(fileName + "/Data", "vary_single")
-        
+        data_car_prices_sold_new =  load_object(fileName + "/Data", "data_car_prices_sold_new")
+
     except FileNotFoundError:
         print("Data files not found.")
         return
@@ -313,6 +355,7 @@ def main(fileName, dpi=600):
     name_property = vary_single["property_varied"] 
     property_save = vary_single["property_varied"]
 
+    plot_prices_scatter_single_seed(base_params,data_car_prices_sold_new, property_values_list, fileName, name_property, property_save, 600)
     plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
     plot_ev_prop(data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
     plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
@@ -323,4 +366,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_11_40_52__16_01_2025")
+    main("results/single_param_vary_12_01_19__17_01_2025")

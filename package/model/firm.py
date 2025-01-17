@@ -162,6 +162,10 @@ class Firm:
                 #print(LW)
                 P = C_m_cost + (1.0 + LW) / (self.kappa *self.nu* beta_s)
 
+                #if self.firm_id == 5:
+                #    print("price compoentns", P, C_m_cost, 1/(self.kappa *self.nu* beta_s), LW/(self.kappa *self.nu* beta_s))
+                #    quit()
+
                 if P < C_m:
                     print(P,C_m, Arg)
                     raise ValueError("P LESS THAN C")
@@ -437,17 +441,24 @@ class Firm:
         #is the memory list is too long then remove data
         if len(self.list_technology_memory) > self.memory_cap:
             tech_to_remove = max((tech for tech in self.list_technology_memory if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
+            
             if tech_to_remove.transportType == 3:
                 if tech_to_remove in self.list_technology_memory_EV:
                     self.list_technology_memory_EV.remove(tech_to_remove)
                 else:
-                    print(tech_to_remove)
+                    print("remove", self.list_technology_memory_EV, tech_to_remove)
+                    print("timer",[tech.timer for tech in self.list_technology_memory_EV])
+                    print("full list",self.list_technology_memory)
+                    print("self.list_technology_memory_ICE", self.list_technology_memory_ICE)
                     raise ValueError("Tech being removed without being in the EV list")
             else:
                 if tech_to_remove in self.list_technology_memory_ICE:
                     self.list_technology_memory_ICE.remove(tech_to_remove)
                 else:
-                    print(tech_to_remove)
+                    print("remove", self.list_technology_memory_ICE, tech_to_remove)
+                    print("timer",[tech.timer for tech in self.list_technology_memory_ICE])
+                    print("full list",self.list_technology_memory)
+                    print("self.list_technology_memory_EV", self.list_technology_memory_EV)
                     raise ValueError("Tech being removed without being in the ICE list")
                 
     ########################################################################################################################################

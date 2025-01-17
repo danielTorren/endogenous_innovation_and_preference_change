@@ -21,7 +21,7 @@ def main(
     pyperclip.copy(fileName)
     print("fileName:", fileName)
 
-    controller = generate_data(base_params, print_simu= 0)  # run the simulation 
+    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
     print("uptake",  controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     "compression_factor_state": 1,
     "choice_seed": 9,
     "ev_research_start_time": 60,
-    "ev_production_start_time": 60,#108,
+    "ev_production_start_time": 60,#
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 10,
+                    "Carbon_price": 2,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -179,7 +179,8 @@ if __name__ == "__main__":
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "fixed_alternative_mark_up": 0.2,
-        "scrap_price": 1000
+        "scrap_price": 1000,
+        "prob_update_second_hand_ols": 0.083
     },
     "parameters_ICE":{
         "landscape_seed": 22, 
@@ -188,10 +189,10 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.01,
+        "delta": 0.005,
         "transportType": 2,
         "min_Price": 20000,
-        "max_Price": 70000,
+        "max_Price": 100000,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -210,11 +211,11 @@ if __name__ == "__main__":
     },
     "parameters_firm_manager": {
         "init_tech_seed": 99,
-        "J": 30,
+        "J": 10,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 5
+        "num_beta_segments": 4
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -227,7 +228,7 @@ if __name__ == "__main__":
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals": 5000,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99, 
@@ -238,19 +239,19 @@ if __name__ == "__main__":
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 100,#210,
-        "WTP_sd": 20,#175,
+        "WTP_mean": 210,
+        "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
         "a_innovativeness": 1,
         "b_innovativeness": 1,
         "selection_bias": 5,
-        "prob_switch_car":0.027777 #0.083
+        "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":5,
+        "kappa":8,
         "r": 0.00417,
-        "mu": 0.5,#0.5,
+        "mu": 0.5,
         "nu": 10e-6
     }
 }
