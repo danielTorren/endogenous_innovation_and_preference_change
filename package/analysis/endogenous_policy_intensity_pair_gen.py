@@ -212,8 +212,8 @@ def main_pair_optimization(
 ###############################################################################
 if __name__ == "__main__":
     main_pair_optimization(
-        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single.json",
-        BOUNDS_LOAD = "package/analysis/optimal_policy_bounds.json", 
+        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_pair_gen6.json",
+        BOUNDS_LOAD = "package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
@@ -223,5 +223,5 @@ if __name__ == "__main__":
             "Research_subsidy"
         ],
         target_ev_uptake   = 0.9,
-        n_steps_for_sweep  = 30
+        n_steps_for_sweep  = 10
     )
