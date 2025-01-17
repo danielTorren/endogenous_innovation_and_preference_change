@@ -206,7 +206,6 @@ def optimize_policy_intensity_minimize(
         float: Final mean total cost.
     """
     # Define bounds and initial guess
-    bounds = [(bounds[0], bounds[1])]  # Single policy intensity bounds
     min_step_size, max_step_size= step_size_bounds
     # Optimize using scipy's minimize
     optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
