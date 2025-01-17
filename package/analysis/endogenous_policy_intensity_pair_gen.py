@@ -13,14 +13,6 @@ from package.resources.utility import (
     produce_name_datetime
 )
 
-###############################################################################
-# Existing single-policy functions (as in your code). 
-# [ generate_policy_scenarios, params_list_with_seed, single_policy_simulation,
-#   single_policy_with_seeds, objective_function_wrapper_manual, manual_optimization,
-#   optimize_policy_intensity_minimize
-# ]
-###############################################################################
-
 def generate_unique_policy_pairs(policy_list):
     """
     Generate all unique pairs (policyA, policyB) from policy_list.
@@ -103,7 +95,7 @@ def policy_pair_sweep(
 
     # Create the array of policy1 intensities to test.
     # Sometimes you might want a logspace or custom steps if the range is large.
-    p1_values = np.linspace(p1_min, p1_max, n_steps)
+    p1_values = np.linspace(p1_max,p1_min, n_steps)#START AT THE BOUNDARY P VALUE
 
     # Initialize the guess for policy2 from single-policy optimum
     p2_guess = bounds_dict[policy2_name][1]#start at the edge

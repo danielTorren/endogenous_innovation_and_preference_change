@@ -123,7 +123,7 @@ def objective_function_wrapper_manual(intensity_level, params, controller_list, 
     # Compute the objective value
     return mean_error, mean_EV_uptake , mean_total_cost
 
-def manual_optimization(params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
+def manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
     """
     Perform manual optimization with adaptive step size adjustment.
 
@@ -167,6 +167,9 @@ def manual_optimization(params, controller_list, policy_name, intensity_level_in
 
         # Update intensity using gradient descent step
         intensity += step_size * np.sign(error)
+        if intensity > bounds[1] or intensity < bounds[0]:
+            print("Converged unsuccessfully successfully.")
+            break
 
         # Store current error for the next iteration
         prev_error = error
@@ -206,7 +209,7 @@ def optimize_policy_intensity_minimize(
     bounds = [(bounds[0], bounds[1])]  # Single policy intensity bounds
     min_step_size, max_step_size= step_size_bounds
     # Optimize using scipy's minimize
-    optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
+    optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
 
     print("Optimized_intensity, error", optimized_intensity, error, error,mean_ev_uptake, mean_total_cost)
 
