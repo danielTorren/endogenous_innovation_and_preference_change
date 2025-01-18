@@ -149,7 +149,7 @@ if __name__ == "__main__":
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         
-        "scrap_price": 500,
+        "scrap_price": 500
         
     },
     "parameters_ICE":{
