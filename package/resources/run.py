@@ -222,6 +222,7 @@ def parallel_run_sa(params_dict: list[dict]):
     Runs the sensitivity analysis in parallel using the given parameter dictionary.
     """
     num_cores = multiprocessing.cpu_count()
+    res = [generate_sensitivity_output_flat(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_sensitivity_output_flat)(params) for params in params_dict
     )
