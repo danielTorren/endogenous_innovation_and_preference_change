@@ -94,97 +94,6 @@ class SecondHandMerchant:
     
 
 ####################################################################################################################################
-    def calc_driving_utility_direct_old(self, Quality_a_t_vec,L_a_t_vec, X):
-
-        utility_vec = Quality_a_t_vec * ((1 - self.delta) ** L_a_t_vec)/(self.alpha*X +1)
-
-        return utility_vec
-    
-    def calc_car_price_vec_old(self, vehicle_dict_vecs, beta, gamma, W_s_t):
-
-        #present UTILITY
-        # Compute cost component based on transport type, with conditional operations
-        X = (beta *vehicle_dict_vecs["fuel_cost_c"] + gamma * vehicle_dict_vecs["e_t"])/vehicle_dict_vecs["Eff_omega_a_t"]
-
-        driving_utility_vec = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X)
-
-        B_vec = driving_utility_vec*((1+self.r)/(self.r + self.delta))
-
-        Arg_vec = (np.exp(self.kappa*self.nu*(B_vec - beta*vehicle_dict_vecs["cost_second_hand_merchant"] )- 1.0)) / W_s_t
-        LW_vec   = lambertw(Arg_vec, 0).real  # principal branch
-        P_vec = vehicle_dict_vecs["cost_second_hand_merchant"] + (1.0 + LW_vec) / (self.kappa *self.nu* beta)
-
-        #if P < vehicle.cost_second_hand_merchant:
-        #    print(P,vehicle.cost_second_hand_merchant, Arg)
-        #    raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
-        
-        #inside_component = W_s_t ** 2 *(beta * vehicle_dict_vecs["cost_second_hand_merchant"]) ** 2 + W_s_t + U_vec
-        
-        # Adjust the component to avoid negative square roots
-        #inside_component_adjusted = np.maximum(inside_component, 0)  # Replace negatives with 0
-
-        #price_vec = np.where(
-        #    inside_component < 0,
-        #    vehicle_dict_vecs["cost_second_hand_merchant"],
-        #    np.maximum(vehicle_dict_vecs["cost_second_hand_merchant"],(beta * vehicle_dict_vecs["cost_second_hand_merchant"] * W_s_t + np.sqrt( inside_component_adjusted))/(beta*W_s_t))
-        #)
-
-        return P_vec
-    
-    def calc_driving_utility_direct_single_old(self, Quality_a_t, L_a_t, X):
-
-        driving_utility = Quality_a_t*(1-self.delta)**(L_a_t)/(self.alpha*X +1)
-
-        return driving_utility
-    
-    def calc_car_price_single(self, vehicle, beta, gamma, W_s_t):
-
-        #present UTILITY
-        X = (beta *vehicle.fuel_cost_c + gamma * vehicle.e_t)/vehicle.Eff_omega_a_t
-
-        driving_utility = self.calc_driving_utility_direct_single( vehicle.Quality_a_t, vehicle.L_a_t, X)
-        B = driving_utility*((1+self.r)/(self.r + self.delta))#treat it as a current car, NO EMISSIOSN COST OR PURCHASSE COST? 
-            
-        Arg = (np.exp(self.kappa*self.nu*(B - beta*vehicle.cost_second_hand_merchant )- 1.0)) / W_s_t
-        LW   = lambertw(Arg, 0)  # principal branch
-        P = vehicle.cost_second_hand_merchant + (1.0 + LW) / (self.kappa *self.nu* beta)
-
-        if P < vehicle.cost_second_hand_merchant:
-            print(P,vehicle.cost_second_hand_merchant, Arg)
-            raise ValueError("P LESS THAN vehicle.cost_second_hand_merchant")
-        
-        #inside_component = W_s_t ** 2 * ((gamma * vehicle.emissions) ** 2 + (beta * vehicle.cost_second_hand_merchant) ** 2 +  2 * vehicle.cost_second_hand_merchant * vehicle.emissions) + W_s_t + U
-        
-        #if inside_component < 0:
-        #    price = vehicle.cost_second_hand_merchant
-        #else:
-        #    price = max(vehicle.cost_second_hand_merchant,(beta * vehicle.cost_second_hand_merchant * W_s_t + np.sqrt(inside_component))/(beta*W_s_t) )
-
-        return P
-
-    def calc_driving_utility_direct(self,Quality_a_t_vec,L_a_t_vec, X_matrix):
-
-        # Compute commuting utility for individual-vehicle pairs
-        B_matrix = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_matrix + 1)
-
-        return B_matrix
-
-    def calc_car_price_vec(self, vehicle_dict_vecs):
-        """ Calc the price at which utility of user would be 0 and set offer based on that"""
-        #present UTILITY
-        # Compute cost component based on transport type, with conditional operations
-        # Adjust costs based on transport type
-
-        X_matrix = ((self.beta_segment_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_segment_vec[:, np.newaxis]* vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
-        driving_utility_matrix = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_matrix)
-        B_s = (driving_utility_matrix*(1+self.r)/(self.r + self.delta))
-
-        #quit()
-        market_component = np.log(self.U_vec_on_sale)/(self.nu* self.beta_segment_vec)
-        Price_s = B_s/self.beta_segment_vec[:, np.newaxis] - market_component[:, np.newaxis]
-        Price_sale_vec = np.max(Price_s, axis = 0)
-
-        return Price_sale_vec
 
     def calc_car_price_heuristic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_second_hand_cars):
 
@@ -228,52 +137,6 @@ class SecondHandMerchant:
 
         return adjusted_prices
 
-    def generate_ols(self,vehicle_dict_vecs_new_cars):
-        """
-        Use OLS regression to predict second-hand car prices based on quality and efficiency of new cars.
-        
-        Args:
-            vehicle_dict_vecs_new_cars: Dictionary of new car attributes (Quality, Efficiency, Price).
-            vehicle_dict_vecs_current_cars: Dictionary of second-hand car attributes (Quality, Efficiency, Age).
-        """
-        # Extract features and target variable from new cars
-        first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
-        first_hand_efficiency = vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
-        first_hand_prices = vehicle_dict_vecs_new_cars["price"]
-
-        # Combine features into a matrix
-        first_hand_features = np.column_stack((first_hand_quality, first_hand_efficiency))
-
-        # Fit OLS model
-        self.ols_model = LinearRegression()
-        self.ols_model.fit(first_hand_features, first_hand_prices)
-
-    def calc_car_price_ols(self, vehicle_dict_vecs_second_hand_cars):
-        """
-        Use OLS regression to predict second-hand car prices based on quality and efficiency of new cars.
-        
-        Args:
-            vehicle_dict_vecs_new_cars: Dictionary of new car attributes (Quality, Efficiency, Price).
-            vehicle_dict_vecs_current_cars: Dictionary of second-hand car attributes (Quality, Efficiency, Age).
-        """
-
-        # Extract features from second-hand cars
-        # Extract Quality, Efficiency, and Age of second-hand cars
-        second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
-        second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
-        second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
-
-        # Combine second-hand features into a matrix
-        second_hand_features = np.column_stack((second_hand_quality, second_hand_efficiency))
-
-        # Predict second-hand prices using the OLS model
-        predicted_prices = self.ols_model.predict(second_hand_features)
-
-        # Adjust prices for depreciation based on age
-        adjusted_prices = predicted_prices * (1 - self.delta) ** second_hand_ages
-
-        return adjusted_prices
-
 #############################################################################################################################
 
     def update_stock_contents(self):
@@ -290,11 +153,6 @@ class SecondHandMerchant:
         data_dicts_new_cars = self.gen_vehicle_dict_vecs_new_cars(self.vehicles_on_sale)
 
         price_vec = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
-
-        #price_vec = self.calc_car_price_ols(data_dicts_second_hand)
-
-        #price_vec = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
-        #price_vec = self.calc_car_price_vec_old( data_dicts_second_hand, self.median_beta, self.median_gamma, self.U_sum)
 
         # Vectorized approach to identify cars below the scrap price
         below_scrap_mask = price_vec < self.scrap_price

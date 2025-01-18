@@ -37,8 +37,6 @@ class Social_Network:
         self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
         self.gamma_segment_vec = parameters_social_network["gamma_segment_vals"] 
 
-        self.prob_update_second_hand_ols = parameters_social_network["prob_update_second_hand_ols"]
-
         self.beta_median = np.median(self.beta_vec )
         self.gamma_median = np.median(self.gamma_vec )
 
@@ -274,15 +272,9 @@ class Social_Network:
         #THIS CAN BE DONE FOR THE SUBSET OF USERS
         CV_filtered_vechicles_dicts, CV_filtered_vehicles = self.filter_vehicle_dict_for_switchers(CV_vehicle_dict_vecs, self.current_vehicles, switcher_indices)
         utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec)
-        #second_hand_merchant_offer_price = self.calc_offer_prices_depreciated(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
-        #self.second_hand_merchant_offer_price = self.calc_offer_prices_max(CV_filtered_vechicles_dicts, CV_filtered_vehicles)#calculate_offer only on thoe individuals who consider swtiching
-        
+
         self.second_hand_merchant_offer_price = self.calc_offer_prices_heursitic(self.NC_vehicle_dict_vecs, CV_filtered_vechicles_dicts, CV_filtered_vehicles)
 
-        #if self.random_state_social_network.rand() < self.prob_update_second_hand_ols or self.t_social_network == 1:#FIRST STEP
-        #    self.second_hand_merchant.generate_ols(self.NC_vehicle_dict_vecs)
-        #self.second_hand_merchant_offer_price = self.calc_offer_prices_ols(CV_filtered_vechicles_dicts, CV_filtered_vehicles)
-  
         # pass those indices to generate_utilities
         utilities_buying_matrix_switchers, buying_vehicles_list, d_buying_matrix_switchers = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price)
 
@@ -352,38 +344,6 @@ class Social_Network:
 
 #####################################################################################################
 
-    def calc_driving_utility_direct(self,Quality_a_t_vec,L_a_t_vec, X_matrix):
-
-        # Compute commuting utility for individual-vehicle pairs
-        B_matrix = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_matrix + 1)
-
-        return B_matrix
-
-    def calc_offer_prices_max(self, vehicle_dict_vecs, filtered_vehicles):
-        """ Calc the price at which utility of user would be 0 and set offer based on that"""
-        #present UTILITY
-        # Compute cost component based on transport type, with conditional operations
-        # Adjust costs based on transport type
-
-        X_matrix = ((self.beta_segment_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_segment_vec[:, np.newaxis]* vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
-        driving_utility_matrix = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_matrix)
-        B_s = (driving_utility_matrix*(1+self.r)/(self.r + self.delta))
-
-        #quit()
-        market_component = np.log(self.U_vec_on_sale)/(self.nu* self.beta_segment_vec)
-        Price_s = B_s/self.beta_segment_vec[:, np.newaxis] - market_component[:, np.newaxis]
-        Price_sale = np.max(Price_s, axis = 0)
-        self.max_index_segemnt = np.argmax(Price_s, axis = 0)
-
-        Price_raw = Price_sale/(1+self.mu)
-        Offer_vec = np.maximum(Price_raw, self.scrap_price)
-
-        for i, vehicle in enumerate(filtered_vehicles):
-            vehicle.price_second_hand_merchant = Price_sale[i]
-            vehicle.cost_second_hand_merchant = Offer_vec[i]
-
-        return Offer_vec
-
     def calc_offer_prices_heursitic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_current_cars, current_cars):
 
         # Extract Quality, Efficiency, and Prices of first-hand cars
@@ -436,62 +396,6 @@ class Social_Network:
             car.cost_second_hand_merchant = offer_prices[i]
 
         return offer_prices
-
-    def calc_driving_utility_direct_old(self,Quality_a_t_vec,L_a_t_vec, X_vec):
-
-        # Compute commuting utility for individual-vehicle pairs
-        utility_vec = Quality_a_t_vec*((1 - self.delta) ** L_a_t_vec)/(self.alpha*X_vec + 1)
-
-        return utility_vec
-
-    def calc_offer_prices_max_old(self, vehicle_dict_vecs, filtered_vehicles):
-        
-        #present UTILITY
-        # Compute cost component based on transport type, with conditional operations
-        # Adjust costs based on transport type
-        X_vec = ((self.beta_median * vehicle_dict_vecs["fuel_cost_c"]) + (self.gamma_median * vehicle_dict_vecs["e_t"]))/vehicle_dict_vecs["Eff_omega_a_t"]
-   
-
-        driving_utility = self.calc_driving_utility_direct(vehicle_dict_vecs["Quality_a_t"] ,vehicle_dict_vecs["L_a_t"] , X_vec)
-        price_vec_negative = (driving_utility*(1+self.r)/((self.r + self.delta)*self.beta_median))*(1-self.mu)
-        price_vec = np.maximum(price_vec_negative, self.scrap_price) #I need to make sure that if the optimal price is negative then the price vec offered is literally zero
-
-        for i, vehicle in enumerate(filtered_vehicles):
-            vehicle.cost_second_hand_merchant = price_vec[i]
-
-        return price_vec
-
-    def calc_offer_prices_ols(self, vehicle_dict_vecs_current_cars, current_cars):
-
-        # Extract features from second-hand cars
-        current_cars_quality = vehicle_dict_vecs_current_cars["Quality_a_t"]
-        current_cars_efficiency = vehicle_dict_vecs_current_cars["Eff_omega_a_t"]
-        current_cars_ages = vehicle_dict_vecs_current_cars["L_a_t"]
-
-        # Combine second-hand features into a matrix
-        current_cars_features = np.column_stack((current_cars_quality, current_cars_efficiency))
-
-        # Predict second-hand prices using the OLS model
-        predicted_prices = self.second_hand_merchant.ols_model.predict(current_cars_features)
-
-        # Adjust prices for depreciation based on age
-        adjusted_prices = predicted_prices * (1 - self.delta) ** current_cars_ages
-
-        # Calculate offer prices
-        offer_prices = adjusted_prices / (1 + self.mu)
-
-        # Ensure offer prices are not below the scrap price
-        offer_prices = np.maximum(offer_prices, self.scrap_price)
-
-        # Assign prices back to the current cars dictionary
-                # Assign prices back to second-hand car objects
-        for i, car in enumerate(current_cars):
-            car.price_second_hand_merchant = adjusted_prices[i]
-            car.cost_second_hand_merchant = offer_prices[i]
-
-        return offer_prices
-
-
 
 ########################################################################################################
     
