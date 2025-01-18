@@ -309,7 +309,7 @@ def main(
         policy_name, params = policy_comb
         print("policy_name",policy_name)
 
-        initial_step_size = bounds_dict["init_val_dict"][policy_name]*0.1#step size of 10%
+        initial_step_size = policy_params_dict["init_val_dict"][policy_name]*0.1#step size of 10%
 
         mean_ev_uptake, mean_total_cost, intensity_level, runs_data = optimize_policy_intensity_minimize(
             params,
