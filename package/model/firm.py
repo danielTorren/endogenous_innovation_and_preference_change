@@ -328,35 +328,38 @@ class Firm:
             #print("vehicle.expected_profit_segments",vehicle.expected_profit_segments)
             # Calculate profit for each segment
             max_profit = 0
-            segment_code_max = None
             for segment_code, segment_profit in vehicle.expected_profit_segments.items():
                 if segment_profit > max_profit:
                     max_profit = segment_profit
-                    segment_code_max = segment_code
-            #print(vehicle,segment_code_max,max_profit)
             profits.append(max_profit)
             
         # Convert profits list to numpy array
         profits = np.array(profits)
 
-        profits[profits < 0] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
-        profits[profits == np.nan] = 0#REPLACE NEGATIVE VALUES OF PROFIT WITH 0, SO PROBABILITY IS 0
+        # Replace negative values with 0
+        profits[profits < 0] = 0
+
+        # Replace NaN values with 0
+        profits[np.isnan(profits)] = 0
 
         # Compute the softmax probabilities
-        lambda_profits = profits**self.lambda_pow        
+        lambda_profits = profits ** self.lambda_pow
         sum_profit = np.sum(lambda_profits)
 
-        len_vehicles = len(car_list)#literally just cos i do it 3 times
-        
+        len_vehicles = len(car_list)  # Length of the car list
+
         if sum_profit == 0:
             self.zero_profit_options_research = 1
-            #print("random choice")
-            selected_index = self.random_state.choice(len_vehicles)#pick one
+            # Random choice since all profits are zero
+            selected_index = self.random_state.choice(len_vehicles)
         else:
             self.zero_profit_options_research = 0
-            probabilities = lambda_profits/sum_profit
-            #print("probabilities",probabilities)
+            probabilities = lambda_profits / sum_profit
+            # Handle any residual NaNs in probabilities
+            probabilities[np.isnan(probabilities)] = 0
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
+
+
         # Select a vehicle based on the computed probabilities
         selected_vehicle = car_list[selected_index]
 
