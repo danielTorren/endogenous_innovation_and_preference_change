@@ -157,7 +157,7 @@
         "init_price_multiplier": 3
     },
     "parameters_social_network":{
-        "num_individuals": 200,
+        "num_individuals": 1000,
         "d_max": 3000,
         "d_min": 500,
         "chi_max": 0.9,

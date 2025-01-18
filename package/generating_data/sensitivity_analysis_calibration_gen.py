@@ -208,22 +208,22 @@ def main(
     len_y = int(len(params_list_sa)/AV_reps)
 
     Y_emissions_stock_reshape = Y_emissions_stock_stochastic.reshape(len_y,AV_reps)
-    Y_emissions_stock = np.mean(Y_emissions_stock_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    Y_emissions_stock = np.mean(Y_emissions_stock_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     Y_ev_uptake_reshape = Y_ev_uptake_stochastic.reshape(len_y,AV_reps)
-    Y_ev_uptake = np.mean(Y_ev_uptake_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    Y_ev_uptake = np.mean(Y_ev_uptake_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     Y_total_firm_profit_reshape = Y_total_firm_profit_stochastic.reshape(len_y,AV_reps)
-    Y_total_firm_profit = np.mean(Y_total_firm_profit_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    Y_total_firm_profit = np.mean(Y_total_firm_profit_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     Y_market_concentration_reshape = Y_market_concentration_stochastic.reshape(len_y,AV_reps)
-    Y_market_concentration = np.mean(Y_ev_uptake_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    Y_market_concentration = np.mean(Y_ev_uptake_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     Y_total_utility_reshape = Y_total_utility_stochastic.reshape(len_y,AV_reps)
-    Y_total_utility = np.mean(Y_total_utility_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    Y_total_utility = np.mean(Y_total_utility_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
     
     Y_mean_car_age_reshape = Y_mean_car_age_stochastic.reshape(len_y,AV_reps)
-    Y_mean_car_age = np.mean(Y_mean_car_age_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    Y_mean_car_age = np.mean(Y_mean_car_age_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     
     save_object(base_params, fileName + "/Data", "base_params")
@@ -246,14 +246,14 @@ def main(
     save_object(Y_mean_car_age, fileName + "/Data", "Y_mean_car_age")
     save_object(Y_mean_car_age_reshape, fileName + "/Data", "Y_mean_car_age_reshape")
 
-    save_object(N_samples , fileName + "/Data","N_samples")
+    save_object(N_samples git, fileName + "/Data","N_samples")
     save_object(calc_second_order, fileName + "/Data","calc_second_order")
 
     return fileName
 
 if __name__ == '__main__':
     fileName_Figure_6 = main(
-    N_samples = 2,#128,
+    N_samples = 16,#128,
     BASE_PARAMS_LOAD = "package/constants/base_params_SA.json",
     VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_SA.json",
     calc_second_order = True
