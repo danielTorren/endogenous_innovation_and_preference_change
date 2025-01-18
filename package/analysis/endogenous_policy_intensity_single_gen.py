@@ -329,7 +329,6 @@ def main(
 
     save_object(policy_outcomes, fileName + "/Data", "policy_outcomes")
     save_object(runs_data, fileName + "/Data", "runs_data")
-    
     save_object(base_params, fileName + "/Data", "base_params")
 
 
@@ -337,10 +336,10 @@ if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single_gen.json",
         policy_list = [
-            "Carbon_price",
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
             "Adoption_subsidy",
+            "Carbon_price",
             ],
             BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json"
         )
