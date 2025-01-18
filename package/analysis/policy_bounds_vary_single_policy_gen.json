@@ -16,5 +16,14 @@
             "Adoption_subsidy_used": [1000, 10000],
             "Production_subsidy": [1000, 10000],
             "Research_subsidy": [1000, 10000]
-            }
+    },
+    "init_val_dict":{            
+    "Carbon_price": 6,
+    "Discriminatory_corporate_tax": 0.9,
+    "Electricity_subsidy": 0.9,
+    "Adoption_subsidy": 30000,
+    "Adoption_subsidy_used": 30000,
+    "Production_subsidy": 30000,
+    "Research_subsidy": 20000
+    }
 }

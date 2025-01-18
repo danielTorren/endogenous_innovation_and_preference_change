@@ -135,7 +135,7 @@ def objective_function_wrapper_manual(intensity_level, params, controller_list, 
     
 
     # Compute the objective value
-    return mean_error, mean_EV_uptake , mean_total_cost, conf_int
+    return mean_error, mean_EV_uptake , mean_total_cost, conf_int, EV_uptake_arr, total_cost_arr
 
 def manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
     """
@@ -159,14 +159,18 @@ def manual_optimization(bounds, params, controller_list, policy_name, intensity_
     intensity = intensity_level_init
     prev_error = None
     at_boundary = False 
+
+    data = []
     
     for iteration in range(max_iter):
         print(f"Iteration {iteration + 1}, Intensity: {intensity}, Step Size: {step_size}")
 
         # Calculate error, EV uptake, and total cost
-        error, ev_uptake, total_cost, conf_int= objective_function_wrapper_manual(
+        error, ev_uptake, total_cost, conf_int , EV_uptake_arr, total_cost_arr= objective_function_wrapper_manual(
             intensity, params, controller_list, policy_name, target_ev_uptake
         )
+
+        data.append([error, ev_uptake, total_cost, conf_int, EV_uptake_arr, total_cost_arr, intensity, step_size])
 
         # Convergence check
         if conf_int[0] <= target_ev_uptake <= conf_int[1]:
@@ -205,7 +209,7 @@ def manual_optimization(bounds, params, controller_list, policy_name, intensity_
         # Store current error for the next iteration
         prev_error = error
 
-    return intensity, error, ev_uptake, total_cost
+    return intensity, error, ev_uptake, total_cost, data
 
 
 def optimize_policy_intensity_minimize(
@@ -215,7 +219,7 @@ def optimize_policy_intensity_minimize(
         intensity_level_init,
         target_ev_uptake=0.9,
         bounds=(0, None),
-        max_iterations=100,
+        max_iterations=30,
         initial_step_size = 0.1,
         adaptive_factor= 0.5, 
         step_size_bounds = [0.1,100]       
@@ -239,13 +243,13 @@ def optimize_policy_intensity_minimize(
     # Define bounds and initial guess
     min_step_size, max_step_size= step_size_bounds
     # Optimize using scipy's minimize
-    optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
+    optimized_intensity, error,mean_ev_uptake, mean_total_cost, data = manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
 
-    print("Optimized_intensity, error, mean_ev_uptake, mean_total_cost: ", optimized_intensity, error, mean_ev_uptake, mean_total_cost)
+    print("Policy: Optimized_intensity, error, mean_ev_uptake, mean_total_cost: ", policy_name,optimized_intensity, error, mean_ev_uptake, mean_total_cost)
 
     # Extract optimized intensity
 
-    return optimized_intensity, mean_ev_uptake, mean_total_cost
+    return optimized_intensity, mean_ev_uptake, mean_total_cost, data
 
 #############################################################################
 
@@ -300,29 +304,32 @@ def main(
 
     policy_outcomes = {}
 
+    runs_data = {}
     for i, policy_comb in enumerate(policy_combinations):
         policy_name, params = policy_comb
         print("policy_name",policy_name)
 
-        intensity_level_init = (bounds_dict[policy_name][0] + bounds_dict[policy_name][1])/2#start at teh middle
+        initial_step_size = bounds_dict["init_val_dict"][policy_name]*0.1#step size of 10%
 
-        initial_step_size = intensity_level_init*0.01#step size of 1%
-
-        mean_ev_uptake, mean_total_cost, intensity_level = optimize_policy_intensity_minimize(
+        mean_ev_uptake, mean_total_cost, intensity_level, runs_data = optimize_policy_intensity_minimize(
             params,
             controller_list,
             policy_name,
-            intensity_level_init,
+            intensity_level_init = bounds_dict["init_val_dict"][policy_name],
             target_ev_uptake=0.9,
             bounds=bounds_dict[policy_name],
             initial_step_size = initial_step_size,
             adaptive_factor= 0.5,
             step_size_bounds = step_size_dict[policy_name]
         )
+
+        runs_data[policy_name] = runs_data
         
         policy_outcomes[policy_name] = [mean_ev_uptake, mean_total_cost, intensity_level]
 
     save_object(policy_outcomes, fileName + "/Data", "policy_outcomes")
+    save_object(runs_data, fileName + "/Data", "runs_data")
+    
     save_object(base_params, fileName + "/Data", "base_params")
 
 
