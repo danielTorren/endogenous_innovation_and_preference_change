@@ -315,7 +315,7 @@ def main(
             params,
             controller_list,
             policy_name,
-            intensity_level_init = bounds_dict["init_val_dict"][policy_name],
+            intensity_level_init = policy_params_dict["init_val_dict"][policy_name],
             target_ev_uptake=0.9,
             bounds=bounds_dict[policy_name],
             initial_step_size = initial_step_size,
