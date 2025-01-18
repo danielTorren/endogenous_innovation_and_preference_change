@@ -1,6 +1,4 @@
 {
-    "N_ICE": {"sub_dict":"parameters_ICE","property":"N","min":8,"max": 18, "round":1},
-    "N_EV": {"sub_dict":"parameters_EV","property":"N","min":8,"max": 18, "round":1},
     "K_ICE": {"sub_dict":"parameters_ICE","property":"K","min":1,"max": 5, "round":1},
     "K_EV": {"sub_dict":"parameters_EV","property":"K","min":1,"max": 5, "round":1},
     "delta": {"sub_dict":"parameters_ICE","property":"delta","min":0.001,"max": 0.1, "round":0},
