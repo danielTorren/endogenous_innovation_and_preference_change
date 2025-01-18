@@ -183,17 +183,17 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.4, 1]},
+        {"name": "a_innovativeness", "subdict": "parameters_social_network", "bounds": [0.3, 2]},
         {"name": "b_innovativeness", "subdict": "parameters_social_network", "bounds": [0.3, 2]},
-        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [2,80]},
+        #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [2,80]},
         #{"name": "prob_switch_car", "subdict": "parameters_social_network", "bounds": [0, 0.03]}
         #{"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},
         #{"name": "SW_K", "subdict": "parameters_social_network", "bounds": [20, 500]},
     ]
     main(
         parameters_list=parameters_list,
-        BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
+        BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=1024
+        num_simulations=512#1024
     )
