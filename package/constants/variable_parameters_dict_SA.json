@@ -11,7 +11,6 @@
     "WTP_sd": {"sub_dict":"parameters_social_network","property":"WTP_sd","min":0,"max": 500, "round":0},
     "a_innovativeness": {"sub_dict":"parameters_social_network","property":"a_innovativeness","min":0.05,"max": 4, "round":0},
     "b_innovativeness": {"sub_dict":"parameters_social_network","property":"b_innovativeness","min":0.05,"max": 4, "round":0},
-    "prob_switch_car": {"sub_dict":"parameters_social_network","property":"prob_switch_car","min":0,"max": 0.5, "round":0},
     "kappa": {"sub_dict":"parameters_vehicle_user","property":"kappa","min":1,"max": 30, "round":0},
     "mu": {"sub_dict":"parameters_vehicle_user","property":"mu","min":0.05,"max":0.9, "round":0}
 }
