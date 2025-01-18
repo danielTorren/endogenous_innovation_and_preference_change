@@ -11,8 +11,8 @@ class NKModel:
         - A (int): Number of attributes influencing the fitness.
         - rho (list): List of length A containing correlation coefficients.
         """
-        self.N = parameters["N"]
-        self.K = parameters["K"]
+        self.N = int(round(parameters["N"]))
+        self.K = int(round(parameters["K"]))
         self.A = parameters["A"]
         self.rho = [1] + parameters["rho"]  # Adding 1 as the first correlation coefficient
 
