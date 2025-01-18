@@ -246,7 +246,7 @@ def main(
     save_object(Y_mean_car_age, fileName + "/Data", "Y_mean_car_age")
     save_object(Y_mean_car_age_reshape, fileName + "/Data", "Y_mean_car_age_reshape")
 
-    save_object(N_samples git, fileName + "/Data","N_samples")
+    save_object(N_samples, fileName + "/Data","N_samples")
     save_object(calc_second_order, fileName + "/Data","calc_second_order")
 
     return fileName
