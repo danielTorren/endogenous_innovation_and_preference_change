@@ -638,8 +638,6 @@ class Controller:
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
-        self.parameters_social_network["prob_update_second_hand_ols"] = self.parameters_second_hand["prob_update_second_hand_ols"]
-
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
