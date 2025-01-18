@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Parallel, delayed
 import multiprocessing
 from package.resources.run import load_in_controller, parallel_run_multi_run
-
+from scipy.stats import norm
 from package.resources.utility import (
     createFolder, 
     save_object, 
@@ -88,6 +88,15 @@ def single_policy_with_seeds(params, controller_list):
     return np.asarray(EV_uptake_list), np.asarray(total_cost_list)
 ###########################################################################################################################
 
+def compute_confidence_interval(data, confidence=0.95):
+    """
+    Compute the confidence interval for a given dataset and confidence level.
+    """
+    mean = np.mean(data)
+    sem = np.std(data, ddof=1) / np.sqrt(len(data))  # Standard error of the mean
+    margin = sem * norm.ppf((1 + confidence) / 2)
+    return mean - margin, mean + margin
+
 def objective_function_wrapper_manual(intensity_level, params, controller_list, policy_name, target_ev_uptake):
     """
     Wrapper for the objective function to be minimized.
@@ -118,10 +127,15 @@ def objective_function_wrapper_manual(intensity_level, params, controller_list, 
     mean_error = np.mean(target_ev_uptake - EV_uptake_arr)
     mean_EV_uptake = np.mean(EV_uptake_arr)
     mean_total_cost = np.mean(total_cost_arr)
+    conf_int = compute_confidence_interval(EV_uptake_arr, confidence=0.95)
+
     print("EV_uptake_arr", EV_uptake_arr)
     print("mean_error", abs(mean_error))
+    print("conf_int", conf_int)
+    
+
     # Compute the objective value
-    return mean_error, mean_EV_uptake , mean_total_cost
+    return mean_error, mean_EV_uptake , mean_total_cost, conf_int
 
 def manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
     """
@@ -144,18 +158,21 @@ def manual_optimization(bounds, params, controller_list, policy_name, intensity_
     """
     intensity = intensity_level_init
     prev_error = None
-
+    at_boundary = False 
+    
     for iteration in range(max_iter):
         print(f"Iteration {iteration + 1}, Intensity: {intensity}, Step Size: {step_size}")
 
         # Calculate error, EV uptake, and total cost
-        error, ev_uptake, total_cost = objective_function_wrapper_manual(
+        error, ev_uptake, total_cost, conf_int= objective_function_wrapper_manual(
             intensity, params, controller_list, policy_name, target_ev_uptake
         )
 
         # Convergence check
-        if abs(error) < 1e-2:
+        if conf_int[0] <= target_ev_uptake <= conf_int[1]:
+        #if abs(error) < 1e-2:
             print("Converged successfully.")
+            print("Final: error, ev_uptake, total_cost, conf_int", error, ev_uptake, total_cost, conf_int)
             break
 
         # Adjust step size based on the error and previous error
@@ -165,11 +182,25 @@ def manual_optimization(bounds, params, controller_list, policy_name, intensity_
             else:
                 step_size = max(step_size * adaptive_factor, min_step_size)
 
-        # Update intensity using gradient descent step
-        intensity += step_size * np.sign(error)
-        if intensity > bounds[1] or intensity < bounds[0]:
-            print("Converged unsuccessfully successfully.")
-            break
+        # Update intensity using gradient descent step 
+        next_intensity = intensity + step_size * np.sign(error)
+        
+        # Check for boundary conditions
+        if next_intensity > bounds[1]:
+            intensity = bounds[1]
+            if at_boundary:
+                print("Reached upper boundary again. Stopping optimization.")
+                break
+            at_boundary = True
+        elif next_intensity < bounds[0]:
+            intensity = bounds[0]
+            if at_boundary:
+                print("Reached lower boundary again. Stopping optimization.")
+                break
+            at_boundary = True
+        else:
+            intensity = next_intensity
+            at_boundary = False  # Reset boundary flag if we're within bounds
 
         # Store current error for the next iteration
         prev_error = error
@@ -210,7 +241,7 @@ def optimize_policy_intensity_minimize(
     # Optimize using scipy's minimize
     optimized_intensity, error,mean_ev_uptake, mean_total_cost = manual_optimization(bounds, params, controller_list, policy_name, intensity_level_init, target_ev_uptake, step_size=initial_step_size , max_iter=max_iterations, adaptive_factor=adaptive_factor, min_step_size=min_step_size, max_step_size=max_step_size)
 
-    print("Optimized_intensity, error", optimized_intensity, error, error,mean_ev_uptake, mean_total_cost)
+    print("Optimized_intensity, error, mean_ev_uptake, mean_total_cost: ", optimized_intensity, error, mean_ev_uptake, mean_total_cost)
 
     # Extract optimized intensity
 

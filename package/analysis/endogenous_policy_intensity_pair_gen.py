@@ -173,6 +173,7 @@ def main_pair_optimization(
     save_object(base_params, fileName + "/Data", "base_params_preburn")
 
     # Restore future duration
+    print("Future_time_steps", future_time_steps)
     base_params["duration_future"] = future_time_steps
 
     # 4) Now do *pairwise* sweeps

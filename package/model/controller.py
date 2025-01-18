@@ -381,6 +381,8 @@ class Controller:
         self.Production_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Production_subsidy"]
         self.Research_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Research_subsidy"]
 
+        
+
         # Carbon price calculation
         if self.Carbon_price_state == "Zero":
             self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price_state"]
