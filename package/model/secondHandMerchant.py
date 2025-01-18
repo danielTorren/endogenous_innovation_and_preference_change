@@ -17,7 +17,6 @@ class SecondHandMerchant:
         self.r = parameters_second_hand["r"]
         self.max_num_cars = parameters_second_hand["max_num_cars"]
         self.burn_in_second_hand_market = parameters_second_hand["burn_in_second_hand_market"]
-        self.fixed_alternative_mark_up = parameters_second_hand["fixed_alternative_mark_up"]
         self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
         self.d_max = parameters_second_hand["d_max"]
         self.delta = parameters_second_hand["delta"]
