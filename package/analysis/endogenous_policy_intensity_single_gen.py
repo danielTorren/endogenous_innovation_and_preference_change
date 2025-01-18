@@ -303,15 +303,15 @@ def main(
     print("TOTAL SCENARIOS: ", len(policy_combinations))
 
     policy_outcomes = {}
-
     runs_data = {}
+
     for i, policy_comb in enumerate(policy_combinations):
         policy_name, params = policy_comb
         print("policy_name",policy_name)
 
         initial_step_size = policy_params_dict["init_val_dict"][policy_name]*0.1#step size of 10%
 
-        mean_ev_uptake, mean_total_cost, intensity_level, runs_data = optimize_policy_intensity_minimize(
+        mean_ev_uptake, mean_total_cost, intensity_level, policy_data = optimize_policy_intensity_minimize(
             params,
             controller_list,
             policy_name,
@@ -323,7 +323,7 @@ def main(
             step_size_bounds = step_size_dict[policy_name]
         )
 
-        runs_data[policy_name] = runs_data
+        runs_data[policy_name] = policy_data
         
         policy_outcomes[policy_name] = [mean_ev_uptake, mean_total_cost, intensity_level]
 
