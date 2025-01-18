@@ -1,0 +1,17 @@
+{
+    "N_ICE": {"sub_dict":"parameters_ICE","property":"N","min":8,"max": 20, "round":1},
+    "N_EV": {"sub_dict":"parameters_EV","property":"N","min":8,"max": 20, "round":1},
+    "K_ICE": {"sub_dict":"parameters_ICE","property":"K","min":1,"max": 7, "round":1},
+    "K_EV": {"sub_dict":"parameters_EV","property":"K","min":1,"max": 7, "round":1},
+    "delta": {"sub_dict":"parameters_ICE","property":"delta","min":0.001,"max": 0.1, "round":0},
+    "prob_innovate": {"sub_dict":"parameters_firm","property":"prob_innovate","min":0,"max": 0.5, "round":0},
+    "prob_change_production": {"sub_dict":"parameters_firm","property":"prob_change_production","min":0,"max": 0.5, "round":0},
+    "lambda_pow": {"sub_dict":"parameters_firm","property":"lambda_pow","min":1,"max": 50, "round":0},
+    "WTP_mean": {"sub_dict":"parameters_social_network","property":"WTP_mean","min":0,"max": 500, "round":0},
+    "WTP_sd": {"sub_dict":"parameters_social_network","property":"WTP_sd","min":0,"max": 500, "round":0},
+    "a_innovativeness": {"sub_dict":"parameters_social_network","property":"a_innovativeness","min":0.05,"max": 4, "round":0},
+    "b_innovativeness": {"sub_dict":"parameters_social_network","property":"b_innovativeness","min":0.05,"max": 4, "round":0},
+    "prob_switch_car": {"sub_dict":"parameters_social_network","property":"prob_switch_car","min":0,"max": 0.5, "round":0},
+    "kappa": {"sub_dict":"parameters_vehicle_user","property":"kappa","min":1,"max": 30, "round":0},
+    "mu": {"sub_dict":"parameters_vehicle_user","property":"mu","min":0.05,"max":0.9, "round":0}
+}

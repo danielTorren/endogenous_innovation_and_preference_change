@@ -209,7 +209,7 @@
         "car_lifetime_months": 192,
         "a_innovativeness": 0.6,
         "b_innovativeness": 1,
-        "selection_bias": 5,
+        
         "prob_switch_car": 0.083
     },
     "parameters_vehicle_user":{

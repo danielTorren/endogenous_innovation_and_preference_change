@@ -113,9 +113,8 @@
         "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "fixed_alternative_mark_up": 0.2,
-        "scrap_price": 1000,
-        "prob_update_second_hand_ols": 0.083
+        "scrap_price": 500
+        
     },
     "parameters_ICE":{
         "N": 15,
@@ -171,7 +170,6 @@
         "car_lifetime_months": 192,
         "a_innovativeness": 0.8,
         "b_innovativeness": 1,
-        "selection_bias": 5,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{

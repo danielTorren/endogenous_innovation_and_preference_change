@@ -13,6 +13,7 @@ from package.resources.utility import (
     save_object,
     produce_name_datetime
 )
+from copy import deepcopy
 from package.resources.run import parallel_run_sa
 
 # modules
@@ -86,6 +87,32 @@ def generate_problem(
         param_values[:,index_round] = np.asarray([int(x) for x in np.round(param_values[:,index_round])])
     return problem, param_values
 
+def params_list_with_seed(base_params):
+    """
+    Expand the list of scenarios by varying the seed parameters.
+    """
+    base_params_list = []
+    seed_repetitions = base_params["seed_repetitions"]
+
+    for seed in range(1, seed_repetitions + 1):
+        base_params_copy = deepcopy(base_params)
+        # VARY ALL THE SEEDS
+        base_params_copy["seeds"]["init_tech_seed"] = seed + seed_repetitions
+        base_params_copy["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
+        base_params_copy["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
+        base_params_copy["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+        base_params_copy["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
+        base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
+        base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
+        base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+       
+        base_params_list.append( base_params_copy)
+    
+    return base_params_list
+
 def stochastic_produce_param_list_SA(
     param_values: npt.NDArray, base_params: dict, variable_parameters_dict: dict[dict]
 ) -> list:
@@ -114,7 +141,6 @@ def stochastic_produce_param_list_SA(
     """
 
     params_list = []
-    seeds_labels = ["preferences_seed", "network_structure_seed", "shuffle_homophily_seed", "shuffle_coherance_seed"]
     for i, X in enumerate(param_values):
         base_params_copy = (
             base_params.copy()
@@ -123,17 +149,12 @@ def stochastic_produce_param_list_SA(
             variable_parameters_dict.values()
         )  # turn it too a list so we can loop through it as X is just an array not a dict
         for v in range(len(X)):  # loop through the properties to be changed
-            base_params_copy[variable_parameters_dict_toList[v]["property"]] = X[
+            base_params_copy[variable_parameters_dict_toList[v]["sub_dict"]][variable_parameters_dict_toList[v]["property"]] = X[
                 v
             ]  # replace the base variable value with the new value for that experiment
-        for j in range(base_params_copy["seed_reps"]):#copy with stochastic seeds
-            for k, label in enumerate(seeds_labels):
-                base_params_copy[label] = int(10*k + j + 1)
-            #base_params_copy["set_seed"] = int(v+1)
-            params_list.append(
-                base_params_copy.copy()
-            )  
-        #params_list.append(base_params_copy)
+        list_base_params = params_list_with_seed(base_params_copy)
+        params_list.extend(list_base_params)
+
     return params_list
 
 def main(
@@ -153,7 +174,7 @@ def main(
     f_variable_parameters.close()
 
     ##AVERAGE RUNS
-    AV_reps = base_params["seed_reps"]
+    AV_reps = base_params["seed_repetitions"]
     print("Average reps: ", AV_reps)
 
     problem, param_values = generate_problem(
@@ -165,16 +186,13 @@ def main(
         param_values, base_params, variable_parameters_dict
     )
 
-
-    params_list_sa =
-
     print("Total runs: ", len(params_list_sa))
 
     root = "sensitivity_analysis"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-    Y_emissions_stock_stochastic, Y_ev_uptake_stochastic, Y_total_firm_profit_stochastic, Y_market_concentration_stochastic, Y_total_utility_stochastic,Y_mean_car_age_stochastic  = parallel_run_sa(
+    Y_emissions_stock_stochastic, Y_ev_uptake_stochastic, Y_total_firm_profit_stochastic, Y_market_concentration_stochastic, Y_total_utility_stochastic, Y_mean_car_age_stochastic  = parallel_run_sa(
         params_list_sa
     )
 
@@ -184,6 +202,8 @@ def main(
     save_object(Y_ev_uptake_stochastic, fileName + "/Data", "Y_ev_uptake_stochastic")
     save_object(Y_total_firm_profit_stochastic, fileName + "/Data", "Y_total_firm_profit_stochastic")
     save_object(Y_market_concentration_stochastic, fileName + "/Data", "Y_market_concentration_stochastic")
+    save_object(Y_total_utility_stochastic, fileName + "/Data", "Y_total_utility_stochastic")
+    save_object(Y_mean_car_age_stochastic, fileName + "/Data", "Y_mean_car_age_stochastic")
     
     len_y = int(len(params_list_sa)/AV_reps)
 
@@ -199,6 +219,11 @@ def main(
     Y_market_concentration_reshape = Y_market_concentration_stochastic.reshape(len_y,AV_reps)
     Y_market_concentration = np.mean(Y_ev_uptake_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
 
+    Y_total_utility_reshape = Y_total_utility_stochastic.reshape(len_y,AV_reps)
+    Y_total_utility = np.mean(Y_total_utility_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
+    
+    Y_mean_car_age_reshape = Y_mean_car_age_stochastic.reshape(len_y,AV_reps)
+    Y_mean_car_age = np.mean(Y_mean_car_age_reshape, axis=2)#AVERAGE OVER THE SEED VARIATIONS
 
     
     save_object(base_params, fileName + "/Data", "base_params")
@@ -215,6 +240,12 @@ def main(
     save_object(Y_market_concentration, fileName + "/Data", "Y_market_concentration")
     save_object(Y_market_concentration_reshape, fileName + "/Data", "Y_market_concentration_reshape")
 
+    save_object(Y_total_utility, fileName + "/Data", "Y_total_utility")
+    save_object(Y_total_utility_reshape, fileName + "/Data", "Y_total_utility_reshape")
+
+    save_object(Y_mean_car_age, fileName + "/Data", "Y_mean_car_age")
+    save_object(Y_mean_car_age_reshape, fileName + "/Data", "Y_mean_car_age_reshape")
+
     save_object(N_samples , fileName + "/Data","N_samples")
     save_object(calc_second_order, fileName + "/Data","calc_second_order")
 
@@ -222,8 +253,8 @@ def main(
 
 if __name__ == '__main__':
     fileName_Figure_6 = main(
-    N_samples = 128,
-    BASE_PARAMS_LOAD = "package/constants/base_params_sensitivity.json",
+    N_samples = 8,#128,
+    BASE_PARAMS_LOAD = "package/constants/base_params_SA.json",
     VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_SA.json",
     calc_second_order = True
     )

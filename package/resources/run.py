@@ -202,13 +202,46 @@ def parallel_run_multi_run(
 
 ##########################################################################################################################
 def generate_sensitivity_output_flat(params: dict):
+    """
+    Generates sensitivity output from input parameters.
+    Assumes `generate_data` is a defined function that returns
+    an object with the required attributes.
+    """
     data = generate_data(params)
-    return data.emissions_cumulative
+    return (
+        data.social_network.emissions_cumulative,
+        data.calc_EV_prop(),
+        data.firm_manager.total_profit,
+        data.firm_manager.HHI,
+        data.social_network.total_utility,
+        np.mean(data.social_network.car_ages)
+    )
 
-def parallel_run_sa(
-    params_dict: list[dict],
-):
-
+def parallel_run_sa(params_dict: list[dict]):
+    """
+    Runs the sensitivity analysis in parallel using the given parameter dictionary.
+    """
     num_cores = multiprocessing.cpu_count()
-    results_emissions_stock = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_sensitivity_output_flat)(i) for i in params_dict)
-    return np.asarray(results_emissions_stock)
+    res = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(generate_sensitivity_output_flat)(params) for params in params_dict
+    )
+    
+    # Unpack the results
+    (
+        emissions_list,
+        ev_prop_list,
+        profit_list,
+        HHI_list,
+        utility_list,
+        age_list
+    ) = zip(*res)
+    
+    # Return results as arrays where applicable
+    return (
+        np.asarray(emissions_list),
+        np.asarray(ev_prop_list),
+        np.asarray(profit_list),
+        np.asarray(HHI_list),
+        np.asarray(utility_list),
+        np.asarray(age_list)
+    )
