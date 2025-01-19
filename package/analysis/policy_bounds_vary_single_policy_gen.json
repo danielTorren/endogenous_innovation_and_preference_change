@@ -3,9 +3,9 @@
         "Carbon_price": [0, 20],
         "Discriminatory_corporate_tax": [0, 1],
         "Electricity_subsidy": [0, 1],
-        "Adoption_subsidy": [0, 70000],
-        "Adoption_subsidy_used": [0, 70000],
-        "Production_subsidy": [0, 40000],
+        "Adoption_subsidy": [0, 100000],
+        "Adoption_subsidy_used": [0, 100000],
+        "Production_subsidy": [0, 100000],
         "Research_subsidy": [0, 100000]
     },
     "step_size_dict":{
@@ -18,9 +18,9 @@
             "Research_subsidy": [1000, 10000]
     },
     "init_val_dict":{            
-    "Carbon_price": 6,
-    "Discriminatory_corporate_tax": 0.9,
-    "Electricity_subsidy": 0.9,
+    "Carbon_price": 5,
+    "Discriminatory_corporate_tax": 0.8,
+    "Electricity_subsidy": 0.8,
     "Adoption_subsidy": 30000,
     "Adoption_subsidy_used": 30000,
     "Production_subsidy": 30000,

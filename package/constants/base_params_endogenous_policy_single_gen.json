@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 80,
+    "seed_repetitions": 256,
     "duration_burn_in": 30,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
