@@ -13,13 +13,22 @@ from package.resources.utility import (
     produce_name_datetime
 )
 
-def generate_unique_policy_pairs(policy_list):
+def generate_unique_policy_pairs(policy_list_all, policy_list_works):
     """
-    Generate all unique pairs (policyA, policyB) from policy_list.
-    (A,B) is returned but not (B,A).
+    Generate pairs of policies where:
+    - The first policy can be any policy from policy_list_all.
+    - The second policy is only from policy_list_works.
+    - Policies are not paired with themselves.
+    - Pairs are unique and not reversed (e.g., (A, B) but not (B, A)).
     """
-    return list(itertools.combinations(policy_list, 2))
+    pairs = []
+    for policy1 in policy_list_all:
+        for policy2 in policy_list_works:
+            if policy1 != policy2 and policy1 < policy2:  # Enforce consistent ordering
+                pairs.append((policy1, policy2))
 
+    print("num pairs", len(pairs))
+    return pairs
 ###############################################################################
 # New function: For a *fixed* policy1 intensity, optimize policy2 to meet the EV target
 ###############################################################################
@@ -133,17 +142,23 @@ def policy_pair_sweep(
 ###############################################################################
 # Example 'main' that integrates everything
 ###############################################################################
-def main_pair_optimization(
+def main(
     BASE_PARAMS_LOAD = "package/constants/base_params_run_scenario_seeds.json",
     BOUNDS_LOAD      = "package/analysis/policy_bounds.json", 
-    policy_list      = [
-        "Carbon_price",
-        "Discriminatory_corporate_tax",
-        "Electricity_subsidy",
-        "Adoption_subsidy",
-        "Production_subsidy",
-        "Research_subsidy"
-    ],
+    policy_list_all  = [
+            "Carbon_price",
+            "Discriminatory_corporate_tax",
+            "Electricity_subsidy",
+            "Adoption_subsidy",
+            "Adoption_subsidy_used",
+            "Production_subsidy",
+            "Research_subsidy"
+        ],
+    policy_list_works = [
+            "Carbon_price",
+            "Discriminatory_corporate_tax",
+            "Electricity_subsidy"
+        ],
     target_ev_uptake = 0.9,
     n_steps_for_sweep = 5
 ):
@@ -165,6 +180,10 @@ def main_pair_optimization(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
+        # 4) Now do *pairwise* sweeps
+    policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
+    print("All unique pairs:", policy_pairs)
+
     # Run the burn-in with seeds
     base_params_list = params_list_with_seed(base_params)
     controller_list  = parallel_run_multi_run(base_params_list)
@@ -177,7 +196,7 @@ def main_pair_optimization(
     base_params["duration_future"] = future_time_steps
 
     # 4) Now do *pairwise* sweeps
-    policy_pairs = generate_unique_policy_pairs(policy_list)
+    policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
     print("All unique pairs:", policy_pairs)
 
     pairwise_outcomes = {}
@@ -204,18 +223,23 @@ def main_pair_optimization(
 # If you wanted to run directly:
 ###############################################################################
 if __name__ == "__main__":
-    main_pair_optimization(
+    main(
         BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_pair_gen.json",
         BOUNDS_LOAD = "package/analysis/policy_bounds_vary_pair_policy_gen.json", 
-        policy_list = [
-            "Carbon_price",
-            "Discriminatory_corporate_tax",
-            "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Adoption_subsidy_used",
-            "Production_subsidy",
-            "Research_subsidy"
-        ],
+        policy_list_all  = [
+                "Carbon_price",
+                "Discriminatory_corporate_tax",
+                "Electricity_subsidy",
+                "Adoption_subsidy",
+                "Adoption_subsidy_used",
+                "Production_subsidy",
+                "Research_subsidy"
+            ],
+        policy_list_works = [
+                "Carbon_price",
+                "Discriminatory_corporate_tax",
+                "Electricity_subsidy"
+            ],
         target_ev_uptake   = 0.9,
         n_steps_for_sweep  = 10
     )

@@ -311,7 +311,7 @@ def main(
 
         initial_step_size = policy_params_dict["init_val_dict"][policy_name]*0.1#step size of 10%
 
-        mean_ev_uptake, mean_total_cost, intensity_level, policy_data = optimize_policy_intensity_minimize(
+        intensity_level, mean_ev_uptake, mean_total_cost, policy_data = optimize_policy_intensity_minimize(
             params,
             controller_list,
             policy_name,
