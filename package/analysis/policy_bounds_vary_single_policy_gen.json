@@ -18,7 +18,7 @@
             "Research_subsidy": [1000, 10000]
     },
     "init_val_dict":{            
-    "Carbon_price": 5,
+    "Carbon_price": 1,
     "Discriminatory_corporate_tax": 0.8,
     "Electricity_subsidy": 0.8,
     "Adoption_subsidy": 30000,
