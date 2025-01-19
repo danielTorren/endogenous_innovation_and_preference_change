@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 30,
+    "seed_repetitions": 128,
     "duration_burn_in": 30,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
@@ -64,17 +64,17 @@
                 "Zero":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 0,
-                    "Carbon_price_state": "linear"
+                    "Carbon_price_state": "flat"
                 },
                 "Low":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 0.1,
-                    "Carbon_price_state": "linear"
+                    "Carbon_price_state": "flat"
                 },
                 "High":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 2,
-                    "Carbon_price_state": "linear"
+                    "Carbon_price_state": "flat"
                 }
             },
             "Discriminatory_corporate_tax":{
@@ -114,7 +114,6 @@
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 500
-        
     },
     "parameters_ICE":{
         "N": 15,
@@ -170,6 +169,7 @@
         "car_lifetime_months": 192,
         "a_innovativeness": 0.8,
         "b_innovativeness": 1,
+        
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
