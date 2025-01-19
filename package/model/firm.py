@@ -348,7 +348,7 @@ class Firm:
 
         len_vehicles = len(car_list)  # Length of the car list
 
-        if sum_profit == 0:
+        if sum_profit == 0 or sum_profit == np.nan:
             self.zero_profit_options_research = 1
             # Random choice since all profits are zero
             selected_index = self.random_state.choice(len_vehicles)
@@ -356,7 +356,7 @@ class Firm:
             self.zero_profit_options_research = 0
             probabilities = lambda_profits / sum_profit
             # Handle any residual NaNs in probabilities
-            probabilities[np.isnan(probabilities)] = 0
+            #probabilities[np.isnan(probabilities)] = 0
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
 
 
