@@ -61,7 +61,7 @@ def optimize_second_policy_with_first_fixed(
         params_copy["parameters_policies"]["Values"][policy1_name]["High"] = policy1_intensity
 
     # 2) Now optimize policy2 using your existing optimize_policy_intensity_minimize
-    optimized_intensity2, mean_ev_uptake2, mean_total_cost2 = optimize_policy_intensity_minimize(
+    optimized_intensity2, mean_ev_uptake2, mean_total_cost2, policy_data2 = optimize_policy_intensity_minimize(
         params_copy,
         controller_list,
         policy2_name,
@@ -73,7 +73,7 @@ def optimize_second_policy_with_first_fixed(
         step_size_bounds   = step_size_dict[policy2_name]
     )
     
-    return optimized_intensity2, mean_ev_uptake2, mean_total_cost2
+    return optimized_intensity2, mean_ev_uptake2, mean_total_cost2, policy_data2
 
 ###############################################################################
 # New function: Sweep policy1 from min->max, for each step fix policy1,
@@ -111,10 +111,10 @@ def policy_pair_sweep(
 
     # We'll store the results for this pair in a list of dicts
     results_for_pair = []
-
+    policy_data_list = []
     for i, p1_val in enumerate(p1_values):
         # For each step, fix policy1 = p1_val, then find best policy2
-        optimized_p2, ev_uptake2, cost2 = optimize_second_policy_with_first_fixed(
+        optimized_p2, ev_uptake2, cost2, policy_data2 = optimize_second_policy_with_first_fixed(
             base_params,
             controller_list,
             policy1_name,
@@ -134,10 +134,12 @@ def policy_pair_sweep(
             "mean_total_cost": cost2
         })
 
+        policy_data_list.append(policy_data2)
+
         # Update p2_guess so next iteration uses the *new* solution for p2
         p2_guess = optimized_p2
 
-    return results_for_pair
+    return results_for_pair, policy_data_list
 
 ###############################################################################
 # Example 'main' that integrates everything
@@ -200,9 +202,12 @@ def main(
     print("All unique pairs:", policy_pairs)
 
     pairwise_outcomes = {}
+
+    policy_data_list_dict = {}
+
     for (p1, p2) in policy_pairs:
         print(f"\n=== Sweeping pair: ({p1}, {p2}) ===")
-        results = policy_pair_sweep(
+        results, policy_data_list = policy_pair_sweep(
             base_params      = base_params,
             controller_list  = controller_list,
             policy1_name     = p1,
@@ -213,9 +218,11 @@ def main(
             n_steps          = n_steps_for_sweep
         )
         pairwise_outcomes[(p1, p2)] = results
+        policy_data_list[(p1, p2)] = policy_data_list
 
     # 5) Save everything
     save_object(pairwise_outcomes, fileName + "/Data", "pairwise_outcomes")
+    save_object(policy_data_list_dict, fileName + "/Data", "policy_data_list_dict")
 
     return "Done"
 
