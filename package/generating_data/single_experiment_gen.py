@@ -35,9 +35,10 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
+    "seed_repetitions": 24,
     "duration_burn_in": 30,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -53,8 +54,8 @@ if __name__ == "__main__":
         "choice_seed": 9,
         "remove_seed": 48
     },
-    "ev_research_start_time": 60,
-    "ev_production_start_time": 60,
+    "ev_research_start_time": 96,
+    "ev_production_start_time": 96,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -99,17 +100,17 @@ if __name__ == "__main__":
                 "Zero":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 0,
-                    "Carbon_price_state": "linear"
+                    "Carbon_price_state": "flat"
                 },
                 "Low":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 0.1,
-                    "Carbon_price_state": "linear"
+                    "Carbon_price_state": "flat"
                 },
                 "High":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 2,
-                    "Carbon_price_state": "linear"
+                    "Carbon_price_state": "flat"
                 }
             },
             "Discriminatory_corporate_tax":{
@@ -148,9 +149,7 @@ if __name__ == "__main__":
         "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        
         "scrap_price": 500
-        
     },
     "parameters_ICE":{
         "N": 15,
@@ -158,7 +157,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.005,
+        "delta": 0.001,
         "transportType": 2,
         "min_Price": 20000,
         "max_Price": 120000,
@@ -204,7 +203,7 @@ if __name__ == "__main__":
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.8,
+        "a_innovativeness": 0.85,
         "b_innovativeness": 1,
         
         "prob_switch_car":0.083
@@ -223,7 +222,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
 
     if RUN_PLOT:
         plotting_main(fileName = fileName)

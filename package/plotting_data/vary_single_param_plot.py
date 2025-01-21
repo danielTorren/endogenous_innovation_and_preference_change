@@ -339,19 +339,17 @@ def plot_efficiency(data_array, property_values_list, fileName, name_property, p
 
 # Sample main function
 def main(fileName, dpi=600):
-    try:
-        base_params = load_object(fileName + "/Data", "base_params")
-        data_array_distance = load_object(fileName + "/Data", "data_array_distance")
-        data_array_EV_prop = load_object(fileName + "/Data", "data_array_EV_prop")
-        data_array_age =  load_object(fileName + "/Data", "data_array_age")
-        data_array_price =  load_object(fileName + "/Data", "data_array_price")
-        data_array_emissions = load_object(fileName + "/Data", "data_array_emissions")
-        data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
-        vary_single = load_object(fileName + "/Data", "vary_single")
-        
-    except FileNotFoundError:
-        print("Data files not found.")
-        return
+
+    base_params = load_object(fileName + "/Data", "base_params")
+    data_array_distance = load_object(fileName + "/Data", "data_array_distance")
+    data_array_EV_prop = load_object(fileName + "/Data", "data_array_EV_prop")
+    data_array_age =  load_object(fileName + "/Data", "data_array_age")
+    data_array_price =  load_object(fileName + "/Data", "data_array_price")
+    data_array_emissions = load_object(fileName + "/Data", "data_array_emissions")
+    #data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
+    vary_single = load_object(fileName + "/Data", "vary_single")
+    
+
     
     property_values_list = vary_single["property_values_list"]
     name_property = vary_single["property_varied"] 
@@ -362,9 +360,9 @@ def main(fileName, dpi=600):
     plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
     plot_price(data_array_price , property_values_list, fileName, name_property, property_save, 600)
     plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
-    plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
+    #plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_16_23_57__13_01_2025")
+    main("results/single_param_vary_22_05_52__20_01_2025")

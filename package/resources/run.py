@@ -246,3 +246,77 @@ def parallel_run_sa(params_dict: list[dict]):
         np.asarray(utility_list),
         np.asarray(age_list)
     )
+
+
+def generate_multi_seed(params: dict):
+    """
+    Generates sensitivity output from input parameters.
+    Assumes `generate_data` is a defined function that returns
+    an object with the required attributes.
+    """
+    data = generate_data(params)
+    return (
+        data.social_network.history_total_emissions,#Emmissions flow
+        data.social_network.history_prop_EV, 
+        data.social_network.history_car_age, 
+        data.social_network.history_mean_price,
+        data.social_network.history_median_price, 
+        data.social_network.history_total_utility, 
+        data.social_network.history_quality_ICE, 
+        data.social_network.history_quality_EV, 
+        data.social_network.history_efficiency_ICE, 
+        data.social_network.history_efficiency_EV, 
+        data.social_network.history_production_cost_ICE, 
+        data.social_network.history_production_cost_EV, 
+        data.social_network.history_distance_individual_ICE, 
+        data.social_network.history_distance_individual_EV,
+        data.firm_manager.history_market_concentration,
+        data.firm_manager.history_total_profit
+    )
+
+def parallel_run_multi_seed(params_list):
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_sensitivity_output_flat(i) for i in params_dict]
+    res = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(generate_multi_seed)(params) for params in params_list
+    )
+    
+    # Unpack the results
+    (
+        history_total_emissions,#Emmissions flow
+        history_prop_EV, 
+        history_car_age, 
+        history_mean_price,
+        history_median_price, 
+        history_total_utility, 
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_distance_individual_ICE, 
+        history_distance_individual_EV,
+        history_market_concentration,
+        history_total_profit
+    ) = zip(*res)
+    
+    # Return results as arrays where applicable
+    return (
+        np.asarray(history_total_emissions),#Emmissions flow
+        np.asarray(history_prop_EV), 
+        np.asarray(history_car_age), 
+        np.asarray(history_mean_price),
+        np.asarray(history_median_price), 
+        np.asarray(history_total_utility), 
+        np.asarray(history_market_concentration),
+        np.asarray(history_total_profit),
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_distance_individual_ICE, 
+        history_distance_individual_EV,
+    )

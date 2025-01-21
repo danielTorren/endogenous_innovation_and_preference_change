@@ -59,7 +59,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     # Adding the dashed lines
     ax.axvline(second_hand_burn_in, color=color, linestyle='-.', label="Second hand market start")
     ax.axvline(burn_in, color=color, linestyle='--', label="Burn-in period end")
-    ax.axvline( burn_in  + ev_research_start_time, color=color, linestyle=':', label="EV research start")
+    #ax.axvline( burn_in  + ev_research_start_time, color=color, linestyle=':', label="EV research start")
     ax.axvline( burn_in  + ev_production_start_time, color="red", linestyle=':', label="EV sale start")
     
     if base_params["EV_rebate_state"]:

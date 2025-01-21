@@ -1,6 +1,6 @@
 from copy import deepcopy
 import json
-from package.resources.run import emissions_parallel_run, ev_prop_parallel_run
+from package.resources.run import parallel_run_multi_seed
 from package.resources.utility import (
     createFolder, 
     save_object, 
@@ -49,19 +49,49 @@ def main(
     
     print("TOTAL RUNS: ", len(params_list))
 
-    data_flat_ev_prop = ev_prop_parallel_run(params_list) 
-    print( data_flat_ev_prop.shape)
-
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
-    data_array_ev_prop = data_flat_ev_prop.reshape(base_params["seed_repetitions"], len(data_flat_ev_prop[0]))
+    (
+        history_total_emissions_arr,#Emmissions flow
+        history_prop_EV_arr, 
+        history_car_age_arr, 
+        history_mean_price_arr,
+        history_median_price_arr, 
+        history_total_utility_arr, 
+        history_market_concentration_arr,
+        history_total_profit_arr,
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_distance_individual_ICE, 
+        history_distance_individual_EV,
+    ) = parallel_run_multi_seed(
+        params_list
+    )
 
     createFolder(fileName)
-
-    save_object(data_array_ev_prop  , fileName + "/Data", "data_array_ev_prop")
-    save_object(params_list, fileName + "/Data", "params_list_flat")
+    
+    save_object(history_total_emissions_arr, fileName + "/Data", "history_total_emissions_arr")
+    save_object(history_prop_EV_arr, fileName + "/Data", "history_prop_EV_arr")
+    save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")
+    save_object(history_mean_price_arr, fileName + "/Data", "history_mean_price_arr")
+    save_object(history_median_price_arr, fileName + "/Data", "history_median_price_arr")
+    save_object(history_total_utility_arr, fileName + "/Data", "history_total_utility_arr")
+    save_object(history_market_concentration_arr, fileName + "/Data", "history_market_concentration_arr")
+    save_object(history_total_profit_arr, fileName + "/Data", "history_total_profit_arr")
+    save_object(history_quality_ICE, fileName + "/Data", "history_quality_ICE")
+    save_object(history_quality_EV, fileName + "/Data", "history_quality_EV")
+    save_object(history_efficiency_ICE, fileName + "/Data", "history_efficiency_ICE")
+    save_object(history_efficiency_EV, fileName + "/Data", "history_efficiency_EV")
+    save_object(history_production_cost_ICE, fileName + "/Data", "history_production_cost_ICE")
+    save_object(history_production_cost_EV, fileName + "/Data", "history_production_cost_EV")
+    save_object(history_distance_individual_ICE, fileName + "/Data", "history_distance_individual_ICE")
+    save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
     save_object(base_params, fileName + "/Data", "base_params")
 
-    print("Done")
+
     return params_list
 
 if __name__ == "__main__":

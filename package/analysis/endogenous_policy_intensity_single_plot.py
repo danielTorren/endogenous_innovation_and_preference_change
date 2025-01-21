@@ -3,24 +3,9 @@ from package.resources.utility import (
 )
 import matplotlib.pyplot as plt
 
+from package.plotting_data.single_experiment_plot import save_and_show
 
-def plot_ev_uptake_all_policies(runs_data):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for policy_name, data in runs_data.items():
-        iterations = range(1, len(data) + 1)
-        ev_uptakes = [entry[1] for entry in data]
-        ax.plot(iterations, ev_uptakes, marker='o', label=f"{policy_name}")
-    
-    ax.set_xlabel("Iteration")
-    ax.set_ylabel("EV Uptake")
-    ax.set_title("EV Uptake Over Iterations for All Policies")
-    ax.grid()
-    ax.legend()
-
-
-
-
-def plot_total_cost_all_policies(runs_data):
+def plot_total_cost_all_policies(runs_data, fileName, dpi = 600):
     fig, ax = plt.subplots(figsize=(10, 6))
     for policy_name, data in runs_data.items():
         iterations = range(1, len(data) + 1)
@@ -32,11 +17,10 @@ def plot_total_cost_all_policies(runs_data):
     ax.set_title("Total Cost Over Iterations for All Policies")
     ax.grid()
     ax.legend()
+    save_and_show(fig, fileName, "plot_total_cost_all_policies", dpi)
 
 
-  
-
-def plot_intensity_levels_all_policies(runs_data):
+def plot_intensity_levels_all_policies(runs_data, fileName, dpi = 600):
     fig, ax = plt.subplots(figsize=(10, 6))
     for policy_name, data in runs_data.items():
         iterations = range(1, len(data) + 1)
@@ -48,10 +32,39 @@ def plot_intensity_levels_all_policies(runs_data):
     ax.set_title("Policy Intensity Levels Over Iterations for All Policies")
     ax.grid()
     ax.legend()
+    save_and_show(fig, fileName, "plot_intensity_levels_all_policies", dpi)
 
 
+def plot_intensity_levels_excluding_adoption_subsidy(runs_data, fileName, dpi=600):
+    fig, axes = plt.subplots(1, 2, figsize=(10, 8))
+    ax1,ax2 = axes[0], axes[1]
+    for policy_name, data in runs_data.items():
+        iterations = range(1, len(data) + 1)
+        intensities = [entry[6] for entry in data]
+        
+        if policy_name == "Adoption_subsidy":
+            ax2.plot(iterations, intensities, marker='o', label=f"{policy_name}")
+        else:
+            ax1.plot(iterations, intensities, marker='o', label=f"{policy_name}")
+    
+    # Top subplot for all policies except "Adoption Subsidy"
+    ax1.set_ylabel("Intensity Level")
+    ax1.set_title("Policy Intensity Levels (Excluding Adoption Subsidy)")
+    ax1.grid()
+    ax1.legend()
+    
+    # Bottom subplot for "Adoption Subsidy"
+    ax2.set_xlabel("Iteration")
+    ax2.set_ylabel("Intensity Level")
+    ax2.set_title("Policy Intensity Levels for Adoption Subsidy")
+    ax2.grid()
+    ax2.legend()
+    
+    # Save and show the figure
+    save_and_show(fig, fileName, "plot_intensity_levels_excluding_adoption_subsidy", dpi)
 
-def plot_ev_uptake_with_confidence_all_policies(runs_data):
+
+def plot_ev_uptake_with_confidence_all_policies(runs_data, fileName, dpi = 600):
     fig, ax = plt.subplots(figsize=(10, 6))
     for policy_name, data in runs_data.items():
         iterations = range(1, len(data) + 1)
@@ -67,17 +80,15 @@ def plot_ev_uptake_with_confidence_all_policies(runs_data):
     ax.set_title("EV Uptake with Confidence Intervals for All Policies")
     ax.grid()
     ax.legend()
+    save_and_show(fig, fileName, "plot_ev_uptake_with_confidence_all_policies", dpi)
 
 
+def plot_policy_summary_all(runs_data, fileName):
 
-
-def plot_policy_summary_all(runs_data):
-    plot_ev_uptake_all_policies(runs_data)
-    plot_total_cost_all_policies(runs_data)
-    plot_intensity_levels_all_policies(runs_data)
-    plot_ev_uptake_with_confidence_all_policies(runs_data)
-
-
+    plot_total_cost_all_policies(runs_data, fileName)
+    plot_intensity_levels_all_policies(runs_data, fileName)
+    plot_ev_uptake_with_confidence_all_policies(runs_data, fileName)
+    plot_intensity_levels_excluding_adoption_subsidy(runs_data, fileName)
 
 def main(fileName):
     # Load observed data
@@ -86,7 +97,7 @@ def main(fileName):
     policy_outcomes = load_object(fileName + "/Data", "policy_outcomes")
     runs_data = load_object(fileName + "/Data", "runs_data")
     
-    plot_policy_summary_all(runs_data)
+    plot_policy_summary_all(runs_data, fileName)
 
     print("policy_outcomes", policy_outcomes)
 

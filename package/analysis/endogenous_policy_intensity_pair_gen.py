@@ -178,7 +178,7 @@ def main(
     future_time_steps = base_params["duration_future"]
     base_params["duration_future"] = 0
 
-    root = "endogenous_policy_intensity_single"
+    root = "endogenous_policy_intensity_pair"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
