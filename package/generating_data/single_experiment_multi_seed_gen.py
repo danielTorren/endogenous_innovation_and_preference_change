@@ -66,7 +66,7 @@ def main(
         history_production_cost_ICE, 
         history_production_cost_EV, 
         history_distance_individual_ICE, 
-        history_distance_individual_EV,
+        history_distance_individual_EV
     ) = parallel_run_multi_seed(
         params_list
     )

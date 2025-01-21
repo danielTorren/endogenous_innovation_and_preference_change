@@ -260,11 +260,11 @@ def plot_distance_individuals_mean_median_type_multiple_seeds(
 
     # Plot EV data (green)
     ax.plot(mean_ev, color='green', linestyle='-', linewidth=2, label='EV Mean Distance')
-    #ax.plot(median_ev, color='green', linestyle='--', linewidth=2, label='EV Median Distance')
+    ax.plot(median_ev, color='green', linestyle='--', linewidth=2, label='EV Median Distance')
 
     # Plot ICE data (blue)
     ax.plot(mean_ice, color='blue', linestyle='-', linewidth=2, label='ICE Mean Distance')
-    #ax.plot(median_ice, color='blue', linestyle='--', linewidth=2, label='ICE Median Distance')
+    ax.plot(median_ice, color='blue', linestyle='--', linewidth=2, label='ICE Median Distance')
 
     # Add confidence intervals for EV and ICE
     ax.fill_between(
@@ -597,4 +597,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_22_55_26__20_01_2025")
+    main("results/multi_seed_single_12_50_54__21_01_2025")

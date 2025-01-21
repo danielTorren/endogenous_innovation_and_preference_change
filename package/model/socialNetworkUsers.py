@@ -739,9 +739,9 @@ class Social_Network:
 
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
-        price_difference_raw = vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate - second_hand_merchant_offer_price
+        price_difference_raw = vehicle_dict_vecs["price"][:, np.newaxis] - self.used_rebate 
 
-        price_difference = np.maximum(0, price_difference_raw)#HAS TO BE ZERO
+        price_difference = np.maximum(0, price_difference_raw)- second_hand_merchant_offer_price
 
         U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))))
 
@@ -758,9 +758,9 @@ class Social_Network:
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
-        price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis] - second_hand_merchant_offer_price)  # Apply rebate
+        price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis])  # Apply rebate
 
-        price_difference = np.maximum(0, price_difference_raw)
+        price_difference = np.maximum(0, price_difference_raw) - second_hand_merchant_offer_price
         price_adjust = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
 
         U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))))

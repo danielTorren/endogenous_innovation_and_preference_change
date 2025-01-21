@@ -596,7 +596,8 @@ class Firm:
 
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
-                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * (selected_vehicle.optimal_price_segments[segment_code] - (self.rebate + self.rebate_calibration)) +  gamma_s * selected_vehicle.emissions)))
+                                price_adjust = np.maximum(0,selected_vehicle.optimal_price_segments[segment_code] - (self.rebate + self.rebate_calibration))
+                                utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * price_adjust +  gamma_s * selected_vehicle.emissions)))
                             else:
                                 utility_segment_U = np.exp(self.nu*(selected_vehicle.car_base_utility_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)))
                             

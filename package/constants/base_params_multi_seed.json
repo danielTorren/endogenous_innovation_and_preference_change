@@ -90,7 +90,7 @@
             "Adoption_subsidy":{
                 "Zero": 0,
                 "Low": 2500,
-                "High":50000
+                "High":200000
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
@@ -167,7 +167,7 @@
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.82,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
         
         "prob_switch_car":0.083
@@ -176,6 +176,7 @@
         "kappa":10,
         "r": 0.00417,
         "mu": 0.5,
-        "nu": 10e-6
+        "nu": 10e-6,
+        "alpha": 2.834
     }
 }

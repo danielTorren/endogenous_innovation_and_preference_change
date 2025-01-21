@@ -257,17 +257,19 @@ class Controller:
         return np.asarray(beta_list)
 
     def calc_variables(self):
-        D_plus = self.parameters_social_network["d_max"]
-        D_minus = self.parameters_social_network["d_min"]
+        #D_plus = self.parameters_social_network["d_max"]
+        #D_minus = self.parameters_social_network["d_min"]
         
-        beta_plus = np.max(self.beta_vec) # upper bound beta
-        gamma_plus = np.max(self.gamma_vec)# upper bound gamma
+        #beta_plus = np.max(self.beta_vec) # upper bound beta
+        #gamma_plus = np.max(self.gamma_vec)# upper bound gamma
         c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
         omega_minus = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
-        X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
-        alpha = (D_plus - D_minus) / (D_minus * X_plus)
-        self.parameters_vehicle_user["alpha"] = alpha
+        #X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
+        alpha = self.parameters_vehicle_user["alpha"] #(D_plus - D_minus) / (D_minus * X_plus)
+        #print("alpha, dmin", alpha, D_minus)
+
+        #self.parameters_vehicle_user["alpha"] = self.parameters_social_network["alp"]#alpha
 
         #SET Quality
         W = 10e6#the value of this basically makes no difference to alpha, min q or max q
