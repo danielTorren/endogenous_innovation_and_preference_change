@@ -1,6 +1,6 @@
 {
     "seed_repetitions": 40,
-    "duration_burn_in": 30,
+    "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,

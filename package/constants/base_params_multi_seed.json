@@ -159,7 +159,7 @@
     },
     "parameters_social_network":{
         "num_individuals": 5000,
-        "d_max": 3000,
+        "d_max": 2500,
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,

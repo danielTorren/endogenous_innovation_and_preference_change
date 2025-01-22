@@ -4,13 +4,49 @@ from scipy.stats import sem, t
 from package.resources.utility import load_object
 import matplotlib.pyplot as plt
 from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
-from package.plotting_data.single_experiment_plot import save_and_show, add_vertical_lines, format_plot
+from package.plotting_data.single_experiment_plot import save_and_show, format_plot
 
-def plot_data_across_seeds( base_params,fileName, data, title, x_label, y_label, save_name, dpi=600):
+def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     """
-    Plot data across multiple seeds with mean, confidence intervals, and individual traces.
+    Adds dashed vertical lines to the plot at specified steps, adjusted to exclude the burn-in period.
+
+    Parameters:
+    ax : matplotlib.axes.Axes
+        The Axes object to add the lines to.
+    base_params : dict
+        Dictionary containing relevant parameters for placing vertical lines.
+    color : str, optional
+        Color of the dashed lines. Default is 'black'.
+    linestyle : str, optional
+        Style of the dashed lines. Default is '--'.
+    """
+    burn_in = base_params["duration_burn_in"]
+    no_carbon_price = base_params["duration_no_carbon_price"]
+    #ev_research_start_time = base_params["ev_research_start_time"]
+    ev_production_start_time = base_params["ev_production_start_time"]
+    #second_hand_burn_in = base_params["parameters_second_hand"]["burn_in_second_hand_market"]
+
+    # Adding the vertical lines after the burn-in period
+    #ax.axvline(burn_in + second_hand_burn_in, color=color, linestyle='-.', label="Second-hand market start")
+    ax.axvline(burn_in + ev_production_start_time, color="red", linestyle=':', label="EV sale start")
+
+    if base_params["EV_rebate_state"]:
+        rebate_start_time = burn_in + base_params["parameters_rebate_calibration"]["start_time"]
+        ax.axvline(rebate_start_time, color="red", linestyle='-.', label="EV adoption subsidy start")
+    
+    if base_params["duration_future"] > 0:
+        policy_start_time = burn_in + no_carbon_price
+        ax.axvline(policy_start_time, color="red", linestyle='--', label="Policy start")
+
+
+def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label, save_name, dpi=600): 
+    """
+    Plot data across multiple seeds with mean, confidence intervals, and individual traces, 
+    starting from the end of the burn-in period.
 
     Args:
+        base_params: Dictionary containing simulation parameters (e.g., duration_burn_in).
+        fileName: Name of the file for saving the plot.
         data: 2D array where rows are the time series for each seed (shape: [num_seeds, num_time_steps]).
         title: Title of the plot.
         x_label: Label for the x-axis.
@@ -18,17 +54,19 @@ def plot_data_across_seeds( base_params,fileName, data, title, x_label, y_label,
         save_name: Name of the file to save the plot.
         dpi: Dots per inch for saving the plot.
     """
-    # Define x-axis as the range of the columns
-    time_steps = np.arange(data.shape[1])
+    # Determine the start of the data after the burn-in period
+    burn_in_step = base_params["duration_burn_in"]
+    data_after_burn_in = data[:, burn_in_step:]
+    time_steps = np.arange(burn_in_step, data.shape[1])
 
     # Calculate mean and 95% confidence interval
-    mean_values = np.mean(data, axis=0)
-    ci_range = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)  # 95% CI
+    mean_values = np.mean(data_after_burn_in, axis=0)
+    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
-    fig, ax1  = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
+    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
 
-    # First subplot: Mean and 95% CI
+    # Plot mean and 95% CI
     ax1.plot(time_steps, mean_values, label='Mean', color='blue')
     ax1.fill_between(
         time_steps, 
@@ -38,23 +76,28 @@ def plot_data_across_seeds( base_params,fileName, data, title, x_label, y_label,
         alpha=0.3, 
         label='95% Confidence Interval'
     )
-    #ax1.set_title(f"{title} (Mean and 95% CI)")
+
+    # Add labels, vertical lines, and legend
     ax1.set_xlabel(x_label)
     ax1.set_ylabel(y_label)
+    ax1.set_title(title)
     add_vertical_lines(ax1, base_params)
     ax1.legend()
-    #x1.grid()
-
 
     # Adjust layout and save
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
+
     
 def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600):
     """
-    Plot data across multiple seeds with mean, confidence intervals, and individual traces.
+    Plot data across multiple seeds with mean, confidence intervals, and individual traces,
+    starting from the end of the burn-in period.
 
     Args:
+        real_data: Real-world data to compare against.
+        base_params: Dictionary containing simulation parameters (e.g., duration_burn_in).
+        fileName: Name of the file for saving the plot.
         data: 2D array where rows are the time series for each seed (shape: [num_seeds, num_time_steps]).
         title: Title of the plot.
         x_label: Label for the x-axis.
@@ -62,57 +105,50 @@ def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, 
         save_name: Name of the file to save the plot.
         dpi: Dots per inch for saving the plot.
     """
-    # Define x-axis as the range of the columns
+    # Determine the start of the data after the burn-in period
+    burn_in_step = base_params["duration_burn_in"]
+    data_after_burn_in = data[:, burn_in_step:]
+    time_steps = np.arange(burn_in_step, data.shape[1])
+
+    # Adjust the real data's time steps
     init_index = base_params["duration_burn_in"] + 120
-    time_steps_real = np.arange(init_index, init_index + len(real_data)*12, 12)
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
 
-    time_steps = np.arange(data.shape[1])
-
-    # Calculate mean and 95% confidence interval
-    mean_values = np.mean(data, axis=0)
-    ci_range = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)  # 95% CI
+    # Calculate mean and 95% confidence interval for data after burn-in
+    mean_values = np.mean(data_after_burn_in, axis=0)
+    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
-
-    ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle= "--")
-    ax2.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle= "--")
-
-    # First subplot: Mean and 95% CI
+    # First subplot: Mean and 95% CI with real data
+    ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="--")
     ax1.plot(time_steps, mean_values, label='Mean', color='blue')
     ax1.fill_between(
-        time_steps, 
-        mean_values - ci_range, 
-        mean_values + ci_range, 
-        color='blue', 
-        alpha=0.3, 
+        time_steps,
+        mean_values - ci_range,
+        mean_values + ci_range,
+        color='blue',
+        alpha=0.3,
         label='95% Confidence Interval'
     )
-    #ax1.set_title(f"{title} (Mean and 95% CI)")
     ax1.set_xlabel(x_label)
     ax1.set_ylabel(y_label)
     add_vertical_lines(ax1, base_params)
     ax1.legend()
-    #ax1.grid()
 
-    
-
-    # Second subplot: Individual traces
-    for seed_idx, seed_data in enumerate(data):
+    # Second subplot: Individual traces with real data
+    ax2.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="--")
+    for seed_data in data_after_burn_in:
         ax2.plot(time_steps, seed_data, alpha=0.7)
-    
-    #ax2.set_title(f"{title} (Individual Seed Traces)")
     ax2.set_xlabel(x_label)
     ax2.set_ylabel(y_label)
-    #ax2.legend(loc='upper left', bbox_to_anchor=(1.05, 1), fontsize='small')
     add_vertical_lines(ax2, base_params)
-    #ax2.grid()
 
-    
     # Adjust layout and save
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
+
 
 def plot_vehicle_attribute_time_series_by_type_split(
     base_params, 
@@ -123,7 +159,8 @@ def plot_vehicle_attribute_time_series_by_type_split(
 ):
     """
     Plots time series of Quality, Efficiency (separate for ICE and EV),
-    and Production Cost for both ICE and EV with means and confidence intervals across multiple seeds.
+    and Production Cost for both ICE and EV with means and confidence intervals across multiple seeds,
+    starting from the end of the burn-in period.
 
     Args:
         base_params: Parameters of the simulation for adding additional context (like vertical lines).
@@ -139,6 +176,9 @@ def plot_vehicle_attribute_time_series_by_type_split(
         "Efficiency": (history_efficiency_ICE, history_efficiency_EV),
         "Production Cost": (history_production_cost_ICE, history_production_cost_EV),
     }
+
+    # Get burn-in step
+    burn_in_step = base_params["duration_burn_in"]
 
     # Create figure and gridspec
     fig = plt.figure(figsize=(8, 10))
@@ -156,9 +196,9 @@ def plot_vehicle_attribute_time_series_by_type_split(
             ax_ev.set_title("EV")
         
         # Plot ICE
-        plot_attribute_multiple_seeds(ax_ice, f"{attribute_name} (ICE)", ice_data, base_params)
+        plot_attribute_multiple_seeds(ax_ice, f"{attribute_name} (ICE)", ice_data[:, burn_in_step:], base_params)
         # Plot EV
-        plot_attribute_multiple_seeds(ax_ev, f"{attribute_name} (EV)", ev_data, base_params)
+        plot_attribute_multiple_seeds(ax_ev, f"{attribute_name} (EV)", ev_data[:, burn_in_step:], base_params)
 
         # Collect legend handles and labels
         if idx == 0:  # Only collect from the first subplot to avoid duplicates
@@ -170,7 +210,6 @@ def plot_vehicle_attribute_time_series_by_type_split(
             ax_ev.set_xlabel("Time Step (Month)")
 
     # Add a single legend for the entire figure at the bottom
-
     fig.legend(handles, labels, loc='lower center', ncol=4, frameon=False, bbox_to_anchor=(0.5, 0.0), prop={'size': 8})
 
     # Adjust layout to make space for the legend
@@ -182,7 +221,8 @@ def plot_vehicle_attribute_time_series_by_type_split(
 
 def plot_attribute_multiple_seeds(ax, title, data, base_params):
     """
-    Helper function to plot an attribute (e.g., Quality, Efficiency, Production Cost) across multiple seeds.
+    Helper function to plot an attribute (e.g., Quality, Efficiency, Production Cost) across multiple seeds,
+    starting from the end of the burn-in period.
 
     Args:
         ax: Matplotlib axis to plot on.
@@ -218,10 +258,8 @@ def plot_attribute_multiple_seeds(ax, title, data, base_params):
     )
 
     # Set title and labels
-    #ax.set_title(title)
-    
-    ax.set_ylabel(title)  # Use the first word of the title as the y-axis label
-    #ax.grid()
+    ax.set_ylabel(title)
+
 
 
 def plot_distance_individuals_mean_median_type_multiple_seeds(
@@ -231,7 +269,8 @@ def plot_distance_individuals_mean_median_type_multiple_seeds(
     fileName, dpi=600
 ):
     """
-    Plots mean and median individual distances for EV and ICE with 95% confidence intervals across multiple seeds.
+    Plots mean and median individual distances for EV and ICE with 95% confidence intervals across multiple seeds,
+    starting from the end of the burn-in period.
 
     Args:
         base_params: Parameters of the simulation for adding vertical lines.
@@ -240,14 +279,15 @@ def plot_distance_individuals_mean_median_type_multiple_seeds(
         fileName: Directory or file name to save the plot.
         dpi: Resolution for saving the plot.
     """
-    fig, ax = plt.subplots(figsize=(10, 6))
+    # Determine the burn-in step
+    burn_in_step = base_params["duration_burn_in"]
 
-    history_distance_individual_EV = np.nanmean(np.asarray(history_distance_individual_EV),axis = 2)
-    history_distance_individual_ICE = np.nanmean(np.asarray(history_distance_individual_ICE),axis = 2)
+    # Slice data to exclude the burn-in period
+    history_distance_individual_EV = np.nanmean(np.asarray(history_distance_individual_EV), axis=2)[:, burn_in_step:]
+    history_distance_individual_ICE = np.nanmean(np.asarray(history_distance_individual_ICE), axis=2)[:, burn_in_step:]
 
     # Compute mean and median across seeds for EV
     mean_ev = np.nanmean(history_distance_individual_EV, axis=0)
-
     median_ev = np.nanmedian(history_distance_individual_EV, axis=0)
     std_error_ev = sem(history_distance_individual_EV, axis=0)
     ci_ev = t.ppf(0.975, df=history_distance_individual_EV.shape[0] - 1) * std_error_ev
@@ -257,6 +297,9 @@ def plot_distance_individuals_mean_median_type_multiple_seeds(
     median_ice = np.nanmedian(history_distance_individual_ICE, axis=0)
     std_error_ice = sem(history_distance_individual_ICE, axis=0)
     ci_ice = t.ppf(0.975, df=history_distance_individual_ICE.shape[0] - 1) * std_error_ice
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot EV data (green)
     ax.plot(mean_ev, color='green', linestyle='-', linewidth=2, label='EV Mean Distance')
@@ -287,11 +330,9 @@ def plot_distance_individuals_mean_median_type_multiple_seeds(
     # Add vertical lines for base parameters (e.g., milestones or events)
     add_vertical_lines(ax, base_params)
 
-    # Format plot
+    # Format the plot
     ax.set_xlabel("Time Step, months")
     ax.set_ylabel("Distance, km")
-
-    #format_plot(ax, "User Distance Over Time", "Time Step, months", "Individual Distance")
     ax.legend()
 
     # Save and show the plot
@@ -301,7 +342,8 @@ def plot_history_car_age_multiple_seeds(
     base_params, history_car_age, fileName, dpi
 ):
     """
-    Plots the mean, median, and 95% confidence interval for car ages across multiple seeds.
+    Plots the mean and 95% confidence interval for car ages across multiple seeds,
+    starting from the end of the burn-in period.
 
     Args:
         base_params: Parameters of the simulation for adding vertical lines.
@@ -309,30 +351,31 @@ def plot_history_car_age_multiple_seeds(
         fileName: Directory or file name to save the plot.
         dpi: Resolution for the saved plot.
     """
-    # Calculate statistics across seeds
+    # Determine the burn-in step
+    burn_in_step = base_params["duration_burn_in"]
 
-    history_car_age = np.mean(history_car_age, axis=2)
+    # Slice the data to exclude the burn-in period
+    history_car_age = np.mean(history_car_age, axis=2)[:, burn_in_step:]
+
+    # Calculate statistics across seeds
     means = np.mean(history_car_age, axis=0)
-    #medians = np.median(history_car_age, axis=0)
     std_errors = sem(history_car_age, axis=0)
     ci = t.ppf(0.975, df=history_car_age.shape[0] - 1) * std_errors
     lower_bounds = means - ci
     upper_bounds = means + ci
 
-    # Time steps
-    time_steps = np.arange(history_car_age.shape[1])
+    # Time steps after the burn-in period
+    time_steps = np.arange(burn_in_step, burn_in_step + history_car_age.shape[1])
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    #ax.plot(time_steps, medians, label="Median Age", color="red")
     ax.plot(time_steps, means, label="Mean Age, Months", color="blue")
     ax.fill_between(
         time_steps, lower_bounds, upper_bounds, color="blue", alpha=0.2, label="95% Confidence Interval"
     )
-    #ax.set_title("Mean Age and 95% Confidence Interval Over Time")
+
     ax.set_xlabel("Time Step, months")
     ax.set_ylabel("Age, months")
-    #ax.grid(True)
 
     # Add vertical lines for base parameters (e.g., milestones or events)
     add_vertical_lines(ax, base_params)
@@ -351,8 +394,8 @@ def plot_history_mean_price_multiple_seeds(
     dpi=600
 ):
     """
-    Plots the mean, median, and 95% confidence interval for prices (new and second-hand cars) in the first subplot,
-    and the traces of individual seeds in the second subplot.
+    Plots the mean and 95% confidence interval for prices (new and second-hand cars) in the first subplot,
+    starting from the end of the burn-in period.
 
     Args:
         base_params: Parameters of the simulation for adding vertical lines.
@@ -361,15 +404,15 @@ def plot_history_mean_price_multiple_seeds(
         fileName: Directory or file name to save the plot.
         dpi: Resolution for the saved plot.
     """
-    # Extract new and second-hand prices
-    mean_new = history_mean_price[:, :, 0]  # Mean prices for new cars
-    mean_second_hand = history_mean_price[:, :, 1]  # Mean prices for second-hand cars
+    # Extract burn-in step
+    burn_in_step = base_params["duration_burn_in"]
 
-    median_new = history_median_price[:, :, 0]  # Median prices for new cars
-    median_second_hand = history_median_price[:, :, 1]  # Median prices for second-hand cars
+    # Extract new and second-hand prices, excluding burn-in period
+    mean_new = history_mean_price[:, burn_in_step:, 0]  # Mean prices for new cars
+    mean_second_hand = history_mean_price[:, burn_in_step:, 1]  # Mean prices for second-hand cars
 
-    # Time steps
-    time_steps = np.arange(mean_new.shape[1])
+    # Time steps after burn-in
+    time_steps = np.arange(burn_in_step, burn_in_step + mean_new.shape[1])
 
     # Compute mean and 95% CI across seeds
     overall_mean_new = np.mean(mean_new, axis=0)
@@ -378,11 +421,10 @@ def plot_history_mean_price_multiple_seeds(
     overall_mean_second_hand = np.mean(mean_second_hand, axis=0)
     ci_second_hand = t.ppf(0.975, df=mean_second_hand.shape[0] - 1) * sem(mean_second_hand, axis=0)
 
-    # Create the figure with two subplots
-    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
+    # Create the figure
+    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
 
-    # First subplot: Mean and 95% CI
-    # New car prices
+    # Plot Mean and 95% CI for New Car Prices
     ax1.plot(time_steps, overall_mean_new, label="New Car Mean Price", color="blue")
     ax1.fill_between(
         time_steps,
@@ -393,7 +435,7 @@ def plot_history_mean_price_multiple_seeds(
         label="New Car 95% Confidence Interval"
     )
 
-    # Second-hand car prices
+    # Plot Mean and 95% CI for Second-hand Car Prices
     ax1.plot(time_steps, overall_mean_second_hand, label="Second-hand Car Mean Price", color="green")
     ax1.fill_between(
         time_steps,
@@ -404,102 +446,11 @@ def plot_history_mean_price_multiple_seeds(
         label="Second-hand Car 95% Confidence Interval"
     )
 
-    # Format the first subplot
-    #ax1.set_title("Mean Prices and 95% Confidence Interval (New and Second-hand Cars)")
+    # Format the plot
+    ax1.set_xlabel("Time Step, months")
     ax1.set_ylabel("Price, $")
-    #ax1.grid(True)
     add_vertical_lines(ax1, base_params)
     ax1.legend()
-
-    # Adjust layout and save the plot
-    plt.tight_layout()
-    save_and_show(fig, fileName, "history_mean_price_with_traces", dpi)
-
-def plot_history_mean_price_multiple_seeds_dual(
-    base_params, 
-    history_mean_price, 
-    history_median_price, 
-    fileName, 
-    dpi=600
-):
-    """
-    Plots the mean, median, and 95% confidence interval for prices (new and second-hand cars) in the first subplot,
-    and the traces of individual seeds in the second subplot.
-
-    Args:
-        base_params: Parameters of the simulation for adding vertical lines.
-        history_mean_price: 3D array [num_seeds, num_time_steps, 2] for mean prices.
-        history_median_price: 3D array [num_seeds, num_time_steps, 2] for median prices.
-        fileName: Directory or file name to save the plot.
-        dpi: Resolution for the saved plot.
-    """
-    # Extract new and second-hand prices
-    mean_new = history_mean_price[:, :, 0]  # Mean prices for new cars
-    mean_second_hand = history_mean_price[:, :, 1]  # Mean prices for second-hand cars
-
-    median_new = history_median_price[:, :, 0]  # Median prices for new cars
-    median_second_hand = history_median_price[:, :, 1]  # Median prices for second-hand cars
-
-    # Time steps
-    time_steps = np.arange(mean_new.shape[1])
-
-    # Compute mean and 95% CI across seeds
-    overall_mean_new = np.mean(mean_new, axis=0)
-    ci_new = t.ppf(0.975, df=mean_new.shape[0] - 1) * sem(mean_new, axis=0)
-
-    overall_mean_second_hand = np.mean(mean_second_hand, axis=0)
-    ci_second_hand = t.ppf(0.975, df=mean_second_hand.shape[0] - 1) * sem(mean_second_hand, axis=0)
-
-    # Create the figure with two subplots
-    fig, axes = plt.subplots(2, 1, figsize=(12, 12), sharex=True)
-
-    ax1 = axes[0]
-    ax2 = axes[1]
-    # First subplot: Mean and 95% CI
-    # New car prices
-    ax1.plot(time_steps, overall_mean_new, label="New Car Mean Price", color="blue")
-    ax1.fill_between(
-        time_steps,
-        overall_mean_new - ci_new,
-        overall_mean_new + ci_new,
-        color="blue",
-        alpha=0.2,
-        label="New Car 95% Confidence Interval"
-    )
-
-    # Second-hand car prices
-    ax1.plot(time_steps, overall_mean_second_hand, label="Second-hand Car Mean Price", color="green")
-    ax1.fill_between(
-        time_steps,
-        overall_mean_second_hand - ci_second_hand,
-        overall_mean_second_hand + ci_second_hand,
-        color="green",
-        alpha=0.2,
-        label="Second-hand Car 95% Confidence Interval"
-    )
-
-    # Format the first subplot
-    #ax1.set_title("Mean Prices and 95% Confidence Interval (New and Second-hand Cars)")
-    ax1.set_ylabel("Price")
-    ax1.grid(True)
-    add_vertical_lines(ax1, base_params)
-    ax1.legend()
-
-    # Second subplot: Traces of individual seeds
-    # New car prices
-    for seed_idx in range(mean_new.shape[0]):
-        ax2.plot(time_steps, mean_new[seed_idx], label=f"Seed {seed_idx + 1} Mean (New)", alpha=0.5, color="blue")
-        ax2.plot(time_steps, mean_second_hand[seed_idx], label=f"Seed {seed_idx + 1} Mean (Second-hand)", alpha=0.5, color="green")
-
-    # Format the second subplot
-    #ax2.set_title("Traces of Mean Prices Over Time (New and Second-hand Cars)")
-    ax2.set_xlabel("Time Step, months")
-    ax2.set_ylabel("Price")
-    ax2.grid(True)
-
-    # Add legend to second subplot (limited to 10 labels for clarity)
-    handles, labels = ax2.get_legend_handles_labels()
-    ax2.legend(handles[:10], labels[:10], fontsize="small", loc="upper left", bbox_to_anchor=(1, 1))
 
     # Adjust layout and save the plot
     plt.tight_layout()
@@ -567,6 +518,7 @@ def main(fileName, dpi=600):
                         "Total Profit, $", 
                         "history_total_profit")
 
+    """
     plot_vehicle_attribute_time_series_by_type_split(
         base_params, 
         history_quality_ICE, history_quality_EV, 
@@ -574,6 +526,7 @@ def main(fileName, dpi=600):
         history_production_cost_ICE, history_production_cost_EV, 
         fileName
     )
+    """
 
     plot_distance_individuals_mean_median_type_multiple_seeds(
         base_params, 
@@ -597,4 +550,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_11_28_36__22_01_2025")
+    main("results/multi_seed_single_17_01_53__22_01_2025")

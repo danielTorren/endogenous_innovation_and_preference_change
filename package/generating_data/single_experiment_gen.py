@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 12,
-    "duration_burn_in": 30,
+    "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     },
     "parameters_social_network":{
         "num_individuals": 5000,
-        "d_max": 3000,
+        "d_max": 2500,
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
