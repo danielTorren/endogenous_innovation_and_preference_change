@@ -94,7 +94,7 @@ def main():
     print("av_distance ", av_distance )#SO YEHA THIS DOES NOT WORK
     #plt.plot(alpha_vec,av_distance)
     #plt.show()
-    #quit()
+ 
 
     # Generate W and n values
     W_vals = np.logspace(W_min, W_max, W_points)

@@ -1600,7 +1600,7 @@ def plot_conditional_transport_users_4x4(
     fig, axs = plt.subplots(2, 4, figsize=(12, 12), sharex=True, sharey=True)
     for i,test in  enumerate(condition_combinations):
         print(i,test)
-    quit()
+   
     for i, (beta_cond, gamma_cond, chi_cond) in enumerate(condition_combinations):
         print(i)
 

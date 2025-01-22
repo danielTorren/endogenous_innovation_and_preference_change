@@ -31,7 +31,7 @@ class Social_Network:
         self.chi_vec = parameters_social_network["chi_vec"]
 
         self.delta = parameters_social_network["delta"]
-        self.nu = parameters_social_network["nu"]
+        #self.nu = parameters_social_network["nu"]
         self.scrap_price = parameters_social_network["scrap_price"]
 
         self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
@@ -57,7 +57,7 @@ class Social_Network:
         self.alpha =  parameters_vehicle_user["alpha"]
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
-        self.kappa = int(round(parameters_vehicle_user["kappa"]))
+        self.kappa = parameters_vehicle_user["kappa"]
 
         # Generate a list of indices and shuffle them
         self.user_indices = np.arange(self.num_individuals)
@@ -298,7 +298,7 @@ class Social_Network:
 
         # Combine the list of vehicles
         available_and_current_vehicles_list = buying_vehicles_list + CV_filtered_vehicles# ITS CURRENT VEHICLES AND NOT FILTERED VEHCILES AS THE SHUFFLING INDEX DOENST ACCOUNT FOR THE FILTERING
-        self.utilities_matrix_switchers[self.utilities_matrix_switchers < 0] = 0#set utilities which are negative to 0, needed for probabilities
+
         utilities_kappa = self.masking_options(self.utilities_matrix_switchers, available_and_current_vehicles_list, self.consider_ev_vec[switcher_indices])
 
         #########################################################################################################################
@@ -417,12 +417,24 @@ class Social_Network:
 
     def masking_options(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
 
-        combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)
-        utilities_matrix_masked = utilities_matrix * combined_mask
-        norm_utility = utilities_matrix_masked/np.amax(utilities_matrix_masked)
-        utilities_kappa = np.power(norm_utility, self.kappa)
+        # Replace `-np.inf` with a mask to avoid issues
+        valid_utilities_mask = utilities_matrix != -np.inf  # Mask for valid (non -np.inf) entries
 
-        return utilities_kappa
+        # Initialize result matrix with zeros
+        utilities_kappa = np.zeros_like(utilities_matrix)
+
+        # Compute row-wise maximums, ignoring -np.inf
+        row_max = np.max(utilities_matrix, axis=1)
+
+        # Normalize each row by its row_max and compute the exponential
+        row_indices, col_indices = np.where(valid_utilities_mask)
+        normalized_values = utilities_matrix[row_indices, col_indices] / row_max[row_indices]
+        utilities_kappa[valid_utilities_mask] = np.exp(self.kappa * normalized_values)
+
+        combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)#THEN MAKE AND APPLY MASK 
+        utilities_kappa_masked = utilities_kappa * combined_mask
+        
+        return utilities_kappa_masked
     
 #########################################################################################################################################################
     #choosing vehicles
@@ -445,6 +457,7 @@ class Social_Network:
             sum_prob = np.sum(individual_specific_util)
 
             probability_choose = individual_specific_util / sum_prob
+
             choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)
 
@@ -532,12 +545,14 @@ class Social_Network:
 
         driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X)
         
-        #utility_vec_L_adjusted =  np.maximum(commuting_util_vec_L, 0)
-        U_a_i_t_vec_raw = driving_utility_vec*((1+self.r)/(self.r + self.delta))
-        U_a_i_t_vec = np.exp(self.nu*(U_a_i_t_vec_raw))
-        #U_a_i_t_vec = np.maximum(0, U_a_i_t_vec_raw)
+        U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
 
-        CV_utilities_matrix = np.diag(U_a_i_t_vec)
+        # Initialize the matrix with -np.inf
+        CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
+
+
+        # Set the diagonal values
+        np.fill_diagonal(CV_utilities_matrix, U_a_i_t_vec)
 
         return  CV_utilities_matrix, U_a_i_t_vec
 
@@ -743,7 +758,7 @@ class Social_Network:
 
         price_difference = np.maximum(0, price_difference_raw)- second_hand_merchant_offer_price
 
-        U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))))
+        U_a_i_t_matrix_final = lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))
 
         return U_a_i_t_matrix_final, d_i_t_L
     
@@ -763,8 +778,8 @@ class Social_Network:
         price_difference = np.maximum(0, price_difference_raw) - second_hand_merchant_offer_price
         price_adjust = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
 
-        U_a_i_t_matrix_final = np.exp(self.nu*(lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))))
-
+        U_a_i_t_matrix_final = lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))
+        
         return U_a_i_t_matrix_final, d_i_t_L
     
     def vectorised_optimal_distance_cars(self, X_matrix):
@@ -1105,7 +1120,7 @@ class Social_Network:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, U_vec_on_sale, rebate_calibration, used_rebate_calibration):
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, rebate_calibration, used_rebate_calibration):
         """
         Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
         then produce new data and finally save it.
@@ -1130,7 +1145,6 @@ class Social_Network:
         self.rebate_calibration = rebate_calibration
         self.used_rebate_calibration = used_rebate_calibration
         self.electricity_price_subsidy_dollars = electricity_price_subsidy_dollars
-        self.U_vec_on_sale = U_vec_on_sale
 
         #update new tech and prices
         self.second_hand_cars, self.new_cars = second_hand_cars, new_cars

@@ -47,7 +47,7 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
             confidence_interval = t.ppf(0.975, df=data.shape[0] - 1) * standard_error
             
             # Plot mean and capture the line object
-            line = ax.plot(time_series, mean_distance, label=f"Seed {seed+1}", alpha=0.7)[0]
+            line = ax.plot(time_series, mean_distance, alpha=0.7)[0]
 
             # Use the line color for the confidence interval
             ax.fill_between(
@@ -365,4 +365,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_14_57_53__21_01_2025")
+    main("results/single_param_vary_10_59_59__22_01_2025")

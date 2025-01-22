@@ -90,7 +90,7 @@ def main(
     params_list = expand_scenarios_with_seeds(base_scenarios, seed_list)
     
     #print(params_list, len(params_list), len())
-    #quit()
+
     # Flatten the parameters list for parallel execution
     flattened_params_list = [scenario for scenario_group in params_list for scenario in scenario_group]
 

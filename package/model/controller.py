@@ -272,7 +272,7 @@ class Controller:
         #self.parameters_vehicle_user["alpha"] = self.parameters_social_network["alp"]#alpha
 
         #SET Quality
-        W = 10e6#the value of this basically makes no difference to alpha, min q or max q
+        kappa = self.parameters_vehicle_user["kappa"]
         P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
         C = np.asarray([self.parameters_ICE["min_Cost"], (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2])
         beta = np.asarray([np.median(self.beta_vec),np.min(self.beta_vec)])
@@ -288,24 +288,31 @@ class Controller:
         omega = (omega_plus + omega_minus)/2
         X = (beta*c + gamma*e)/omega
 
-        inside_log = W *(self.parameters_vehicle_user["kappa"]* beta*(P - C) - 1)
-        has_to_be_more_than_one = self.parameters_vehicle_user["kappa"]* beta*(P - C)
-        if  any(item < 1 for item in has_to_be_more_than_one):
-            raise Exception("Costs too large relative to price")
+        # Calculate inside_log
+        inside_log = self.parameters_firm_manager["J"] * np.exp(kappa) * ((P - C) * kappa * beta - 1)
 
-        Q_vals = (alpha * X + 1) * (r + delta) * (np.log(inside_log**(1/(self.parameters_vehicle_user["kappa"]))) + beta * P + gamma * E) /  (1 + r) 
-        
+        # Compute Q for each element in X
+        log_term = np.log(inside_log)
+        numerator = (r + delta) * (alpha * X + 1)
+        denominator = 1 + r
+
+        Q_vals = (numerator / denominator) * (
+            (beta * P + gamma * E) *
+            (log_term + beta * P + gamma * E) /
+            (log_term + beta * P + gamma * E - kappa)
+        )
+
         max_q_poor = (4*Q_vals[0] - 0)/3
         max_q_rich = (4*Q_vals[1] - 0)/3
 
         max_q = (max_q_poor + max_q_rich)/2
-
+        #print("max_q", max_q)
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
         self.parameters_EV["min_Quality"] = 0#min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
 
-    #######################################################################################################################################
+    #####################################################################################################################################
     def manage_burn_in(self):
         self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
         self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
@@ -585,14 +592,14 @@ class Controller:
         self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
         self.parameters_firm_manager["carbon_price"] = self.carbon_price
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
-        self.parameters_firm_manager["kappa"] = int(round(self.parameters_vehicle_user["kappa"]))
+        self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["IDGenerator_firms"] = self.IDGenerator_firms
-        self.parameters_firm["kappa"] = int(round(self.parameters_vehicle_user["kappa"]))
+        self.parameters_firm["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape
@@ -606,7 +613,7 @@ class Controller:
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
 
         self.parameters_firm["d_max"] = self.parameters_social_network["d_max"]
-        self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
+
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -636,7 +643,6 @@ class Controller:
         self.parameters_social_network["used_rebate_calibration"] = self.used_rebate_calibration 
 
         self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
-        self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
@@ -654,7 +660,6 @@ class Controller:
         parameters_ICE["fuel_cost"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         parameters_ICE["d_max"]= self.parameters_social_network["d_max"]
-        self.parameters_ICE["nu"] = self.parameters_vehicle_user["nu"]
         self.ICE_landscape = NKModel(parameters_ICE)
 
     def setup_EV_landscape(self, parameters_EV):
@@ -666,7 +671,6 @@ class Controller:
         parameters_EV["fuel_cost"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
         parameters_EV["d_max"]= self.parameters_social_network["d_max"]
-        self.parameters_EV["nu"] = self.parameters_vehicle_user["nu"]
         self.EV_landscape = NKModel(parameters_EV)
 
     def setup_second_hand_market(self):
@@ -675,7 +679,7 @@ class Controller:
         self.parameters_second_hand["d_max"] = self.parameters_social_network["d_max"]
         self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
-        self.parameters_second_hand["nu"] = self.parameters_vehicle_user["nu"]
+
         self.parameters_second_hand["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_second_hand["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_second_hand["max_num_cars"] = int(np.round(self.parameters_social_network["num_individuals"] * self.parameters_second_hand["max_num_cars_prop"]))  
@@ -756,17 +760,16 @@ class Controller:
 
 
     def update_firms(self):
-        cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy, self.rebate_calibration)
-        return cars_on_sale_all_firms, U_sum_total, U_vec_on_sale
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy, self.rebate_calibration)
+        return cars_on_sale_all_firms
     
-    def update_social_network(self, U_vec_on_sale):
+    def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, U_vec_on_sale, self.rebate_calibration, self.used_rebate_calibration)
-
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, self.rebate_calibration, self.used_rebate_calibration)
         return consider_ev_vec, new_bought_vehicles
 
-    def get_second_hand_cars(self,U_sum_total, U_vec_on_sale):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price, U_sum_total, U_vec_on_sale)
+    def get_second_hand_cars(self):
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price)
 
         return self.second_hand_merchant.cars_on_sale
 
@@ -789,10 +792,9 @@ class Controller:
         #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
-        self.cars_on_sale_all_firms, U_sum_total, U_vec_on_sale = self.update_firms()
-        self.second_hand_cars = self.get_second_hand_cars(U_sum_total, U_vec_on_sale)
-
-        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network(U_vec_on_sale)
+        self.cars_on_sale_all_firms = self.update_firms()
+        self.second_hand_cars = self.get_second_hand_cars()
+        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()
 

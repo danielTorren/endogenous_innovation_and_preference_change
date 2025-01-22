@@ -25,15 +25,17 @@ class Firm_Manager:
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.id_generator = parameters_firm_manager["IDGenerator_firms"]
         self.kappa = parameters_firm_manager["kappa"]
+        #self.nu = parameters_firm_manager["nu"]
         self.num_individuals = parameters_firm_manager["num_individuals"]
 
+        self.minimum_segement_utilty = parameters_firm_manager["minimum_segment_utility"]
 
         self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
 
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
 
         self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
-
+        self.num_segments = len(self.all_segment_codes)
         #landscapes
         self.landscape_ICE = ICE_landscape
         self.landscape_EV = EV_landscape
@@ -162,7 +164,7 @@ class Firm_Manager:
 
     def generate_market_data(self):
         """
-
+        CALLED ONCE AT THE END OF THE SET UP BY CONTROLLER AND ONLY AFTER THE SOCIAL NETWORK INFORMATION HAS BEEN RECEIVIED
         For each segment code, we store:
          - I_s_t     (count of individuals)
          - beta_s_t  (average beta)
@@ -177,8 +179,11 @@ class Firm_Manager:
                 "beta_s_t": 0.0,
                 "gamma_s_t": 0.0,
                 "W": 0.0,
+                "U_max_s": self.minimum_segement_utilty,#-np.inf,
+                "U_max_s_immediate": self.minimum_segement_utilty,#-np.inf,
                 "history_I_s_t": [],
-                "history_W": []
+                "history_W": [], 
+                "history_U_max_s": [],
             }
 
         # 2) Count how many individuals fall into each segment code
@@ -212,46 +217,88 @@ class Firm_Manager:
 
         # 4) Now we need to compute the initial W for each segment
         for firm in self.firms_list:
-            firm.calc_utility_cars_segments(self.market_data, self.cars_on_sale_all_firms)
+            vehicle_list = firm.calc_utility_cars_segments(self.market_data, self.cars_on_sale_all_firms)
+                # Loop through each vehicle and its corresponding utility
+            for car in vehicle_list:
+                # Update U_max_s with the maximum value across all cars for each segment
+                for code in self.all_segment_codes:
+                    #print("car.car_utility_segments_U[code]", car.car_utility_segments_U[code])
+                    #print(self.market_data[code]["U_max_s"])
+                    
+                    self.market_data[code]["U_max_s"] = np.maximum(self.market_data[code]["U_max_s"], car.car_utility_segments_U[code])
+        
 
         # 5) Sum up the utilities across all cars for each segment
         segment_W = defaultdict(float)
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                    segment_W[code] += U**self.kappa
+                    U_max = self.market_data[code]["U_max_s"]
+                    segment_W[code] += np.exp((self.kappa/U_max)*U)
 
+        #print("END INIT")
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
+            #print(self.market_data[code]["U_max_s"])
+        #quit()
 
 
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
-    def generate_cars_on_sale_all_firms_and_sum_U(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def update_firms(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         cars_on_sale_all_firms = []
-        segment_W = defaultdict(float)
+        
         self.zero_profit_options_prod_sum = 0
         self.zero_profit_options_research_sum = 0
 
-        #print("In firm manager data: ", market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate)
+
+        # 4) Now we need to compute the initial W for each segment
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
             cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
-            for car in cars_on_sale:
-                for segment, U in car.car_utility_segments_U.items():
-                    segment_W[segment] += U**self.kappa
 
-        return cars_on_sale_all_firms, segment_W
+        return cars_on_sale_all_firms
 
-    def update_market_data_moving_average_old(self, W_segment):
-        """
-        If you still want a moving average approach:
-        """
+    def update_U_max_immediate(self):
+        #calc the total "probability of selection" of the market based on max utility in the segment
+        for segment in self.all_segment_codes:#RESET TO GET THE NEW ONE FOR THIS STEP
+            self.market_data[segment]["U_max_s_immediate"] = self.minimum_segement_utilty
+
+        #get the best U out off all cars
+        for car in self.cars_on_sale_all_firms:
+            for segment, U in car.car_utility_segments_U.items():
+                self.market_data[segment]["U_max_s_immediate"] = np.maximum(self.market_data[segment]["U_max_s_immediate"], car.car_utility_segments_U[segment])
+        
+    def update_U_max_rolling(self):
+        for code in self.market_data.keys():
+            # Append current values to history
+            self.market_data[code]["history_U_max_s"].append(self.market_data[code]["U_max_s_immediate"])
+
+            # Trim history to the last N time steps
+            if len(self.market_data[code]["history_U_max_s"]) > self.time_steps_tracking_market_data:
+                self.market_data[code]["history_U_max_s"].pop(0)
+
+            # Calculate moving averages
+            moving_avg_U_max_s = np.mean(self.market_data[code]["history_U_max_s"])
+
+            # Store the moving averages
+            self.market_data[code]["U_max_s"] = moving_avg_U_max_s
+
+    def update_W_immediate(self):
+        #calc the total "probability of selection" of the market based on max utility in the segment
+        segment_W = defaultdict(float)
+        for car in self.cars_on_sale_all_firms:
+            for segment, U in car.car_utility_segments_U.items():
+                segment_W[segment] += np.exp(self.kappa*(U/self.market_data[segment]["U_max_s"]))
+        return segment_W
+        
+    def update_market_data_moving_average(self, W_segment):
+
         segment_counts = defaultdict(int)
         for i in range(self.num_individuals):
             b_idx = self.beta_segment_idx[i]
@@ -259,8 +306,6 @@ class Firm_Manager:
             e_idx = self.consider_ev_vec[i]
             code = (b_idx, g_idx, e_idx)
             segment_counts[code] += 1
-
-        self.total_W = 0.0
 
         for code in self.market_data.keys():
             # Append current values to history
@@ -280,48 +325,7 @@ class Firm_Manager:
             # Store the moving averages
             self.market_data[code]["I_s_t"] = moving_avg_I_s_t
             self.market_data[code]["W"] = moving_avg_W
-
-            self.total_W += moving_avg_W
     
-    def compute_utilities_vec_moving_average(self):
-        """
-        Compute the utilities vector for all cars using a rolling average approach,
-        where the rolling average is based on the mean values from each of the 12 steps.
-        """
-        # Step 1: Collect all cars into a single list
-        cars = [car for firm in self.firms_list for car in firm.cars_on_sale]
-
-        # Step 2: Determine the number of cars (M) and segments (S)
-        M = len(cars)
-        S = len(cars[0].car_utility_segments_U)  # Number of segments (assumes all cars have the same keys)
-
-        # Step 3: Create the utility matrix (M x S)
-        U_matrix = np.zeros((M, S))
-
-        # Step 4: Fill the matrix with utilities
-        for m, car in enumerate(cars):
-            utilities = np.array(list(car.car_utility_segments_U.values()))
-            U_matrix[m, :] = utilities
-
-        # Calculate the mean of the current utility matrix
-        current_max = np.max(U_matrix, axis=0)
-
-        # Initialize or maintain history for rolling average
-        if not hasattr(self, "mean_history"):
-            self.mean_history = []
-
-        # Step 5: Store the current mean in history
-        self.mean_history.append(current_max)
-
-        # Trim history to the last 12 time steps
-        if len(self.mean_history) > self.time_steps_tracking_market_data:
-            self.mean_history.pop(0)
-
-        # Step 6: Calculate the rolling average using the mean of means
-        rolling_avg_means = np.mean(self.mean_history, axis=0)
-
-        return rolling_avg_means
-
     ######################################################################################################################
 
     def calc_total_profits(self, past_new_bought_vehicles):
@@ -428,26 +432,22 @@ class Firm_Manager:
     def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         
         self.t_firm_manager += 1
-        
         self.past_new_bought_vehicles = new_bought_vehicles
         self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
-         
+
+        
+        self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.carbon_price = carbon_price
-
-        #print("gas_price",gas_price)
-
+        
         self.discriminatory_corporate_tax = discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
-        self.cars_on_sale_all_firms, W_segment = self.generate_cars_on_sale_all_firms_and_sum_U(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
-    
-        self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
-        #self.update_market_data(sums_U_segment)
-        self.update_market_data_moving_average_old(W_segment)
-        self.U_vec_on_sale = self.compute_utilities_vec_moving_average()
+        
+        self.cars_on_sale_all_firms  = self.update_firms(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
 
-        #print(self.market_data)
-        #quit()
+        self.update_U_max_immediate()#get the value from the cars to be sold next time step
+        self.update_U_max_rolling()#update the rolling mean
+        W_segment = self.update_W_immediate()#calculate the competiveness of the market current
 
-        self.total_W = 1#DONT NEED THIS
+        self.update_market_data_moving_average(W_segment)#update the rollign vlaues
 
-        return self.cars_on_sale_all_firms, self.total_W, self.U_vec_on_sale
+        return self.cars_on_sale_all_firms

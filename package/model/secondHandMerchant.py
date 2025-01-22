@@ -20,8 +20,7 @@ class SecondHandMerchant:
         self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
         self.d_max = parameters_second_hand["d_max"]
         self.delta = parameters_second_hand["delta"]
-        self.kappa = parameters_second_hand["kappa"]
-        self.nu = parameters_second_hand["nu"]
+
         self.scrap_price = parameters_second_hand["scrap_price"]
 
         self.beta_segment_vec = parameters_second_hand["beta_segment_vals"] 
@@ -182,7 +181,6 @@ class SecondHandMerchant:
 
     def add_to_stock(self,vehicle):
         #add new car to stock
-        #vehicle.price = self.calc_car_price_single(vehicle, self.median_beta, self.median_gamma, self.U_sum)
         vehicle.price = vehicle.price_second_hand_merchant
         vehicle.scenario = "second_hand"
         vehicle.second_hand_counter = 0
@@ -221,19 +219,16 @@ class SecondHandMerchant:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, carbon_price, U_sum, U_vec_on_sale):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, carbon_price):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.vehicles_on_sale = vehicles_on_sale
         self.carbon_price = carbon_price
-        self.U_vec_on_sale = U_vec_on_sale
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []
-        
-        self.U_sum = U_sum
 
         if self.cars_on_sale:
             self.update_stock_contents()

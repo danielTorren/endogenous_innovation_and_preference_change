@@ -1,5 +1,5 @@
 {
     "property_varied": "kappa",
     "subdict": "parameters_vehicle_user",
-    "property_values_list": [1,10,20]
+    "property_values_list": [50 , 60 , 70 , 80 , 90 , 100]
 }
