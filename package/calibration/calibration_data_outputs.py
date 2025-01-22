@@ -96,12 +96,18 @@ def load_in_output_data():
     emisisons_intensity_cars_data = emissions_intensity_cars_df["gCO2e per mile"].to_numpy()
     kg_CO2_per_km_vec = emisisons_intensity_cars_data/(km_to_miles*1000)
 
-    return merged_data_filtered['EV Prop'].to_numpy(), kg_CO2_per_km_vec
+
+    ##################################################################################################
+    MMTCO2e_df = pd.read_excel("package/calibration_data/emissions_passenger_vehicle_2000_21.xlsx") 
+    MMTCO2e_data = MMTCO2e_df["MMTCO2e"].to_numpy()
+    CO2_index = MMTCO2e_data/max(MMTCO2e_data)
+    return merged_data_filtered['EV Prop'].to_numpy(), kg_CO2_per_km_vec, CO2_index
 
 if __name__ == "__main__":
-    EV_Prop, kg_CO2_per_km = load_in_output_data()
+    EV_Prop, kg_CO2_per_km, CO2_index = load_in_output_data()
     calibration_data_output = {}
 
     calibration_data_output["EV Prop"] = EV_Prop
     calibration_data_output["kg_CO2_per_km"] = kg_CO2_per_km
+    calibration_data_output["CO2_index"] = CO2_index
     save_object(calibration_data_output, "package/calibration_data", "calibration_data_output")

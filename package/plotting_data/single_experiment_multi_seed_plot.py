@@ -88,7 +88,51 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
 
-    
+def plot_calibrated_index_emissions(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600): 
+
+    # Adjust the real data's time steps
+    init_index = base_params["duration_burn_in"]
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+
+    # Determine the start of the data after the burn-in period
+    burn_in_step = base_params["duration_burn_in"]
+    data_after_burn_in = data[:, burn_in_step:]
+    time_steps = np.arange(burn_in_step, data.shape[1])
+
+    # Calculate mean and 95% confidence interval
+    mean_values = np.mean(data_after_burn_in, axis=0)
+    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
+
+    # Create subplots
+    fig, (ax1,ax2) = plt.subplots(2, 1, figsize=(8, 5), sharex=True)
+
+    # Plot mean and 95% CI
+    ax1.plot(time_steps, mean_values, label='Mean', color='blue')
+    ax1.fill_between(
+        time_steps, 
+        mean_values - ci_range, 
+        mean_values + ci_range, 
+        color='blue', 
+        alpha=0.3, 
+        label='95% Confidence Interval'
+    )
+
+    # Add labels, vertical lines, and legend
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(y_label)
+    ax1.set_title(title)
+    add_vertical_lines(ax1, base_params)
+    ax1.legend()
+
+    ax2.plot(time_steps, mean_values/max(mean_values), label='Simulated Emissions index Mean', color='blue')
+    ax2.plot(time_steps_real, real_data,label='California Emissions index', color='Orange', linestyle="dashed")
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel("Normalised Emissions index")
+
+    # Adjust layout and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, save_name, dpi)
+
 def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600):
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces,
@@ -481,12 +525,17 @@ def main(fileName, dpi=600):
     history_distance_individual_EV = load_object( fileName + "/Data", "history_distance_individual_EV")
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    CO2_index_2010_22 = calibration_data_output["CO2_index"]
 
     #plot_ev_stock_multi_seed(base_params, EV_stock_prop_2010_22, data_array_ev_prop, fileName, dpi)
     #plot_ev_stock_multi_seed_pair(base_params, EV_stock_prop_2010_22, history_prop_EV_arr, fileName, dpi)
 
-
     # Plot each dataset
+    plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_total_emissions_arr, 
+                    "Total Emissions Over Time", 
+                    "Time Step, months", 
+                    "Total Emissions, kgCO2", 
+                    "history_total_emissions_and_index")
 
     plot_data_across_seeds(base_params, fileName,history_total_emissions_arr, 
                         "Total Emissions Over Time", 
@@ -550,4 +599,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_17_01_53__22_01_2025")
+    main("results/multi_seed_single_18_31_56__22_01_2025")

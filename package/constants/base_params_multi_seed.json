@@ -2,7 +2,7 @@
     "seed_repetitions": 12,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -54,7 +54,7 @@
             "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "Zero",
+            "Adoption_subsidy": "High",
             "Adoption_subsidy_used": "Zero",
             "Production_subsidy": "Zero",
             "Research_subsidy": "Zero"
@@ -90,7 +90,7 @@
             "Adoption_subsidy":{
                 "Zero": 0,
                 "Low": 2500,
-                "High":20000
+                "High":100000
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
