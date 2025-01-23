@@ -33,7 +33,7 @@ class NKModel:
         self.median_gamma = parameters["median_gamma"]
         self.fuel_cost = parameters["fuel_cost"]
         self.e_t = parameters["e_t"]
-        self.d_max = parameters["d_max"]
+
         #self.nu = parameters["nu"]
 
         self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
@@ -55,7 +55,7 @@ class NKModel:
         X = (beta * self.fuel_cost + gamma * self.e_t)/ eff
 
         # Compute commuting utility for individual-vehicle pairs
-        driving_utility = quality/(self.alpha*X +1)
+        driving_utility = np.exp(quality - X)
 
         # Save the base utility
         B = driving_utility*((1+self.r)/(self.r + self.delta))

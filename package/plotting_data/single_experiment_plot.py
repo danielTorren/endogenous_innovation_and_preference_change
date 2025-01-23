@@ -2714,7 +2714,7 @@ def main(fileName, dpi=600):
 
     #plot_history_age_second_hand_car_removed(base_params,second_hand_merchant, time_series, fileName, dpi)
 
-    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
@@ -2771,4 +2771,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_46_07__14_01_2025")
+    main("results/single_experiment_19_03_57__23_01_2025")

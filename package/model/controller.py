@@ -165,11 +165,15 @@ class Controller:
         self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
         self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
 
+        d_plus_vec_raw = self.random_state_gamma.normal(loc = self.parameters_social_network["d_mean"], scale = self.parameters_social_network["d_sd"], size = self.num_individuals)
+
+        self.d_plus_vec = np.clip(d_plus_vec_raw, a_min = 0, a_max = np.inf)
 
         #social network data
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["chi_vec"] = self.chi_vec 
+        self.parameters_social_network["d_plus_vec"] = self.d_plus_vec
 
         self.beta_median = np.median(self.beta_vec)
         self.gamma_median = np.median(self.gamma_vec)
@@ -257,9 +261,9 @@ class Controller:
         return np.asarray(beta_list)
 
     def calc_variables(self):
-        #D_plus = self.parameters_social_network["d_max"]
-        #D_minus = self.parameters_social_network["d_min"]
-        
+        #"""
+        D_mean = self.parameters_social_network["d_mean"]
+
         #beta_plus = np.max(self.beta_vec) # upper bound beta
         #gamma_plus = np.max(self.gamma_vec)# upper bound gamma
         c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
@@ -287,30 +291,34 @@ class Controller:
         omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
         omega = (omega_plus + omega_minus)/2
         X = (beta*c + gamma*e)/omega
-
+        
         # Calculate inside_log
-        inside_log = self.parameters_firm_manager["J"] * np.exp(kappa) * ((P - C) * kappa * beta - 1)
+        W = self.parameters_firm_manager["J"] * np.exp(kappa)
+        #print("W", W)
+        U_m_star_s_t = self.parameters_firm_manager["minimum_segment_utility"]
+        # Calculate the components inside the log functions
+        indie_W = (kappa * beta / U_m_star_s_t)*(P - C) - 1
+        #print("indie_W",indie_W)
+        inside_log = W* (indie_W) + beta * P + gamma * E
+        #print("inside_log", inside_log)
+        inside_ln1 = np.log(inside_log)* (U_m_star_s_t * (r + delta))/ (kappa * D_mean * (1 + r))
+        #print("inside_ln1", inside_ln1)
 
-        # Compute Q for each element in X
-        log_term = np.log(inside_log)
-        numerator = (r + delta) * (alpha * X + 1)
-        denominator = 1 + r
-
-        Q_vals = (numerator / denominator) * (
-            (beta * P + gamma * E) *
-            (log_term + beta * P + gamma * E) /
-            (log_term + beta * P + gamma * E - kappa)
-        )
-
+        # Apply the double logarithm and the outer addition of X
+        Q_vals = (1 / alpha) * np.log(inside_ln1) + X
+        #print("Q_vals",Q_vals)
         max_q_poor = (4*Q_vals[0] - 0)/3
         max_q_rich = (4*Q_vals[1] - 0)/3
+        #"""
 
         max_q = (max_q_poor + max_q_rich)/2
-        #print("max_q", max_q)
+        print("max_q", max_q)
+
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
         self.parameters_EV["min_Quality"] = 0#min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
+        #quit()
 
     #####################################################################################################################################
     def manage_burn_in(self):
@@ -611,8 +619,8 @@ class Controller:
         self.parameters_firm["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
-
-        self.parameters_firm["d_max"] = self.parameters_social_network["d_max"]
+        self.parameters_firm["d_mean"] = self.parameters_social_network["d_mean"]
+        self.parameters_firm["minimum_segment_utility"] = self.parameters_firm_manager["minimum_segment_utility"]
 
 
         if self.t_controller == self.ev_research_start_time:
@@ -659,7 +667,7 @@ class Controller:
         parameters_ICE["median_gamma"] = self.gamma_median
         parameters_ICE["fuel_cost"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-        parameters_ICE["d_max"]= self.parameters_social_network["d_max"]
+
         self.ICE_landscape = NKModel(parameters_ICE)
 
     def setup_EV_landscape(self, parameters_EV):
@@ -670,13 +678,13 @@ class Controller:
         parameters_EV["median_gamma"] = self.gamma_median
         parameters_EV["fuel_cost"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
-        parameters_EV["d_max"]= self.parameters_social_network["d_max"]
+
         self.EV_landscape = NKModel(parameters_EV)
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
-        self.parameters_second_hand["d_max"] = self.parameters_social_network["d_max"]
+
         self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
 

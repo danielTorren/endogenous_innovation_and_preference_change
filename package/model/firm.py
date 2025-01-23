@@ -26,8 +26,9 @@ class Firm:
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.id_generator = parameters_firm["IDGenerator_firms"]  
 
-        #self.nu = parameters_firm["nu"]
-        self.d_max = parameters_firm["d_max"]  
+        self.d_mean = parameters_firm["d_mean"]  
+
+
         self.firm_id = firm_id
         #ICE
         self.init_tech_ICE = init_tech_ICE
@@ -60,7 +61,7 @@ class Firm:
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
 
-        self.init_U = self.parameters_firm["init_U"]
+        self.minimum_segement_utilty = self.parameters_firm["minimum_segment_utility"]
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
         self.carbon_price =  self.parameters_firm["carbon_price"]
@@ -103,7 +104,7 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.init_U
+                car.car_base_utility_segments[segment_code] = self.minimum_segement_utilty
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
         for car in self.list_technology_memory_EV:
@@ -111,12 +112,12 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.init_U
+                car.car_base_utility_segments[segment_code] = self.minimum_segement_utilty
 
-    def calc_driving_utility(self, Quality_a_t, L_a_t, X):
+    def calc_driving_utility(self, Quality_a_t, X):
 
         # Compute commuting utility for individual-vehicle pairs
-        driving_utility = Quality_a_t * ((1 - self.delta) ** L_a_t)/(self.alpha*X +1)
+        driving_utility = self.d_mean*np.exp(Quality_a_t - X +1)
 
         return driving_utility
 
@@ -148,7 +149,7 @@ class Firm:
                 else:
                     X = (beta_s * (car.fuel_cost_c + self.carbon_price*car.e_t) + gamma_s * car.e_t)/car.Eff_omega_a_t
                 # Calculate the commuting  utility for the given segment
-                driving_utility = self.calc_driving_utility(car.Quality_a_t, car.L_a_t, X)
+                driving_utility = self.calc_driving_utility(car.Quality_a_t, X)
 
                 # Save the base utility
                 U = driving_utility*((1+self.r)/(self.r + self.delta)) 
@@ -158,11 +159,14 @@ class Firm:
                 #print("U_max_s", U_max_s)
                 #print("U", U)
                 #print("kappa", self.kappa)
+                #inside_exp = (self.kappa/U_max_s)*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0
+                #print("inside exp", inside_exp)
+                #print(np.exp(inside_exp))
                 Arg = (np.exp((self.kappa/U_max_s)*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
                 #print("arg",Arg)
                 LW   = lambertw(Arg, 0).real  # principal branch
-                #print("LW",LW)
                 #quit()
+                ##print("LW",LW)
                 P = C_m_cost + (U_max_s*(1.0 + LW))/(self.kappa*beta_s)
 
                 if P < C_m:
