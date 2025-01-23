@@ -3,9 +3,17 @@ from package.resources.utility import save_object
 
 def load_in_calibration_data():
 
-    gasoline_Kilowatt_Hour_per_gallon = 33.41 #Gasoline gallon equivalent (GGE)
-    gasoline_gco2_per_gallon = 8887 #grams CO2/ gallon
-
+    gasoline_Kilowatt_Hour_per_gallon = 1/0.030#33.41 #Gasoline gallon equivalent (GGE) https://afdc.energy.gov/fuels/properties
+    print("gasoline_Kilowatt_Hour_per_gallon", gasoline_Kilowatt_Hour_per_gallon)
+    km_to_miles = 1.60934
+    #1 kWh = 0.030 GGE #https://afdc.energy.gov/fuels/properties
+    gasoline_g_co2_per_MJ = 92#FROM https://www.ipcc.ch/report/ar6/wg3/downloads/report/IPCC_AR6_WGIII_Chapter10.pdf table 10.8 p1145
+    gasoline_Kgco2_per_MJ = gasoline_g_co2_per_MJ/1000
+    kWr_per_MJ = 0.2777777778
+    gasoline_Kgco2_per_Kilowatt_Hour = gasoline_Kgco2_per_MJ/kWr_per_MJ
+    print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)
+    quit()
+    
     #CPI
     CPI_california_df = pd.read_excel("package/calibration_data/CPI_california.xlsx") 
     # Ensure the "Date" column is in datetime format (optional, for time-based operations)
@@ -66,8 +74,8 @@ def load_in_calibration_data():
     
     # Convert mpg to km/kWhr
     
-    km_to_miles = 1.60934
-    gasoline_Kilowatt_Hour_per_gallon = 33.41 #Gasoline gallon equivalent (GGE)
+ 
+    
     efficiency_and_power_df["km_per_kWhr"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*(km_to_miles/gasoline_Kilowatt_Hour_per_gallon)
     #"min_max_Efficiency":[0.5,1.5], historial min and max for period are (0.953754,1.252405)
 
@@ -77,61 +85,6 @@ def load_in_calibration_data():
     #                        = (km/kwhr)
     # min = 0.265988/0.281 = 0.94657651245, max = 0.265988/0.221 = 1.20356561086
     # for lascaep take values = (0.867, 1.444)
-
-
-
-    #What is the distance travelled by your typical car?
-    average_gas_tank_size = 16#Gallons https://mechanicbase.com/cars/average-gas-tank-size/  https://millsequipment.com/blogs/blogs/understanding-average-fuel-tank-size-what-you-need-to-know
-    efficiency_and_power_df["Average Distance km"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*average_gas_tank_size*km_to_miles
-    #print(efficiency_and_power_df)
-    #MIN in 2000 is 509.838912km, MAX in 2022 its 669.485440km
-    
-    #Now compare to the evolving range in EVs
-    # Load EV range data
-    EV_range_df = pd.read_excel("package/calibration_data/EVrange.xlsx")
-    EV_range_df["Date"] = pd.to_datetime(EV_range_df["Date"])
-    EV_range_df.set_index("Date", inplace=True)
-
-    # Align the indices to yearly for calculation
-    yearly_data = EV_range_df.join(efficiency_and_power_df["Average Distance km"], how="inner")
-
-    # Calculate the year-wise range ratio
-    yearly_data["Range Ratio (ICE to EV)"] = yearly_data["Average Distance km"] / yearly_data["EV Range (km)"]
-
-    # Extend the yearly data to monthly frequency
-    monthly_index = pd.date_range(
-        start=yearly_data.index.min(),
-        end="2022-12-01",  # Extend up to December 2022
-        freq="MS"  # Month Start frequency
-    )
-
-    # Reindex to monthly and forward-fill yearly data to monthly
-    EV_range_monthly_data = yearly_data.reindex(monthly_index, method="ffill")
-
-    # If needed, set the index name back to "Date"
-    EV_range_monthly_data.index.name = "Date"
-    ##############################################################################################    ##############################################################################################
-
-    #NOW - NEED TO GET ALL THE PRICES INTO 2020 DOLLARS BY DIVIDING BY THE CPI 
-
-    #Emissions Gasoline - WE 
-    gasoline_Kgco2_per_Kilowatt_Hour =  (gasoline_gco2_per_gallon/gasoline_Kilowatt_Hour_per_gallon)/1000
-    print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)
-    #ALT: #https://ww2.arb.ca.gov/sites/default/files/2020-06/basics-notes_1.pdf
-    #gasoline_Kgco2_per_Kilowatt_Hour =  93.23/(1000*0.2777778)
-    #0.26599820413049985
-    
-    #print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)
-    #ALTERNATIVE DATA FROM USA: US energy information adminitstration: https://www.eia.gov/environment/emissions/co2_vol_mass.php
-    #1 Btu = 0.000293071 KWh
-    #millionBTU = 293.071 KWh
-    #Mototr gasoline  = 76.1104903685078 kgCO2/millionBTU
-    #Motot gasoline  = 76.1104903685078/293.071 kgCO2/KWh = 0.260 kgCO2/KWh WHICH IS BASICALLY IDENTICAL, IF not lower than what i had earlier
-    #
-
-    #AND AGAIN, this time EPA: https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references#:~:text=filled%20with%20gasoline-,The%20amount%20of%20carbon%20dioxide%20emitted%20per%20gallon%20of%20motor,A%20barrel%20equals%2042%20gallons.
-    #gallon of motor gasoline burned is 8.89 × 10-3 metric tons
-    
 
     ##############################################################################################    ##############################################################################################
     
@@ -166,7 +119,7 @@ def load_in_calibration_data():
     income_df = pd.read_excel("package/calibration_data/income_quintiles_2019_20.xlsx")
     
     ################################################################################################################################################
-    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_monthly_data["Range Ratio (ICE to EV)"], Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df
+    return aligned_data, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df
 
 def future_calibration_data():
     # Load data
@@ -203,12 +156,11 @@ if __name__ == "__main__":
 
     calibration_data_input = {}
 
-    calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, EV_range_ratio, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
+    calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
     
     calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()
     calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()
     calibration_data_input["electricity_emissions_intensity_vec"] = calibration_data_output["KgCO2 per Kilowatt-Hour"].to_numpy()
-    calibration_data_input["tank_ratio_vec"] = EV_range_ratio.to_numpy()
     calibration_data_input["Gas_price_2022"] = Gas_price_2022
     calibration_data_input["Electricity_price_2022"] = electricity_price_2022
     calibration_data_input["Electricity_emissions_intensity_2022"] = electricity_emissions_intensity_2022

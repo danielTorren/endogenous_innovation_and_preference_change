@@ -27,8 +27,7 @@ class Firm:
         self.id_generator = parameters_firm["IDGenerator_firms"]  
 
         #self.nu = parameters_firm["nu"]
-        self.d_max = parameters_firm["d_max"]
-        self.num_cars_production =   parameters_firm["num_cars_production"]  
+        self.d_max = parameters_firm["d_max"]  
         self.firm_id = firm_id
         #ICE
         self.init_tech_ICE = init_tech_ICE
@@ -530,12 +529,8 @@ class Firm:
         
         if not np.any(profit_matrix): #PROFIT IS ALL 0, pick up to 
             self.zero_profit_options_prod = 1
-            if len(technologies) > self.num_cars_production:
-                #print("ALL ZEROS AND MORE THAN NUM CARS PRODUCTION")
-                vehicles_selected = technologies[:self.num_cars_production]
-            else:
-                #print("ALL ZEROS AND LESS THAN NUM CARS PRODUCTION")
-                vehicles_selected = technologies
+            
+            vehicles_selected = technologies
 
             #NEED TO SET PRICES HERE, WHAT TO DO WHEN ALL THE CARS ARE TERRIBLE, SET THE LOWEST PRICE?
             for i, vehicle in enumerate(vehicles_selected):
@@ -628,21 +623,12 @@ class Firm:
                 vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True
             )
 
-            if len(selected_vehicles) > self.num_cars_production:
-                # Select up to the allowed number of cars
-                vehicles_selected_with_segment = [
-                    (x[0], x[1]["segment"]) for x in sorted_vehicles[:self.num_cars_production]
-                ]
-                vehicles_selected = [
-                    x[0] for x in sorted_vehicles[:self.num_cars_production]
-                ]
-            else:
-                vehicles_selected_with_segment = [
-                    (x[0], x[1]["segment"]) for x in sorted_vehicles
-                ]
-                vehicles_selected = [
-                    x[0] for x in sorted_vehicles
-                ]
+            vehicles_selected_with_segment = [
+                (x[0], x[1]["segment"]) for x in sorted_vehicles
+            ]
+            vehicles_selected = [
+                x[0] for x in sorted_vehicles
+            ]
 
             if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
                 # Count segments of selected vehicles

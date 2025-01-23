@@ -35,7 +35,8 @@ def load_in_output_data():
     #UP TO 2022 TO MATCH THE PRICING DATA!
     merged_data_filtered = merged_data[(merged_data['Data Year'] >= 2010) & (merged_data['Data Year'] <= 2022)]
 
-    #######################################
+    print("merged_data_filtered", merged_data_filtered)
+    #############################################################
 
     #NOW DO EV SALES DATA
     #EV SALES
@@ -95,7 +96,6 @@ def load_in_output_data():
     emissions_intensity_cars_df = pd.read_excel("package/calibration_data/emissions_intensity_cars.xlsx") 
     emisisons_intensity_cars_data = emissions_intensity_cars_df["gCO2e per mile"].to_numpy()
     kg_CO2_per_km_vec = emisisons_intensity_cars_data/(km_to_miles*1000)
-
 
     ##################################################################################################
     MMTCO2e_df = pd.read_excel("package/calibration_data/emissions_passenger_vehicle_2000_21.xlsx") 

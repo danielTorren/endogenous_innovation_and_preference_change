@@ -1,8 +1,8 @@
 {
-    "seed_repetitions": 8,
+    "seed_repetitions": 3,
     "duration_burn_in": 60,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -54,7 +54,7 @@
             "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "Zero",
+            "Adoption_subsidy": "High",
             "Adoption_subsidy_used": "Zero",
             "Production_subsidy": "Zero",
             "Research_subsidy": "Zero"
@@ -90,7 +90,7 @@
             "Adoption_subsidy":{
                 "Zero": 0,
                 "Low": 2500,
-                "High":20000
+                "High":100000
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
@@ -138,28 +138,26 @@
         "production_emissions":9000,
         "transportType": 3,
         "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "max_Efficiency": 8
     },
     "parameters_firm_manager": {
         "J": 10,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4
+        "num_beta_segments": 4,
+        "minimum_segment_utility": 1e4
     },
     "parameters_firm":{
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "lambda_pow": 5,
-        "num_cars_production": 16,
-        "init_U": 10e5,
-        "init_price_multiplier": 3
+        "init_U": 1e4,
+        "init_price_multiplier": 1.1
     },
     "parameters_social_network":{
         "num_individuals": 5000,
-        "d_max": 3000,
-        "d_min": 500,
+        "d_max": 2500,
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -167,13 +165,12 @@
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.9,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
-        
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":100,
+        "kappa":10,
         "r": 0.00417,
         "mu": 0.5,
         "alpha": 3.5

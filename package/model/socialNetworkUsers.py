@@ -969,7 +969,10 @@ class Social_Network:
         #self.history_quality_index = []
         self.history_mean_price = []
         self.history_median_price = []
-        
+
+        self.history_mean_price_EV_ICE = []
+        self.history_median_price_EV_ICE = []
+
         self.history_car_prices_sold_new = []
         self.history_car_prices_sold_second_hand = []
 
@@ -997,8 +1000,52 @@ class Social_Network:
         self.history_count_buy.append([self.keep_car, self.buy_new_car, self.buy_second_hand_car])
 
         self.history_drive_min_num.append(self.drive_min_num/self.num_individuals)
+
+
         mean_price_new = np.mean([vehicle.price for vehicle in self.new_cars])
         median_price_new = np.median([vehicle.price for vehicle in self.new_cars])
+
+        prices_ICE = [vehicle.price for vehicle in self.new_cars if vehicle.transportType == 2]
+        prices_EV = [vehicle.price for vehicle in self.new_cars if vehicle.transportType == 3]
+
+        if prices_ICE:
+            mean_price_new_ICE = np.mean(prices_ICE)
+            median_price_new_ICE = np.median(prices_ICE)
+        else:
+            mean_price_new_ICE = np.nan
+            median_price_new_ICE = np.nan
+        
+        if prices_EV:
+            mean_price_new_EV = np.mean(prices_EV)
+            median_price_new_EV = np.median(prices_EV)
+        else:
+            mean_price_new_EV = np.nan
+            median_price_new_EV = np.nan
+
+        if self.second_hand_cars:
+            prices_second_hand_ICE = [vehicle.price for vehicle in self.second_hand_cars if vehicle.transportType == 2]
+            prices_second_hand_EV = [vehicle.price for vehicle in self.second_hand_cars if vehicle.transportType == 3]
+
+            if prices_second_hand_ICE:
+                mean_price_second_hand_ICE = np.mean(prices_second_hand_ICE)
+                median_price_second_hand_ICE = np.median(prices_second_hand_ICE)
+            else:
+                mean_price_second_hand_ICE = np.nan
+                median_price_second_hand_ICE = np.nan
+            
+            if prices_EV:
+                mean_price_second_hand_EV = np.mean(prices_second_hand_EV)
+                median_price_second_hand_EV = np.median(prices_second_hand_EV)
+            else:
+                mean_price_second_hand_EV = np.nan
+                median_price_second_hand_EV = np.nan
+
+        else:
+            mean_price_second_hand_ICE = np.nan
+            median_price_second_hand_ICE = np.nan
+            mean_price_second_hand_EV = np.nan
+            median_price_second_hand_EV = np.nan
+
         if self.second_hand_cars:
             mean_price_second_hand = np.mean([vehicle.price for vehicle in self.second_hand_cars])
             median_price_second_hand = np.median([vehicle.price for vehicle in self.second_hand_cars])
@@ -1008,6 +1055,9 @@ class Social_Network:
 
         self.history_mean_price.append([mean_price_new, mean_price_second_hand])
         self.history_median_price.append([median_price_new, median_price_second_hand])
+
+        self.history_mean_price_EV_ICE.append([(mean_price_new_ICE, mean_price_new_EV), (mean_price_second_hand_ICE,mean_price_second_hand_EV)])
+        self.history_median_price_EV_ICE.append([(median_price_new_ICE, median_price_new_EV), (median_price_second_hand_ICE,median_price_second_hand_EV)])
 
         self.history_driving_emissions_individual.append(self.users_driving_emissions_vec)
         

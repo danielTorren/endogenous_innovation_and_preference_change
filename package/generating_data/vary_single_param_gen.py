@@ -76,7 +76,7 @@ def main(
     data_array_distance = data_flat_distance.reshape(len(property_values_list),seed_repetitions, len(data_flat_distance[0]), base_params["parameters_social_network"]["num_individuals"])
     data_array_ev_prop = data_flat_ev_prop.reshape(len(property_values_list),seed_repetitions, len(data_flat_ev_prop[0]))
     data_array_age = data_flat_age.reshape(len(property_values_list),seed_repetitions, len(data_flat_age[0]), base_params["parameters_social_network"]["num_individuals"])
-    data_array_price = data_flat_price.reshape(len(property_values_list),seed_repetitions, len(data_flat_price[0]), 2)
+    data_array_price = data_flat_price.reshape(len(property_values_list),seed_repetitions, len(data_flat_price[0]), 2, 2)
     data_array_emissions = data_flat_emissions.reshape(len(property_values_list),seed_repetitions, len(data_flat_emissions[0]))
     
     createFolder(fileName)
@@ -94,5 +94,5 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_kappa.json", #"package/constants/vary_single_delta.json"
+        VARY_LOAD ="package/constants/vary_single_alpha.json", #"package/constants/vary_single_delta.json"
         )

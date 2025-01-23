@@ -189,7 +189,7 @@ if __name__ == "__main__":
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "lambda_pow": 5,
-        "num_cars_production": 16,
+
         "init_U": 1e4,
         "init_price_multiplier": 1.1
     },

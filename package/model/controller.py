@@ -180,7 +180,7 @@ class Controller:
         #firm data
         self.gamma_bins = np.linspace(min(self.gamma_vec) , max(self.gamma_vec), 2+1)#np.linspace(min(self.gamma_vec) - error, max(self.gamma_vec) + error, 2+1)
 
-        self.parameters_firm_manager["gamma_threshold"] = np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
+        self.parameters_firm_manager["gamma_threshold"] = np.mean(self.gamma_vec)#np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
         
         gamma_val_lower = (self.gamma_bins[1] + self.gamma_bins[0])/2
         gamma_val_upper = (self.gamma_bins[2]  + self.gamma_bins[1])/2

@@ -261,15 +261,20 @@ def plot_price(data_array, property_values_list, fileName, name_property, proper
         # For each seed, compute the mean over individuals and plot
         for seed in range(num_seeds):
             # data for this delta and seed: shape (time_steps, num_individuals)
-            data = data_array[i, seed, :, :]  # shape (time_steps, num_individuals)
-            data_new = data[:, 0]
-            data_second_hand = data[:, 1]
+            data = data_array[i, seed, :, :, :] 
+            
+            data_new_ICE = data[:, 0, 0]
+            data_second_hand_ICE = data[:, 1, 0]
+            data_new_EV = data[:, 0, 1]
+            data_second_hand_EV = data[:, 1, 1]
 
             # Plot new prices on the upper row
-            ax_new.plot(time_series, data_new, label=f"Seed {seed+1}", alpha=0.7)
+            ax_new.plot(time_series, data_new_ICE, label=f"ICE", alpha=0.7)
+            ax_new.plot(time_series, data_new_EV, label=f"EV", alpha=0.7, linestyle = "--")
 
             # Plot second-hand prices on the lower row
-            ax_second_hand.plot(time_series, data_second_hand, label=f"Seed {seed+1}", alpha=0.7)
+            ax_second_hand.plot(time_series, data_second_hand_ICE, label=f"ICE", alpha=0.7)
+            ax_second_hand.plot(time_series, data_second_hand_EV, label=f"EV", alpha=0.7, linestyle = "--")
 
         # Format each subplot
         ax_new.set_title(f"{name_property} = {delta} (New)")
@@ -365,4 +370,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_10_59_59__22_01_2025")
+    main("results/single_param_vary_11_35_42__23_01_2025")
