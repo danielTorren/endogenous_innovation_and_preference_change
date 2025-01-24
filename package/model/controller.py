@@ -291,28 +291,57 @@ class Controller:
         omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
         omega = (omega_plus + omega_minus)/2
         X = (beta*c + gamma*e)/omega
-        
+        print("X",X)
         # Calculate inside_log
         W = self.parameters_firm_manager["J"] * np.exp(kappa)
-        #print("W", W)
-        U_m_star_s_t = self.parameters_firm_manager["minimum_segment_utility"]
+        print("W", W)
+
+        U_m_calibration = self.parameters_vehicle_user["U_m_calibration"]#self.parameters_firm_manager["minimum_segment_utility"]
+        print("U_m_calibration",U_m_calibration)
         # Calculate the components inside the log functions
-        indie_W = (kappa * beta / U_m_star_s_t)*(P - C) - 1
+        indie_W = (kappa * beta / U_m_calibration)*(P - C) - 1
+        #print("(P - C)",(P - C))
+        #print("kappa * beta / U_m_calibration", kappa * beta / U_m_calibration, kappa * beta)
         #print("indie_W",indie_W)
         inside_log = W* (indie_W) + beta * P + gamma * E
         #print("inside_log", inside_log)
-        inside_ln1 = np.log(inside_log)* (U_m_star_s_t * (r + delta))/ (kappa * D_mean * (1 + r))
+        #print("second part",  (U_m_calibration * (r + delta))/ (kappa * D_mean * (1 + r)))
+        #print("U_m_calibration", U_m_calibration)
+        #print("(r + delta))/ (kappa * D_mean * (1 + r)))",(r + delta)/ (kappa * D_mean * (1 + r)))
+        #print("div up", 1/(kappa * D_mean), (r + delta)/(1 + r))
+        inside_ln1 = np.log(inside_log)* (U_m_calibration * (r + delta))/ (kappa * D_mean * (1 + r))
         #print("inside_ln1", inside_ln1)
 
         # Apply the double logarithm and the outer addition of X
-        Q_vals = (1 / alpha) * np.log(inside_ln1) + X
-        #print("Q_vals",Q_vals)
+        #Q_vals = (1 / alpha) * np.log(inside_ln1) + X
+        
+        component_fixed = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r)))
+        compoent_endog1 = (1 / alpha)*np.log(U_m_calibration/kappa)
+        inner_log_term = W*((kappa*beta/U_m_calibration)*(P-C) - 1)
+        print("inner_log_term ", inner_log_term )
+        print("outter log terms", beta*P + gamma*E + np.log(inner_log_term))
+        compoent_endog2 = (1 / alpha)*np.log(beta*P + gamma*E + np.log(inner_log_term))  
+        Q_vals = component_fixed + compoent_endog1 + compoent_endog2
+        #Q_alt = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r)))  + (1 / alpha)*np.log(U_m_calibration/kappa)+ (1 / alpha)*np.log(beta*P + gamma*E + np.log( W*((kappa*beta/U_m_calibration)*(P-C) - 1))) 
+
+        #print("(1 / alpha) * np.log(inside_ln1)", (1 / alpha) * np.log(inside_ln1))
+
+        #Q_alt = X + (1 / alpha)*np.log((r + delta)/(D_mean*kappa*(1+r))) + (1 / alpha)*np.log(U_m_calibration*np.log(W*(((P-C)*kappa*beta)/U_m_calibration - 1)) + beta*P + gamma*E ) 
+        #Q_alt2 = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r))) + (1 / alpha)*np.log(beta*P + gamma*E + (U_m_calibration/kappa)*np.log(W*(((P-C)*kappa*beta)/U_m_calibration - 1))) 
+        #B = beta*P + gamma*E + (U_m_calibration/kappa)*np.log(W*(((P-C)*kappa*beta)/U_m_calibration - 1))
+        #print("B",B)
+        #Q_vals = alpha*X + np.log((r + delta)/(D_mean*(1+r))) + np.log(B) 
+        print("Q_vals", Q_vals)
+        #print("Q_alt", Q_alt)
+        #print("Q_alt2", Q_alt2)
         max_q_poor = (4*Q_vals[0] - 0)/3
         max_q_rich = (4*Q_vals[1] - 0)/3
         #"""
 
-        max_q = (max_q_poor + max_q_rich)/2
+        max_q = np.nanmean([max_q_poor, max_q_rich])
         print("max_q", max_q)
+
+        #max_q = 1
 
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
@@ -602,6 +631,7 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
+        self.parameters_firm_manager["minimum_segment_utility"] = self.parameters_vehicle_user["minimum_segment_utility"]
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -620,8 +650,8 @@ class Controller:
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
         self.parameters_firm["d_mean"] = self.parameters_social_network["d_mean"]
-        self.parameters_firm["minimum_segment_utility"] = self.parameters_firm_manager["minimum_segment_utility"]
-
+        self.parameters_firm["car_base_utility_segments_init"] = self.parameters_vehicle_user["car_base_utility_segments_init"]
+        
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True

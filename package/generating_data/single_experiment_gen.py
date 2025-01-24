@@ -182,7 +182,7 @@ if __name__ == "__main__":
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 4,
-        "minimum_segment_utility": 1e4
+       
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -207,10 +207,13 @@ if __name__ == "__main__":
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":1,
+        "kappa":10,
+        "alpha": 1,
+        "U_m_calibration": 1e5,#used in calibrating Q vlaue initially
+        "minimum_segment_utility": 1e6,#used for settign the Q_m of segemnts with no technologies, ideally only used in start of burn in period
+        "car_base_utility_segments_init": 1e7,#needs to be high to avoid issues with initial step and arg of lambert function
         "r": 0.00247,
         "mu": 0.5,
-        "alpha": 1
     }
 }
     

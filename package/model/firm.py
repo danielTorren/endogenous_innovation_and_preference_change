@@ -61,7 +61,7 @@ class Firm:
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
 
-        self.minimum_segement_utilty = self.parameters_firm["minimum_segment_utility"]
+        self.car_base_utility_segments_init = self.parameters_firm["car_base_utility_segments_init"]
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
         self.carbon_price =  self.parameters_firm["carbon_price"]
@@ -104,7 +104,7 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.minimum_segement_utilty
+                car.car_base_utility_segments[segment_code] = self.car_base_utility_segments_init
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
         for car in self.list_technology_memory_EV:
@@ -112,7 +112,7 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.minimum_segement_utilty
+                car.car_base_utility_segments[segment_code] = self.car_base_utility_segments_init
 
     def calc_driving_utility(self, Quality_a_t, X):
 
