@@ -161,6 +161,7 @@ if __name__ == "__main__":
         "transportType": 2,
         "min_Price": 20000,
         "max_Price": 120000,
+        "mean_Price": 40000,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -193,8 +194,6 @@ if __name__ == "__main__":
     },
     "parameters_social_network":{
         "num_individuals": 3000,
-        "d_mean": 1600,
-        "d_sd": 500,
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,

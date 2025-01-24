@@ -188,7 +188,7 @@ class Controller:
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
         self.d_plus_vec = poisson_samples * scale_factor + min_bin
-        print("self.d_plus_vec", self.d_plus_vec)
+        #print("self.d_plus_vec", self.d_plus_vec)
 
         #d_plus_vec_raw = self.random_state_gamma.normal(loc = self.parameters_social_network["d_mean"], scale = self.parameters_social_network["d_sd"], size = self.num_individuals)
         #self.d_plus_vec = np.clip(d_plus_vec_raw, a_min = 0, a_max = np.inf)
@@ -286,100 +286,51 @@ class Controller:
         return np.asarray(beta_list)
 
     def calc_variables(self):
-        #"""
-        D_mean = self.parameters_social_network["d_mean"]
-
-        #beta_plus = np.max(self.beta_vec) # upper bound beta
-        #gamma_plus = np.max(self.gamma_vec)# upper bound gamma
-        c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
-        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
-        omega_minus = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
-        #X_plus = (beta_plus*c_plus + gamma_plus*e)/omega_minus
-        alpha = self.parameters_vehicle_user["alpha"] #(D_plus - D_minus) / (D_minus * X_plus)
-        #print("alpha, dmin", alpha, D_minus)
-
-        #self.parameters_vehicle_user["alpha"] = self.parameters_social_network["alp"]#alpha
-
-        #SET Quality
-        kappa = self.parameters_vehicle_user["kappa"]
-        P = np.asarray([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
-        C = np.asarray([self.parameters_ICE["min_Cost"], (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"]) /2])
-        beta = np.asarray([np.median(self.beta_vec),np.min(self.beta_vec)])
-        gamma = np.max(self.gamma_vec)
-
+        alpha = self.parameters_vehicle_user["alpha"] 
         E = self.parameters_ICE["production_emissions"]
-
         delta = self.parameters_ICE["delta"]
         r = self.parameters_vehicle_user["r"]
+        kappa = self.parameters_vehicle_user["kappa"]
+        
+        c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
         c_minus = np.min(self.calibration_gas_price_california_vec)
         c = (c_plus + c_minus)/2
-        omega_plus = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])#0.7#low bound of efficiency, km/whr
-        omega = (omega_plus + omega_minus)/2
 
-        print(beta, gamma, e,c,omega)
+        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
+
+        omega = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
+
+        D_mean = np.mean(self.d_plus_vec)
+        
+        gamma = np.max(self.gamma_vec)
+
+        beta = np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+        P = np.array([self.parameters_ICE["max_Price"], self.parameters_ICE["mean_Price"], self.parameters_ICE["min_Price"]])
+        
+        C_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        C_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        C = np.array([C_max, (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2, C_max]) 
+
+        #print(beta, gamma, e,c,omega)
         X = (beta*c + gamma*e)/omega
-
-        print("X",X)
-        #quit()
-        # Calculate inside_log
-        #W = self.parameters_firm_manager["J"] * np.exp(kappa)
-        #print("W", W)
-
-        #U_m_calibration = self.parameters_vehicle_user["U_m_calibration"]#self.parameters_firm_manager["minimum_segment_utility"]
-        #print("U_m_calibration",U_m_calibration)
-        # Calculate the components inside the log functions
-        #indie_W = (kappa * beta / U_m_calibration)*(P - C) - 1
-        #print("(P - C)",(P - C))
-        #print("kappa * beta / U_m_calibration", kappa * beta / U_m_calibration, kappa * beta)
-        #print("indie_W",indie_W)
-        #inside_log = W* (indie_W) + beta * P + gamma * E
-        #print("inside_log", inside_log)
-        #print("second part",  (U_m_calibration * (r + delta))/ (kappa * D_mean * (1 + r)))
-        #print("U_m_calibration", U_m_calibration)
-        #print("(r + delta))/ (kappa * D_mean * (1 + r)))",(r + delta)/ (kappa * D_mean * (1 + r)))
-        #print("div up", 1/(kappa * D_mean), (r + delta)/(1 + r))
-        #inside_ln1 = np.log(inside_log)* (U_m_calibration * (r + delta))/ (kappa * D_mean * (1 + r))
-        #print("inside_ln1", inside_ln1)
-
-        # Apply the double logarithm and the outer addition of X
-        #Q_vals = (1 / alpha) * np.log(inside_ln1) + X
-        
-        #component_fixed = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r)))
-        #compoent_endog1 = (1 / alpha)*np.log(U_m_calibration/kappa)
-        #inner_log_term = W*((kappa*beta/U_m_calibration)*(P-C) - 1)
-        #print("inner_log_term ", inner_log_term )
-        #print("outter log terms", beta*P + gamma*E + np.log(inner_log_term))
-        #compoent_endog2 = (1 / alpha)*np.log(beta*P + gamma*E + np.log(inner_log_term))  
-        #Q_vals = component_fixed + compoent_endog1 + compoent_endog2
-
+        #print("X",X)
+        log1 = (r + delta)/((1+r))
+        #print("log1", log1)
         J = self.parameters_firm_manager["J"]
-        log2 =  beta*P + gamma*E + (J*kappa*beta*(P-C))/(1+J)
         #print("log2", log2)
-        Q_vals = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r))) + (1 / alpha)*np.log(log2)
-        #print("new", Q_vals)
+        log2 =  beta*P + gamma*E + (J*kappa*beta*(P-C))/(1+J)
+
+        Q_vals = X + (1 / alpha)*(np.log(log1)  - np.log(D_mean) + np.log(log2))
+        Q_val_props = np.asarray([X[0], (1 / alpha)*(np.log(log1)) - (1 / alpha)*np.log(D_mean), (1 / alpha)* np.log(log2[0])])
+        print(Q_val_props )
+        quit()
+        print("Q_vals", Q_vals)
+        #print("Q_val, Q_val alt", Q_val, Q_val_alt)
         #quit()
-        #Q_alt = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r)))  + (1 / alpha)*np.log(U_m_calibration/kappa)+ (1 / alpha)*np.log(beta*P + gamma*E + np.log( W*((kappa*beta/U_m_calibration)*(P-C) - 1))) 
-
-        #print("(1 / alpha) * np.log(inside_ln1)", (1 / alpha) * np.log(inside_ln1))
-
-        #Q_alt = X + (1 / alpha)*np.log((r + delta)/(D_mean*kappa*(1+r))) + (1 / alpha)*np.log(U_m_calibration*np.log(W*(((P-C)*kappa*beta)/U_m_calibration - 1)) + beta*P + gamma*E ) 
-        #Q_alt2 = X + (1 / alpha)*np.log((r + delta)/(D_mean*(1+r))) + (1 / alpha)*np.log(beta*P + gamma*E + (U_m_calibration/kappa)*np.log(W*(((P-C)*kappa*beta)/U_m_calibration - 1))) 
-        #B = beta*P + gamma*E + (U_m_calibration/kappa)*np.log(W*(((P-C)*kappa*beta)/U_m_calibration - 1))
-        #print("B",B)
-        #Q_vals = alpha*X + np.log((r + delta)/(D_mean*(1+r))) + np.log(B) 
-        #print("Q_vals", Q_vals)
-        #print("Q_alt", Q_alt)
-        #print("Q_alt2", Q_alt2)
-        max_q_poor = (4*Q_vals[0] - 0)/3
-        max_q_rich = (4*Q_vals[1] - 0)/3
-        #"""
-
-        max_q = np.nanmean([max_q_poor, max_q_rich])
-
-        max_q = max_q*0.5
+        Q_max_mean = np.nanmean(Q_vals)
+        print("Q_max_mean", Q_max_mean)
+        max_q = (4*Q_max_mean - 0)/3
         print("max_q", max_q)
-        
-        #max_q = 1
 
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
@@ -387,10 +338,9 @@ class Controller:
         self.parameters_EV["max_Quality"] = max_q #max_q
 
         #NOW USE THIS QUALITY TO CALCUALTE THE UTILITY!
-        P_mean = 40000
-        u = D_mean*np.exp(max_q - X)
+        u = D_mean*np.exp(alpha*(Q_max_mean - X))
         B = u*(1+r)/(r+delta)
-        U = B + beta*P_mean + gamma*E
+        U = B + beta*P + gamma*E
         U_mean = np.nanmean(U)
         print("U_mean", U_mean)
         self.parameters_vehicle_user["car_base_utility_segments_init"] = U_mean
@@ -697,7 +647,7 @@ class Controller:
         self.parameters_firm["electricity_emissions_intensity"] = self.electricity_emissions_intensity
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
-        self.parameters_firm["d_mean"] = self.parameters_social_network["d_mean"]
+        self.parameters_firm["d_mean"] = np.mean(self.d_plus_vec)
         self.parameters_firm["car_base_utility_segments_init"] = self.parameters_vehicle_user["car_base_utility_segments_init"]
         
 
