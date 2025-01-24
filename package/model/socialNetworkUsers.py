@@ -542,7 +542,7 @@ class Social_Network:
         driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_plus_vec)
         
         U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
-        #print("U_a_i_t_vec", U_a_i_t_vec)
+        #print("U_a_i_t_vec", np.median(U_a_i_t_vec))
         
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 

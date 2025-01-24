@@ -1,6 +1,4 @@
 import numpy as np
-from scipy.special import lambertw
-from sklearn.linear_model import LinearRegression
 
 class SecondHandMerchant:
 

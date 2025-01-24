@@ -2488,7 +2488,7 @@ def plot_fuel_costs_verus_carbon_price_km(base_params,controller, fileName, dpi 
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
 
     carbon_tax_paid = np.asarray(controller.carbon_price_time_series)*controller.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-    total_ice = controller.history_gas_price + carbon_tax_paid[:-2]
+    #total_ice = controller.history_gas_price + carbon_tax_paid[:-2]
 
     Eff_omega_a_t_ICE_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_ICE])
     Eff_omega_a_t_EV_median = np.asarray([np.median(values) if values else np.nan for values in controller.social_network.history_efficiency_EV])
@@ -2663,6 +2663,34 @@ def plot_history_U_max(base_params, firm_manager, fileName, dpi=600):
     # Save and show the plot
     save_and_show(fig, fileName, "plot_history_U_max", dpi)
 
+def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600):
+
+    time_points_new_ICE = []
+    time_points_new_EV = []
+    profit_margins_ICE = []
+    profit_margins_EV = []
+    
+    for i, pm_list in enumerate(firm_manager.history_profit_margins_ICE):
+        time_points_new_ICE.extend([time_series[i]] * len(pm_list))  
+        profit_margins_ICE.extend(pm_list)
+
+    for i, pm_list in enumerate(firm_manager.history_profit_margins_EV):
+        time_points_new_EV.extend([time_series[i]] * len(pm_list))  
+        profit_margins_EV.extend(pm_list)
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    print()
+    ax.scatter(time_points_new_ICE, profit_margins_ICE, marker='o', alpha=0.7, color = "blue", label = "ICE")
+    ax.scatter(time_points_new_EV, profit_margins_EV, marker='o', alpha=0.7, color = "green", label = "EV")
+
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Profit margin (P-C)")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_profit_margins_by_type", dpi)
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -2690,8 +2718,10 @@ def main(fileName, dpi=600):
 
     #emissions_decomposed(social_network, time_series, fileName, dpi)
 
+    plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600)
+    #plt.show()
     plot_history_U_max(base_params,firm_manager, fileName)
-    plt.show()
+    
 
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
@@ -2732,6 +2762,8 @@ def main(fileName, dpi=600):
 
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
 
+    plot_num_bought_by_type(base_params, social_network, fileName, dpi)
+
     # All plot function calls
 
     #plot_fuel_costs_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
@@ -2740,8 +2772,8 @@ def main(fileName, dpi=600):
 
     #plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
 
-    #plot_num_bought_by_type(base_params, social_network, fileName, dpi)
-    #plot_calibration_data(data_controller, time_series, fileName)
+    
+    plot_calibration_data(data_controller, time_series, fileName)
 
     #plot_aggregated_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
     #plot_segment_production_time_series(base_params,firm_manager.firms_list, fileName, dpi)
@@ -2805,4 +2837,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_29_58__24_01_2025")
+    main("results/single_experiment_17_20_38__24_01_2025")

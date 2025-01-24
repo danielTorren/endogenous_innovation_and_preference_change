@@ -165,8 +165,9 @@ class Firm:
                 Arg = (np.exp((self.kappa/U_max_s)*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
                 #print("arg",Arg)
                 LW   = lambertw(Arg, 0).real  # principal branch
+                
+                #print("LW",LW)
                 #quit()
-                ##print("LW",LW)
                 P = C_m_cost + (U_max_s*(1.0 + LW))/(self.kappa*beta_s)
 
                 if P < C_m:

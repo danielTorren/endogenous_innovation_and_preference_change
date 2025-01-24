@@ -208,11 +208,11 @@ if __name__ == "__main__":
         "delta_distance": 0.010411
     },
     "parameters_vehicle_user":{
-        "kappa":50,
+        "kappa":10,
         "alpha": 1,
-        "U_m_calibration": 1e5,#used in calibrating Q vlaue initially
-        "minimum_segment_utility": 1e7,#used for settign the Q_m of segemnts with no technologies, ideally only used in start of burn in period
-        "car_base_utility_segments_init": 1e7,#needs to be high to avoid issues with initial step and arg of lambert function
+        #"U_m_calibration": 1e6,#used in calibrating Q vlaue initially
+        #"minimum_segment_utility": 5e5,#used for settign the Q_m of segemnts with no technologies, ideally only used in start of burn in period
+        #"car_base_utility_segments_init": 5e5,#needs to be high to avoid issues with initial step and arg of lambert function
         "r": 0.00247,
         "mu": 0.5,
     }

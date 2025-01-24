@@ -267,7 +267,7 @@ class Firm_Manager:
     def update_U_max_immediate(self):
         #calc the total "probability of selection" of the market based on max utility in the segment
         for segment in self.all_segment_codes:#RESET TO GET THE NEW ONE FOR THIS STEP
-            self.market_data[segment]["U_max_s_immediate"] = self.minimum_segement_utilty
+            self.market_data[segment]["U_max_s_immediate"] = -np.inf#FOR THE SECOND TIME THERE SHOULD BE A UTILIY FOR ALL SEGEMENT 
 
         #get the best U out off all cars
         for car in self.cars_on_sale_all_firms:
@@ -381,6 +381,20 @@ class Firm_Manager:
         HHI = sum(self.calculate_market_share(firm, past_new_bought_vehicles, total_sales)**2 for firm in self.firms_list)
         return HHI
 
+    def calc_profit_margin(self, past_new_bought_vehicles):
+        
+        profit_margin_ICE = []
+        profit_margin_EV = []
+
+        for car in past_new_bought_vehicles:
+            profit_margin = car.price - car.ProdCost_t
+            if car.transportType == 3:
+                profit_margin_EV.append(profit_margin)
+            else:
+                profit_margin_ICE.append(profit_margin)
+        #if not profit_margin_EV:
+        #    profit_margin_EV.append(np.nan)#if no evs then just add nan
+        return profit_margin_ICE, profit_margin_EV
     #######################################################################################################################
     #DEAL WITH REBATE
     def add_social_network(self,social_network):
@@ -402,10 +416,18 @@ class Firm_Manager:
         self.history_zero_profit_options_research_sum = []
         self.history_U_max = []
 
+        self.history_profit_margins_EV = []
+        self.history_profit_margins_ICE = []
+
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
         self.HHI = self. calculate_market_concentration(self.past_new_bought_vehicles)
+        profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
+
+        self.history_profit_margins_EV.append(profit_margin_EV)
+        self.history_profit_margins_ICE.append(profit_margin_ICE)
+
         self.calc_vehicles_chosen_list(self.past_new_bought_vehicles)
         self.history_cars_on_sale_price.append([car.price for car in self.cars_on_sale_all_firms])
 
@@ -425,6 +447,7 @@ class Firm_Manager:
         self.history_zero_profit_options_research_sum.append(self.zero_profit_options_research_sum/self.J)
 
         self.history_U_max.append([self.market_data[code]["U_max_s"] for code in self.all_segment_codes])
+
     def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
         for firm in self.firms_list:
             firm.firm_cars_users = sum(1 for car in past_new_bought_vehicles if car.firm == firm)
