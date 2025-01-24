@@ -32,6 +32,8 @@ class Social_Network:
         self.d_plus_vec = parameters_social_network["d_plus_vec"]
 
         self.delta = parameters_social_network["delta"]
+        self.delta_distance = parameters_social_network["delta_distance"]
+        
         #self.nu = parameters_social_network["nu"]
         self.scrap_price = parameters_social_network["scrap_price"]
 
@@ -746,7 +748,7 @@ class Social_Network:
 
         U_a_i_t_matrix_final = lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))
         
-        d_i_t_L = d_plus_vec[:, np.newaxis]*(1-self.delta)**vehicle_dict_vecs["L_a_t"]
+        d_i_t_L = d_plus_vec[:, np.newaxis]*(1-self.delta_distance)**vehicle_dict_vecs["L_a_t"]
 
         return U_a_i_t_matrix_final, d_i_t_L
     
@@ -766,7 +768,7 @@ class Social_Network:
 
         U_a_i_t_matrix_final = lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))
         
-        d_i_t_L = d_plus_vec[:, np.newaxis]*(1-self.delta)**vehicle_dict_vecs["L_a_t"]
+        d_i_t_L = d_plus_vec[:, np.newaxis]*(1-self.delta_distance)**vehicle_dict_vecs["L_a_t"]
 
 
         return U_a_i_t_matrix_final, d_i_t_L

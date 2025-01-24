@@ -400,6 +400,7 @@ class Firm_Manager:
         self.history_market_data = []
         self.history_zero_profit_options_prod_sum = []
         self.history_zero_profit_options_research_sum = []
+        self.history_U_max = []
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
@@ -423,6 +424,7 @@ class Firm_Manager:
         self.history_zero_profit_options_prod_sum.append(self.zero_profit_options_prod_sum/self.J)
         self.history_zero_profit_options_research_sum.append(self.zero_profit_options_research_sum/self.J)
 
+        self.history_U_max.append([self.market_data[code]["U_max_s"] for code in self.all_segment_codes])
     def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
         for firm in self.firms_list:
             firm.firm_cars_users = sum(1 for car in past_new_bought_vehicles if car.firm == firm)

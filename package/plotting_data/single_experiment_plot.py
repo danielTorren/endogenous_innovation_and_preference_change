@@ -2632,6 +2632,38 @@ def plot_history_second_hand_merchant_offer_price(base_params,social_network, ti
     # Save and show the plot
     save_and_show(fig, fileName, "plot_history_second_hand_merchant_offer_price", dpi)   
 
+def plot_history_U_max(base_params, firm_manager, fileName, dpi=600):
+
+    data = np.asarray(firm_manager.history_U_max).T
+    # Define a color map for the first index of the code
+    color_map = {
+        0: 'blue',
+        1: 'green',
+        2: 'orange',
+        3: 'red'
+    }
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for i, code in enumerate(firm_manager.all_segment_codes):
+        line_style = '--' if code[2] == 1 else '-'  # Dashed if the third item in code is 1
+        color = color_map.get(code[0], 'black')  # Default to black if not in the map
+        ax.plot(data[i], linestyle=line_style, color=color, label=f"Segment {code}")
+
+    # Add horizontal black line for minimum utility
+    min_utility = base_params["parameters_vehicle_user"]["minimum_segment_utility"]
+    ax.axhline(y=min_utility, color='black', linestyle='-', label=f"Min Utility ({min_utility})")
+     
+    ax.set_xlabel("Time")
+    ax.set_ylabel("U_{max}")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_history_U_max", dpi)
+
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -2658,6 +2690,8 @@ def main(fileName, dpi=600):
 
     #emissions_decomposed(social_network, time_series, fileName, dpi)
 
+    plot_history_U_max(base_params,firm_manager, fileName)
+    plt.show()
 
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
 
@@ -2771,4 +2805,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_19_03_57__23_01_2025")
+    main("results/single_experiment_12_29_58__24_01_2025")

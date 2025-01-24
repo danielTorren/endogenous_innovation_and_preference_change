@@ -8,6 +8,7 @@ from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
+from scipy.stats import poisson
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -165,10 +166,34 @@ class Controller:
         self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
         self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
 
-        d_plus_vec_raw = self.random_state_gamma.normal(loc = self.parameters_social_network["d_mean"], scale = self.parameters_social_network["d_sd"], size = self.num_individuals)
 
-        self.d_plus_vec = np.clip(d_plus_vec_raw, a_min = 0, a_max = np.inf)
+        #########################################
+        #GENERATING DISTANCES
+        #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
+        bin_centers = np.array([
+            335.2791667,
+            1005.8375,
+            1676.331279,
+            2346.892946,
+            3017.452946,
+            5028.99
+        ])
+        fitted_lambda = 1.5428809450394916
+        #Fitted_lambda_10_plus_year_old_cars =  0.2345307913567248
+        #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
+        # Step 4: Generate N random distances using the fitted Poisson parameter
+        N= self.num_individuals # Number of individuals
+        poisson_samples = poisson.rvs(mu=fitted_lambda, size=N)
+        # Step 5: Map the Poisson samples back to the distance range of the original data
+        min_bin, max_bin = bin_centers[0], bin_centers[-1]
+        scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
+        self.d_plus_vec = poisson_samples * scale_factor + min_bin
+        print("self.d_plus_vec", self.d_plus_vec)
 
+        #d_plus_vec_raw = self.random_state_gamma.normal(loc = self.parameters_social_network["d_mean"], scale = self.parameters_social_network["d_sd"], size = self.num_individuals)
+        #self.d_plus_vec = np.clip(d_plus_vec_raw, a_min = 0, a_max = np.inf)
+
+        ############################################
         #social network data
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
