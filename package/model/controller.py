@@ -321,9 +321,9 @@ class Controller:
         log2 =  beta*P + gamma*E + (J*kappa*beta*(P-C))/(1+J)
 
         Q_vals = X + (1 / alpha)*(np.log(log1)  - np.log(D_mean) + np.log(log2))
-        Q_val_props = np.asarray([X[0], (1 / alpha)*(np.log(log1)) - (1 / alpha)*np.log(D_mean), (1 / alpha)* np.log(log2[0])])
-        print(Q_val_props )
-        quit()
+        Q_val_comps = np.asarray([X[0], (1 / alpha)*(np.log(log1)) - (1 / alpha)*np.log(D_mean), (1 / alpha)* np.log(log2[0])])
+        print(Q_val_comps )
+        #quit()
         print("Q_vals", Q_vals)
         #print("Q_val, Q_val alt", Q_val, Q_val_alt)
         #quit()
@@ -331,6 +331,24 @@ class Controller:
         print("Q_max_mean", Q_max_mean)
         max_q = (4*Q_max_mean - 0)/3
         print("max_q", max_q)
+        ####################################################################################
+        #Alternative method, reduce X as much as possible take min values of beta, gamma, c and max valeus of omega
+        
+        c_minus = np.min(self.calibration_gas_price_california_vec)
+        omega =  self.parameters_ICE["max_Efficiency"]
+        gamma = np.min(self.gamma_vec)
+        beta = np.min(self.beta_vec)
+        #print(beta, gamma, e,c,omega)
+        X = (beta*c + gamma*e)/omega
+        log2 =  beta*P + gamma*E + (J*kappa*beta*(P-C))/(1+J)
+        Q_val_alt = X + (1 / alpha)*(np.log(log1)  - np.log(D_mean) + np.log(log2))
+        print("Q_val_alt ",Q_val_alt )
+        max_q = (4*Q_val_alt - 0)/3
+        print("max_q alt", max_q)
+        quit()
+        ####################################################################################
+
+
 
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
