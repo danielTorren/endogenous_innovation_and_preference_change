@@ -9,6 +9,7 @@ from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
 from scipy.stats import poisson
+from scipy.special import lambertw
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -33,8 +34,6 @@ class Controller:
         self.setup_firm_parameters()
         self.setup_social_network_parameters()
         self.setup_vehicle_users_parameters()
-
-        
 
         self.gen_firms()
 
@@ -182,7 +181,7 @@ class Controller:
         #Fitted_lambda_10_plus_year_old_cars =  0.2345307913567248
         #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
         # Step 4: Generate N random distances using the fitted Poisson parameter
-        N= self.num_individuals # Number of individuals
+        N = self.num_individuals # Number of individuals
         poisson_samples = poisson.rvs(mu=fitted_lambda, size=N)
         # Step 5: Map the Poisson samples back to the distance range of the original data
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
@@ -223,7 +222,7 @@ class Controller:
         gamma_values = []
 
         segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
-
+        self.num_segments = len(segment_codes) 
         beta_segment_vals_set = set()
         for code in segment_codes:
             beta_idx, gamma_idx, _ = code  # Unpack the segment code
@@ -286,7 +285,6 @@ class Controller:
         return np.asarray(beta_list)
 
     def calc_variables(self):
-        alpha = self.parameters_vehicle_user["alpha"] 
         E = self.parameters_ICE["production_emissions"]
         delta = self.parameters_ICE["delta"]
         r = self.parameters_vehicle_user["r"]
@@ -298,71 +296,54 @@ class Controller:
 
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
 
-        omega = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
-
-        D_mean = np.mean(self.d_plus_vec)
+        #omega_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        #omega_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
-        gamma = np.max(self.gamma_vec)
-
-        beta = np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
-        P = np.array([self.parameters_ICE["max_Price"], self.parameters_ICE["mean_Price"], self.parameters_ICE["min_Price"]])
+        #C_max = self.parameters_ICE["min_Cost"] + 0.8*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
+        #C_min = self.parameters_ICE["min_Cost"] + 0.2*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
+        C_mean = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2
         
-        C_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
-        C_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
-        C = np.array([C_max, (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2, C_max]) 
+        gamma = np.median(self.gamma_vec)#np.max(self.gamma_vec)
+        beta = np.median(self.beta_vec)#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
 
-        #print(beta, gamma, e,c,omega)
+        P = self.parameters_ICE["mean_Price"]#np.array([self.parameters_ICE["max_Price"], self.parameters_ICE["mean_Price"], self.parameters_ICE["min_Price"]])
+        omega = omega_mean#np.array([omega_min, omega_mean, omega_max])
+        C = C_mean #np.array([C_max, C_mean, C_min]) 
+
+        W = self.parameters_vehicle_user["W_calibration"]
+
+        u =  ((r + delta)/(1+r))*(np.log(W*(kappa*beta*(P-C)))/kappa + beta*P + gamma*E)
         X = (beta*c + gamma*e)/omega
-        #print("X",X)
-        log1 = (r + delta)/((1+r))
-        #print("log1", log1)
-        J = self.parameters_firm_manager["J"]
-        #print("log2", log2)
-        log2 =  beta*P + gamma*E + (J*kappa*beta*(P-C))/(1+J)
+        D = np.median(self.d_plus_vec)#np.mean(self.d_plus_vec)
+        Q = (X/D)*u
+        print("Q",Q)
 
-        Q_vals = X + (1 / alpha)*(np.log(log1)  - np.log(D_mean) + np.log(log2))
-        Q_val_comps = np.asarray([X[0], (1 / alpha)*(np.log(log1)) - (1 / alpha)*np.log(D_mean), (1 / alpha)* np.log(log2[0])])
-        print(Q_val_comps )
-        #quit()
-        print("Q_vals", Q_vals)
-        #print("Q_val, Q_val alt", Q_val, Q_val_alt)
-        #quit()
-        Q_max_mean = np.nanmean(Q_vals)
-        print("Q_max_mean", Q_max_mean)
-        max_q = (4*Q_max_mean - 0)/3
+        max_q = Q*2#(4*Q_max_mean - 0)/3
         print("max_q", max_q)
-        ####################################################################################
-        #Alternative method, reduce X as much as possible take min values of beta, gamma, c and max valeus of omega
         
-        c_minus = np.min(self.calibration_gas_price_california_vec)
-        omega =  self.parameters_ICE["max_Efficiency"]
-        gamma = np.min(self.gamma_vec)
-        beta = np.min(self.beta_vec)
-        #print(beta, gamma, e,c,omega)
-        X = (beta*c + gamma*e)/omega
-        log2 =  beta*P + gamma*E + (J*kappa*beta*(P-C))/(1+J)
-        Q_val_alt = X + (1 / alpha)*(np.log(log1)  - np.log(D_mean) + np.log(log2))
-        print("Q_val_alt ",Q_val_alt )
-        max_q = (4*Q_val_alt - 0)/3
-        print("max_q alt", max_q)
-        quit()
-        ####################################################################################
-
-
-
         self.parameters_ICE["min_Quality"] = 0#min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
         self.parameters_EV["min_Quality"] = 0#min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
 
         #NOW USE THIS QUALITY TO CALCUALTE THE UTILITY!
-        u = D_mean*np.exp(alpha*(Q_max_mean - X))
+        #Q_max_mean = 0
+        #X = (np.max(beta)*c_plus + np.max(gamma)*e)/(omega_min)
+        print("Q", Q)
+        print("X", X)
+        u = D*Q/X
         B = u*(1+r)/(r+delta)
-        U = B + beta*P + gamma*E
-        U_mean = np.nanmean(U)
-        print("U_mean", U_mean)
-        self.parameters_vehicle_user["car_base_utility_segments_init"] = U_mean
-        self.parameters_vehicle_user["minimum_segment_utility"] = U_mean
+        U = B - beta*P - gamma*E
+        print("Utility", U)
+        #########
+        self.nu = self.parameters_vehicle_user["nu"]
+        Arg = np.exp(kappa*self.nu*(U - beta*C - gamma*E) - 1.0)/W
+        LW = lambertw(Arg, 0).real  # principal branch
+        P = C + (U*(1.0 + LW))/(kappa*beta)
+        print("expected price", P)
+
+        #print("nu kappa",self.nu*kappa)
         #quit()
 
     #####################################################################################################################################
@@ -442,8 +423,6 @@ class Controller:
         self.Adoption_subsidy_used_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy_used"]
         self.Production_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Production_subsidy"]
         self.Research_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Research_subsidy"]
-
-        
 
         # Carbon price calculation
         if self.Carbon_price_state == "Zero":
@@ -647,14 +626,14 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
-        self.parameters_firm_manager["minimum_segment_utility"] = self.parameters_vehicle_user["minimum_segment_utility"]
+        self.parameters_firm_manager["nu"] = self.parameters_vehicle_user["nu"]
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm["kappa"] = self.parameters_vehicle_user["kappa"]
-        self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
+
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape
         self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
@@ -667,7 +646,7 @@ class Controller:
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
         self.parameters_firm["d_mean"] = np.mean(self.d_plus_vec)
         self.parameters_firm["car_base_utility_segments_init"] = self.parameters_vehicle_user["car_base_utility_segments_init"]
-        
+        self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -700,6 +679,7 @@ class Controller:
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
+        self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -707,7 +687,7 @@ class Controller:
 
     def setup_ICE_landscape(self, parameters_ICE):    
 
-        parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
+
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
         parameters_ICE["median_beta"] = self.beta_median
         parameters_ICE["median_gamma"] = self.gamma_median
@@ -717,7 +697,7 @@ class Controller:
         self.ICE_landscape = NKModel(parameters_ICE)
 
     def setup_EV_landscape(self, parameters_EV):
-        parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
+
         parameters_EV["r"] = self.parameters_vehicle_user["r"]
         parameters_EV["delta"] = self.parameters_ICE["delta"]
         parameters_EV["median_beta"] = self.beta_median 
@@ -728,7 +708,6 @@ class Controller:
         self.EV_landscape = NKModel(parameters_EV)
 
     def setup_second_hand_market(self):
-        self.parameters_second_hand["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
 
         self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]

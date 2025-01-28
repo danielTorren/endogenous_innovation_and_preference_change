@@ -26,7 +26,7 @@ class NKModel:
         self.max_Efficiency = parameters["max_Efficiency"]
         self.max_Cost = parameters["max_Cost"]
 
-        self.alpha = parameters["alpha"]
+
         self.r = parameters["r"]
         self.delta =  parameters["delta"]
         self.median_beta = parameters["median_beta"]
@@ -55,7 +55,7 @@ class NKModel:
         X = (beta * self.fuel_cost + gamma * self.e_t)/ eff
 
         # Compute commuting utility for individual-vehicle pairs
-        driving_utility = np.exp(quality - X)
+        driving_utility = quality/X
 
         # Save the base utility
         B = driving_utility*((1+self.r)/(self.r + self.delta))

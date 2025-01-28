@@ -28,6 +28,8 @@ class Firm:
 
         self.d_mean = parameters_firm["d_mean"]  
 
+        self.nu = parameters_firm["nu"]
+
 
         self.firm_id = firm_id
         #ICE
@@ -53,7 +55,7 @@ class Firm:
         self.EVs_sold = 0
 
         self.parameters_firm = parameters_firm
-        self.alpha = parameters_firm["alpha"]
+
         self.kappa = self.parameters_firm["kappa"]
         self.memory_cap = self.parameters_firm["memory_cap"]
         self.prob_innovate = self.parameters_firm["prob_innovate"]
@@ -91,20 +93,22 @@ class Firm:
         else:
             self.cars_on_sale = [self.init_tech_ICE] 
 
-        self.set_car_init_price_and_U()
+        self.set_car_init_price_and_base_U()
+        
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
 
         self.random_state = np.random.RandomState(innovation_seed)  # Local random state
     
-    def set_car_init_price_and_U(self):
+    def set_car_init_price_and_base_U(self):
         for car in self.cars_on_sale:
             car.price = car.ProdCost_t*self.init_price_multiplier
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
                 car.car_base_utility_segments[segment_code] = self.car_base_utility_segments_init
+
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
         for car in self.list_technology_memory_EV:
@@ -114,10 +118,34 @@ class Firm:
                 car.optimal_price_segments[segment_code] = car.price
                 car.car_base_utility_segments[segment_code] = self.car_base_utility_segments_init
 
+    def calc_init_U_segments(self, market_data):
+        for segment_code, segment_data in market_data.items():
+           
+            beta_s =  segment_data["beta_s_t"]
+            gamma_s = segment_data["gamma_s_t"]
+            
+            # Unpack the tuple
+            b_idx, g_idx, e_idx = segment_code  # if your codes are (b, g, e)
+
+            for car in self.cars_on_sale:
+                price_s = car.optimal_price_segments[segment_code]#price for that specific segment
+                if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
+                    #ADD IN A SUBSIDY
+                    if car.transportType == 3:
+                        price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
+                        utility_segment_U  = car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)
+                    else:
+                        utility_segment_U  = car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)
+
+                    car.car_utility_segments_U[segment_code] = utility_segment_U 
+
+                else:
+                    car.car_utility_segments_U[segment_code] = 0
+
     def calc_driving_utility(self, Quality_a_t, X):
 
         # Compute commuting utility for individual-vehicle pairs
-        driving_utility = self.d_mean*np.exp(Quality_a_t - X +1)
+        driving_utility = self.d_mean*Quality_a_t/X
 
         return driving_utility
 
@@ -143,7 +171,7 @@ class Firm:
                 gamma_s = segment_data["gamma_s_t"]
                 W_s_t = segment_data["W"]
  
-                        # Calculate commuting utility based on conditions for z
+                # Calculate commuting utility based on conditions for z
                 if car.transportType == 3:
                     X = (beta_s * car.fuel_cost_c + gamma_s * car.e_t)/car.Eff_omega_a_t
                 else:
@@ -153,22 +181,12 @@ class Firm:
 
                 # Save the base utility
                 U = driving_utility*((1+self.r)/(self.r + self.delta)) 
-
                 car.car_base_utility_segments[segment_code] = U
-                U_max_s = segment_data["U_max_s"]
-                #print("U_max_s", U_max_s)
-                #print("U", U)
-                #print("kappa", self.kappa)
-                #inside_exp = (self.kappa/U_max_s)*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0
-                #print("inside exp", inside_exp)
-                #print(np.exp(inside_exp))
-                Arg = (np.exp((self.kappa/U_max_s)*(U - beta_s*C_m_price - gamma_s*E_m)- 1.0)) / W_s_t
-                #print("arg",Arg)
+
+                Arg = np.exp(self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0)/W_s_t
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
-                #print("LW",LW)
-                #quit()
-                P = C_m_cost + (U_max_s*(1.0 + LW))/(self.kappa*beta_s)
+                P = C_m_cost + (1.0 + LW)/(self.kappa*self.nu*beta_s)
 
                 if P < C_m:
                     print(P,C_m, Arg)
@@ -201,7 +219,7 @@ class Firm:
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
 
                 else:
-                    car.car_utility_segments_U[segment_code] = -np.inf 
+                    car.car_utility_segments_U[segment_code] = 0
 
         return vehicle_list
 
@@ -278,12 +296,11 @@ class Firm:
                     
                     # Expected profit calculation
                     utility_value = vehicle.car_utility_segments_U[segment_code]
-                    if utility_value == -np.inf:
+                    if utility_value == 0:
                         utility_proportion = 0
                         raw_profit = 0
                     else:
-                        U_max_s = segment_data["U_max_s"]
-                        utility_proportion = np.exp((self.kappa/U_max_s)*utility_value)/(W + np.exp((self.kappa/U_max_s)*utility_value))
+                        utility_proportion = np.exp(self.kappa*self.nu*utility_value)/(W + np.exp(self.kappa*self.nu*utility_value))
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                     if is_ev:
@@ -293,12 +310,10 @@ class Firm:
 
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
-                    #print("vehicle.expected_profit_segments[segment_code]", vehicle.expected_profit_segments[segment_code], is_ev)
                 else:
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     expected_profit = self.research_subsidy
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
-                    #print("vehicle.expected_profit_segments[segment_code]", vehicle.expected_profit_segments[segment_code], is_ev)
 
         return  car_list
     
@@ -319,7 +334,6 @@ class Firm:
         #PICK OUT EACH CARS BEST SEGMENT
         profits = []
         for vehicle in car_list:
-            #print("vehicle.expected_profit_segments",vehicle.expected_profit_segments)
             # Calculate profit for each segment
             max_profit = 0
             for segment_code, segment_profit in vehicle.expected_profit_segments.items():
@@ -485,8 +499,7 @@ class Firm:
                     # Expected profit calculation
                     utility_car = vehicle.car_utility_segments_U[segment_code]#max(0,vehicle.car_utility_segments_U[segment_code])
 
-                    U_max_s = segment_data["U_max_s"]
-                    utility_proportion = np.exp((self.kappa/U_max_s)*utility_car)/(W + np.exp((self.kappa/U_max_s)*utility_car))
+                    utility_proportion = np.exp(self.kappa*self.nu*utility_car)/(W + np.exp(self.kappa*self.nu*utility_car))
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -529,7 +542,6 @@ class Firm:
         # Populate the profit matrix with expected profits
         for i, segment_code in enumerate(segments):
             for j, car in enumerate(technologies):
-                #print("MATRIX IN",self.t_firm,self.firm_id,car.expected_profit_segments[segment_code])
                 profit_matrix[i, j] = car.expected_profit_segments[segment_code]
         
         if not np.any(profit_matrix): #PROFIT IS ALL 0, pick up to 
@@ -588,7 +600,7 @@ class Firm:
                             selected_vehicle.car_utility_segments_U[segment_code] = utility_segment_U
 
                         else:
-                            selected_vehicle.car_utility_segments_U[segment_code] = -np.inf
+                            selected_vehicle.car_utility_segments_U[segment_code] = 0
 
                         if selected_vehicle.transportType == 3:#PRODUCTION SUBSIDY
                             profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t - self.production_subsidy)
@@ -600,12 +612,11 @@ class Firm:
 
                         utility_value = selected_vehicle.car_utility_segments_U[segment_code]
 
-                        if utility_value == -np.inf:
+                        if utility_value == 0:
                             utility_proportion = 0
                             raw_profit = 0
                         else:
-                            U_max_s = market_data[segment_code]["U_max_s"]
-                            utility_proportion = np.exp((self.kappa/U_max_s)* utility_value)/(W + np.exp((self.kappa/U_max_s) * utility_value))
+                            utility_proportion = np.exp(self.kappa*self.nu* utility_value)/(W + np.exp(self.kappa*self.nu* utility_value))
                             raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                         if selected_vehicle.transportType == 3:  # EV
@@ -736,7 +747,6 @@ class Firm:
 
         #update cars to sell   
         if self.random_state.rand() < self.prob_change_production:
-            #print("change production",self.t_firm, self.firm_id)
             self.cars_on_sale = self.choose_cars_segments(market_data)
             self.production_change_bool = 1
             self.prod_counter += 1
@@ -744,7 +754,6 @@ class Firm:
         self.update_memory_timer()
 
         if self.random_state.rand() < self.prob_innovate:
-            #print("INNOVATE", self.t_firm, self.firm_id)
             self.innovate(market_data)
             self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DAT
             self.research_counter += 1

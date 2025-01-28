@@ -15,7 +15,7 @@ bin_centers_new = np.array([
 ])
 bin_counts_new = np.array([145, 231, 207, 62, 31, 29])
 
-# Percentages for 8-year-old cars
+# Percentages for 10-year-old cars
 percentages_10plusyr = np.array([
     0.413342054,
     0.294637018,
@@ -24,8 +24,6 @@ percentages_10plusyr = np.array([
     0.030739045,
     0.038260301
 ])
-
-
 # Assume a total count for the older car data
 total_count_10plusyr = 3058  # Adjust this as needed
 bin_counts_10plusyr = percentages_10plusyr * total_count_10plusyr

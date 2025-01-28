@@ -34,7 +34,7 @@ class Social_Network:
         self.delta = parameters_social_network["delta"]
         self.delta_distance = parameters_social_network["delta_distance"]
         
-        #self.nu = parameters_social_network["nu"]
+        self.nu = parameters_social_network["nu"]
         self.scrap_price = parameters_social_network["scrap_price"]
 
         self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
@@ -57,7 +57,6 @@ class Social_Network:
 
         self.random_state_social_network = np.random.RandomState(parameters_social_network["social_network_seed"])
 
-        self.alpha =  parameters_vehicle_user["alpha"]
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
         self.kappa = parameters_vehicle_user["kappa"]
@@ -542,7 +541,6 @@ class Social_Network:
         driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_plus_vec)
         
         U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
-        #print("U_a_i_t_vec", np.median(U_a_i_t_vec))
         
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
@@ -586,7 +584,7 @@ class Social_Network:
     def vectorised_driving_utility_current(self, Quality_a_t_vec, L_a_t_vec, X_vec, d_plus_vec):
 
         # Calculate the commuting utility for each individual-vehicle pair
-        driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*np.exp(Quality_a_t_vec - X_vec)
+        driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_vec
         
         return driving_utility_vec_raw  # Shape: (num_individuals,)
 
@@ -778,7 +776,7 @@ class Social_Network:
         """utility of all cars for all agents"""
 
         # Compute the commuting utility for each individual-vehicle pair
-        driving_utility_matrix_raw = d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*np.exp(Quality_a_t_vec - X_matrix)
+        driving_utility_matrix_raw = d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_matrix
 
         return driving_utility_matrix_raw  # Shape: (num_individuals, num_vehicles)
 
@@ -1185,7 +1183,6 @@ class Social_Network:
         self.second_hand_cars, self.new_cars = second_hand_cars, new_cars
         self.all_vehicles_available = self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT
 
-        #print([car.price for car in self.new_cars])
         self.update_prices_and_emissions_intensity()#UPDATE: the prices and emissions intensities of cars which are currently owned
         self.current_vehicles = self.update_VehicleUsers()
         

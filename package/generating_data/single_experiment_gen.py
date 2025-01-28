@@ -25,7 +25,7 @@ def main(
     print("E, total",controller.social_network.emissions_cumulative)
     print("uptake",  controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
-    
+    print("mean price", controller.social_network.history_mean_price[-1])
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
@@ -157,15 +157,13 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.002,
+        "delta": 0.010411,
         "transportType": 2,
-        "min_Price": 20000,
-        "max_Price": 120000,
         "mean_Price": 40000,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
-        "max_Cost": 30000
+        "max_Cost": 50000
     },
     "parameters_EV":{
         "N": 15,
@@ -178,7 +176,7 @@ if __name__ == "__main__":
         "max_Efficiency": 7
     },
     "parameters_firm_manager": {
-        "J": 10,
+        "J": 20,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
@@ -193,7 +191,7 @@ if __name__ == "__main__":
         "init_price_multiplier": 1.1
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals": 5000,
         "chi_max": 0.9,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -201,19 +199,18 @@ if __name__ == "__main__":
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.9,
+        "a_innovativeness": 1,
         "b_innovativeness": 1,
         "prob_switch_car":0.083,
         "delta_distance": 0.010411
     },
     "parameters_vehicle_user":{
-        "kappa":10,
-        "alpha": 1,
-        #"U_m_calibration": 1e6,#used in calibrating Q vlaue initially
-        #"minimum_segment_utility": 5e5,#used for settign the Q_m of segemnts with no technologies, ideally only used in start of burn in period
-        #"car_base_utility_segments_init": 5e5,#needs to be high to avoid issues with initial step and arg of lambert function
+        "kappa":1,
+        "car_base_utility_segments_init": 1e4,#needs to be high to avoid issues with initial step and arg of lambert function
+        "W_calibration":1e6,#does matter too much the quality is fairly inert to the whole thing
         "r": 0.00247,
         "mu": 0.5,
+        "nu":1e-3
     }
 }
     
