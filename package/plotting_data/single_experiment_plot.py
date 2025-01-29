@@ -2662,6 +2662,27 @@ def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName
     # Save and show the plot
     save_and_show(fig, fileName, "plot_profit_margins_by_type", dpi)
 
+def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600):
+
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    print()
+    
+    data = np.asarray(firm_manager.history_W).T
+    for i, data_segment in enumerate(data):
+        ax.plot(time_series, data_segment, label = i)
+
+    ax.set_xlabel("Time")
+    ax.set_ylabel("W")
+    ax.grid(True)
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_history_W", dpi)
+
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -2688,7 +2709,9 @@ def main(fileName, dpi=600):
 
     #emissions_decomposed(social_network, time_series, fileName, dpi)
 
-    plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600)
+    plot_history_W(base_params, firm_manager,time_series,  fileName)
+
+    plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName)
     #plt.show()
 
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)

@@ -55,7 +55,8 @@ class NKModel:
         X = (beta * self.fuel_cost + gamma * self.e_t)/ eff
 
         # Compute commuting utility for individual-vehicle pairs
-        driving_utility = quality/X
+        driving_utility = np.log(1 + quality/X)
+        
 
         # Save the base utility
         B = driving_utility*((1+self.r)/(self.r + self.delta))

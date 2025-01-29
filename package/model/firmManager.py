@@ -26,7 +26,7 @@ class Firm_Manager:
         self.nu = parameters_firm_manager["nu"]
         self.num_individuals = parameters_firm_manager["num_individuals"]
         self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
-
+        self.min_W = parameters_firm_manager["min_W"]
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
 
         self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
@@ -170,7 +170,7 @@ class Firm_Manager:
                 "I_s_t": 0,
                 "beta_s_t": 0.0,
                 "gamma_s_t": 0.0,
-                "W": 0.0,
+                "W": self.min_W,#0.0,
                 "history_I_s_t": [],
                 "history_W": []
             }
@@ -210,11 +210,14 @@ class Firm_Manager:
 
         # 5) Sum up the utilities across all cars for each segment
         segment_W = defaultdict(float)
+
+        for segment in self.all_segment_codes:
+            segment_W[segment] = self.min_W#SET THE MINIMUM
+        
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                    segment_W[code] += np.exp(self.kappa*self.nu*U)
-
+                        segment_W[code] += np.exp(self.kappa*self.nu*U)
 
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
@@ -246,11 +249,10 @@ class Firm_Manager:
         #calc the total "probability of selection" of the market based on max utility in the segment
         segment_W = defaultdict(float)
         for segment in self.all_segment_codes:
-            segment_W[segment] = 0#RESET THEM INCASE
+            segment_W[segment] = self.min_W#RESET THEM INCASE
 
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                #print("yooo",np.exp(self.kappa*self.nu*U), self.kappa, self.nu, U)
                 segment_W[segment] += np.exp(self.kappa*self.nu*U)
 
         return segment_W
@@ -404,6 +406,8 @@ class Firm_Manager:
 
         self.history_zero_profit_options_prod_sum.append(self.zero_profit_options_prod_sum/self.J)
         self.history_zero_profit_options_research_sum.append(self.zero_profit_options_research_sum/self.J)
+
+        self.history_W.append(list(self.W_segment.values()))
 
     def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
         for firm in self.firms_list:

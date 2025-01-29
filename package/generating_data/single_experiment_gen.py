@@ -36,21 +36,21 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 12,
-    "duration_burn_in": 60,
+    "duration_burn_in": 120,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
-        "init_tech_seed": 99,
-        "landscape_seed_ICE": 22,
+        "init_tech_seed": 96,
+        "landscape_seed_ICE": 27,
         "social_network_seed": 66,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99,
         "init_vals_price_seed": 8,
-        "innovation_seed": 77,
-        "landscape_seed_EV": 14, 
+        "innovation_seed": 75,
+        "landscape_seed_EV": 11, 
         "choice_seed": 9,
         "remove_seed": 48
     },
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -157,9 +157,11 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.010411,
+        "delta": 0.005,#0.010411,
         "transportType": 2,
         "mean_Price": 40000,
+        "min_Price": 20000,
+        "max_Price": 100000,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5000,
@@ -202,15 +204,16 @@ if __name__ == "__main__":
         "a_innovativeness": 1,
         "b_innovativeness": 1,
         "prob_switch_car":0.083,
-        "delta_distance": 0.010411
+        "delta_distance": 0.002#0.010411
     },
     "parameters_vehicle_user":{
-        "kappa":1,
-        "car_base_utility_segments_init": 1e4,#needs to be high to avoid issues with initial step and arg of lambert function
-        "W_calibration":1e6,#does matter too much the quality is fairly inert to the whole thing
-        "r": 0.00247,
+        "kappa":10,
+        "B_segments_init": 1e3,#needs to be high to avoid issues with initial step and arg of lambert function
+        "W_calibration":1e3,#does matter too much the quality is fairly inert to the whole thing
+        "min_W": 1,#SET TO ZERO IF IT WORKS WELL
+        "r": 0.005,#0.00247,
         "mu": 0.5,
-        "nu":1e-3
+        "nu":1e-5,
     }
 }
     

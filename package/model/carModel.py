@@ -29,7 +29,7 @@ class CarModel:
         self.inverted_tech_fitness = np.asarray([self.nk_landscape.attributes_dict[inverted_string] for inverted_string in self.inverted_tech_strings])
 
         self.optimal_price_segments = {} 
-        self.car_base_utility_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?
+        self.B_segments = {}#,little u,  populated by a firm who is considering which car to buy, can be deleted afterwards?
         self.car_utility_segments_U = {}  #Capital U
         self.expected_profit_segments = {} 
         self.expected_profit = 0#used by firms to choose cars

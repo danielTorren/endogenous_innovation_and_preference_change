@@ -420,20 +420,14 @@ class Social_Network:
         return combined_mask
 
     def masking_options(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
-
+        """If i dont want something to be picked the utilities kappa needs to nbe 0 at the output!"""
         # Replace `-np.inf` with a mask to avoid issues
         valid_utilities_mask = utilities_matrix != -np.inf  # Mask for valid (non -np.inf) entries
-
         # Initialize result matrix with zeros
-        utilities_kappa = np.zeros_like(utilities_matrix)
+        utilities_kappa = np.zeros_like(utilities_matrix)# THEY SHOULDNT BE ZERO THAT SHOULD BE -np.inf!
 
-        # Compute row-wise maximums, ignoring -np.inf
-        row_max = np.max(utilities_matrix, axis=1)
-
-        # Normalize each row by its row_max and compute the exponential
         row_indices, col_indices = np.where(valid_utilities_mask)
-        normalized_values = utilities_matrix[row_indices, col_indices] / row_max[row_indices]
-        utilities_kappa[valid_utilities_mask] = np.exp(self.kappa * normalized_values)
+        utilities_kappa[valid_utilities_mask] = np.exp(self.kappa *self.nu* utilities_matrix[row_indices, col_indices])
 
         combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)#THEN MAKE AND APPLY MASK 
         utilities_kappa_masked = utilities_kappa * combined_mask
@@ -489,8 +483,12 @@ class Social_Network:
                 if vehicle_chosen.transportType == 3:
                     self.policy_distortion += self.used_rebate           
 
+                ###########################################################################
+                #DO NOT DELETE
                 #SET THE UTILITY TO 0 of that second hand car
-                utilities_kappa[:, choice_index] = 0
+                utilities_kappa[:, choice_index] = 0#THIS STOPS OTHER INDIVIDUALS FROM BUYING SECOND HAND CAR THAT YOU BOUGHT, VERY IMPORANT LINE
+                ###############################################################
+                
                 self.second_hand_merchant.remove_car(vehicle_chosen)
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
@@ -545,7 +543,6 @@ class Social_Network:
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
 
-
         # Set the diagonal values
         np.fill_diagonal(CV_utilities_matrix, U_a_i_t_vec)
 
@@ -584,7 +581,8 @@ class Social_Network:
     def vectorised_driving_utility_current(self, Quality_a_t_vec, L_a_t_vec, X_vec, d_plus_vec):
 
         # Calculate the commuting utility for each individual-vehicle pair
-        driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_vec
+        driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*np.log(1+ Quality_a_t_vec/X_vec)
+        #driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_vec
         
         return driving_utility_vec_raw  # Shape: (num_individuals,)
 
@@ -776,7 +774,8 @@ class Social_Network:
         """utility of all cars for all agents"""
 
         # Compute the commuting utility for each individual-vehicle pair
-        driving_utility_matrix_raw = d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_matrix
+        driving_utility_matrix_raw =  d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*np.log(1+ Quality_a_t_vec/X_matrix)
+        #driving_utility_matrix_raw = d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_matrix
 
         return driving_utility_matrix_raw  # Shape: (num_individuals, num_vehicles)
 

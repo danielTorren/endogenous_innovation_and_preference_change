@@ -63,7 +63,7 @@ class Firm:
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
 
-        self.car_base_utility_segments_init = self.parameters_firm["car_base_utility_segments_init"]
+        self.B_segments_init = self.parameters_firm["B_segments_init"]
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
         self.carbon_price =  self.parameters_firm["carbon_price"]
@@ -107,7 +107,7 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.car_base_utility_segments_init
+                car.B_segments[segment_code] = self.B_segments_init
 
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
@@ -116,7 +116,7 @@ class Firm:
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                car.car_base_utility_segments[segment_code] = self.car_base_utility_segments_init
+                car.B_segments[segment_code] = self.B_segments_init
 
     def calc_init_U_segments(self, market_data):
         for segment_code, segment_data in market_data.items():
@@ -133,19 +133,20 @@ class Firm:
                     #ADD IN A SUBSIDY
                     if car.transportType == 3:
                         price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)
+                        utility_segment_U  = car.B_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)
                     else:
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)
+                        utility_segment_U  = car.B_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)
 
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
 
                 else:
-                    car.car_utility_segments_U[segment_code] = 0
+                    car.car_utility_segments_U[segment_code] = -np.inf
 
     def calc_driving_utility(self, Quality_a_t, X):
 
         # Compute commuting utility for individual-vehicle pairs
-        driving_utility = self.d_mean*Quality_a_t/X
+        #driving_utility = self.d_mean*Quality_a_t/X
+        driving_utility = self.d_mean*np.log(1 + Quality_a_t/X)
 
         return driving_utility
 
@@ -181,9 +182,16 @@ class Firm:
 
                 # Save the base utility
                 U = driving_utility*((1+self.r)/(self.r + self.delta)) 
-                car.car_base_utility_segments[segment_code] = U
+                car.B_segments[segment_code] = U
 
-                Arg = np.exp(self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0)/W_s_t
+                term = self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0
+                
+                #print("W_s_t", self.t_firm, W_s_t)
+                #print(term,np.log(W_s_t))
+                #quit()
+                log_arg = term - np.log(W_s_t)
+                Arg = np.exp(log_arg)  # This is now numerically safe
+                #Arg = np.exp(term)/W_s_t
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
                 P = C_m_cost + (1.0 + LW)/(self.kappa*self.nu*beta_s)
@@ -212,14 +220,14 @@ class Firm:
                     #ADD IN A SUBSIDY
                     if car.transportType == 3:
                         price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)
+                        utility_segment_U  = car.B_segments[segment_code] - (beta_s *price_adjust + gamma_s * car.emissions)
                     else:
-                        utility_segment_U  = car.car_base_utility_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)
+                        utility_segment_U  = car.B_segments[segment_code] - (beta_s *price_s + gamma_s * car.emissions)
 
                     car.car_utility_segments_U[segment_code] = utility_segment_U 
 
                 else:
-                    car.car_utility_segments_U[segment_code] = 0
+                    car.car_utility_segments_U[segment_code] = -np.inf
 
         return vehicle_list
 
@@ -296,7 +304,8 @@ class Firm:
                     
                     # Expected profit calculation
                     utility_value = vehicle.car_utility_segments_U[segment_code]
-                    if utility_value == 0:
+     
+                    if utility_value == -np.inf:
                         utility_proportion = 0
                         raw_profit = 0
                     else:
@@ -593,14 +602,14 @@ class Firm:
                         if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
                             if selected_vehicle.transportType == 3:
                                 price_adjust = np.maximum(0,selected_vehicle.optimal_price_segments[segment_code] - (self.rebate + self.rebate_calibration))
-                                utility_segment_U = selected_vehicle.car_base_utility_segments[segment_code] - (beta_s * price_adjust +  gamma_s * selected_vehicle.emissions)
+                                utility_segment_U = selected_vehicle.B_segments[segment_code] - (beta_s * price_adjust +  gamma_s * selected_vehicle.emissions)
                             else:
-                                utility_segment_U =selected_vehicle.car_base_utility_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)
+                                utility_segment_U =selected_vehicle.B_segments[segment_code] - (beta_s*selected_vehicle.optimal_price_segments[segment_code] + gamma_s * selected_vehicle.emissions)
                             
                             selected_vehicle.car_utility_segments_U[segment_code] = utility_segment_U
 
                         else:
-                            selected_vehicle.car_utility_segments_U[segment_code] = 0
+                            selected_vehicle.car_utility_segments_U[segment_code] = -np.inf
 
                         if selected_vehicle.transportType == 3:#PRODUCTION SUBSIDY
                             profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t - self.production_subsidy)
@@ -612,7 +621,7 @@ class Firm:
 
                         utility_value = selected_vehicle.car_utility_segments_U[segment_code]
 
-                        if utility_value == 0:
+                        if utility_value == -np.inf:
                             utility_proportion = 0
                             raw_profit = 0
                         else:

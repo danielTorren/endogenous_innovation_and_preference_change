@@ -187,10 +187,6 @@ class Controller:
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
         self.d_plus_vec = poisson_samples * scale_factor + min_bin
-        #print("self.d_plus_vec", self.d_plus_vec)
-
-        #d_plus_vec_raw = self.random_state_gamma.normal(loc = self.parameters_social_network["d_mean"], scale = self.parameters_social_network["d_sd"], size = self.num_individuals)
-        #self.d_plus_vec = np.clip(d_plus_vec_raw, a_min = 0, a_max = np.inf)
 
         ############################################
         #social network data
@@ -285,6 +281,19 @@ class Controller:
         return np.asarray(beta_list)
 
     def calc_variables(self):
+
+        """
+        minQ: Quality required for the least sensitive Segment to buy the cheapest car.
+            beta = Lowest segment, P = cheap car, use average gamma, efficicny, fuel cost, fuel emisisons, C = cheapest
+
+        maxQ: Quality required for the average Segment to buy the most expensive car.
+            beta = mean , P = expensive car, use average gamma, efficicny, fuel cost, fuel emisisons, C = expensive
+
+        C goes from a range to 5 to 50K
+        Omega from 1.25 to 2.46 (ICE)
+        Gamma 0 to 2.5
+
+        """
         E = self.parameters_ICE["production_emissions"]
         delta = self.parameters_ICE["delta"]
         r = self.parameters_vehicle_user["r"]
@@ -296,44 +305,61 @@ class Controller:
 
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
 
-        #omega_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
-        #omega_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        omega_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        omega_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
-        #C_max = self.parameters_ICE["min_Cost"] + 0.8*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
-        #C_min = self.parameters_ICE["min_Cost"] + 0.2*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
-        C_mean = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2
-        
-        gamma = np.median(self.gamma_vec)#np.max(self.gamma_vec)
-        beta = np.median(self.beta_vec)#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+        C_max = self.parameters_ICE["min_Cost"] + 0.8*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
+        C_min = self.parameters_ICE["min_Cost"] + 0.2*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
+        #C_mean = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2
 
-        P = self.parameters_ICE["mean_Price"]#np.array([self.parameters_ICE["max_Price"], self.parameters_ICE["mean_Price"], self.parameters_ICE["min_Price"]])
-        omega = omega_mean#np.array([omega_min, omega_mean, omega_max])
-        C = C_mean #np.array([C_max, C_mean, C_min]) 
+        #Qmin poor, Q min rich, Qmax poor, Qmax rich
+        omega = omega_mean#np.array([omega_max, omega_max,omega_min , omega_min])
+        gamma = np.mean(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
+        beta = np.array([np.min(self.beta_segment_vals), np.mean(self.beta_vec)]) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+
+        P = np.array([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])#np.array([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"], self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
+        #omega = omega_mean#np.array([omega_min, omega_mean, omega_max])
+        C = np.array([C_min,C_max]) #np.array([C_min,C_max,C_min,C_max]) 
 
         W = self.parameters_vehicle_user["W_calibration"]
-
-        u =  ((r + delta)/(1+r))*(np.log(W*(kappa*beta*(P-C)))/kappa + beta*P + gamma*E)
         X = (beta*c + gamma*e)/omega
-        D = np.median(self.d_plus_vec)#np.mean(self.d_plus_vec)
-        Q = (X/D)*u
-        print("Q",Q)
 
-        max_q = Q*2#(4*Q_max_mean - 0)/3
-        print("max_q", max_q)
+        D = np.median(self.d_plus_vec)#np.mean(self.d_plus_vec)   
+        Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E) /(kappa*D*(1+r))  ) - 1)
+        print("Q",Q_vals)
+        Q_min = Q_vals[0]#np.mean(Q_vals[:2])
+        Q_max = Q_vals[1]#np.mean(Q_vals[2:])
+        print("Q_min", Q_min)
+        print("Q_max", Q_max)
+       
+
+        max_q = (4*Q_max - Q_min)/3
+        min_q = (4*Q_min - Q_max)/3
         
-        self.parameters_ICE["min_Quality"] = 0#min_q
+        print("min_q", min_q)
+        print("max_q", max_q)
+
+
+        self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
-        self.parameters_EV["min_Quality"] = 0#min_q
+        self.parameters_EV["min_Quality"] = min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
 
         #NOW USE THIS QUALITY TO CALCUALTE THE UTILITY!
         #Q_max_mean = 0
         #X = (np.max(beta)*c_plus + np.max(gamma)*e)/(omega_min)
-        print("Q", Q)
-        print("X", X)
-        u = D*Q/X
+        
+        #quit()
+        """
+        X_bit_1 = np.mean(X[:2])
+        X_bit_2 = np.mean(X[2:])
+        X_mean = np.asarray([X_bit_1 ,  X_bit_2 ])
+        Q = np.asarray([min_q , max_q ])
+        u = D*np.log(1 + Q/X_mean)
+        print("u", u)
         B = u*(1+r)/(r+delta)
+        print("B", B)
         U = B - beta*P - gamma*E
         print("Utility", U)
         #########
@@ -342,7 +368,7 @@ class Controller:
         LW = lambertw(Arg, 0).real  # principal branch
         P = C + (U*(1.0 + LW))/(kappa*beta)
         print("expected price", P)
-
+        """
         #print("nu kappa",self.nu*kappa)
         #quit()
 
@@ -476,11 +502,11 @@ class Controller:
         self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
 
         if self.Adoption_subsidy_used_state == "Zero":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]["Zero"]
         elif self.Adoption_subsidy_used_state == "Low":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]["Low"]
         elif self.Adoption_subsidy_used_state == "High":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]["High"]
         else:
             raise ValueError("Invalid Adoption subsidy state")
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
@@ -565,7 +591,6 @@ class Controller:
         self.calibration_electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
         self.calibration_electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
 
-
         self.manage_burn_in()
 
         self.manage_calibration()
@@ -627,6 +652,8 @@ class Controller:
         self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
         self.parameters_firm_manager["nu"] = self.parameters_vehicle_user["nu"]
+        self.parameters_firm_manager["min_W"] = self.parameters_vehicle_user["min_W"]
+        
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -645,7 +672,7 @@ class Controller:
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
         self.parameters_firm["d_mean"] = np.mean(self.d_plus_vec)
-        self.parameters_firm["car_base_utility_segments_init"] = self.parameters_vehicle_user["car_base_utility_segments_init"]
+        self.parameters_firm["B_segments_init"] = self.parameters_vehicle_user["B_segments_init"]
         self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
 
         if self.t_controller == self.ev_research_start_time:
@@ -851,12 +878,10 @@ class Controller:
         
         self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.rebate_time_series_future), axis=None) 
         self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.used_rebate_time_series_future), axis=None) 
-
         
         #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
         self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
         self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
-
 
         self.discriminatory_corporate_tax_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.discriminatory_corporate_tax_time_series_future), axis=None) 
         self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
