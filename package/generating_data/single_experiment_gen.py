@@ -59,8 +59,8 @@ if __name__ == "__main__":
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "rebate": 10,
-        "used_rebate": 1
+        "rebate": 1,
+        "used_rebate": 0.1
     },
     "parameters_scenarios":{
         "States":{
@@ -156,23 +156,23 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6,
-        "delta": 0.01,#0.010411,
+        "production_emissions":0.6,
+        "delta": 0.001,#0.010411,
         "transportType": 2,
-        "mean_Price": 40,
-        "min_Price": 20,
-        "max_Price": 100,
+        "mean_Price": 4,
+        "min_Price": 2,
+        "max_Price": 10,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
-        "min_Cost": 5,
-        "max_Cost": 50
+        "min_Cost": 0.5,
+        "max_Cost": 5
     },
     "parameters_EV":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":9,
+        "production_emissions":0.9,
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7
@@ -196,8 +196,8 @@ if __name__ == "__main__":
         "chi_max": 0.9,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 0.210,
-        "WTP_sd": 0.175,
+        "WTP_mean": 0.0210,
+        "WTP_sd": 0.0175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
         "a_innovativeness": 0.8,
@@ -207,11 +207,11 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa":1,
         "B_segments_init": 1,#needs to be high to avoid issues with initial step and arg of lambert function
-        "W_calibration":1,#does matter too much the quality is fairly inert to the whole thing
-        "min_W": 1,#SET TO ZERO IF IT WORKS WELL
+        "W_calibration":1e8,#does matter too much the quality is fairly inert to the whole thing
+        "min_W": 0,#SET TO ZERO IF IT WORKS WELL
         "r": 0.0016,#0.00247,
         "mu": 1,
-        "nu":100#1e-5,
+        "nu":1#1e-5,
     }
 }
     

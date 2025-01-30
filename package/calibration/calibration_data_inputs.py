@@ -158,16 +158,16 @@ if __name__ == "__main__":
 
     calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
 
-    dollars_to_thousands_dollars = 0.001
-    kg_to_tonnes = 0.001
+    scale_dollars = 0.0001
+    scale_co2 = 0.0001
 
-    calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()*dollars_to_thousands_dollars
-    calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()*dollars_to_thousands_dollars
-    calibration_data_input["electricity_emissions_intensity_vec"] = calibration_data_output["KgCO2 per Kilowatt-Hour"].to_numpy()*kg_to_tonnes
-    calibration_data_input["Gas_price_2022"] = Gas_price_2022*dollars_to_thousands_dollars
-    calibration_data_input["Electricity_price_2022"] = electricity_price_2022*dollars_to_thousands_dollars
-    calibration_data_input["Electricity_emissions_intensity_2022"] = electricity_emissions_intensity_2022*kg_to_tonnes
-    calibration_data_input["gasoline_Kgco2_per_Kilowatt_Hour"] = gasoline_Kgco2_per_Kilowatt_Hour*kg_to_tonnes
+    calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()*scale_dollars
+    calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()*scale_dollars
+    calibration_data_input["electricity_emissions_intensity_vec"] = calibration_data_output["KgCO2 per Kilowatt-Hour"].to_numpy()*scale_co2
+    calibration_data_input["Gas_price_2022"] = Gas_price_2022*scale_dollars
+    calibration_data_input["Electricity_price_2022"] = electricity_price_2022*scale_dollars
+    calibration_data_input["Electricity_emissions_intensity_2022"] = electricity_emissions_intensity_2022*scale_co2
+    calibration_data_input["gasoline_Kgco2_per_Kilowatt_Hour"] = gasoline_Kgco2_per_Kilowatt_Hour*scale_co2
     calibration_data_input["income"] = income_df["Income"].to_numpy()
     
     print("gas price 2022",calibration_data_input["Gas_price_2022"] )

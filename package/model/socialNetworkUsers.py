@@ -406,27 +406,34 @@ class Social_Network:
 
         return combined_mask
 
+
     def masking_options(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
-        """If i dont want something to be picked the utilities kappa needs to nbe 0 at the output!"""
+        """If I don’t want something to be picked, the utilities kappa needs to be 0 at the output!"""
+
         # Replace `-np.inf` with a mask to avoid issues
         valid_utilities_mask = utilities_matrix != -np.inf  # Mask for valid (non -np.inf) entries
-        # Initialize result matrix with zeros
-        utilities_kappa = np.zeros_like(utilities_matrix)# THEY SHOULDNT BE ZERO THAT SHOULD BE -np.inf!
-
         row_indices, col_indices = np.where(valid_utilities_mask)
 
-        #print("utilities_matrix[row_indices, col_indices]", np.min(utilities_matrix[row_indices, col_indices]),  np.max(utilities_matrix[row_indices, col_indices]))
-        #quit()
-        self.nu_maxU = np.max(utilities_matrix[row_indices, col_indices])#SUBSRACT MAX VALUE OF UTILITIES FROM EVERYONE?
+        # Compute max value for numerical stability
+        max_utilities = np.max(utilities_matrix[row_indices, col_indices])  # Get max value of valid utilities
+        self.nu_maxU = max_utilities  # Store max utility for reference
 
-        #utilities_kappa[valid_utilities_mask] = np.exp(self.kappa*utilities_matrix[row_indices, col_indices] - self.nu_maxU)
-        utilities_kappa[valid_utilities_mask] = np.exp(self.kappa*utilities_matrix[row_indices, col_indices])
+        print("max_utilities", max_utilities)
         
-        combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)#THEN MAKE AND APPLY MASK 
-        utilities_kappa_masked = utilities_kappa * combined_mask
-        
-        return utilities_kappa_masked
+        # Fix the exponentiation to prevent overflow
+        exp_input = self.kappa *utilities_matrix[row_indices, col_indices] - self.kappa*max_utilities
+
+        # Initialize result matrix with zeros
+        utilities_kappa = np.zeros_like(utilities_matrix)
     
+        utilities_kappa[valid_utilities_mask] = np.exp(exp_input)
+
+        # Generate mask and apply
+        combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)
+        utilities_kappa_masked = utilities_kappa * combined_mask
+
+        return utilities_kappa_masked
+
 #########################################################################################################################################################
     #choosing vehicles
     def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start ):
@@ -530,9 +537,9 @@ class Social_Network:
         X = (beta_vec * vehicle_dict_vecs["fuel_cost_c"] + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
         driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_vec)
-        
+        #print("driving_utility_vec", driving_utility_vec)
         U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
-        
+        #print("U_a_i_t_vec", U_a_i_t_vec)
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
 
@@ -574,7 +581,8 @@ class Social_Network:
     def vectorised_driving_utility_current(self, Quality_a_t_vec, L_a_t_vec, X_vec, d_vec):
 
         # Calculate the commuting utility for each individual-vehicle pair
-        driving_utility_vec_raw =  d_vec**np.log(1+ (Quality_a_t_vec*(1 - self.delta) ** L_a_t_vec)/X_vec)
+        driving_utility_vec_raw =  d_vec*np.log(1+ (Quality_a_t_vec*(1 - self.delta) ** L_a_t_vec)/X_vec)
+
         #driving_utility_vec_raw =  d_vec*(1 - self.delta) ** L_a_t_vec*np.log(1+ Quality_a_t_vec/X_vec)
         #driving_utility_vec_raw =  d_vec*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_vec
         

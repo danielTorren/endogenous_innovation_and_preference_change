@@ -142,6 +142,13 @@ class Firm:
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
+    def utility_prop(self,U,W):
+
+        utility_proportion = np.exp(self.kappa*U - self.kappa*self.nu_maxU)/(W + np.exp(self.kappa*U- self.kappa*self.nu_maxU))
+        #utility_proportion = np.exp(self.kappa*U)/(W + np.exp(self.kappa*U))
+
+        return utility_proportion
+
     def calc_driving_utility(self, Quality_a_t, X):
 
         # Compute commuting utility for individual-vehicle pairs
@@ -184,14 +191,8 @@ class Firm:
                 U = driving_utility*((1+self.r)/(self.r + self.delta)) 
                 car.B_segments[segment_code] = U
 
-                #term = self.kappa*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0 - self.nu_maxU
-                term = self.kappa*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0
-                
-                #print("W_s_t", self.t_firm, W_s_t)
-                #print(term,np.log(W_s_t))
-                #quit()
-                #log_arg = term - np.log(W_s_t)
-                #Arg = np.exp(log_arg)  # This is now numerically safe
+                term = self.kappa*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0 - self.kappa*self.nu_maxU
+
                 Arg = np.exp(term)/W_s_t
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
@@ -311,7 +312,7 @@ class Firm:
                         raw_profit = 0
                     else:
                         #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
-                        utility_proportion = np.exp(self.kappa*utility_value)/(W + np.exp(self.kappa*utility_value))
+                        utility_proportion = self.utility_prop(utility_value,W)
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                     if is_ev:
@@ -362,7 +363,7 @@ class Firm:
         profits[np.isnan(profits)] = 0
 
         # Compute the softmax probabilities
-        lambda_profits = profits ** self.lambda_pow
+        lambda_profits = profits**self.lambda_pow
         sum_profit = np.sum(lambda_profits)
 
         len_vehicles = len(car_list)  # Length of the car list
@@ -517,7 +518,7 @@ class Firm:
                     utility_car = vehicle.car_utility_segments_U[segment_code]#max(0,vehicle.car_utility_segments_U[segment_code])
 
                     #utility_proportion = np.exp(self.kappa*utility_car - self.nu_maxU)/(W + np.exp(self.kappa*utility_car - self.nu_maxU))
-                    utility_proportion = np.exp(self.kappa*utility_car)/(W + np.exp(self.kappa*utility_car))
+                    utility_proportion = self.utility_prop(utility_car,W)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -635,7 +636,7 @@ class Firm:
                             raw_profit = 0
                         else:
                             #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
-                            utility_proportion = np.exp(self.kappa*utility_value)/(W + np.exp(self.kappa*utility_value))
+                            utility_proportion = self.utility_prop(utility_value,W)
                             raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                         if selected_vehicle.transportType == 3:  # EV

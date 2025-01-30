@@ -333,14 +333,17 @@ class Controller:
         print("X",X)
         D = np.median(self.d_vec)#np.mean(self.d_vec)   
         #Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E + self.nu) /(kappa*D*(1+r))  ) - 1)
-        Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E) /(kappa*D*(1+r))  ) - 1)
+        print("min kappa", 1/(beta*(P-C)))
+        print("Q compoentnns (must be > 1)", kappa*beta*(P-C))
+        
+        Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E) /(kappa*D*(1+r))) - 1)
         print("Q",Q_vals)
         Q_min = Q_vals[0]#np.mean(Q_vals[:2])
         Q_max = Q_vals[1]#np.mean(Q_vals[2:])
         print("Q_min", Q_min)
         print("Q_max", Q_max)
        
-        max_q = (4*Q_max - Q_min)/3
+        max_q = (4*Q_max - 0)/3#(4*Q_max - Q_min)/3
         min_q = 0#(4*Q_min - Q_max)/3
         
         print("min_q", min_q)
@@ -367,10 +370,11 @@ class Controller:
         #print("Utility", U)
         #########
         
-        Arg = np.exp(kappa*(U - beta*C - gamma*E) - 1.0 - self.nu)/W
+        #Arg = np.exp(kappa*(U - beta*C - gamma*E) - 1.0 - self.nu)/W
+        Arg = np.exp(kappa*(U - beta*C - gamma*E) - 1.0)/W
         LW = lambertw(Arg, 0).real  # principal branch
         P = C + (U*(1.0 + LW))/(kappa*beta)
-        #print("expected price", P)
+        print("expected price", P)
 
         #print("nu kappa",self.nu*kappa)
         #quit()

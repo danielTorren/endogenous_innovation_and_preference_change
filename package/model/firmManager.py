@@ -165,6 +165,11 @@ class Firm_Manager:
         # Convert gamma to 0 or 1 based on threshold
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
+    def calc_exp(self, U):
+        #segment_W[code] += np.exp(self.kappa*U)
+        comp = np.exp(self.kappa*U - self.kappa*self.nu_maxU)
+        return comp
+
     def generate_market_data(self):
         """
         CALLED ONCE AT THE END OF THE SET UP BY CONTROLLER AND ONLY AFTER THE SOCIAL NETWORK INFORMATION HAS BEEN RECEIVIED
@@ -228,8 +233,8 @@ class Firm_Manager:
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                        segment_W[code] += np.exp(self.kappa*U)
-                        #segment_W[code] += np.exp(self.kappa*U - self.nu_maxU)
+                        #segment_W[code] += np.exp(self.kappa*U)
+                        segment_W[code] += self.calc_exp(U)
 
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
@@ -261,20 +266,14 @@ class Firm_Manager:
     def update_W_immediate(self):
         #calc the total "probability of selection" of the market based on max utility in the segment
         segment_W = defaultdict(float)
-        #segment_W_raw = defaultdict(float)
+
         for segment in self.all_segment_codes:
             segment_W[segment] = self.min_W#RESET THEM INCASE
-        #    segment_W_raw[segment] = 0#RESET THEM INCASE
-
+        
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                segment_W[segment] += np.exp(self.kappa*U)
+                segment_W[segment] += self.calc_exp(U)
                 #segment_W[segment] += np.exp(self.kappa*U - self.nu_maxU)
-        #        segment_W_raw[segment] += np.exp(self.kappa*U - self.nu)
-
-        #for segment in self.all_segment_codes:
-        #    print(segment_W_raw[segment])
-        #quit()
 
         return segment_W
         
@@ -454,6 +453,7 @@ class Firm_Manager:
         self.cars_on_sale_all_firms  = self.update_firms(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, self.nu_maxU)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment = self.update_W_immediate()#calculate the competiveness of the market current
 
+        #print("W im:",np.max(list(self.W_segment.values())))
         self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
 
         return self.cars_on_sale_all_firms

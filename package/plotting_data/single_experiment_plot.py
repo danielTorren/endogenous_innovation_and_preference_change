@@ -2773,7 +2773,7 @@ def main(fileName, dpi=600):
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
-    plot_total_distance(social_network, time_series, fileName, dpi)
+    #plot_total_distance(social_network, time_series, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
