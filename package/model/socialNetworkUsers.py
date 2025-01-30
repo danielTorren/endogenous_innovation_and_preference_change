@@ -29,11 +29,10 @@ class Social_Network:
         self.beta_vec = parameters_social_network["beta_vec"] 
         self.gamma_vec = parameters_social_network["gamma_vec"]
         self.chi_vec = parameters_social_network["chi_vec"]
-        self.d_plus_vec = parameters_social_network["d_plus_vec"]
+        self.d_vec = parameters_social_network["d_vec"]
 
         self.delta = parameters_social_network["delta"]
-        self.delta_distance = parameters_social_network["delta_distance"]
-        
+  
         self.nu = parameters_social_network["nu"]
         self.scrap_price = parameters_social_network["scrap_price"]
 
@@ -215,14 +214,13 @@ class Social_Network:
 
         self.sub_beta_vec = self.beta_vec[switcher_indices]
         self.sub_gamma_vec = self.gamma_vec[switcher_indices]
-        self.sub_d_plus_vec = self.d_plus_vec[switcher_indices]
+        self.sub_d_vec = self.d_vec[switcher_indices]
 
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
 
         # Generate current utilities and vehicles
         #Calculate the optimal distance for all user with current car, NEEDS TO BE DONE ALWAYS AND FOR ALL USERS
         CV_vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs(self.current_vehicles)
-        d_i_t = self.d_plus_vec*(1-self.delta)**CV_vehicle_dict_vecs["L_a_t"]
 
         # NEED THIS FOR SOME OF THE COUNTERS I THINK - CHECK THIS
         if self.second_hand_cars:
@@ -239,7 +237,7 @@ class Social_Network:
         #NON-SWTICHERS
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
-            __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_plus_vec)
+            __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec)
 
 
         for i, person_index in enumerate(non_switcher_indices):
@@ -247,7 +245,7 @@ class Social_Network:
             user.vehicle.update_timer()# Update the age or timer of the chosen vehicle
             # Handle consequences of the choice
             vehicle_chosen_index = index_current_cars_start + person_index
-            driven_distance = d_i_t[person_index]
+            driven_distance = self.d_vec[person_index]
             self.update_emisisons(user.vehicle, driven_distance)
             #NEEDED FOR OPTIMISATION, add the carbon price paid 
             #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
@@ -275,30 +273,21 @@ class Social_Network:
 
         #THIS CAN BE DONE FOR THE SUBSET OF USERS
         CV_filtered_vechicles_dicts, CV_filtered_vehicles = self.filter_vehicle_dict_for_switchers(CV_vehicle_dict_vecs, self.current_vehicles, switcher_indices)
-        utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec, self.sub_d_plus_vec)
+        utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec, self.sub_d_vec)
 
         self.second_hand_merchant_offer_price = self.calc_offer_prices_heursitic(self.NC_vehicle_dict_vecs, CV_filtered_vechicles_dicts, CV_filtered_vehicles)
 
         # pass those indices to generate_utilities
-        utilities_buying_matrix_switchers, buying_vehicles_list, d_buying_matrix_switchers = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price, self.sub_d_plus_vec)
+        utilities_buying_matrix_switchers, buying_vehicles_list = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price, self.sub_d_vec)
 
         # Preallocate the final utilities and distance matrices
         total_columns = utilities_buying_matrix_switchers.shape[1] + utilities_current_matrix.shape[1]#number of cars which is new+secodn hand + current in the switchers
 
-        """
-        I think these may need to be the num indivdiuals shape purely for the index to work as i want it too? or maybe i create a mapping
-        """
-
         self.utilities_matrix_switchers = np.empty((num_switchers, total_columns))
-        self.d_matrix_switchers = np.empty((num_switchers, total_columns))
-        
+
         # Assign matrices directly
         self.utilities_matrix_switchers[:, :utilities_buying_matrix_switchers.shape[1]] = utilities_buying_matrix_switchers
         self.utilities_matrix_switchers[:, utilities_buying_matrix_switchers.shape[1]:] = utilities_current_matrix
-        
-        d_current_matrix_switchers = np.diag(d_i_t[switcher_indices])#take the distances calcualted on current cars, take out all the ones that are not switching then make that a matrix which is diagonal?
-        self.d_matrix_switchers[:, :d_buying_matrix_switchers.shape[1]] = d_buying_matrix_switchers
-        self.d_matrix_switchers[:, d_buying_matrix_switchers.shape[1]:] = d_current_matrix_switchers
 
         # Combine the list of vehicles
         available_and_current_vehicles_list = buying_vehicles_list + CV_filtered_vehicles# ITS CURRENT VEHICLES AND NOT FILTERED VEHCILES AS THE SHUFFLING INDEX DOENST ACCOUNT FOR THE FILTERING
@@ -323,7 +312,7 @@ class Social_Network:
             )
             user_vehicle_list[global_index] = user_vehicle  # Update using the global index
 
-            driven_distance = self.d_matrix_switchers[reduced_index][vehicle_chosen_index]  # Use the reduced index for the matrix
+            driven_distance = self.d_vec[global_index]  # Use the reduced index for the matrix
             self.update_emisisons(vehicle_chosen, driven_distance)
 
             #CARBON TAX POLICY OPTIMISATION
@@ -335,9 +324,7 @@ class Social_Network:
                 #NEEDED FOR OPTIMISATION, add the carbon price paid 
                 self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
             
-
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-                
                 utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)
 
@@ -530,13 +517,13 @@ class Social_Network:
 ##############################################################################################################################################################
     #CURRENT
     
-    def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_plus_vec):# -> NDArray:
+    def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec):# -> NDArray:
         """
         Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
         """
         X = (beta_vec * vehicle_dict_vecs["fuel_cost_c"] + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
-        driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_plus_vec)
+        driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_vec)
         
         U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
         
@@ -578,52 +565,51 @@ class Social_Network:
         return vehicle_dict_vecs
 
 
-    def vectorised_driving_utility_current(self, Quality_a_t_vec, L_a_t_vec, X_vec, d_plus_vec):
+    def vectorised_driving_utility_current(self, Quality_a_t_vec, L_a_t_vec, X_vec, d_vec):
 
         # Calculate the commuting utility for each individual-vehicle pair
-        driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*np.log(1+ Quality_a_t_vec/X_vec)
-        #driving_utility_vec_raw =  d_plus_vec*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_vec
+        driving_utility_vec_raw =  d_vec**np.log(1+ (Quality_a_t_vec*(1 - self.delta) ** L_a_t_vec)/X_vec)
+        #driving_utility_vec_raw =  d_vec*(1 - self.delta) ** L_a_t_vec*np.log(1+ Quality_a_t_vec/X_vec)
+        #driving_utility_vec_raw =  d_vec*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_vec
         
         return driving_utility_vec_raw  # Shape: (num_individuals,)
 
 ##############################################################################################################################################################
 
-    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_plus_vec):
+    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
 
 
-        # Generate utilities and distances for new cars
+        # Generate utilities
         #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
-        NC_utilities, d_NC = self.vectorised_calculate_utility_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_plus_vec)
+        NC_utilities = self.vectorised_calculate_utility_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec)
 
 
-        # Calculate the total columns needed for utilities and distance matrices
+        # Calculate the total columns needed for utilities 
         total_columns = NC_utilities.shape[1]
 
         if self.second_hand_cars:
             SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_second_hand(self.second_hand_cars)
-            SH_utilities, d_SH = self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price,  d_plus_vec)
+            SH_utilities = self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price,  d_vec)
 
             total_columns += SH_utilities.shape[1]
 
         # Preallocate arrays with the total required columns
         num_individuals_switchers = len(beta_vec)
         utilities_matrix = np.empty((num_individuals_switchers, total_columns))
-        d_matrix = np.empty((num_individuals_switchers, total_columns))
 
         # Fill in preallocated arrays with submatrices
         col_idx = 0#start the counter at zero then increase as you set things up
         utilities_matrix[:, col_idx:col_idx + NC_utilities.shape[1]] = NC_utilities
-        d_matrix[:, col_idx:col_idx + d_NC.shape[1]] = d_NC
+
         col_idx += NC_utilities.shape[1]
 
         if self.second_hand_cars:
             utilities_matrix[:, col_idx:col_idx + SH_utilities.shape[1]] = SH_utilities
-            d_matrix[:, col_idx:col_idx + d_SH.shape[1]] = d_SH
             car_options = self.new_cars + self.second_hand_cars
         else:
             car_options = self.new_cars
 
-        return utilities_matrix, car_options, d_matrix
+        return utilities_matrix, car_options
 
     def filter_vehicle_dict_for_switchers(
         self,
@@ -730,11 +716,11 @@ class Social_Network:
 
         return vehicle_dict_vecs
 
-    def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_plus_vec):
+    def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
         # Compute shared base utility components
         X_matrix = (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
-        commuting_util_matrix_L = self.vectorised_driving_utility_cars(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X_matrix, d_plus_vec)
+        commuting_util_matrix_L = self.vectorised_driving_utility_cars(vehicle_dict_vecs["Quality_a_t"],vehicle_dict_vecs["L_a_t"], X_matrix, d_vec)
 
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
@@ -743,16 +729,14 @@ class Social_Network:
         price_difference = np.maximum(0, price_difference_raw)- second_hand_merchant_offer_price
 
         U_a_i_t_matrix_final = lifetime_utility - (np.multiply(beta_vec[:, np.newaxis], price_difference.T))
-        
-        d_i_t_L = d_plus_vec[:, np.newaxis]*(1-self.delta_distance)**vehicle_dict_vecs["L_a_t"]
 
-        return U_a_i_t_matrix_final, d_i_t_L
+        return U_a_i_t_matrix_final
     
-    def vectorised_calculate_utility_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_plus_vec):
+    def vectorised_calculate_utility_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
 
         X_matrix = (beta_vec[:, np.newaxis] * (vehicle_dict_vecs["fuel_cost_c"]) + gamma_vec[:, np.newaxis] * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
-        commuting_util_matrix_L = self.vectorised_driving_utility_cars(vehicle_dict_vecs["Quality_a_t"],  vehicle_dict_vecs["L_a_t"],  X_matrix,d_plus_vec)
+        commuting_util_matrix_L = self.vectorised_driving_utility_cars(vehicle_dict_vecs["Quality_a_t"],  vehicle_dict_vecs["L_a_t"],  X_matrix,d_vec)
 
         lifetime_utility = commuting_util_matrix_L*((1+self.r)/(self.r + self.delta))
 
@@ -763,19 +747,16 @@ class Social_Network:
         price_adjust = np.multiply(beta_vec[:, np.newaxis], price_difference.T)
 
         U_a_i_t_matrix_final = lifetime_utility - (price_adjust + np.multiply(gamma_vec[:, np.newaxis], vehicle_dict_vecs["production_emissions"]))
-        
-        d_i_t_L = d_plus_vec[:, np.newaxis]*(1-self.delta_distance)**vehicle_dict_vecs["L_a_t"]
 
-
-        return U_a_i_t_matrix_final, d_i_t_L
+        return U_a_i_t_matrix_final
     
 
-    def vectorised_driving_utility_cars(self, Quality_a_t_vec, L_a_t_vec, X_matrix, d_plus_vec):
+    def vectorised_driving_utility_cars(self, Quality_a_t_vec, L_a_t_vec, X_matrix, d_vec):
         """utility of all cars for all agents"""
 
         # Compute the commuting utility for each individual-vehicle pair
-        driving_utility_matrix_raw =  d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*np.log(1+ Quality_a_t_vec/X_matrix)
-        #driving_utility_matrix_raw = d_plus_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_matrix
+        driving_utility_matrix_raw =  d_vec[:, np.newaxis]*np.log(1+ (Quality_a_t_vec*(1 - self.delta) ** L_a_t_vec)/X_matrix)
+        #driving_utility_matrix_raw = d_vec[:, np.newaxis]*(1 - self.delta) ** L_a_t_vec*Quality_a_t_vec/X_matrix
 
         return driving_utility_matrix_raw  # Shape: (num_individuals, num_vehicles)
 

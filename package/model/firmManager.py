@@ -63,9 +63,20 @@ class Firm_Manager:
         Using random assortment of cars intially pick some random cars and set a random age distribution
         """
 
+        #model_choices = self.random_state.choice(self.cars_on_sale_all_firms, self.num_individuals)
+        #age_range = np.arange(0,self.age_max)
+        #age_list = self.random_state.choice(age_range, self.num_individuals)
+
         model_choices = self.random_state.choice(self.cars_on_sale_all_firms, self.num_individuals)
-        age_range = np.arange(0,self.age_max)
-        age_list = self.random_state.choice(age_range, self.num_individuals)
+
+        # Define mean and standard deviation for normal distribution
+        mu = 120#self.age_max / 2  # Mean age at half of max age
+        sigma = 60#self.age_max / 4  # Standard deviation (adjustable)
+
+        # Generate normally distributed ages, ensuring values are within range
+        age_list = np.clip(self.random_state.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
+
+
         car_list = []
         for i, car in enumerate(model_choices):
             personalCar_id = self.id_generator.get_new_id()
@@ -347,7 +358,7 @@ class Firm_Manager:
         profit_margin_EV = []
 
         for car in past_new_bought_vehicles:
-            profit_margin = car.price - car.ProdCost_t
+            profit_margin = (car.price - car.ProdCost_t)/car.ProdCost_t
             if car.transportType == 3:
                 profit_margin_EV.append(profit_margin)
             else:
@@ -355,6 +366,7 @@ class Firm_Manager:
         #if not profit_margin_EV:
         #    profit_margin_EV.append(np.nan)#if no evs then just add nan
         return profit_margin_ICE, profit_margin_EV
+    
     #######################################################################################################################
     #DEAL WITH REBATE
     def add_social_network(self,social_network):

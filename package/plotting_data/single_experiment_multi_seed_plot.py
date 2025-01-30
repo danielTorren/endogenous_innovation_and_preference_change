@@ -240,9 +240,9 @@ def plot_vehicle_attribute_time_series_by_type_split(
             ax_ev.set_title("EV")
         
         # Plot ICE
-        plot_attribute_multiple_seeds(ax_ice, f"{attribute_name} (ICE)", ice_data[:, burn_in_step:], base_params)
+        plot_attribute_multiple_seeds(ax_ice, f"{attribute_name} (ICE)", ice_data, base_params)
         # Plot EV
-        plot_attribute_multiple_seeds(ax_ev, f"{attribute_name} (EV)", ev_data[:, burn_in_step:], base_params)
+        plot_attribute_multiple_seeds(ax_ev, f"{attribute_name} (EV)", ev_data, base_params)
 
         # Collect legend handles and labels
         if idx == 0:  # Only collect from the first subplot to avoid duplicates
@@ -504,7 +504,7 @@ def plot_history_mean_price_multiple_seeds(
 def main(fileName, dpi=600):
 
     base_params = load_object(fileName + "/Data", "base_params")
-
+    print(base_params)
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
 
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
@@ -531,6 +531,7 @@ def main(fileName, dpi=600):
     #plot_ev_stock_multi_seed_pair(base_params, EV_stock_prop_2010_22, history_prop_EV_arr, fileName, dpi)
 
     # Plot each dataset
+    #"""
     plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_total_emissions_arr, 
                     "Total Emissions Over Time", 
                     "Time Step, months", 
@@ -548,6 +549,7 @@ def main(fileName, dpi=600):
                         "Time Step, months", 
                         "Proportion of EVs", 
                         "history_prop_EV")
+
 
     plot_data_across_seeds(base_params, fileName,history_total_utility_arr, 
                         "Total Utility Over Time", 
@@ -567,7 +569,6 @@ def main(fileName, dpi=600):
                         "Total Profit, $", 
                         "history_total_profit")
 
-    """
     plot_vehicle_attribute_time_series_by_type_split(
         base_params, 
         history_quality_ICE, history_quality_EV, 
@@ -575,7 +576,6 @@ def main(fileName, dpi=600):
         history_production_cost_ICE, history_production_cost_EV, 
         fileName
     )
-    """
 
     plot_distance_individuals_mean_median_type_multiple_seeds(
         base_params, 
@@ -599,4 +599,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_18_31_56__22_01_2025")
+    main("results/multi_seed_single_12_31_04__30_01_2025")

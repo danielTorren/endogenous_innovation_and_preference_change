@@ -11,7 +11,6 @@ class SecondHandMerchant:
         self.set_up_time_series_social_network()
         self.car_bin = []
 
-
         self.r = parameters_second_hand["r"]
         self.max_num_cars = parameters_second_hand["max_num_cars"]
         self.burn_in_second_hand_market = parameters_second_hand["burn_in_second_hand_market"]
@@ -23,7 +22,6 @@ class SecondHandMerchant:
 
         self.beta_segment_vec = parameters_second_hand["beta_segment_vals"] 
         self.gamma_segment_vec = parameters_second_hand["gamma_segment_vals"] 
-
 
         self.spent = 0
         self.income = 0

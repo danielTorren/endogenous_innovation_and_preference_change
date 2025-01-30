@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 12,
-    "duration_burn_in": 120,
+    "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
@@ -147,9 +147,9 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 0.3,
+        "max_num_cars_prop": 0.1,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 500
+        "scrap_price": 1000
     },
     "parameters_ICE":{
         "N": 15,
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6000,
-        "delta": 0.005,#0.010411,
+        "delta": 0.01,#0.010411,
         "transportType": 2,
         "mean_Price": 40000,
         "min_Price": 20000,
@@ -183,7 +183,6 @@ if __name__ == "__main__":
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 4,
-       
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -195,24 +194,23 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 5000,
         "chi_max": 0.9,
-        "SW_network_density": 0.05,
+        "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 210,
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
-        "car_lifetime_months": 192,
-        "a_innovativeness": 1,
+        "car_lifetime_months": 240,
+        "a_innovativeness": 0.8,
         "b_innovativeness": 1,
         "prob_switch_car":0.083,
-        "delta_distance": 0.002#0.010411
     },
     "parameters_vehicle_user":{
         "kappa":10,
         "B_segments_init": 1e3,#needs to be high to avoid issues with initial step and arg of lambert function
         "W_calibration":1e3,#does matter too much the quality is fairly inert to the whole thing
         "min_W": 1,#SET TO ZERO IF IT WORKS WELL
-        "r": 0.005,#0.00247,
-        "mu": 0.5,
+        "r": 0.0016,#0.00247,
+        "mu": 1,
         "nu":1e-5,
     }
 }
