@@ -23,7 +23,7 @@ class Firm_Manager:
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.id_generator = parameters_firm_manager["IDGenerator_firms"]
         self.kappa = parameters_firm_manager["kappa"]
-        self.nu = parameters_firm_manager["nu"]
+        self.nu_maxU = parameters_firm_manager["nu"]
         self.num_individuals = parameters_firm_manager["num_individuals"]
         self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
         self.min_W = parameters_firm_manager["min_W"]
@@ -228,17 +228,19 @@ class Firm_Manager:
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                        segment_W[code] += np.exp(self.kappa*self.nu*U)
+                        segment_W[code] += np.exp(self.kappa*U)
+                        #segment_W[code] += np.exp(self.kappa*U - self.nu_maxU)
 
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
+            #print("INIT W", self.market_data[code]["W"])
 
 
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
-    def update_firms(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def update_firms(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, nu_MaxU):
         cars_on_sale_all_firms = []
         
         self.zero_profit_options_prod_sum = 0
@@ -249,7 +251,7 @@ class Firm_Manager:
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
-            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
+            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, nu_MaxU)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
 
@@ -259,12 +261,20 @@ class Firm_Manager:
     def update_W_immediate(self):
         #calc the total "probability of selection" of the market based on max utility in the segment
         segment_W = defaultdict(float)
+        #segment_W_raw = defaultdict(float)
         for segment in self.all_segment_codes:
             segment_W[segment] = self.min_W#RESET THEM INCASE
+        #    segment_W_raw[segment] = 0#RESET THEM INCASE
 
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                segment_W[segment] += np.exp(self.kappa*self.nu*U)
+                segment_W[segment] += np.exp(self.kappa*U)
+                #segment_W[segment] += np.exp(self.kappa*U - self.nu_maxU)
+        #        segment_W_raw[segment] += np.exp(self.kappa*U - self.nu)
+
+        #for segment in self.all_segment_codes:
+        #    print(segment_W_raw[segment])
+        #quit()
 
         return segment_W
         
@@ -427,12 +437,13 @@ class Firm_Manager:
 
     #####################################################################################################################
 
-    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, nu_maxU):
         
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
         self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
 
+        self.nu_maxU = nu_maxU
         
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.carbon_price = carbon_price
@@ -440,11 +451,9 @@ class Firm_Manager:
         self.discriminatory_corporate_tax = discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         
-        self.cars_on_sale_all_firms  = self.update_firms(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.cars_on_sale_all_firms  = self.update_firms(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, self.nu_maxU)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment = self.update_W_immediate()#calculate the competiveness of the market current
-        #if self.t_firm_manager == 100:
-        #    print(self.W_segment)
-        #    quit()
+
         self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
 
         return self.cars_on_sale_all_firms

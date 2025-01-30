@@ -59,8 +59,8 @@ if __name__ == "__main__":
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "rebate": 10000,
-        "used_rebate": 1000
+        "rebate": 10,
+        "used_rebate": 1
     },
     "parameters_scenarios":{
         "States":{
@@ -125,23 +125,23 @@ if __name__ == "__main__":
             },
             "Adoption_subsidy":{
                 "Zero": 0,
-                "Low": 2500,
-                "High":20000
+                "Low": 2.5,
+                "High":20
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
-                "Low":500,
-                "High":20000
+                "Low":0.5,
+                "High":20
             },
             "Production_subsidy":{
                 "Zero":0,
-                "Low":2500,
-                "High":20000
+                "Low":2.5,
+                "High":20
             },
             "Research_subsidy":{
                 "Zero":0,
-                "Low":2500,
-                "High":20000
+                "Low":2.5,
+                "High":20
             }
         }
     },
@@ -149,30 +149,30 @@ if __name__ == "__main__":
         "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.1,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 1000
+        "scrap_price": 1
     },
     "parameters_ICE":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6000,
+        "production_emissions":6,
         "delta": 0.01,#0.010411,
         "transportType": 2,
-        "mean_Price": 40000,
-        "min_Price": 20000,
-        "max_Price": 100000,
+        "mean_Price": 40,
+        "min_Price": 20,
+        "max_Price": 100,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
-        "min_Cost": 5000,
-        "max_Cost": 50000
+        "min_Cost": 5,
+        "max_Cost": 50
     },
     "parameters_EV":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":9000,
+        "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7
@@ -196,8 +196,8 @@ if __name__ == "__main__":
         "chi_max": 0.9,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 210,
-        "WTP_sd": 175,
+        "WTP_mean": 0.210,
+        "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
         "a_innovativeness": 0.8,
@@ -205,13 +205,13 @@ if __name__ == "__main__":
         "prob_switch_car":0.083,
     },
     "parameters_vehicle_user":{
-        "kappa":10,
-        "B_segments_init": 1e3,#needs to be high to avoid issues with initial step and arg of lambert function
-        "W_calibration":1e3,#does matter too much the quality is fairly inert to the whole thing
+        "kappa":1,
+        "B_segments_init": 1,#needs to be high to avoid issues with initial step and arg of lambert function
+        "W_calibration":1,#does matter too much the quality is fairly inert to the whole thing
         "min_W": 1,#SET TO ZERO IF IT WORKS WELL
         "r": 0.0016,#0.00247,
         "mu": 1,
-        "nu":1e-5,
+        "nu":100#1e-5,
     }
 }
     

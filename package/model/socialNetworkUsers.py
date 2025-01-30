@@ -33,7 +33,7 @@ class Social_Network:
 
         self.delta = parameters_social_network["delta"]
   
-        self.nu = parameters_social_network["nu"]
+        self.nu_maxU = parameters_social_network["nu"]
         self.scrap_price = parameters_social_network["scrap_price"]
 
         self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
@@ -414,8 +414,14 @@ class Social_Network:
         utilities_kappa = np.zeros_like(utilities_matrix)# THEY SHOULDNT BE ZERO THAT SHOULD BE -np.inf!
 
         row_indices, col_indices = np.where(valid_utilities_mask)
-        utilities_kappa[valid_utilities_mask] = np.exp(self.kappa *self.nu* utilities_matrix[row_indices, col_indices])
 
+        #print("utilities_matrix[row_indices, col_indices]", np.min(utilities_matrix[row_indices, col_indices]),  np.max(utilities_matrix[row_indices, col_indices]))
+        #quit()
+        self.nu_maxU = np.max(utilities_matrix[row_indices, col_indices])#SUBSRACT MAX VALUE OF UTILITIES FROM EVERYONE?
+
+        #utilities_kappa[valid_utilities_mask] = np.exp(self.kappa*utilities_matrix[row_indices, col_indices] - self.nu_maxU)
+        utilities_kappa[valid_utilities_mask] = np.exp(self.kappa*utilities_matrix[row_indices, col_indices])
+        
         combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)#THEN MAKE AND APPLY MASK 
         utilities_kappa_masked = utilities_kappa * combined_mask
         
@@ -1169,4 +1175,4 @@ class Social_Network:
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
         
-        return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits
+        return self.consider_ev_vec, self.new_bought_vehicles, self.nu_maxU #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

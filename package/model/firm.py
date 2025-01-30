@@ -28,7 +28,7 @@ class Firm:
 
         self.d_mean = parameters_firm["d_mean"]  
 
-        self.nu = parameters_firm["nu"]
+        self.nu_maxU = parameters_firm["nu"]
 
 
         self.firm_id = firm_id
@@ -184,17 +184,18 @@ class Firm:
                 U = driving_utility*((1+self.r)/(self.r + self.delta)) 
                 car.B_segments[segment_code] = U
 
-                term = self.kappa*self.nu*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0
+                #term = self.kappa*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0 - self.nu_maxU
+                term = self.kappa*(U - beta_s*C_m_price - gamma_s*E_m) - 1.0
                 
                 #print("W_s_t", self.t_firm, W_s_t)
                 #print(term,np.log(W_s_t))
                 #quit()
-                log_arg = term - np.log(W_s_t)
-                Arg = np.exp(log_arg)  # This is now numerically safe
-                #Arg = np.exp(term)/W_s_t
+                #log_arg = term - np.log(W_s_t)
+                #Arg = np.exp(log_arg)  # This is now numerically safe
+                Arg = np.exp(term)/W_s_t
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
-                P = C_m_cost + (1.0 + LW)/(self.kappa*self.nu*beta_s)
+                P = C_m_cost + (1.0 + LW)/(self.kappa*beta_s)
 
                 if P < C_m:
                     print(P,C_m, Arg)
@@ -309,7 +310,8 @@ class Firm:
                         utility_proportion = 0
                         raw_profit = 0
                     else:
-                        utility_proportion = np.exp(self.kappa*self.nu*utility_value)/(W + np.exp(self.kappa*self.nu*utility_value))
+                        #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
+                        utility_proportion = np.exp(self.kappa*utility_value)/(W + np.exp(self.kappa*utility_value))
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                     if is_ev:
@@ -365,11 +367,17 @@ class Firm:
 
         len_vehicles = len(car_list)  # Length of the car list
 
+        # **Check for potential overflow before division**
+        #if sum_profit == 0:
+        #    print(f"Warning: sum_profit is zero! This will cause a division error.")
+
+
         if sum_profit == 0 or sum_profit == np.nan:
             self.zero_profit_options_research = 1
             # Random choice since all profits are zero
             selected_index = self.random_state.choice(len_vehicles)
         else:
+
             self.zero_profit_options_research = 0
             probabilities = lambda_profits / sum_profit
             # Handle any residual NaNs in probabilities
@@ -508,7 +516,8 @@ class Firm:
                     # Expected profit calculation
                     utility_car = vehicle.car_utility_segments_U[segment_code]#max(0,vehicle.car_utility_segments_U[segment_code])
 
-                    utility_proportion = np.exp(self.kappa*self.nu*utility_car)/(W + np.exp(self.kappa*self.nu*utility_car))
+                    #utility_proportion = np.exp(self.kappa*utility_car - self.nu_maxU)/(W + np.exp(self.kappa*utility_car - self.nu_maxU))
+                    utility_proportion = np.exp(self.kappa*utility_car)/(W + np.exp(self.kappa*utility_car))
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -625,7 +634,8 @@ class Firm:
                             utility_proportion = 0
                             raw_profit = 0
                         else:
-                            utility_proportion = np.exp(self.kappa*self.nu* utility_value)/(W + np.exp(self.kappa*self.nu* utility_value))
+                            #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
+                            utility_proportion = np.exp(self.kappa*utility_value)/(W + np.exp(self.kappa*utility_value))
                             raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                         if selected_vehicle.transportType == 3:  # EV
@@ -739,7 +749,7 @@ class Firm:
                 car.e_t = self.electricity_emissions_intensity
         return car_list
 
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, nu_maxU):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
@@ -751,6 +761,7 @@ class Firm:
         self.discriminatory_corporate_tax =  discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
+        self.nu_maxU = nu_maxU
 
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
