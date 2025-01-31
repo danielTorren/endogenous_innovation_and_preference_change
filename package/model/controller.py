@@ -302,6 +302,8 @@ class Controller:
         r = self.parameters_vehicle_user["r"]
         kappa = self.parameters_vehicle_user["kappa"]
         self.nu = self.parameters_vehicle_user["nu"]
+
+        alpha = self.parameters_vehicle_user["alpha"]
         
         c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
         c_minus = np.min(self.calibration_gas_price_california_vec)
@@ -329,16 +331,13 @@ class Controller:
         C = np.array([C_min,C_max]) #np.array([C_min,C_max,C_min,C_max]) 
 
         W = self.parameters_vehicle_user["W_calibration"]
-        X = (beta*c + gamma*e)/omega
-        print("X",X)
         D = np.median(self.d_vec)#np.mean(self.d_vec)   
-        #Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E + self.nu) /(kappa*D*(1+r))  ) - 1)
-        print("min kappa", 1/(beta*(P-C)))
-        print("Q compoentnns (must be > 1)", kappa*beta*(P-C))
+
+        min_kappa = 1/(beta*(P-C)) 
+        print("min_kappa CALIBRATION: ", min_kappa)
         
-        #Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E) /(kappa*D*(1+r))) - 1)
-        Q_vals = X*(np.exp( ((r + delta)/(kappa*D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E)) - 1)
-        
+        #Q_vals = (((r-delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
+        Q_vals = (((r+delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
         print("Q",Q_vals)
         Q_min = Q_vals[0]#np.mean(Q_vals[:2])
         Q_max = Q_vals[1]#np.mean(Q_vals[2:])
@@ -358,22 +357,16 @@ class Controller:
         self.parameters_EV["max_Quality"] = max_q #max_q
 
         #NOW USE THIS QUALITY TO CALCUALTE THE UTILITY!
-        #Q_max_mean = 0
-        #X = (np.max(beta)*c_plus + np.max(gamma)*e)/(omega_min)
         
-
         Q = np.mean([min_q , max_q ])
-        X_mean = np.mean(X)
-        u = D*np.log(1 + Q/X_mean)
-        #print("u", u)
-        B = u*(1+r)/(r+delta)
-        #print("B", B)
-        U = B - beta*P - gamma*E
-        #print("Utility", U)
+        #U = D*(Q**alpha)*((1+r)/(r-delta)) - beta*(D*c/(r*omega) + P) - gamma*(D*e/(r*omega) + E)
+        U = D*(Q**alpha)*((1+r)/(r+delta)) - beta*(D*c/(r*omega) + P) - gamma*(D*e/(r*omega) + E)
+        print("U", U)
         #########
         
-        #Arg = np.exp(kappa*(U - beta*C - gamma*E) - 1.0 - self.nu)/W
-        Arg = np.exp(kappa*(U - beta*C - gamma*E) - 1.0)/W
+        #term = kappa*(D*(Q**alpha)*((1+r)/(r-delta)) - beta*D*c/(r*omega) - gamma*(D*e/(r*omega) + E) - beta*C) - 1.0
+        term = kappa*(D*(Q**alpha)*((1+r)/(r+delta)) - beta*D*c/(r*omega) - gamma*(D*e/(r*omega) + E) - beta*C) - 1.0
+        Arg = np.exp(term)/W
         LW = lambertw(Arg, 0).real  # principal branch
         P = C + (U*(1.0 + LW))/(kappa*beta)
         print("expected price", P)
@@ -662,7 +655,6 @@ class Controller:
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
         self.parameters_firm_manager["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_firm_manager["min_W"] = self.parameters_vehicle_user["min_W"]
-        
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -681,8 +673,9 @@ class Controller:
         self.parameters_firm["rebate"] = self.rebate 
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
         self.parameters_firm["d_mean"] = np.mean(self.d_vec)
-        self.parameters_firm["B_segments_init"] = self.parameters_vehicle_user["B_segments_init"]
+        self.parameters_firm["U_segments_init"] = self.parameters_vehicle_user["U_segments_init"]
         self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
+        self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -716,6 +709,7 @@ class Controller:
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
         self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
+        self.parameters_social_network["alpha"] = self.parameters_vehicle_user["alpha"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -727,9 +721,10 @@ class Controller:
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
         parameters_ICE["median_beta"] = self.beta_median
         parameters_ICE["median_gamma"] = self.gamma_median
-        parameters_ICE["fuel_cost"] = self.parameters_calibration_data["gas_price_california_vec"][0]
+        parameters_ICE["fuel_cost_c"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-
+        parameters_ICE["d_mean"] = np.mean(self.d_vec)
+        parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         self.ICE_landscape = NKModel(parameters_ICE)
 
     def setup_EV_landscape(self, parameters_EV):
@@ -738,8 +733,10 @@ class Controller:
         parameters_EV["delta"] = self.parameters_ICE["delta"]
         parameters_EV["median_beta"] = self.beta_median 
         parameters_EV["median_gamma"] = self.gamma_median
-        parameters_EV["fuel_cost"] = self.parameters_calibration_data["electricity_price_vec"][0]
+        parameters_EV["fuel_cost_c"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
+        parameters_EV["d_mean"] = np.mean(self.d_vec)
+        parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
 
         self.EV_landscape = NKModel(parameters_EV)
 
@@ -757,10 +754,6 @@ class Controller:
     
     def gen_firms(self):
         #CREATE FIRMS    
-        self.parameters_ICE["fuel_cost_c"]  = self.gas_price
-        self.parameters_EV["fuel_cost_c"] = self.electricity_price 
-        self.parameters_EV["e_t"] = self.electricity_emissions_intensity
-
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
     def gen_social_network(self):
@@ -838,7 +831,7 @@ class Controller:
         return consider_ev_vec, new_bought_vehicles, nu_MaxU
 
     def get_second_hand_cars(self):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.carbon_price)
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms)
 
         return self.second_hand_merchant.cars_on_sale
 

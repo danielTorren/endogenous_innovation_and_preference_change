@@ -1,8 +1,8 @@
 {
-    "seed_repetitions": 12,
+    "seed_repetitions": 10,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -23,8 +23,8 @@
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "rebate": 10000,
-        "used_rebate": 1000
+        "rebate": 10,
+        "used_rebate": 1
     },
     "parameters_scenarios":{
         "States":{
@@ -64,17 +64,17 @@
                 "Zero":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 0,
-                    "Carbon_price_state": "flat"
+                    "Carbon_price_state": "linear"
                 },
                 "Low":{
                     "Carbon_price_init": 0,
                     "Carbon_price": 0.1,
-                    "Carbon_price_state": "flat"
+                    "Carbon_price_state": "linear"
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 7,
-                    "Carbon_price_state": "flat"
+                    "Carbon_price": 1,
+                    "Carbon_price_state": "linear"
                 }
             },
             "Discriminatory_corporate_tax":{
@@ -89,23 +89,23 @@
             },
             "Adoption_subsidy":{
                 "Zero": 0,
-                "Low": 2500,
-                "High":20000
+                "Low": 2.5,
+                "High":20
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
-                "Low":500,
-                "High":20000
+                "Low":0.5,
+                "High":20
             },
             "Production_subsidy":{
                 "Zero":0,
-                "Low":2500,
-                "High":20000
+                "Low":2.5,
+                "High":20
             },
             "Research_subsidy":{
                 "Zero":0,
-                "Low":2500,
-                "High":20000
+                "Low":2.5,
+                "High":20
             }
         }
     },
@@ -113,30 +113,30 @@
         "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.1,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 1000
+        "scrap_price": 1
     },
     "parameters_ICE":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6000,
-        "delta": 0.01,
+        "production_emissions":6,
+        "delta": 0.001,
         "transportType": 2,
-        "mean_Price": 40000,
-        "min_Price": 20000,
-        "max_Price": 100000,
+        "mean_Price": 40,
+        "min_Price": 20,
+        "max_Price": 100,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
-        "min_Cost": 5000,
-        "max_Cost": 50000
+        "min_Cost": 5,
+        "max_Cost": 50
     },
     "parameters_EV":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":9000,
+        "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7
@@ -153,28 +153,30 @@
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "lambda_pow": 5,
-        "init_price_multiplier": 1.1
+        "init_price_multiplier": 1.1,
+        "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 5000,
+        "num_individuals": 10000,
         "chi_max": 0.9,
-        "SW_network_density": 0.5,
+        "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 210,
-        "WTP_sd": 175,
+        "WTP_mean": 0.210,
+        "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
-        "a_innovativeness": 0.8,
+        "a_innovativeness": 1,
         "b_innovativeness": 1,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":10,
-        "B_segments_init": 1e3,
-        "W_calibration":1e3,
-        "min_W": 1,
+        "kappa":1,
+        "U_segments_init": 0,
+        "W_calibration":1e20,
+        "min_W": 0,
         "r": 0.0016,
         "mu": 1,
-        "nu":1e-5
+        "nu":1,
+        "alpha": 0.5
     }
 }

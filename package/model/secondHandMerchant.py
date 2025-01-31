@@ -215,13 +215,12 @@ class SecondHandMerchant:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, carbon_price):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale):
         
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.vehicles_on_sale = vehicles_on_sale
-        self.carbon_price = carbon_price
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []

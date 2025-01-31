@@ -32,7 +32,7 @@ class Social_Network:
         self.d_vec = parameters_social_network["d_vec"]
 
         self.delta = parameters_social_network["delta"]
-  
+        self.alpha = parameters_social_network["alpha"]
         self.nu_maxU = parameters_social_network["nu"]
         self.scrap_price = parameters_social_network["scrap_price"]
 
@@ -425,7 +425,8 @@ class Social_Network:
 
         # Compute safe exponentiation input (subtract row-wise max only for valid rows)
         exp_input = np.zeros_like(utilities_matrix)
-        exp_input[valid_rows] = self.kappa * (utilities_matrix[valid_rows] - row_max_utilities[valid_rows])
+        #exp_input[valid_rows] = self.kappa * (utilities_matrix[valid_rows] - row_max_utilities[valid_rows])
+        exp_input[valid_rows] = self.kappa * (utilities_matrix[valid_rows])
 
         # Apply the exponentiation safely only on valid values
         utilities_kappa[valid_utilities_mask] = np.exp(exp_input[valid_utilities_mask])
@@ -540,21 +541,16 @@ class Social_Network:
         """
         Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
         """
-
-        U_a_i_t_vec = self.calc_utility_current(d_vec, vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], beta_vec, gamma_vec, vehicle_dict_vecs["fuel_cost_c"], vehicle_dict_vecs["e_t"], vehicle_dict_vecs["Eff_omega_a_t"])
-
+        #U_a_i_t_vec = d_vec*((vehicle_dict_vecs["Quality_a_t"]*(1-self.delta)**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta_vec*(d_vec*vehicle_dict_vecs["fuel_cost_c"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"])) - gamma_vec*(d_vec*vehicle_dict_vecs["e_t"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))
+        U_a_i_t_vec = d_vec*((vehicle_dict_vecs["Quality_a_t"]*(1-self.delta)**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r+self.delta)) - beta_vec*(d_vec*vehicle_dict_vecs["fuel_cost_c"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"])) - gamma_vec*(d_vec*vehicle_dict_vecs["e_t"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))
+        #print("median U current",np.median(U_a_i_t_vec))
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
-
+        
         # Set the diagonal values
         np.fill_diagonal(CV_utilities_matrix, U_a_i_t_vec)
 
         return  CV_utilities_matrix, U_a_i_t_vec
-    
-    def calc_utility_current(self, d_vec, Q, L, beta, gamma, c, e, omega, P_new=0, P_sell = 0, E_new = 0):
-        """just the form doesnt account for matricies, prices etc"""
-        U = d_vec*((Q*(1-self.delta)**L)**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(d_vec*c/(self.r*omega) + P_new - P_sell) - gamma*(d_vec*e/(self.r*omega) + E_new)
-        return U
     
     def gen_current_vehicle_dict_vecs(self, list_vehicles):
         """Generate a dictionary of vehicle property arrays with improved performance."""
@@ -735,8 +731,11 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        U_a_i_t_matrix = d_vec*((vehicle_dict_vecs["Quality_a_t"]*(1-self.delta)**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta_vec[:, np.newaxis]*(d_vec*vehicle_dict_vecs["fuel_cost_c"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T) - gamma_vec[:, np.newaxis]*(d_vec*vehicle_dict_vecs["e_t"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))
-
+        term_1 = d_vec[:, np.newaxis]*((vehicle_dict_vecs["Quality_a_t"]*(1-self.delta)**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r+self.delta))
+        term_2 = beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*(vehicle_dict_vecs["fuel_cost_c"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"])) + price_difference_T)
+        term_3 = gamma_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))
+        
+        U_a_i_t_matrix = term_1 - term_2 - term_3
         return U_a_i_t_matrix
     
     def vectorised_calculate_utility_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
@@ -748,9 +747,13 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        U_a_i_t_matrix = d_vec*((vehicle_dict_vecs["Quality_a_t"]*(1-self.delta)**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta_vec[:, np.newaxis]*(d_vec*vehicle_dict_vecs["fuel_cost_c"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T) - gamma_vec[:, np.newaxis]*(d_vec*vehicle_dict_vecs["e_t"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) +  vehicle_dict_vecs["production_emissions"])
+        term_1 = d_vec[:, np.newaxis]*((vehicle_dict_vecs["Quality_a_t"]*(1-self.delta)**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r+self.delta))
+        term_2 = beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*(vehicle_dict_vecs["fuel_cost_c"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"])) + price_difference_T)
+        term_3 = gamma_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) +  vehicle_dict_vecs["production_emissions"])
         
-        return U_a_i_t_matrix
+        U_a_i_t_matrix = term_1 - term_2 - term_3
+        
+        return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)
     
     ################################################################################################################################
     

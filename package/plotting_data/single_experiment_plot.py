@@ -2757,11 +2757,11 @@ def main(fileName, dpi=600):
 
     # All plot function calls
 
-    #plot_fuel_costs_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
+    plot_fuel_costs_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
 
     #plot_fuel_emissions_verus_carbon_price_km(base_params,data_controller, fileName, dpi)
 
-    #plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
+    plot_fuel_costs_verus_carbon_price_kWhr(base_params,data_controller, fileName, dpi)
 
     
     #plot_calibration_data(data_controller, time_series, fileName)
@@ -2793,8 +2793,10 @@ def main(fileName, dpi=600):
     #plot_transport_users_stacked_rich_poor(social_network, time_series, fileName, x_percentile=90)
     #plot_emissions(social_network, time_series, fileName, dpi)
     #plot_vehicle_attribute_time_series_by_type(base_params, social_network, time_series, fileName, dpi)
+    
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     #"""
+    
     plot_transport_new_cars_stacked(social_network, time_series, fileName, dpi)
     #"""
     #percentiles = {'Beta': base_params["parameters_firm_manager"]["beta_threshold_percentile"], 'Gamma': base_params["parameters_firm_manager"]["gamma_threshold_percentile"], 'Chi': 50}
@@ -2820,7 +2822,7 @@ def main(fileName, dpi=600):
 
     #plot_social_network(social_network, fileName)
     
-    #plot_carbon_price(data_controller, time_series, fileName)
+    plot_carbon_price(data_controller, time_series, fileName)
 
     #CHECKING OUTPUTS
 
@@ -2828,4 +2830,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_16_54_57__29_01_2025")
+    main("results/single_experiment_15_18_17__31_01_2025")

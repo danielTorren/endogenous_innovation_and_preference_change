@@ -26,15 +26,15 @@ class NKModel:
         self.max_Efficiency = parameters["max_Efficiency"]
         self.max_Cost = parameters["max_Cost"]
 
-
         self.r = parameters["r"]
         self.delta =  parameters["delta"]
         self.median_beta = parameters["median_beta"]
         self.median_gamma = parameters["median_gamma"]
-        self.fuel_cost = parameters["fuel_cost"]
+        self.fuel_cost = parameters["fuel_cost_c"]
         self.e_t = parameters["e_t"]
-
-        #self.nu = parameters["nu"]
+        self.d_mean = parameters["d_mean"]
+        self.alpha = parameters["alpha"]
+        self.E = parameters["production_emissions"]
 
         self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
         self.max_vec = np.asarray([self.max_Quality,self.max_Efficiency, self.max_Cost])
@@ -44,28 +44,11 @@ class NKModel:
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string()
 
     def calc_present_utility_minimum_single(self, quality, eff, prod_cost):
-        """assuem all cars are new to simplify, assume 0 carbon price, assume emissiosn intensities and prices from t = 0"""
-        #DISTANCE
-                # Compute numerator for all vehicles
-        beta = self.median_beta
-        gamma = self.median_gamma
+        """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
+        cost_multiplier = 1.2#markup 20%
+        approx_fitness = self.d_mean*(quality**self.alpha)*((1+self.r)/(self.r+self.delta)) - self.median_beta*(self.d_mean*self.fuel_cost/(self.r*eff) + cost_multiplier*prod_cost) - self.median_gamma*(self.d_mean*self.e_t/(self.r*eff) + self.E)
 
-        #present UTILITY
-        # Compute cost component based on transport type, with conditional operations
-        X = (beta * self.fuel_cost + gamma * self.e_t)/ eff
-
-        # Compute commuting utility for individual-vehicle pairs
-        driving_utility = np.log(1 + quality/X)
-        
-
-        # Save the base utility
-        B = driving_utility*((1+self.r)/(self.r + self.delta))
-        #print("B - beta*prod_cost", B - beta*prod_cost)
-        approx_fitness = B - beta*prod_cost
-        
-        #print("approx_fitness",approx_fitness)
         return approx_fitness
-
 
     def find_min_fitness_string(self):
         """

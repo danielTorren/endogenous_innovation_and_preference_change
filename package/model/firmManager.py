@@ -166,8 +166,9 @@ class Firm_Manager:
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
     def calc_exp(self, U):
-        #segment_W[code] += np.exp(self.kappa*U)
-        comp = np.exp(self.kappa*U - self.kappa*self.nu_maxU)
+        #comp = np.exp(self.kappa*U - self.kappa*self.nu_maxU)
+        comp = np.exp(self.kappa*U)
+        
         return comp
 
     def generate_market_data(self):
@@ -453,7 +454,7 @@ class Firm_Manager:
         self.cars_on_sale_all_firms  = self.update_firms(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, self.nu_maxU)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment = self.update_W_immediate()#calculate the competiveness of the market current
 
-        #print("W im:",np.max(list(self.W_segment.values())))
+        #print("W im:",np.min(list(self.W_segment.values())),np.max(list(self.W_segment.values())))
         self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
 
         return self.cars_on_sale_all_firms

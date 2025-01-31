@@ -23,7 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake",  controller.calc_EV_prop())
+    print("uptake: calibration, end",  controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price],controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
     print("mean price", controller.social_network.history_mean_price[-1])
     createFolder(fileName)
@@ -59,8 +59,8 @@ if __name__ == "__main__":
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "rebate": 1,
-        "used_rebate": 0.1
+        "rebate": 10,
+        "used_rebate": 1
     },
     "parameters_scenarios":{
         "States":{
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -109,7 +109,7 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 1,
+                    "Carbon_price": 2,#2000
                     "Carbon_price_state": "linear"
                 }
             },
@@ -156,23 +156,23 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":0.6,
+        "production_emissions":6,
         "delta": 0.001,#0.010411,
         "transportType": 2,
-        "mean_Price": 4,
-        "min_Price": 2,
-        "max_Price": 10,
+        "mean_Price": 40,
+        "min_Price": 20,
+        "max_Price": 100,
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
-        "min_Cost": 0.5,
-        "max_Cost": 5
+        "min_Cost": 5,
+        "max_Cost": 50
     },
     "parameters_EV":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":0.9,
+        "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7
@@ -190,15 +190,15 @@ if __name__ == "__main__":
         "prob_change_production": 0.083,
         "lambda_pow": 5,
         "init_price_multiplier": 1.1,
-        "min profit": 0.1
+        "min profit": 0.1#need to make 100 dollars
     },
     "parameters_social_network":{
         "num_individuals": 10000,
         "chi_max": 0.9,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 0.0210,
-        "WTP_sd": 0.0175,
+        "WTP_mean": 0.210,
+        "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
         "a_innovativeness": 1,
@@ -206,13 +206,14 @@ if __name__ == "__main__":
         "prob_switch_car":0.083,
     },
     "parameters_vehicle_user":{
-        "kappa":100,
-        "B_segments_init": 1,#needs to be high to avoid issues with initial step and arg of lambert function
-        "W_calibration":1e8,#does matter too much the quality is fairly inert to the whole thing
+        "kappa":1,
+        "U_segments_init": 0,#needs to be high to avoid issues with initial step and arg of lambert function
+        "W_calibration":1e20,#does matter too much the quality is fairly inert to the whole thing
         "min_W": 0,#SET TO ZERO IF IT WORKS WELL
-        "r": 0.0016,#0.00247,
+        "r": 0.0016,
         "mu": 1,
-        "nu":1#1e-5,
+        "nu":1,
+        "alpha": 0.5
     }
 }
     
