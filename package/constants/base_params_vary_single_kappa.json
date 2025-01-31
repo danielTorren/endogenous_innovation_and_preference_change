@@ -1,41 +1,5 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
-# imports
-from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
-
-def main(
-    base_params
-) -> str: 
-
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
-    print("fileName:", fileName)
-
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake",  controller.calc_EV_prop())
-    print("distortion",controller.calc_total_policy_distortion())
-    print("mean price", controller.social_network.history_mean_price[-1])
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-    return fileName
-
-if __name__ == "__main__":
-
-    base_params = {
-    "seed_repetitions": 12,
+{
+    "seed_repetitions": 3,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
@@ -157,7 +121,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":0.6,
-        "delta": 0.001,#0.010411,
+        "delta": 0.001,
         "transportType": 2,
         "mean_Price": 4,
         "min_Price": 2,
@@ -182,7 +146,7 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4,
+        "num_beta_segments": 4
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -193,7 +157,7 @@ if __name__ == "__main__":
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 5000,
         "chi_max": 0.9,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
@@ -203,26 +167,15 @@ if __name__ == "__main__":
         "car_lifetime_months": 240,
         "a_innovativeness": 1,
         "b_innovativeness": 1,
-        "prob_switch_car":0.083,
+        "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":100,
-        "B_segments_init": 1,#needs to be high to avoid issues with initial step and arg of lambert function
-        "W_calibration":1e8,#does matter too much the quality is fairly inert to the whole thing
-        "min_W": 0,#SET TO ZERO IF IT WORKS WELL
-        "r": 0.0016,#0.00247,
+        "kappa":3,
+        "B_segments_init": 1,
+        "W_calibration":1e8,
+        "min_W": 0,
+        "r": 0.0016,
         "mu": 1,
-        "nu":1#1e-5,
+        "nu":1
     }
 }
-    
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
-
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 1
-
-    if RUN_PLOT:
-        plotting_main(fileName = fileName)

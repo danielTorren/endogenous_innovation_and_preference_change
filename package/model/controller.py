@@ -336,7 +336,9 @@ class Controller:
         print("min kappa", 1/(beta*(P-C)))
         print("Q compoentnns (must be > 1)", kappa*beta*(P-C))
         
-        Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E) /(kappa*D*(1+r))) - 1)
+        #Q_vals = X*(np.exp( (r + delta)*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E) /(kappa*D*(1+r))) - 1)
+        Q_vals = X*(np.exp( ((r + delta)/(kappa*D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) -1)) + beta*P + gamma*E)) - 1)
+        
         print("Q",Q_vals)
         Q_min = Q_vals[0]#np.mean(Q_vals[:2])
         Q_max = Q_vals[1]#np.mean(Q_vals[2:])

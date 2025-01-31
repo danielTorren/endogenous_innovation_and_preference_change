@@ -406,33 +406,37 @@ class Social_Network:
 
         return combined_mask
 
-
     def masking_options(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
         """If I don’t want something to be picked, the utilities kappa needs to be 0 at the output!"""
 
         # Replace `-np.inf` with a mask to avoid issues
         valid_utilities_mask = utilities_matrix != -np.inf  # Mask for valid (non -np.inf) entries
-        row_indices, col_indices = np.where(valid_utilities_mask)
-
-        # Compute max value for numerical stability
-        max_utilities = np.max(utilities_matrix[row_indices, col_indices])  # Get max value of valid utilities
-        self.nu_maxU = max_utilities  # Store max utility for reference
-
-        print("max_utilities", max_utilities)
-        
-        # Fix the exponentiation to prevent overflow
-        exp_input = self.kappa *utilities_matrix[row_indices, col_indices] - self.kappa*max_utilities
 
         # Initialize result matrix with zeros
         utilities_kappa = np.zeros_like(utilities_matrix)
-    
-        utilities_kappa[valid_utilities_mask] = np.exp(exp_input)
+
+        # Find valid rows (rows that have at least one non -inf value)
+        valid_rows = np.any(valid_utilities_mask, axis=1)
+
+        # Compute row-wise max only for valid rows
+        #row_max_utilities = np.full((utilities_matrix.shape[0], 1), -np.inf)  # Default -inf
+        row_max_utilities = np.max(utilities_matrix[valid_rows], axis=1, keepdims=True)
+        self.nu_maxU = np.max(row_max_utilities[valid_rows])  # Store for reference
+
+        # Compute safe exponentiation input (subtract row-wise max only for valid rows)
+        exp_input = np.zeros_like(utilities_matrix)
+        exp_input[valid_rows] = self.kappa * (utilities_matrix[valid_rows] - row_max_utilities[valid_rows])
+
+        # Apply the exponentiation safely only on valid values
+        utilities_kappa[valid_utilities_mask] = np.exp(exp_input[valid_utilities_mask])
 
         # Generate mask and apply
         combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)
         utilities_kappa_masked = utilities_kappa * combined_mask
 
         return utilities_kappa_masked
+
+
 
 #########################################################################################################################################################
     #choosing vehicles
@@ -526,7 +530,12 @@ class Social_Network:
         user.vehicle.update_timer()
 
         return vehicle_chosen, user.vehicle, choice_index, utilities_kappa
-    
+
+##############################################################################################################################################################
+    def calc_utility_general(self, d_vec, Q, L, beta, gamma, c, e, omega, P_new=0, P_sell = 0, E_new = 0):
+        """just the form doesnt account for matricies, prices etc"""
+        U = d_vec*((Q*(1-self.delta)**L)**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(D*c/(self.r*omega) + P_new - P_sell) - gamma*(D*e/(self.r*omega) + E_new)
+        return U
 ##############################################################################################################################################################
     #CURRENT
     
@@ -534,11 +543,14 @@ class Social_Network:
         """
         Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
         """
-        X = (beta_vec * vehicle_dict_vecs["fuel_cost_c"] + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
+        #X = (beta_vec * vehicle_dict_vecs["fuel_cost_c"] + gamma_vec * vehicle_dict_vecs["e_t"])/ vehicle_dict_vecs["Eff_omega_a_t"]
 
-        driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_vec)
+        #driving_utility_vec = self.vectorised_driving_utility_current(vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], X, d_vec)
         #print("driving_utility_vec", driving_utility_vec)
-        U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
+        #U_a_i_t_vec = driving_utility_vec * ((1 + self.r) / (self.r + self.delta))
+
+        U_a_i_t_vec = self.calc_utility_general(d_vec, vehicle_dict_vecs["Quality_a_t"], vehicle_dict_vecs["L_a_t"], beta_vec, gamma_vec, vehicle_dict_vecs["fuel_cost_c"], vehicle_dict_vecs["e_t"], vehicle_dict_vecs["Eff_omega_a_t"])
+
         #print("U_a_i_t_vec", U_a_i_t_vec)
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 

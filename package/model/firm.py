@@ -63,6 +63,8 @@ class Firm:
         self.r = self.parameters_firm["r"]
         self.delta = self.parameters_firm["delta"]
 
+        self.min_profit = self.parameters_firm["min profit"]
+
         self.B_segments_init = self.parameters_firm["B_segments_init"]
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
@@ -79,14 +81,7 @@ class Firm:
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV
 
-        self.expected_profits_segments = {}
-
-        #ALL TYPES
-        if self.ev_research_bool:
-            self.list_technology_memory = self.list_technology_memory_ICE + self.list_technology_memory_EV
-        else:
-            self.list_technology_memory = self.list_technology_memory_ICE
-        
+        self.expected_profits_segments = {}      
         
         if self.ev_production_bool:
             self.cars_on_sale = [self.init_tech_ICE, self.init_tech_EV]
@@ -236,8 +231,7 @@ class Firm:
     ########################################################################################################################################
     #INNOVATION
     def innovate(self, market_data):
-        # create a list of cars in neighbouring memory space                                #self, last_researched_car,  list_technology_memory,        list_technology_memory_neighbouring, landscape, parameters_car, transportType
-
+        # create a list of cars in neighbouring memory space                       
         unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
         if self.ev_research_bool:
@@ -373,14 +367,14 @@ class Firm:
         #    print(f"Warning: sum_profit is zero! This will cause a division error.")
 
 
-        if sum_profit == 0 or sum_profit == np.nan:
+        #if sum_profit == 0 or sum_profit == np.nan:
+        if sum_profit < self.min_profit or sum_profit == np.nan:
             self.zero_profit_options_research = 1
             # Random choice since all profits are zero
             selected_index = self.random_state.choice(len_vehicles)
         else:
-
             self.zero_profit_options_research = 0
-            probabilities = lambda_profits / sum_profit
+            probabilities = lambda_profits/sum_profit
             # Handle any residual NaNs in probabilities
             #probabilities[np.isnan(probabilities)] = 0
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
@@ -471,8 +465,11 @@ class Firm:
 
     def update_memory_len(self):
         #is the memory list is too long then remove data
-        if len(self.list_technology_memory) > self.memory_cap:
-            tech_to_remove = max((tech for tech in self.list_technology_memory if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
+
+        list_technology_memory_all = list(self.list_technology_memory_EV +self.list_technology_memory_ICE)
+
+        if len(list_technology_memory_all) > self.memory_cap:
+            tech_to_remove = max((tech for tech in list_technology_memory_all if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
             
             if tech_to_remove.transportType == 3:
                 if tech_to_remove in self.list_technology_memory_EV:
@@ -683,24 +680,24 @@ class Firm:
         """
 
         if self.ev_production_bool:
-            list_technology_memory = self.list_technology_memory_EV + self.list_technology_memory_ICE 
+            list_technology_memory_all = self.list_technology_memory_EV + self.list_technology_memory_ICE 
         else:
-            list_technology_memory = self.list_technology_memory_ICE 
+            list_technology_memory_all = self.list_technology_memory_ICE 
 
         # Create a shallow copy of the list to keep the list structure independent, THIS STOPS THE MEMORY LIST AND THE CURRENT CARS LIST FROM LINKING!!!
-        list_technology_memory = list(list_technology_memory)
+        list_technology_memory_all = list(list_technology_memory_all)
 
-        list_technology_memory = self.update_prices_and_emissions_intensity(list_technology_memory)#UPDATE TECHNOLOGY WITH NEW PRICES FOR PRODUCTION SELECTION
+        list_technology_memory_all = self.update_prices_and_emissions_intensity(list_technology_memory_all)#UPDATE TECHNOLOGY WITH NEW PRICES FOR PRODUCTION SELECTION
 
-        list_technology_memory = self.calc_optimal_price_cars(market_data,  list_technology_memory)#calc the optimal price of all cars, also does the utility and distance!
+        list_technology_memory_all = self.calc_optimal_price_cars(market_data,  list_technology_memory_all)#calc the optimal price of all cars, also does the utility and distance!
         
-        list_technology_memory = self.calc_utility_cars_segments(market_data, list_technology_memory)#utility of all the cars for all the segments
+        list_technology_memory_all = self.calc_utility_cars_segments(market_data, list_technology_memory_all)#utility of all the cars for all the segments
         
-        list_technology_memory = self.calc_predicted_profit_segments_production(market_data, list_technology_memory)#calculte the predicted profit of each segment 
+        list_technology_memory_all = self.calc_predicted_profit_segments_production(market_data, list_technology_memory_all)#calculte the predicted profit of each segment 
 
-        cars_selected = self.select_car_lambda_production(market_data, list_technology_memory)#pick the cars for each car
+        cars_selected = self.select_car_lambda_production(market_data, list_technology_memory_all)#pick the cars for each car
 
-        for car in list_technology_memory:#put the cars that are in the list as selected
+        for car in list_technology_memory_all:#put the cars that are in the list as selected
             if car in cars_selected:
                 car.choosen_tech_bool = 1 
             else:
