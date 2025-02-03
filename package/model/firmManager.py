@@ -166,8 +166,8 @@ class Firm_Manager:
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
     def calc_exp(self, U):
-        #comp = np.exp(self.kappa*U - self.kappa*self.nu_maxU)
-        comp = np.exp(self.kappa*U)
+        comp = np.exp(self.kappa*U - self.kappa*self.nu_maxU)
+        #comp = np.exp(self.kappa*U)
         
         return comp
 

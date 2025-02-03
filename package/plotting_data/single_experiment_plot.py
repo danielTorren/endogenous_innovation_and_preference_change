@@ -2737,7 +2737,7 @@ def main(fileName, dpi=600):
     #plot_scatter_research_time_series_multiple_firms(firm_manager.firms_list, fileName)
     #plot_second_hand_market_len(second_hand_merchant, time_series, fileName, dpi)
     #plot_preferences_scatter(social_network, fileName, dpi)
-    #plot_preferences(social_network, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
     plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     plot_history_research_type(firm_manager, time_series, fileName, dpi)
     plot_car_sale_prop(social_network, time_series, fileName, dpi)
@@ -2830,4 +2830,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_15_18_17__31_01_2025")
+    main("results/single_experiment_10_29_00__03_02_2025")

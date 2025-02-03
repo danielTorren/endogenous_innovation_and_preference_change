@@ -35,7 +35,7 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_repetitions": 12,
+    "seed_repetitions": 8,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -109,14 +109,14 @@ if __name__ == "__main__":
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 2,#2000
+                    "Carbon_price": 10,
                     "Carbon_price_state": "linear"
                 }
             },
             "Discriminatory_corporate_tax":{
                 "Zero": 0,
                 "Low":0.05,
-                "High":0.99
+                "High":0.95
             },
             "Electricity_subsidy":{                
                 "Zero":0,
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 0.1,
+        "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 1
     },
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6,
-        "delta": 0.001,#0.010411,
+        "delta": 0.001,
         "transportType": 2,
         "mean_Price": 40,
         "min_Price": 20,
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4,
+        "num_beta_segments": 4
     },
     "parameters_firm":{
         "memory_cap": 30,
@@ -190,7 +190,7 @@ if __name__ == "__main__":
         "prob_change_production": 0.083,
         "lambda_pow": 5,
         "init_price_multiplier": 1.1,
-        "min profit": 0.1#need to make 100 dollars
+        "min profit": 0.1
     },
     "parameters_social_network":{
         "num_individuals": 10000,
@@ -201,15 +201,15 @@ if __name__ == "__main__":
         "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
-        "a_innovativeness": 1,
-        "b_innovativeness": 1,
-        "prob_switch_car":0.083,
+        "a_innovativeness": 3,
+        "b_innovativeness": 3,
+        "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":1,
-        "U_segments_init": 0,#needs to be high to avoid issues with initial step and arg of lambert function
-        "W_calibration":1e20,#does matter too much the quality is fairly inert to the whole thing
-        "min_W": 0,#SET TO ZERO IF IT WORKS WELL
+        "kappa":10,
+        "U_segments_init": 0,
+        "W_calibration":1e20,
+        "min_W": 1e-10,
         "r": 0.0016,
         "mu": 1,
         "nu":1,

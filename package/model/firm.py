@@ -125,14 +125,14 @@ class Firm:
 
     def utility_prop(self,U,W):
 
-        #utility_proportion = np.exp(self.kappa*U - self.kappa*self.nu_maxU)/(W + np.exp(self.kappa*U- self.kappa*self.nu_maxU))
-        utility_proportion = np.exp(self.kappa*U)/(W + np.exp(self.kappa*U))
+        utility_proportion = np.exp(self.kappa*U - self.kappa*self.nu_maxU)/(W + np.exp(self.kappa*U - self.kappa*self.nu_maxU))
+        #utility_proportion = np.exp(self.kappa*U)/(W + np.exp(self.kappa*U))
 
         return utility_proportion
 
     def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust):
         #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
-        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r+self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
+        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
         return U
     
     def calc_optimal_price_cars(self, market_data, car_list): 
@@ -158,9 +158,12 @@ class Firm:
                 W_s_t = segment_data["W"]
                 
                 #term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
-                term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r+self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
-
-                Arg = np.exp(term)/W_s_t
+                #term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r+self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
+                term = - self.kappa*self.nu_maxU + self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
+                #Arg = np.exp(term)/W_s_t
+                #print(segment_code, W_s_t)
+                log_term = term - np.log(W_s_t)
+                Arg = np.exp(log_term)
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
                 P = C_m_cost + (1.0 + LW)/(self.kappa*beta_s)
@@ -217,7 +220,6 @@ class Firm:
         
         unique_neighbouring_technologies = self.calc_predicted_profit_segments_research(market_data, unique_neighbouring_technologies)
         
-        #self.vehicle_model_research = self.select_car_lambda_research_alt(expected_profits_segments)
         self.vehicle_model_research = self.select_car_lambda_research(unique_neighbouring_technologies)
 
         if self.vehicle_model_research.transportType == 3:#EV
@@ -327,11 +329,6 @@ class Firm:
 
         len_vehicles = len(car_list)  # Length of the car list
 
-        # **Check for potential overflow before division**
-        #if sum_profit == 0:
-        #    print(f"Warning: sum_profit is zero! This will cause a division error.")
-
-
         #if sum_profit == 0 or sum_profit == np.nan:
         if sum_profit < self.min_profit or sum_profit == np.nan:
             self.zero_profit_options_research = 1
@@ -436,6 +433,11 @@ class Firm:
         if len(list_technology_memory_all) > self.memory_cap:
             tech_to_remove = max((tech for tech in list_technology_memory_all if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
             
+            # If there's no unchosen tech to remove, do nothing (or handle differently)
+            if tech_to_remove is None:
+                print("Warning: Memory is full, but no unchosen technology to remove.")
+                return  # Or decide on a different policy to remove a chosen tech, etc.
+        
             if tech_to_remove.transportType == 3:
                 if tech_to_remove in self.list_technology_memory_EV:
                     self.list_technology_memory_EV.remove(tech_to_remove)
