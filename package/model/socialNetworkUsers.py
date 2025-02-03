@@ -470,13 +470,6 @@ class Social_Network:
         utilities_kappa = np.zeros_like(utilities_matrix)
         utilities_kappa[valid_utilities_mask] = np.exp(exp_input[valid_utilities_mask])
 
-        # Debugging Outputs
-        #print("Combined mask:", combined_mask)
-        #print("Row-wise max utilities:", row_max_utilities.flatten())
-        #print("Min & Max exp_input:", np.min(exp_input), np.max(exp_input))
-        #print("Row sums after exponentiation:", np.sum(utilities_kappa, axis=1))
-        #print("Invalid (-inf) counts per row:", np.sum(~valid_utilities_mask, axis=1))
-
         return utilities_kappa
 
 

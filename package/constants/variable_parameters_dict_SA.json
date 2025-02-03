@@ -2,7 +2,7 @@
     "K_ICE": {"sub_dict":"parameters_ICE","property":"K","min":1,"max": 5, "round":1},
     "K_EV": {"sub_dict":"parameters_EV","property":"K","min":1,"max": 5, "round":1},
     "delta": {"sub_dict":"parameters_ICE","property":"delta","min":0.001,"max": 0.1, "round":0},
-    "lambda_pow": {"sub_dict":"parameters_firm","property":"lambda_pow","min":1,"max": 50, "round":0},
+    "lambda": {"sub_dict":"parameters_firm","property":"lambda","min":1,"max": 50, "round":0},
     "WTP_mean": {"sub_dict":"parameters_social_network","property":"WTP_mean","min":0,"max": 500, "round":0},
     "WTP_sd": {"sub_dict":"parameters_social_network","property":"WTP_sd","min":0,"max": 500, "round":0},
     "a_innovativeness": {"sub_dict":"parameters_social_network","property":"a_innovativeness","min":0.05,"max": 4, "round":0},

@@ -201,7 +201,7 @@ if __name__ == '__main__':
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
-        "lambda_pow": 5,
+        "lambda": 5,
 
         "init_U": 10e5,
         "init_price_multiplier": 3
