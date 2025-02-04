@@ -39,6 +39,10 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
         ax.axvline(policy_start_time, color="red", linestyle='--', label="Policy start")
 
 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import sem, t
+
 def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label, save_name, dpi=600): 
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces, 
@@ -66,6 +70,10 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
     # Create subplots
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
 
+    # Plot individual traces (faded lines)
+    for seed_data in data_after_burn_in:
+        ax1.plot(time_steps, seed_data, color='gray', alpha=0.3, linewidth=0.8)
+
     # Plot mean and 95% CI
     ax1.plot(time_steps, mean_values, label='Mean', color='blue')
     ax1.fill_between(
@@ -87,6 +95,7 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
     # Adjust layout and save
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
+
 
 def plot_calibrated_index_emissions(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600): 
 
@@ -430,6 +439,10 @@ def plot_history_car_age_multiple_seeds(
     # Save and show the plot
     save_and_show(fig, fileName, "car_age_multiple_seeds", dpi)
 
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import sem, t
+
 def plot_history_mean_price_multiple_seeds(
     base_params, 
     history_mean_price, 
@@ -468,6 +481,11 @@ def plot_history_mean_price_multiple_seeds(
     # Create the figure
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
 
+    # Plot individual traces (faded lines) for new and second-hand car prices
+    for seed_new, seed_second_hand in zip(mean_new, mean_second_hand):
+        ax1.plot(time_steps, seed_new, color='gray', alpha=0.3, linewidth=0.8)
+        ax1.plot(time_steps, seed_second_hand, color='gray', alpha=0.3, linewidth=0.8)
+
     # Plot Mean and 95% CI for New Car Prices
     ax1.plot(time_steps, overall_mean_new, label="New Car Mean Price", color="blue")
     ax1.fill_between(
@@ -499,6 +517,7 @@ def plot_history_mean_price_multiple_seeds(
     # Adjust layout and save the plot
     plt.tight_layout()
     save_and_show(fig, fileName, "history_mean_price_with_traces", dpi)
+
 
 # Sample main function
 def main(fileName, dpi=600):
@@ -599,4 +618,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_18_27_18__01_02_2025")
+    main("results/multi_seed_single_13_22_38__04_02_2025")

@@ -91,8 +91,8 @@ def main(
     save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
     save_object(base_params, fileName + "/Data", "base_params")
 
-
-    return params_list
+    print(fileName)
+    
 
 if __name__ == "__main__":
-    results = main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
+    main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")

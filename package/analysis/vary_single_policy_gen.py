@@ -65,7 +65,7 @@ def single_policy_simulation(params, controller_load):
     return EV_uptake, policy_distortion, cum_em
 
 
-def grid_search_policy_optimization_with_seeds(grid_scenarios, controller_list):
+def grid_search_policy_with_seeds(grid_scenarios, controller_list):
     """
     Perform parallel execution of all policy scenarios and seeds.
     """
@@ -142,7 +142,7 @@ def main(
 
     base_params["duration_future"] = future_time_steps
 
-    results = grid_search_policy_optimization_with_seeds(grid_scenarios, controller_list)
+    results = grid_search_policy_with_seeds(grid_scenarios, controller_list)
 
     print("DONE ALL POLICY RUNS")
     save_object(results, file_name + "/Data", "results")
@@ -157,12 +157,13 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=3,
+        repetitions=20,
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
             "Adoption_subsidy",
+            "Adoption_subsidy_used",
             "Production_subsidy",
             "Research_subsidy",
         ],

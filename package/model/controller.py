@@ -341,7 +341,9 @@ class Controller:
         print("min_kappa CALIBRATION: ", min_kappa)
         
         #Q_vals = (((r-delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
-        Q_vals = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
+        Q_vals = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
+        
+        
         print("Q",Q_vals)
         Q_max = Q_vals#np.mean(Q_vals[2:])
         print("Q_max", Q_max)
@@ -360,12 +362,12 @@ class Controller:
         Q =  max_q
         #U = D*(Q**alpha)*((1+r)/(r-delta)) - beta*(D*c/(r*omega) + P) - gamma*(D*e/(r*omega) + E)
         P_max = np.max(P)
-        U = D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*(D*c/(r*omega) + P_max) - gamma*(D*e/(r*omega) + E)
+        U = D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*(D*c*(1+r)/(r*omega) + P_max) - gamma*(D*e*(1+r)/(r*omega) + E)
         print("U", U)
         #########
         
         #term = kappa*(D*(Q**alpha)*((1+r)/(r-delta)) - beta*D*c/(r*omega) - gamma*(D*e/(r*omega) + E) - beta*C) - 1.0
-        term = kappa*(D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*D*c/(r*omega) - gamma*(D*e/(r*omega) + E) - beta*C) - 1.0
+        term = kappa*(D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*D*c*(1+r)/(r*omega) - gamma*(D*e*(1+r)/(r*omega) + E) - beta*C) - 1.0
         Arg = np.exp(term)/W
         LW = lambertw(Arg, 0).real  # principal branch
         P = C + (U*(1.0 + LW))/(kappa*beta)

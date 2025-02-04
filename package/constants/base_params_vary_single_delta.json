@@ -51,7 +51,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -73,7 +73,7 @@
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 10,
+                    "Carbon_price": 1,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -90,7 +90,7 @@
             "Adoption_subsidy":{
                 "Zero": 0,
                 "Low": 2.5,
-                "High":200
+                "High":20
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
@@ -165,14 +165,14 @@
         "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
-        "a_innovativeness": 2,
+        "a_innovativeness": 1.8,
         "b_innovativeness": 3,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
         "kappa":0.5,
         "U_segments_init": 0,
-        "W_calibration":1e20,
+        "W_calibration":1e7,
         "min_W": 0,
         "r": 0.0016,
         "mu": 1,

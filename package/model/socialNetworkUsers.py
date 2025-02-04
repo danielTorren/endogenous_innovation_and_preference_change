@@ -406,41 +406,6 @@ class Social_Network:
 
         return combined_mask
 
-    def masking_options_old(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
-        """If I don’t want something to be picked, the utilities kappa needs to be 0 at the output!"""
-
-        # Replace `-np.inf` with a mask to avoid issues
-        valid_utilities_mask = utilities_matrix != -np.inf  # Mask for valid (non -np.inf) entries
-
-        # Initialize result matrix with zeros
-        utilities_kappa = np.zeros_like(utilities_matrix)
-
-        # Find valid rows (rows that have at least one non -inf value)
-        valid_rows = np.any(valid_utilities_mask, axis=1)
-
-        # Compute row-wise max only for valid rows
-        #row_max_utilities = np.full((utilities_matrix.shape[0], 1), -np.inf)  # Default -inf
-        row_max_utilities = np.max(utilities_matrix[valid_rows], axis=1, keepdims=True)
-        self.nu_maxU = np.max(row_max_utilities[valid_rows])  # Store for reference
-
-        # Compute safe exponentiation input (subtract row-wise max only for valid rows)
-        exp_input = np.zeros_like(utilities_matrix)
-        #exp_input[valid_rows] = self.kappa * (utilities_matrix[valid_rows])
-        exp_input[valid_rows] = self.kappa * (utilities_matrix[valid_rows] - row_max_utilities[valid_rows])
-
-        # Clip extreme values before exponentiation
-        exp_input = np.clip(exp_input, -700, 700)  # Prevent overflow
-
-        # Apply the exponentiation safely only on valid values
-        utilities_kappa[valid_utilities_mask] = np.exp(exp_input[valid_utilities_mask])
-
-        # Generate mask and apply
-        combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)
-        utilities_kappa_masked = utilities_kappa * combined_mask
-
-        return utilities_kappa_masked
-
-
     def masking_options(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
         """Applies mask before exponentiation, setting masked-out values to -inf."""
 

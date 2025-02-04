@@ -123,7 +123,7 @@ class Firm:
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
-    def utility_prop(self,U,W, nu_maxU):
+    def calc_utility_prop(self,U,W, nu_maxU):
         
         #print("bits",self.kappa*U, self.kappa*self.nu_maxU, W)
         utility_proportion = np.exp(self.kappa*U - self.kappa*nu_maxU)/(np.exp(-self.kappa*nu_maxU)*W + np.exp(self.kappa*U - self.kappa*nu_maxU))
@@ -159,14 +159,11 @@ class Firm:
                 W_s_t = segment_data["W"]
                 nu_maxU = segment_data["nu_maxU"]
                 
-                
-                #term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
-                #term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r+self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
-                term = -self.kappa*nu_maxU + self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
-                #Arg = np.exp(term)/W_s_t
-                #print(segment_code, W_s_t)
-                log_term = term - np.log((W_s_t-self.kappa*nu_maxU))
+                term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c*(1+self.r)/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t*(1+self.r)/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
+
+                log_term = term - np.log(W_s_t)
                 Arg = np.exp(log_term)
+
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
                 P = C_m_cost + (1.0 + LW)/(self.kappa*beta_s)
@@ -280,7 +277,7 @@ class Firm:
                     else:
                         #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
                         nu_maxU = segment_data["nu_maxU"]
-                        utility_proportion = self.utility_prop(utility_value,W, nu_maxU)
+                        utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
                         #print("utility_proportion", utility_proportion)
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -511,7 +508,7 @@ class Firm:
 
                     #utility_proportion = np.exp(self.kappa*utility_car - self.nu_maxU)/(W + np.exp(self.kappa*utility_car - self.nu_maxU))
                     nu_maxU = segment_data["nu_maxU"]
-                    utility_proportion = self.utility_prop(utility_car,W, nu_maxU)
+                    utility_proportion = self.calc_utility_prop(utility_car,W, nu_maxU)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -628,7 +625,7 @@ class Firm:
                         else:
                             #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
                             nu_maxU = market_data[segment_code]["nu_maxU"]
-                            utility_proportion = self.utility_prop(utility_value,W, nu_maxU)
+                            utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
                             raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                         if selected_vehicle.transportType == 3:  # EV
