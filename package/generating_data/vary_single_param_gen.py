@@ -89,10 +89,11 @@ def main(
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(vary_single , fileName + "/Data", "vary_single")
 
+    print(fileName)
     return params_list
 
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_alpha.json", #"package/constants/vary_single_delta.json"
+        VARY_LOAD ="package/constants/vary_single_a_innov.json", #"package/constants/vary_single_delta.json"
         )

@@ -851,7 +851,7 @@ class Controller:
     def next_step(self,):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
-        print("TIME STEP", self.t_controller)
+        #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()

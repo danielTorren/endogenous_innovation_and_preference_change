@@ -28,7 +28,7 @@ class Firm:
 
         self.d_mean = parameters_firm["d_mean"]  
         self.alpha = parameters_firm["alpha"]
-        self.nu_maxU = parameters_firm["nu"]
+        #self.nu_maxU = parameters_firm["nu"]
 
 
         self.firm_id = firm_id
@@ -123,17 +123,17 @@ class Firm:
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
-    def utility_prop(self,U,W):
+    def utility_prop(self,U,W, nu_maxU):
         
         #print("bits",self.kappa*U, self.kappa*self.nu_maxU, W)
-        utility_proportion = np.exp(self.kappa*U - self.kappa*self.nu_maxU)/(W + np.exp(self.kappa*U - self.kappa*self.nu_maxU))
+        utility_proportion = np.exp(self.kappa*U - self.kappa*nu_maxU)/(np.exp(-self.kappa*nu_maxU)*W + np.exp(self.kappa*U - self.kappa*nu_maxU))
         #utility_proportion = np.exp(self.kappa*U)/(W + np.exp(self.kappa*U))
 
         return utility_proportion
 
     def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust):
         #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
-        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
+        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
         return U
     
     def calc_optimal_price_cars(self, market_data, car_list): 
@@ -157,14 +157,15 @@ class Firm:
                 beta_s = segment_data["beta_s_t"]
                 gamma_s = segment_data["gamma_s_t"]
                 W_s_t = segment_data["W"]
+                nu_maxU = segment_data["nu_maxU"]
                 
                 
                 #term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
                 #term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r+self.delta)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0
-                term = -self.kappa*self.nu_maxU + self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
+                term = -self.kappa*nu_maxU + self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
                 #Arg = np.exp(term)/W_s_t
                 #print(segment_code, W_s_t)
-                log_term = term - np.log(W_s_t)
+                log_term = term - np.log((W_s_t-self.kappa*nu_maxU))
                 Arg = np.exp(log_term)
                 LW   = lambertw(Arg, 0).real  # principal branch
                 
@@ -256,10 +257,7 @@ class Firm:
                 consider_ev = (e_idx == 1) # Determine if the segment considers EVs
 
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
-                #print("reserach", is_ev , consider_ev)
-                if is_ev != True or consider_ev == False:
-                    #print("Inside")
-                    #print("vehicle.transportType", vehicle.transportType)
+                if (is_ev == False) or (consider_ev == True):# if its an ice car, or people dont consider evs
                     # Include EV only if the segment considers EV, always include ICE                    
 
                     # Calculate profit for this vehicle and segment
@@ -281,7 +279,8 @@ class Firm:
                         raw_profit = 0
                     else:
                         #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
-                        utility_proportion = self.utility_prop(utility_value,W)
+                        nu_maxU = segment_data["nu_maxU"]
+                        utility_proportion = self.utility_prop(utility_value,W, nu_maxU)
                         #print("utility_proportion", utility_proportion)
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -292,7 +291,7 @@ class Firm:
 
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
-                else:
+                else:#THIS SEGEMNT CANT BUY EVS
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     expected_profit = self.research_subsidy
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
@@ -315,10 +314,15 @@ class Firm:
         
         #PICK OUT EACH CARS BEST SEGMENT
         profits = []
+
+        #num_ev = sum(1 for car in car_list if car.transportType == 3)
+        #print("num ev ad prop: ",num_ev, num_ev/len(car_list))
+
         for vehicle in car_list:
             # Calculate profit for each segment
             max_profit = 0
-            #print("profts car", list(vehicle.expected_profit_segments.values()))
+            #if vehicle.transportType == 3:
+            #    print("profts car", list(vehicle.expected_profit_segments.values()))
             for segment_code, segment_profit in vehicle.expected_profit_segments.items():
                 if segment_profit > max_profit:
                     max_profit = segment_profit
@@ -327,34 +331,42 @@ class Firm:
         # Convert profits list to numpy array
         profits = np.array(profits)
 
+        #ev_profit = sum(profit for car, profit in zip(car_list, profits) if car.transportType == 3)
+        #print("ev_profit", ev_profit)
+
         len_vehicles = len(car_list)  # Length of the car list
 
         if np.sum(profits) == 0:#ALL TECHH HAS 0 UTILITY DUE TO BEIGN VERY BAD, exp caps out
-            print("0 profit", profits)
+            #print("0 profit", profits)
             self.zero_profit_options_research = 1
             selected_index = self.random_state.choice(len_vehicles)
         else:
-            print("proftis raw", profits)
+            #print("proftis raw", profits)
             profits[profits == 0] = -np.inf#if pofit is zero you cant choose it
 
             # Compute the softmax probabilities
             lambda_profits = np.zeros_like(profits)
             valid_profits_mask = profits != -np.inf
-            print("valid_profits_mask", valid_profits_mask)
+            #print("valid_profits_mask", valid_profits_mask)
 
             exp_input = self.lambda_exp*(profits[valid_profits_mask]  - np.max(profits[valid_profits_mask]))
-            print("exp input",exp_input)
+            #print("exp input",exp_input)
 
             exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
 
             lambda_profits[valid_profits_mask] = np.exp(exp_input)
             #lambda_profits = profits**self.lambda_exp
 
-            print("lambda_profits", lambda_profits)
+            #print("lambda_profits", lambda_profits)
             sum_profit = np.sum(lambda_profits)
 
             self.zero_profit_options_research = 0
             probabilities = lambda_profits/sum_profit
+
+            #ev_probability = sum(prob for car, prob in zip(car_list, probabilities) if car.transportType == 3)
+            #print("ev_probability", ev_probability)
+
+
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
 
         # Select a vehicle based on the computed probabilities
@@ -483,7 +495,7 @@ class Firm:
                 consider_ev = (e_idx == 1) # Determine if the segment considers EVs
 
                 # For segments that consider EVs, calculate profit for both EV and ICE vehicles
-                if consider_ev or not is_ev:  # Include EV only if the segment considers EV, always include ICE                    
+                if (is_ev == False) or (consider_ev == True):  # Include EV only if the segment considers EV, always include ICE                    
 
                     # Calculate profit for this vehicle and segment
                     if is_ev:#PRODUCTION SUBSIDY
@@ -498,7 +510,8 @@ class Firm:
                     utility_car = vehicle.car_utility_segments_U[segment_code]#max(0,vehicle.car_utility_segments_U[segment_code])
 
                     #utility_proportion = np.exp(self.kappa*utility_car - self.nu_maxU)/(W + np.exp(self.kappa*utility_car - self.nu_maxU))
-                    utility_proportion = self.utility_prop(utility_car,W)
+                    nu_maxU = segment_data["nu_maxU"]
+                    utility_proportion = self.utility_prop(utility_car,W, nu_maxU)
 
                     raw_profit = profit_per_sale * I_s_t * utility_proportion
 
@@ -614,7 +627,8 @@ class Firm:
                             raw_profit = 0
                         else:
                             #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
-                            utility_proportion = self.utility_prop(utility_value,W)
+                            nu_maxU = market_data[segment_code]["nu_maxU"]
+                            utility_proportion = self.utility_prop(utility_value,W, nu_maxU)
                             raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                         if selected_vehicle.transportType == 3:  # EV

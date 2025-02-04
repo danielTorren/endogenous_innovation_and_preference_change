@@ -90,7 +90,7 @@ if __name__ == "__main__":
             "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "High",
+            "Adoption_subsidy": "Zero",
             "Adoption_subsidy_used": "Zero",
             "Production_subsidy": "Zero",
             "Research_subsidy": "Zero"
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         "num_beta_segments": 4
     },
     "parameters_firm":{
-        "lambda": 0.5,
+        "lambda": 1e-4,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 5000,
+        "num_individuals": 3000,
         "chi_max": 0.9,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
-        "a_innovativeness": 1,
+        "a_innovativeness": 2,
         "b_innovativeness": 3,
         "prob_switch_car":0.083
     },

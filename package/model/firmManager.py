@@ -166,8 +166,8 @@ class Firm_Manager:
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
     def calc_exp(self, U):
-        comp = np.exp(self.kappa*U - self.kappa*self.nu_maxU)
-        #comp = np.exp(self.kappa*U)
+        #comp = np.exp(self.kappa*U - self.kappa*nu_maxU)
+        comp = np.exp(self.kappa*U)
         
         return comp
 
@@ -189,7 +189,8 @@ class Firm_Manager:
                 "gamma_s_t": 0.0,
                 "W": self.min_W,#0.0,
                 "history_I_s_t": [],
-                "history_W": []
+                "history_W": [],
+                "nu_maxU": 0
             }
 
         # 2) Count how many individuals fall into each segment code
@@ -231,10 +232,18 @@ class Firm_Manager:
         for segment in self.all_segment_codes:
             segment_W[segment] = self.min_W#SET THE MINIMUM
         
+        #5.5) calc the max U 
+        for firm in self.firms_list:
+            for car in firm.cars_on_sale:
+                for code, U in car.car_utility_segments_U.items():
+                        if U > self.market_data[code]["nu_maxU"]:
+                            self.market_data[code]["nu_maxU"] = U
+
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
                         #segment_W[code] += np.exp(self.kappa*U)
+                        #segment_W[code] += self.calc_exp(U,self.market_data[code]["nu_maxU"])
                         segment_W[code] += self.calc_exp(U)
 
         # 6) Store the U_sum in market_data
@@ -271,9 +280,15 @@ class Firm_Manager:
         for segment in self.all_segment_codes:
             segment_W[segment] = self.min_W#RESET THEM INCASE
         
+        #UPDATE U MAX
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                segment_W[segment] += self.calc_exp(U)
+                    if U > self.market_data[segment]["nu_maxU"]:
+                            self.market_data[segment]["nu_maxU"] = U
+
+        for car in self.cars_on_sale_all_firms:
+            for segment, U in car.car_utility_segments_U.items():
+                segment_W[segment] += self.calc_exp(U)#self.market_data[segment]["nu_maxU"]
                 #segment_W[segment] += np.exp(self.kappa*U - self.nu_maxU)
 
         return segment_W
@@ -402,6 +417,15 @@ class Firm_Manager:
         self.history_profit_margins_ICE = []
         self.history_W = []
 
+        self.history_quality_ICE = []
+        self.history_efficiency_ICE  = []
+        self.history_production_cost_ICE  = []
+
+        self.history_quality_EV = []
+        self.history_efficiency_EV = []
+        self.history_production_cost_EV = []
+
+
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
@@ -430,6 +454,41 @@ class Firm_Manager:
         self.history_zero_profit_options_research_sum.append(self.zero_profit_options_research_sum/self.J)
 
         self.history_W.append(list(self.W_segment.values()))
+
+        self.quality_vals_ICE = []
+        self.efficiency_vals_ICE = []
+        self.production_cost_vals_ICE = []
+        self.quality_vals_EV = []
+        self.efficiency_vals_EV = []
+        self.production_cost_vals_EV = []
+
+        for car in self.cars_on_sale_all_firms:
+            if car.transportType == 2:#ICE 
+                self.quality_vals_ICE.append(car.Quality_a_t)#done here for efficiency
+                self.efficiency_vals_ICE.append(car.Eff_omega_a_t)
+                self.production_cost_vals_ICE.append(car.ProdCost_t)
+            else:#EV
+                self.quality_vals_EV.append(car.Quality_a_t)#done here for efficiency
+                self.efficiency_vals_EV.append(car.Eff_omega_a_t)
+                self.production_cost_vals_EV.append(car.ProdCost_t)
+
+        if self.quality_vals_EV:
+            self.history_quality_EV.append(self.quality_vals_EV)
+            self.history_efficiency_EV.append(self.efficiency_vals_EV)
+            self.history_production_cost_EV.append(self.production_cost_vals_EV)
+        else:
+            self.history_quality_EV.append([np.nan])
+            self.history_efficiency_EV.append([np.nan])
+            self.history_production_cost_EV.append([np.nan])
+
+        if self.quality_vals_ICE:
+            self.history_quality_ICE.append(self.quality_vals_ICE)
+            self.history_efficiency_ICE.append(self.efficiency_vals_ICE)
+            self.history_production_cost_ICE.append(self.production_cost_vals_ICE)
+        else:
+            self.history_quality_ICE.append([np.nan])
+            self.history_efficiency_ICE.append([np.nan])
+            self.history_production_cost_ICE.append([np.nan])
 
     def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
         for firm in self.firms_list:

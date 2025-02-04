@@ -45,8 +45,8 @@ class NKModel:
 
     def calc_present_utility_minimum_single(self, quality, eff, prod_cost):
         """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
-        cost_multiplier = 1.2#markup 20%
-        approx_fitness = self.d_mean*(quality**self.alpha)*((1+self.r)/(self.r+self.delta)) - self.median_beta*(self.d_mean*self.fuel_cost/(self.r*eff) + cost_multiplier*prod_cost) - self.median_gamma*(self.d_mean*self.e_t/(self.r*eff) + self.E)
+        cost_multiplier = 1.3#markup 30%
+        approx_fitness = self.d_mean*(quality**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - self.median_beta*(self.d_mean*self.fuel_cost*(1+self.r)/(self.r*eff) + cost_multiplier*prod_cost) - self.median_gamma*(self.d_mean*self.e_t*(1+self.r)/(self.r*eff) + self.E)
 
         return approx_fitness
 
