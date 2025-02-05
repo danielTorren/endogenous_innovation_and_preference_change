@@ -216,8 +216,8 @@ if __name__ == '__main__':
         "WTP_sd": 0.1,#175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.7,
-        "b_innovativeness": 1,
+        "a_chi": 0.7,
+        "b_chi": 1,
         "chi_max": 0.9,
         "prob_switch_car": 0.083
     },

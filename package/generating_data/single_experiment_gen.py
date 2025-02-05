@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6,
-        "delta": 0.001,
+        "delta": 0.0116,
         "transportType": 2,
         "mean_Price": 40,
         "min_Price": 20,
@@ -172,6 +172,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[0,0],
+        "delta": 0.0087,
         "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
@@ -195,14 +196,14 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
+        "a_chi": 2,
+        "b_chi": 3,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 0.210,
         "WTP_sd": 0.175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
-        "a_innovativeness": 2,
-        "b_innovativeness": 3,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{

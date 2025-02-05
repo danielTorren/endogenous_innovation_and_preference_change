@@ -61,7 +61,7 @@ class Firm:
         self.prob_innovate = self.parameters_firm["prob_innovate"]
         self.prob_change_production = self.parameters_firm["prob_change_production"]
         self.r = self.parameters_firm["r"]
-        self.delta = self.parameters_firm["delta"]
+        #self.delta = self.parameters_firm["delta"]
 
         self.min_profit = self.parameters_firm["min profit"]
 
@@ -131,9 +131,9 @@ class Firm:
 
         return utility_proportion
 
-    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust):
+    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta):
         #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
-        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
+        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
         return U
     
     def calc_optimal_price_cars(self, market_data, car_list): 
@@ -144,6 +144,7 @@ class Firm:
             C_m = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
             C_m_cost = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
             C_m_price = car.ProdCost_t 
+            delta = car.delta
 
             #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
             if car.transportType == 3:#EV
@@ -159,7 +160,8 @@ class Firm:
                 W_s_t = segment_data["W"]
                 nu_maxU = segment_data["nu_maxU"]
                 
-                term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c*(1+self.r)/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t*(1+self.r)/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
+                
+                term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c*(1+self.r)/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t*(1+self.r)/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
 
                 log_term = term - np.log(W_s_t)
                 Arg = np.exp(log_term)
@@ -190,7 +192,7 @@ class Firm:
                         price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
                     else:
                         price_adjust = price_s
-                    car.car_utility_segments_U[segment_code] =  self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust)
+                    car.car_utility_segments_U[segment_code] =  self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust, car.delta)
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
@@ -605,7 +607,7 @@ class Firm:
                                 price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
                             else:
                                 price_adjust = price_s
-                            selected_vehicle.car_utility_segments_U[segment_code] = self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust)
+                            selected_vehicle.car_utility_segments_U[segment_code] = self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust, car.delta)
                         else:
                             selected_vehicle.car_utility_segments_U[segment_code] = -np.inf
 

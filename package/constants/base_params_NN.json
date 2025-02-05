@@ -167,8 +167,8 @@
         "WTP_sd": 175,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 192,
-        "a_innovativeness": 0.9,
-        "b_innovativeness": 1,
+        "a_chi": 0.9,
+        "b_chi": 1,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{

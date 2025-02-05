@@ -16,7 +16,7 @@ class SecondHandMerchant:
         self.burn_in_second_hand_market = parameters_second_hand["burn_in_second_hand_market"]
         self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
 
-        self.delta = parameters_second_hand["delta"]
+        #self.delta = parameters_second_hand["delta"]
 
         self.scrap_price = parameters_second_hand["scrap_price"]
 
@@ -45,7 +45,8 @@ class SecondHandMerchant:
             "e_t": [],
             "L_a_t": [],
             "transportType": [],
-            "cost_second_hand_merchant": []
+            "cost_second_hand_merchant": [],
+            "delta": []
         }
 
         # Iterate over each vehicle to populate the arrays
@@ -58,6 +59,7 @@ class SecondHandMerchant:
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
             vehicle_dict_vecs["transportType"].append(vehicle.transportType)
             vehicle_dict_vecs["cost_second_hand_merchant"].append(vehicle.cost_second_hand_merchant)
+            vehicle_dict_vecs["delta"].append(vehicle.delta)
 
         # convert lists to numpy arrays for vectorised operations
         for key in vehicle_dict_vecs:
@@ -72,6 +74,7 @@ class SecondHandMerchant:
             "Eff_omega_a_t": [], 
             "price": [], 
             "L_a_t": [],
+            "delta": []
         }
 
         # Iterate over each vehicle to populate the arrays
@@ -80,6 +83,7 @@ class SecondHandMerchant:
             vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
             vehicle_dict_vecs["price"].append(vehicle.price)
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
+            
 
         # convert lists to numpy arrays for vectorised operations
         for key in vehicle_dict_vecs:
@@ -101,6 +105,7 @@ class SecondHandMerchant:
         second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
         second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
         second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
+        second_hand_delta = vehicle_dict_vecs_second_hand_cars["delta"]
 
         # Normalize Quality and Efficiency for both first-hand and second-hand cars
         all_quality = np.concatenate([first_hand_quality, second_hand_quality])
@@ -128,7 +133,7 @@ class SecondHandMerchant:
         closest_prices = first_hand_prices[closest_idxs]
 
         # Adjust prices based on car age and depreciation
-        adjusted_prices = closest_prices * (1 - self.delta) ** second_hand_ages
+        adjusted_prices = closest_prices * (1 - second_hand_delta) ** second_hand_ages
 
         return adjusted_prices
 

@@ -10,6 +10,7 @@ import numpy as np
 import itertools
 from scipy.stats import poisson
 from scipy.special import lambertw
+import matplotlib.pyplot as plt
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -90,7 +91,7 @@ class Controller:
         #self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
         self.parameters_EV["min_Cost"] = self.parameters_ICE["min_Cost"]
         self.parameters_EV["max_Cost"] = self.parameters_ICE["max_Cost"]
-        self.parameters_EV["delta"] = self.parameters_ICE["delta"]
+        #self.parameters_EV["delta"] = self.parameters_ICE["delta"]
         
 
         self.nu_maxU = self.parameters_vehicle_user["nu"]
@@ -138,14 +139,17 @@ class Controller:
 
         self.num_individuals = self.parameters_social_network["num_individuals"]
          
-        #CHI
-        self.a_innovativeness = self.parameters_social_network["a_innovativeness"]
-        self.b_innovativeness = self.parameters_social_network["b_innovativeness"]
+        # CHI
+                #CHI
+        self.a_chi = self.parameters_social_network["a_chi"]
+        self.b_chi = self.parameters_social_network["b_chi"]
         self.chi_max = self.parameters_social_network["chi_max"]
         self.random_state_chi = np.random.RandomState(self.parameters_social_network["init_vals_innovative_seed"])
-        innovativeness_vec_init_unrounded = self.random_state_chi.beta(self.a_innovativeness, self.b_innovativeness, size=self.num_individuals)
+        innovativeness_vec_init_unrounded = self.random_state_chi.beta(self.a_chi, self.b_chi, size=self.num_individuals)
         chi_vec_raw = np.round(innovativeness_vec_init_unrounded, 1)
         self.chi_vec = chi_vec_raw*self.chi_max
+        self.proportion_zero_chi = np.mean(self.chi_vec == 0)
+        print("self.proportion_zero_chi",self.proportion_zero_chi)
 
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
@@ -325,7 +329,7 @@ class Controller:
         print("gamma", gamma)
         #quit()
         #beta = np.array([np.min(self.beta_segment_vals), np.mean(self.beta_vec)]) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
-        beta =  np.mean(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+        beta = np.min(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
 
         #P = np.array([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])#np.array([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"], self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
         P = self.parameters_ICE["max_Price"]
@@ -341,16 +345,16 @@ class Controller:
         print("min_kappa CALIBRATION: ", min_kappa)
         
         #Q_vals = (((r-delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
-        Q_vals = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
+        Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
         
         
-        print("Q",Q_vals)
-        Q_max = Q_vals#np.mean(Q_vals[2:])
-        print("Q_max", Q_max)
+        print("Q",Q_val)
        
-        max_q = (4*Q_max - 0)/3#(4*Q_max - Q_min)/3
-        min_q = 0#(4*Q_min - Q_max)/3
+        max_q = 4/3*Q_val #(4*Q_max - Q_min)/3
+        min_q = 0.8*Q_val#0#(4*Q_min - Q_max)/3
         print("max_q", max_q)
+        print("min_q", min_q)
+
 
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
@@ -667,7 +671,7 @@ class Controller:
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape
         self.parameters_firm["r"] = self.parameters_vehicle_user["r"]
-        self.parameters_firm["delta"] = self.parameters_ICE["delta"]#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
+        #self.parameters_firm["delta"] = self.parameters_ICE["delta"]#ASSUME THAT BOTH ICE AND EV HAVE SAME DEPRECIATIONS RATE
         self.parameters_firm["carbon_price"] = self.carbon_price
         self.parameters_firm["gas_price"] = self.gas_price
         self.parameters_firm["electricity_price"] = self.electricity_price
@@ -706,7 +710,7 @@ class Controller:
         self.parameters_social_network["rebate_calibration"] = self.rebate_calibration 
         self.parameters_social_network["used_rebate_calibration"] = self.used_rebate_calibration 
 
-        self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
+        #self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
@@ -732,7 +736,7 @@ class Controller:
     def setup_EV_landscape(self, parameters_EV):
 
         parameters_EV["r"] = self.parameters_vehicle_user["r"]
-        parameters_EV["delta"] = self.parameters_ICE["delta"]
+        #parameters_EV["delta"] = self.parameters_ICE["delta"]
         parameters_EV["median_beta"] = self.beta_median 
         parameters_EV["median_gamma"] = self.gamma_median
         parameters_EV["fuel_cost_c"] = self.parameters_calibration_data["electricity_price_vec"][0]
@@ -745,7 +749,7 @@ class Controller:
     def setup_second_hand_market(self):
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
 
-        self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
+        #self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
 
         self.parameters_second_hand["beta_segment_vals"] = self.beta_segment_vals 

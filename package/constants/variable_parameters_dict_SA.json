@@ -5,8 +5,8 @@
     "lambda": {"sub_dict":"parameters_firm","property":"lambda","min":1,"max": 50, "round":0},
     "WTP_mean": {"sub_dict":"parameters_social_network","property":"WTP_mean","min":0,"max": 500, "round":0},
     "WTP_sd": {"sub_dict":"parameters_social_network","property":"WTP_sd","min":0,"max": 500, "round":0},
-    "a_innovativeness": {"sub_dict":"parameters_social_network","property":"a_innovativeness","min":0.05,"max": 4, "round":0},
-    "b_innovativeness": {"sub_dict":"parameters_social_network","property":"b_innovativeness","min":0.05,"max": 4, "round":0},
+    "a_chi": {"sub_dict":"parameters_social_network","property":"a_chi","min":0.05,"max": 4, "round":0},
+    "b_chi": {"sub_dict":"parameters_social_network","property":"b_chi","min":0.05,"max": 4, "round":0},
     "kappa": {"sub_dict":"parameters_vehicle_user","property":"kappa","min":1,"max": 30, "round":0},
     "mu": {"sub_dict":"parameters_vehicle_user","property":"mu","min":0.05,"max":0.9, "round":0}
 }
