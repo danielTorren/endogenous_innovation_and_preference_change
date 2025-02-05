@@ -95,5 +95,5 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_kappa.json", #"package/constants/vary_single_delta.json"
+        VARY_LOAD ="package/constants/vary_single_mu.json", #"package/constants/vary_single_delta.json"
         )

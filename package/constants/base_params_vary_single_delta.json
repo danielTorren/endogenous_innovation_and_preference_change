@@ -51,7 +51,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -73,7 +73,7 @@
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 1,
+                    "Carbon_price": 10,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -90,7 +90,7 @@
             "Adoption_subsidy":{
                 "Zero": 0,
                 "Low": 2.5,
-                "High":20
+                "High":200
             },
             "Adoption_subsidy_used":{
                 "Zero":0,
@@ -111,7 +111,7 @@
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 0.3,
+        "max_num_cars_prop": 1,
         "burn_in_second_hand_market": 12,
         "scrap_price": 1
     },
@@ -121,7 +121,7 @@
         "A": 3,
         "rho":[0,0],
         "production_emissions":6,
-        "delta": 0.001,
+        "delta": 0.0116,
         "transportType": 2,
         "mean_Price": 40,
         "min_Price": 20,
@@ -136,6 +136,7 @@
         "K": 3,
         "A": 3,
         "rho":[0,0],
+        "delta": 0.0087,
         "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
@@ -159,24 +160,23 @@
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "SW_network_density": 0.01,
-        "SW_prob_rewire": 0.1,
-        "WTP_mean": 0.210,
-        "WTP_sd": 0.175,
-        "gamma_epsilon": 1e-5,
-        "car_lifetime_months": 240,
         "a_chi": 1.8,
         "b_chi": 3,
+        "SW_network_density": 0.01,
+        "SW_prob_rewire": 0.1,
+        "WTP_mean": 40889,
+        "WTP_sd": 34327,
+        "gamma_epsilon": 1e-5,
+
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":0.5,
+        "kappa":0.15,
         "U_segments_init": 0,
-        "W_calibration":1e7,
+        "W_calibration":1e20,
         "min_W": 0,
-        "r": 0.0016,
-        "mu": 1,
-        "nu":1,
+        "r":  0.0002959523726,
+        "mu": 5,
         "alpha": 0.5
     }
 }

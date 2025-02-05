@@ -164,7 +164,7 @@
         "WTP_mean": 0.0210,
         "WTP_sd": 0.0175,
         "gamma_epsilon": 1e-5,
-        "car_lifetime_months": 240,
+
         "a_chi": 1,
         "b_chi": 1,
         "prob_switch_car":0.083

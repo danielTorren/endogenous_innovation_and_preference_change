@@ -35,7 +35,7 @@ class SecondHandMerchant:
 
     ###############################################################################################################
 
-    def gen_vehicle_dict_vecs(self, list_vehicles):
+    def gen_vehicle_dict_vecs_second_hand(self, list_vehicles):
         # Initialize dictionary to hold lists of vehicle properties
         vehicle_dict_vecs = {
             "Quality_a_t": [], 
@@ -46,7 +46,7 @@ class SecondHandMerchant:
             "L_a_t": [],
             "transportType": [],
             "cost_second_hand_merchant": [],
-            "delta": []
+            "delta_P": []
         }
 
         # Iterate over each vehicle to populate the arrays
@@ -59,7 +59,7 @@ class SecondHandMerchant:
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
             vehicle_dict_vecs["transportType"].append(vehicle.transportType)
             vehicle_dict_vecs["cost_second_hand_merchant"].append(vehicle.cost_second_hand_merchant)
-            vehicle_dict_vecs["delta"].append(vehicle.delta)
+            vehicle_dict_vecs["delta_P"].append(vehicle.delta_P)
 
         # convert lists to numpy arrays for vectorised operations
         for key in vehicle_dict_vecs:
@@ -73,8 +73,7 @@ class SecondHandMerchant:
             "Quality_a_t": [], 
             "Eff_omega_a_t": [], 
             "price": [], 
-            "L_a_t": [],
-            "delta": []
+            "L_a_t": []
         }
 
         # Iterate over each vehicle to populate the arrays
@@ -105,7 +104,7 @@ class SecondHandMerchant:
         second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
         second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
         second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
-        second_hand_delta = vehicle_dict_vecs_second_hand_cars["delta"]
+        second_hand_delta = vehicle_dict_vecs_second_hand_cars["delta_P"]
 
         # Normalize Quality and Efficiency for both first-hand and second-hand cars
         all_quality = np.concatenate([first_hand_quality, second_hand_quality])
@@ -148,7 +147,7 @@ class SecondHandMerchant:
                 self.scrap_loss += vehicle.cost_second_hand_merchant
                 self.cars_on_sale.remove(vehicle)
 
-        data_dicts_second_hand = self.gen_vehicle_dict_vecs(self.cars_on_sale)
+        data_dicts_second_hand = self.gen_vehicle_dict_vecs_second_hand(self.cars_on_sale)
         # Calculate the price vector
         data_dicts_new_cars = self.gen_vehicle_dict_vecs_new_cars(self.vehicles_on_sale)
 

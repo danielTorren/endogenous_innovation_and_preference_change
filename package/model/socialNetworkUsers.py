@@ -347,7 +347,7 @@ class Social_Network:
         second_hand_quality = vehicle_dict_vecs_current_cars["Quality_a_t"]
         second_hand_efficiency = vehicle_dict_vecs_current_cars["Eff_omega_a_t"]
         second_hand_ages = vehicle_dict_vecs_current_cars["L_a_t"]
-        second_hand_delta = vehicle_dict_vecs_current_cars["delta"]
+        second_hand_delta = vehicle_dict_vecs_current_cars["delta_P"]
         
         # Normalize Quality and Efficiency for both first-hand and second-hand cars
         all_quality = np.concatenate([first_hand_quality, second_hand_quality])
@@ -568,6 +568,7 @@ class Social_Network:
         fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
         e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
+        delta_P = np.array([vehicle.delta_P for vehicle in list_vehicles])
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
@@ -580,6 +581,7 @@ class Social_Network:
             "transportType": transport_type,
             "last_price_paid": last_price_paid,
             "delta": delta,
+            "delta_P": delta_P
         }
 
         return vehicle_dict_vecs

@@ -147,7 +147,7 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 0.3,
+        "max_num_cars_prop": 1,
         "burn_in_second_hand_market": 12,
         "scrap_price": 1
     },
@@ -157,7 +157,8 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":6,
-        "delta": 0.0116,
+        "delta": 0.00058,
+        "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 40,
         "min_Price": 20,
@@ -166,13 +167,14 @@ if __name__ == "__main__":
         "max_Efficiency": 1.5,
         "min_Cost": 5,
         "max_Cost": 50
-    },
+    }, 
     "parameters_EV":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "delta": 0.0087,
+        "delta": 0.000435,
+        "delta_P":0.0087,
         "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
@@ -203,7 +205,7 @@ if __name__ == "__main__":
         "WTP_mean": 40889,
         "WTP_sd": 34327,
         "gamma_epsilon": 1e-5,
-        "car_lifetime_months": 240,
+
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
@@ -212,11 +214,13 @@ if __name__ == "__main__":
         "W_calibration":1e20,
         "min_W": 0,
         "r":  0.0002959523726,
-        "mu": 2,
+        "mu": 1,
         "alpha": 0.5
     }
 }
     
+
+
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
 

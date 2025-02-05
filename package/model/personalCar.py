@@ -25,6 +25,8 @@ class PersonalCar:
 
         self.delta = parameters["delta"]  # Depreciation or distance-decay factor for the vehicle.
                                # Indicates how the utility decays over distance, accounting for the decreasing benefit or increased discomfort of using the vehicle over longer distances.
+        
+        self.delta_P = parameters["delta_P"]  # Depreciation from price!! used in second hand car!
 
         self.L_a_t = 0  # Lifetime or longevity parameter of transport mode 'a' at time 't'.
                             # Represents how the utility of the vehicle evolves over time or lifetime, often indicating how wear and tear or aging affects the overall utility.
