@@ -28,6 +28,10 @@ def load_in_calibration_data():
     reference_value = CPI_california_df.loc["2020-01-01", "Weighted Average"]
     # Normalize by the 2020 reference value
     CPI_california_df["2020 relative Weighted Average"] = CPI_california_df["Weighted Average"] / reference_value
+    
+    # If you want the normalized value relative to 2020
+    dec_2017_relative_value = CPI_california_df.loc["2017-12-01", "2020 relative Weighted Average"]
+    print("dec_2017_relative_value (For Gamma)",dec_2017_relative_value)
 
     #Gasoline Price
     gas_price_california_df = pd.read_excel("package/calibration_data/gas_price_california.xlsx") 

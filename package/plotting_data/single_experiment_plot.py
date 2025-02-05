@@ -2297,6 +2297,52 @@ def plot_history_median_price(base_params, social_network, fileName, dpi=600):
     ax.legend()
     save_and_show(fig, fileName, "history_median_price", dpi)
 
+def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    
+    data = np.asarray(social_network.history_mean_price_EV_ICE)
+    data_ICE_first = data[:,0,0]
+    data_EV_first = data[:,0,1]
+    data_ICE_second = data[:,1,0]
+    data_EV_second = data[:,1,1]
+
+    ax.plot(data_ICE_first, label = "ICE new", color = "blue", linestyle= "solid")
+    ax.plot(data_EV_first, label = "EV new", color = "green", linestyle= "solid")
+    ax.plot(data_ICE_second, label = "ICE second hand", color = "blue", linestyle= "dashed")
+    ax.plot(data_EV_second, label = "EV second hand", color = "green", linestyle= "dashed")
+
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Mean Price")
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    save_and_show(fig, fileName, "history_mean_price_by_type", dpi)
+
+def plot_history_median_price_by_type(base_params, social_network, fileName, dpi=600):
+
+    # Create a grid of subplots (4x4 layout)
+    fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
+    
+    data = np.asarray(social_network.history_median_price_EV_ICE)
+    data_ICE_first = data[:,0,0]
+    data_EV_first = data[:,0,1]
+    data_ICE_second = data[:,1,0]
+    data_EV_second = data[:,1,1]
+
+    ax.plot(data_ICE_first, label = "ICE new", color = "blue", linestyle= "solid")
+    ax.plot(data_EV_first, label = "EV new", color = "green", linestyle= "solid")
+    ax.plot(data_ICE_second, label = "ICE second hand", color = "blue", linestyle= "dashed")
+    ax.plot(data_EV_second, label = "EV second hand", color = "green", linestyle= "dashed")
+
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Median Price")
+
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    save_and_show(fig, fileName, "history_median_price_by_type", dpi)
+
 def plot_history_quality_users_raw_adjusted(social_network, fileName, dpi=600):
     # Convert the history list to a NumPy array for easier manipulation
     data = np.array(social_network.history_quality_users_raw_adjusted, dtype=object)
@@ -2849,14 +2895,13 @@ def main(fileName, dpi=600):
 
 
     #KEY PLOTS
+    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
-
     emissions_decomposed(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
     plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName)
-    plot_history_median_price(base_params, social_network, fileName, dpi)
-    plot_history_mean_price(base_params, social_network, fileName, dpi)
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
@@ -2869,7 +2914,8 @@ def main(fileName, dpi=600):
     plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_segment_count_grid(firm_manager, time_series, fileName)
-
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    
     #plot_history_W(base_params, firm_manager,time_series,  fileName)
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
     #plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
@@ -2883,7 +2929,7 @@ def main(fileName, dpi=600):
     #
     #plot_sale_EV_prop(firm_manager, time_series, fileName, dpi)
     #
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    #
 
     #plot_history_history_drive_min_num(base_params, social_network, fileName, dpi)
     #plot_zero_util_count(base_params, social_network, fileName, dpi)
@@ -2969,4 +3015,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_15_41_44__03_02_2025")
+    main("results/single_experiment_13_44_54__05_02_2025")

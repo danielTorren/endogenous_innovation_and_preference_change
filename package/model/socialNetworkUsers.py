@@ -33,7 +33,7 @@ class Social_Network:
 
         #self.delta = parameters_social_network["delta"]
         self.alpha = parameters_social_network["alpha"]
-        self.nu_maxU = parameters_social_network["nu"]
+
         self.scrap_price = parameters_social_network["scrap_price"]
 
         self.beta_segment_vec = parameters_social_network["beta_segment_vals"] 
@@ -424,7 +424,6 @@ class Social_Network:
         # Step 4: Compute row-wise max only for valid rows
         row_max_utilities = np.full((utilities_matrix.shape[0], 1), -np.inf)  # Default -inf
         row_max_utilities[valid_rows] = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
-        self.nu_maxU = np.max(row_max_utilities[valid_rows])  # Store for reference
 
         # Step 5: Compute safe exponentiation input (subtract row max for stability)
         exp_input = np.zeros_like(utilities_matrix)
@@ -1170,4 +1169,4 @@ class Social_Network:
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
         
-        return self.consider_ev_vec, self.new_bought_vehicles, self.nu_maxU #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits
+        return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

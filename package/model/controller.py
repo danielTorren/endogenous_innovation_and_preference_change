@@ -94,8 +94,6 @@ class Controller:
         #self.parameters_EV["delta"] = self.parameters_ICE["delta"]
         
 
-        self.nu_maxU = self.parameters_vehicle_user["nu"]
-
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
@@ -138,6 +136,30 @@ class Controller:
     def gen_users_parameters(self):
 
         self.num_individuals = self.parameters_social_network["num_individuals"]
+
+        #########################################
+        #GENERATING DISTANCES
+        #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
+        bin_centers = np.array([
+            335.2791667,
+            1005.8375,
+            1676.331279,
+            2346.892946,
+            3017.452946,
+            5028.99
+        ])
+        fitted_lambda = 1.5428809450394916
+        #Fitted_lambda_10_plus_year_old_cars =  0.2345307913567248
+        #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
+        # Step 4: Generate N random distances using the fitted Poisson parameter
+        N = self.num_individuals # Number of individuals
+        poisson_samples = poisson.rvs(mu=fitted_lambda, size=N)
+        # Step 5: Map the Poisson samples back to the distance range of the original data
+        min_bin, max_bin = bin_centers[0], bin_centers[-1]
+        scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
+        self.d_vec = poisson_samples * scale_factor + min_bin
+        ########################################################################
+
          
         # CHI
                 #CHI
@@ -164,36 +186,16 @@ class Controller:
         self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
 
         #GAMMA
+        r = self.parameters_vehicle_user["r"]
+        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
+        
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
         self.WTP_mean = self.parameters_social_network["WTP_mean"]
-        self.WTP_sd = self.parameters_social_network["WTP_sd"]
-        self.car_lifetime_months = self.parameters_social_network["car_lifetime_months"]
+        self.WTP_sd = self.parameters_social_network["WTP_sd"]     
         WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
-        self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
-        self.gamma_vec = self.beta_vec*self.WTP_vec/self.car_lifetime_months
-
-
-        #########################################
-        #GENERATING DISTANCES
-        #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
-        bin_centers = np.array([
-            335.2791667,
-            1005.8375,
-            1676.331279,
-            2346.892946,
-            3017.452946,
-            5028.99
-        ])
-        fitted_lambda = 1.5428809450394916
-        #Fitted_lambda_10_plus_year_old_cars =  0.2345307913567248
-        #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
-        # Step 4: Generate N random distances using the fitted Poisson parameter
-        N = self.num_individuals # Number of individuals
-        poisson_samples = poisson.rvs(mu=fitted_lambda, size=N)
-        # Step 5: Map the Poisson samples back to the distance range of the original data
-        min_bin, max_bin = bin_centers[0], bin_centers[-1]
-        scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
-        self.d_vec = poisson_samples * scale_factor + min_bin
+        self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
+        self.gamma_vec = self.WTP_vec*self.beta_vec*r*omega_mean/(self.d_vec*(1+r))
+        #print("Gamma, min,  mean , max",np.min(self.gamma_vec),np.mean(self.gamma_vec), np.max(self.gamma_vec))
 
         ############################################
         #social network data
@@ -305,7 +307,6 @@ class Controller:
         delta = self.parameters_ICE["delta"]
         r = self.parameters_vehicle_user["r"]
         kappa = self.parameters_vehicle_user["kappa"]
-        self.nu = self.parameters_vehicle_user["nu"]
 
         alpha = self.parameters_vehicle_user["alpha"]
         
@@ -325,8 +326,8 @@ class Controller:
 
         #Qmin poor, Q min rich, Qmax poor, Qmax rich
         omega = omega_mean#np.array([omega_max, omega_max,omega_min , omega_min])
-        gamma = np.mean(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
-        print("gamma", gamma)
+        gamma = np.max(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
+        #print("gamma", gamma)
         #quit()
         #beta = np.array([np.min(self.beta_segment_vals), np.mean(self.beta_vec)]) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
         beta = np.min(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
@@ -347,13 +348,13 @@ class Controller:
         #Q_vals = (((r-delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
         Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
         
-        
         print("Q",Q_val)
        
         max_q = 4/3*Q_val #(4*Q_max - Q_min)/3
         min_q = 0.8*Q_val#0#(4*Q_min - Q_max)/3
-        print("max_q", max_q)
-        print("min_q", min_q)
+        
+        #print("min_q", min_q)
+        #print("max_q", max_q)
 
 
         self.parameters_ICE["min_Quality"] = min_q
@@ -367,7 +368,7 @@ class Controller:
         #U = D*(Q**alpha)*((1+r)/(r-delta)) - beta*(D*c/(r*omega) + P) - gamma*(D*e/(r*omega) + E)
         P_max = np.max(P)
         U = D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*(D*c*(1+r)/(r*omega) + P_max) - gamma*(D*e*(1+r)/(r*omega) + E)
-        print("U", U)
+        #print("U", U)
         #########
         
         #term = kappa*(D*(Q**alpha)*((1+r)/(r-delta)) - beta*D*c/(r*omega) - gamma*(D*e/(r*omega) + E) - beta*C) - 1.0
@@ -375,9 +376,9 @@ class Controller:
         Arg = np.exp(term)/W
         LW = lambertw(Arg, 0).real  # principal branch
         P = C + (U*(1.0 + LW))/(kappa*beta)
-        print("max expected price", P)
+        #print("max expected price", P)
 
-        #print("nu kappa",self.nu*kappa)
+
         #quit()
 
     #####################################################################################################################################
@@ -659,7 +660,7 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
-        self.parameters_firm_manager["nu"] = self.parameters_vehicle_user["nu"]
+        #self.parameters_firm_manager["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_firm_manager["min_W"] = self.parameters_vehicle_user["min_W"]
 
     def setup_firm_parameters(self):
@@ -680,7 +681,7 @@ class Controller:
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
         self.parameters_firm["d_mean"] = np.mean(self.d_vec)
         self.parameters_firm["U_segments_init"] = self.parameters_vehicle_user["U_segments_init"]
-        self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
+        #self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
 
         if self.t_controller == self.ev_research_start_time:
@@ -714,7 +715,7 @@ class Controller:
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
-        self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
+        #self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_social_network["alpha"] = self.parameters_vehicle_user["alpha"]
 
     def setup_vehicle_users_parameters(self):
@@ -828,13 +829,13 @@ class Controller:
 
 
     def update_firms(self):
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy, self.rebate_calibration, self.nu_maxU)
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.discriminatory_corporate_tax, self.production_subsidy, self.research_subsidy, self.rebate_calibration)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
         # Update social network based on firm preferences
-        consider_ev_vec, new_bought_vehicles, nu_MaxU = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, self.rebate_calibration, self.used_rebate_calibration)
-        return consider_ev_vec, new_bought_vehicles, nu_MaxU
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy, self.rebate_calibration, self.used_rebate_calibration)
+        return consider_ev_vec, new_bought_vehicles
 
     def get_second_hand_cars(self):
         self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms)
@@ -862,7 +863,7 @@ class Controller:
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()
         self.second_hand_cars = self.get_second_hand_cars()
-        self.consider_ev_vec, self.new_bought_vehicles, self.nu_maxU = self.update_social_network()
+        self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()
 

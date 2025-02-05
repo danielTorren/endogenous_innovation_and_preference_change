@@ -196,24 +196,23 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 2,
+        "a_chi": 1.8,
         "b_chi": 3,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 0.210,
-        "WTP_sd": 0.175,
+        "WTP_mean": 40889,
+        "WTP_sd": 34327,
         "gamma_epsilon": 1e-5,
         "car_lifetime_months": 240,
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":0.5,
+        "kappa":0.15,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 0,
-        "r": 0.0016,
-        "mu": 1,
-        "nu":1,
+        "r":  0.0002959523726,
+        "mu": 2,
         "alpha": 0.5
     }
 }

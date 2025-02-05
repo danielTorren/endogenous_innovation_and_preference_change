@@ -28,8 +28,6 @@ class Firm:
 
         self.d_mean = parameters_firm["d_mean"]  
         self.alpha = parameters_firm["alpha"]
-        #self.nu_maxU = parameters_firm["nu"]
-
 
         self.firm_id = firm_id
         #ICE
@@ -741,7 +739,7 @@ class Firm:
                 car.e_t = self.electricity_emissions_intensity
         return car_list
 
-    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration, nu_maxU):
+    def next_step(self, market_data, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         self.t_firm += 1
 
         self.carbon_price = carbon_price
@@ -753,7 +751,6 @@ class Firm:
         self.discriminatory_corporate_tax =  discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
-        self.nu_maxU = nu_maxU
 
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
