@@ -54,8 +54,8 @@ def main(
         history_total_emissions_arr,#Emmissions flow
         history_prop_EV_arr, 
         history_car_age_arr, 
-        history_mean_price_arr,
-        history_median_price_arr, 
+        history_mean_price_ICE_EV_arr,
+        history_median_price_ICE_EV_arr, 
         history_total_utility_arr, 
         history_market_concentration_arr,
         history_total_profit_arr,
@@ -76,8 +76,8 @@ def main(
     save_object(history_total_emissions_arr, fileName + "/Data", "history_total_emissions_arr")
     save_object(history_prop_EV_arr, fileName + "/Data", "history_prop_EV_arr")
     save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")
-    save_object(history_mean_price_arr, fileName + "/Data", "history_mean_price_arr")
-    save_object(history_median_price_arr, fileName + "/Data", "history_median_price_arr")
+    save_object(history_mean_price_ICE_EV_arr, fileName + "/Data", "history_mean_price_ICE_EV_arr")
+    save_object(history_median_price_ICE_EV_arr, fileName + "/Data", "history_median_price_ICE_EV_arr")
     save_object(history_total_utility_arr, fileName + "/Data", "history_total_utility_arr")
     save_object(history_market_concentration_arr, fileName + "/Data", "history_market_concentration_arr")
     save_object(history_total_profit_arr, fileName + "/Data", "history_total_profit_arr")

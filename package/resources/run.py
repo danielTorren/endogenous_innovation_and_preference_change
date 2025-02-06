@@ -139,7 +139,7 @@ def distance_ev_prop_parallel_run(
 #########################################################################################
 def generate_multi(params):
     data = generate_data(params)
-    return data.social_network.history_distance_individual, data.social_network.history_prop_EV, data.social_network.history_car_age, data.social_network.history_mean_price_EV_ICE, data.social_network.history_driving_emissions, data.social_network.history_mean_efficiency_vals
+    return data.social_network.history_distance_individual, data.social_network.history_prop_EV, data.social_network.history_car_age, data.social_network.history_mean_price_ICE_EV, data.social_network.history_driving_emissions, data.social_network.history_mean_efficiency_vals
 #data_flat_age, data_flat_price , data_flat_emissions 
 
 def distance_ev_prop_age_price_emissions_parallel_run(
@@ -259,8 +259,8 @@ def generate_multi_seed(params: dict):
         data.social_network.history_total_emissions,#Emmissions flow
         data.social_network.history_prop_EV, 
         data.social_network.history_car_age, 
-        data.social_network.history_mean_price,
-        data.social_network.history_median_price, 
+        data.social_network.history_mean_price_ICE_EV,
+        data.social_network.history_median_price_ICE_EV, 
         data.social_network.history_total_utility, 
         data.social_network.history_quality_ICE, 
         data.social_network.history_quality_EV, 
@@ -286,8 +286,8 @@ def parallel_run_multi_seed(params_list):
         history_total_emissions,#Emmissions flow
         history_prop_EV, 
         history_car_age, 
-        history_mean_price,
-        history_median_price, 
+        history_mean_price_ICE_EV,
+        history_median_price_ICE_EV, 
         history_total_utility, 
         history_quality_ICE, 
         history_quality_EV, 
@@ -306,8 +306,8 @@ def parallel_run_multi_seed(params_list):
         np.asarray(history_total_emissions),#Emmissions flow
         np.asarray(history_prop_EV), 
         np.asarray(history_car_age), 
-        np.asarray(history_mean_price),
-        np.asarray(history_median_price), 
+        np.asarray(history_mean_price_ICE_EV),
+        np.asarray(history_median_price_ICE_EV), 
         np.asarray(history_total_utility), 
         np.asarray(history_market_concentration),
         np.asarray(history_total_profit),

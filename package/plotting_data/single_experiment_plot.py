@@ -2302,7 +2302,7 @@ def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=6
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
     
-    data = np.asarray(social_network.history_mean_price_EV_ICE)
+    data = np.asarray(social_network.history_mean_price_ICE_EV)
     data_ICE_first = data[:,0,0]
     data_EV_first = data[:,0,1]
     data_ICE_second = data[:,1,0]
@@ -2325,7 +2325,7 @@ def plot_history_median_price_by_type(base_params, social_network, fileName, dpi
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
     
-    data = np.asarray(social_network.history_median_price_EV_ICE)
+    data = np.asarray(social_network.history_median_price_ICE_EV)
     data_ICE_first = data[:,0,0]
     data_EV_first = data[:,0,1]
     data_ICE_second = data[:,1,0]

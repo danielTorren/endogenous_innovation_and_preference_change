@@ -935,8 +935,8 @@ class Social_Network:
         self.history_mean_price = []
         self.history_median_price = []
 
-        self.history_mean_price_EV_ICE = []
-        self.history_median_price_EV_ICE = []
+        self.history_mean_price_ICE_EV = []
+        self.history_median_price_ICE_EV = []
 
         self.history_car_prices_sold_new = []
         self.history_car_prices_sold_second_hand = []
@@ -1021,8 +1021,8 @@ class Social_Network:
         self.history_mean_price.append([mean_price_new, mean_price_second_hand])
         self.history_median_price.append([median_price_new, median_price_second_hand])
 
-        self.history_mean_price_EV_ICE.append([(mean_price_new_ICE, mean_price_new_EV), (mean_price_second_hand_ICE,mean_price_second_hand_EV)])
-        self.history_median_price_EV_ICE.append([(median_price_new_ICE, median_price_new_EV), (median_price_second_hand_ICE,median_price_second_hand_EV)])
+        self.history_mean_price_ICE_EV.append([(mean_price_new_ICE, mean_price_new_EV), (mean_price_second_hand_ICE,mean_price_second_hand_EV)])
+        self.history_median_price_ICE_EV.append([(median_price_new_ICE, median_price_new_EV), (median_price_second_hand_ICE,median_price_second_hand_EV)])
 
         self.history_driving_emissions_individual.append(self.users_driving_emissions_vec)
         

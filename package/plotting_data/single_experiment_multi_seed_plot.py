@@ -1,3 +1,4 @@
+from matplotlib.lines import lineStyles
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
@@ -445,8 +446,8 @@ from scipy.stats import sem, t
 
 def plot_history_mean_price_multiple_seeds(
     base_params, 
-    history_mean_price, 
-    history_median_price, 
+    history_mean_price_ICE_EV, 
+    history_median_price_ICE_EV, 
     fileName, 
     dpi=600
 ):
@@ -465,47 +466,86 @@ def plot_history_mean_price_multiple_seeds(
     burn_in_step = base_params["duration_burn_in"]
 
     # Extract new and second-hand prices, excluding burn-in period
-    mean_new = history_mean_price[:, burn_in_step:, 0]  # Mean prices for new cars
-    mean_second_hand = history_mean_price[:, burn_in_step:, 1]  # Mean prices for second-hand cars
+    mean_new_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
+    mean_second_hand_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
+
+    mean_new_EV = history_mean_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
+    mean_second_hand_EV = history_mean_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
 
     # Time steps after burn-in
-    time_steps = np.arange(burn_in_step, burn_in_step + mean_new.shape[1])
+    time_steps = np.arange(burn_in_step, burn_in_step + mean_new_ICE.shape[1])
 
     # Compute mean and 95% CI across seeds
-    overall_mean_new = np.mean(mean_new, axis=0)
-    ci_new = t.ppf(0.975, df=mean_new.shape[0] - 1) * sem(mean_new, axis=0)
+    #ICE
+    overall_mean_new_ICE = np.mean(mean_new_ICE, axis=0)
+    ci_new_ICE = t.ppf(0.975, df=mean_new_ICE.shape[0] - 1) * sem(mean_new_ICE, axis=0)
 
-    overall_mean_second_hand = np.mean(mean_second_hand, axis=0)
-    ci_second_hand = t.ppf(0.975, df=mean_second_hand.shape[0] - 1) * sem(mean_second_hand, axis=0)
+    overall_mean_second_hand_ICE = np.mean(mean_second_hand_ICE, axis=0)
+    ci_second_hand_ICE = t.ppf(0.975, df=mean_second_hand_ICE.shape[0] - 1) * sem(mean_second_hand_ICE, axis=0)
+
+    #EV
+    overall_mean_new_EV = np.mean(mean_new_EV, axis=0)
+    ci_new_EV = t.ppf(0.975, df=mean_new_EV.shape[0] - 1) * sem(mean_new_EV, axis=0)
+
+    overall_mean_second_hand_EV = np.mean(mean_second_hand_EV, axis=0)
+    ci_second_hand_EV = t.ppf(0.975, df=mean_second_hand_EV.shape[0] - 1) * sem(mean_second_hand_EV, axis=0)
 
     # Create the figure
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
 
     # Plot individual traces (faded lines) for new and second-hand car prices
-    for seed_new, seed_second_hand in zip(mean_new, mean_second_hand):
-        ax1.plot(time_steps, seed_new, color='gray', alpha=0.3, linewidth=0.8)
-        ax1.plot(time_steps, seed_second_hand, color='gray', alpha=0.3, linewidth=0.8)
+    for seed_new, seed_second_hand in zip(mean_new_ICE, mean_second_hand_ICE):
+        ax1.plot(time_steps, seed_new, color='blue', alpha=0.3, linewidth=0.8)
+        ax1.plot(time_steps, seed_second_hand, color='blue', alpha=0.3, linewidth=0.8, linestyle = "dashed")
 
+    for seed_new, seed_second_hand in zip(mean_new_EV, mean_second_hand_EV):
+        ax1.plot(time_steps, seed_new, color='green', alpha=0.3, linewidth=0.8)
+        ax1.plot(time_steps, seed_second_hand, color='green', alpha=0.3, linewidth=0.8,  linestyle = "dashed")
+
+    #ICE
     # Plot Mean and 95% CI for New Car Prices
-    ax1.plot(time_steps, overall_mean_new, label="New Car Mean Price", color="blue")
+    ax1.plot(time_steps, overall_mean_new_ICE, label="New Car Mean Price ICE", color="blue")
     ax1.fill_between(
         time_steps,
-        overall_mean_new - ci_new,
-        overall_mean_new + ci_new,
+        overall_mean_new_ICE - ci_new_ICE,
+        overall_mean_new_ICE + ci_new_ICE,
         color="blue",
         alpha=0.2,
-        label="New Car 95% Confidence Interval"
+        label="New Car 95% Confidence Interval ICE"
     )
 
     # Plot Mean and 95% CI for Second-hand Car Prices
-    ax1.plot(time_steps, overall_mean_second_hand, label="Second-hand Car Mean Price", color="green")
+    ax1.plot(time_steps, overall_mean_second_hand_ICE, label="Second-hand Car Mean Price ICE", color="blue", linestyle = "dashed")
     ax1.fill_between(
         time_steps,
-        overall_mean_second_hand - ci_second_hand,
-        overall_mean_second_hand + ci_second_hand,
+        overall_mean_second_hand_ICE - ci_second_hand_ICE,
+        overall_mean_second_hand_ICE + ci_second_hand_ICE,
+        color="blue",
+        alpha=0.2,
+        label="Second-hand Car 95% Confidence Interval ICE"
+    )
+
+    #EV
+    # Plot Mean and 95% CI for New Car Prices
+    ax1.plot(time_steps, overall_mean_new_EV, label="New Car Mean Price EV", color="green")
+    ax1.fill_between(
+        time_steps,
+        overall_mean_new_EV - ci_new_EV,
+        overall_mean_new_EV + ci_new_EV,
         color="green",
         alpha=0.2,
-        label="Second-hand Car 95% Confidence Interval"
+        label="New Car 95% Confidence Interval EV"
+    )
+
+    # Plot Mean and 95% CI for Second-hand Car Prices
+    ax1.plot(time_steps, overall_mean_second_hand_EV, label="Second-hand Car Mean Price EV", color="green", linestyle = "dashed")
+    ax1.fill_between(
+        time_steps,
+        overall_mean_second_hand_EV - ci_second_hand_EV,
+        overall_mean_second_hand_EV + ci_second_hand_EV,
+        color="green",
+        alpha=0.2,
+        label="Second-hand Car 95% Confidence Interval EV"
     )
 
     # Format the plot
@@ -516,7 +556,7 @@ def plot_history_mean_price_multiple_seeds(
 
     # Adjust layout and save the plot
     plt.tight_layout()
-    save_and_show(fig, fileName, "history_mean_price_with_traces", dpi)
+    save_and_show(fig, fileName, "history_mean_price_with_traces_by_type", dpi)
 
 
 # Sample main function
@@ -529,8 +569,8 @@ def main(fileName, dpi=600):
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
     history_prop_EV_arr= load_object(fileName + "/Data", "history_prop_EV_arr")
     history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
-    history_mean_price_arr= load_object( fileName + "/Data", "history_mean_price_arr")
-    history_median_price_arr= load_object( fileName + "/Data", "history_median_price_arr")
+    history_mean_price_ICE_EV_arr= load_object( fileName + "/Data", "history_mean_price_ICE_EV_arr")
+    history_median_price_ICE_EV_arr= load_object( fileName + "/Data", "history_median_price_ICE_EV_arr")
     history_total_utility_arr= load_object(fileName + "/Data", "history_total_utility_arr")
     history_market_concentration_arr= load_object( fileName + "/Data", "history_market_concentration_arr")
     history_total_profit_arr= load_object( fileName + "/Data", "history_total_profit_arr")
@@ -609,8 +649,8 @@ def main(fileName, dpi=600):
 
     plot_history_mean_price_multiple_seeds(
     base_params, 
-    history_mean_price_arr, 
-    history_median_price_arr, 
+    history_mean_price_ICE_EV_arr, 
+    history_median_price_ICE_EV_arr, 
     fileName
     )
 
@@ -618,4 +658,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_10_29_10__05_02_2025")
+    main("results/multi_seed_single_16_34_07__05_02_2025")
