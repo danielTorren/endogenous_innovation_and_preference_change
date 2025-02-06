@@ -346,9 +346,9 @@ def plot_efficiency(data_array, property_values_list, fileName, name_property, p
 def main(fileName, dpi=600):
 
     base_params = load_object(fileName + "/Data", "base_params")
-    data_array_distance = load_object(fileName + "/Data", "data_array_distance")
+    #data_array_distance = load_object(fileName + "/Data", "data_array_distance")
     data_array_EV_prop = load_object(fileName + "/Data", "data_array_EV_prop")
-    data_array_age =  load_object(fileName + "/Data", "data_array_age")
+    #data_array_age =  load_object(fileName + "/Data", "data_array_age")
     data_array_price =  load_object(fileName + "/Data", "data_array_price")
     data_array_emissions = load_object(fileName + "/Data", "data_array_emissions")
     #data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
@@ -360,9 +360,9 @@ def main(fileName, dpi=600):
     name_property = vary_single["property_varied"] 
     property_save = vary_single["property_varied"]
 
-    plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
+    #plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
     plot_ev_prop(data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
-    plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
+    #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
     plot_price(data_array_price , property_values_list, fileName, name_property, property_save, 600)
     plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
     #plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
@@ -370,4 +370,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_12_32_12__04_02_2025")
+    main("results/single_param_vary_11_08_27__06_02_2025")

@@ -17,8 +17,8 @@ class Firm:
         self.zero_profit_options_research = 0
 
         #DELETE THIS LATER
-        self.prod_counter =0
-        self.research_counter =0
+        self.prod_counter = 0
+        self.research_counter = 0
 
         self.segment_codes = parameters_firm["segment_codes"]
         
@@ -139,8 +139,8 @@ class Firm:
 
         for car in car_list:
             E_m = car.emissions  # Emissions for the current car                                                  
-            C_m = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
-            C_m_cost = car.ProdCost_t  #+ self.carbon_price*E_m  # Cost for the current car
+            C_m = car.ProdCost_t  
+            C_m_cost = car.ProdCost_t  
             C_m_price = car.ProdCost_t 
             delta = car.delta
 
@@ -157,7 +157,6 @@ class Firm:
                 gamma_s = segment_data["gamma_s_t"]
                 W_s_t = segment_data["W"]
                 nu_maxU = segment_data["nu_maxU"]
-                
                 
                 term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c*(1+self.r)/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t*(1+self.r)/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
 

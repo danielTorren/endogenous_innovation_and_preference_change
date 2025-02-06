@@ -87,8 +87,8 @@ def main(
     save_object(history_efficiency_EV, fileName + "/Data", "history_efficiency_EV")
     save_object(history_production_cost_ICE, fileName + "/Data", "history_production_cost_ICE")
     save_object(history_production_cost_EV, fileName + "/Data", "history_production_cost_EV")
-    save_object(history_distance_individual_ICE, fileName + "/Data", "history_distance_individual_ICE")
-    save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
+    #save_object(history_distance_individual_ICE, fileName + "/Data", "history_distance_individual_ICE")
+    #save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
     save_object(base_params, fileName + "/Data", "base_params")
 
     print(fileName)

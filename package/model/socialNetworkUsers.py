@@ -242,7 +242,7 @@ class Social_Network:
 
         for i, person_index in enumerate(non_switcher_indices):
             user = self.vehicleUsers_list[person_index]
-            user.vehicle.update_timer()# Update the age or timer of the chosen vehicle
+            user.vehicle.update_timer_L_a_t()# Update the age or timer of the chosen vehicle
             # Handle consequences of the choice
             vehicle_chosen_index = index_current_cars_start + person_index
             driven_distance = self.d_vec[person_index]
@@ -530,7 +530,7 @@ class Social_Network:
 
         # Update the age or timer of the chosen vehicle
         #if isinstance(vehicle_chosen, PersonalCar):
-        user.vehicle.update_timer()
+        user.vehicle.update_timer_L_a_t()
 
         return vehicle_chosen, user.vehicle, choice_index, utilities_kappa
 

@@ -36,8 +36,8 @@ class NKModel:
         self.alpha = parameters["alpha"]
         self.E = parameters["production_emissions"]
 
-        self.min_vec = np.asarray([self.min_Quality,self.min_Efficiency, self.min_Cost])
-        self.max_vec = np.asarray([self.max_Quality,self.max_Efficiency, self.max_Cost])
+        self.min_vec = np.asarray([self.min_Quality, self.min_Efficiency, self.min_Cost])
+        self.max_vec = np.asarray([self.max_Quality, self.max_Efficiency, self.max_Cost])
 
         self.fitness_landscape = self.generate_fitness_landscape()
 
@@ -97,17 +97,25 @@ class NKModel:
         L_efficiency = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
         L_cost = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
         # Iterate over each attribute starting from the second one
+
+        if self.rho[1] == 0:
+            L[:, :, 1] = L_efficiency[:, :, 1]
+        else:
+            #FOR COST ITS CORRELATION IS 0.5
+            Q_a_size = int(abs(self.rho[1]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
+            L[:, Q_a, 1] = L_efficiency[:, Q_a, 1]  # Copy fitness contribution from attribute 1
         
-        #DONT HAVE TO ANYTHING FOR QUALITY, its the one we base everything off of
 
-        #FOR EFFICIENCY CORRELATION IS 0, so replace that entry
-        L[:, :, 1] = L_efficiency[:, :, 1]
-
-        #FOR COST ITS CORRELATION IS 0.5
-        Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-        #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-        Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
-        L[:, Q_a, 2] = L_cost[:, Q_a, 2]  # Copy fitness contribution from attribute 1
+        if self.rho[2] == 0:
+            L[:, :, 2] = L_cost[:, :, 2]
+        else:
+            #FOR COST ITS CORRELATION IS 0.5
+            Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
+            L[:, Q_a, 2] = L_cost[:, Q_a, 2]  # Copy fitness contribution from attribute 1
 
         return L
     
@@ -143,5 +151,6 @@ class NKModel:
             inverted_value = decimal_value ^ (1 << bit_position)
             inverted_binary_value = format(inverted_value, f'0{self.N}b')
             inverted_binary_values.append(inverted_binary_value)
+
         return inverted_binary_values
     

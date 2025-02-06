@@ -30,7 +30,6 @@ class PersonalCar:
 
         self.L_a_t = 0  # Lifetime or longevity parameter of transport mode 'a' at time 't'.
                             # Represents how the utility of the vehicle evolves over time or lifetime, often indicating how wear and tear or aging affects the overall utility.
-
         self.Eff_omega_a_t = self.attributes_fitness[1]  #FUEL EFFICIENCY km per kilojoules
         self.ProdCost_t = self.attributes_fitness[2]  #PRODUCTION COST
         self.fuel_cost_c = parameters["fuel_cost_c"]#Fuel cost
@@ -39,10 +38,9 @@ class PersonalCar:
 
         self.emissions = parameters["production_emissions"]  # Emissions factor for the vehicle (E_a_t).
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
-        
         self.total_distance = 0
         self.total_driving_emmissions = 0
         self.total_emissions = self.emissions
 
-    def update_timer(self):
+    def update_timer_L_a_t(self):
         self.L_a_t += 1#0.5 + np.random.uniform()#THE ADDED AGE RANGES FROM 0.5 to 1.5 to avoid cyclic behaviour of agents
