@@ -28,6 +28,7 @@ def params_list_with_seed(base_params):
         base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
         base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
         base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
        
         base_params_list.append( base_params_copy)
     

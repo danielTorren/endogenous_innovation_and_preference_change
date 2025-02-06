@@ -28,6 +28,7 @@ def params_list_with_seed(base_params):
         base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
         base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
         base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
         base_params_list.append(base_params_copy)
     
     return base_params_list
@@ -100,24 +101,13 @@ def main(
     repetitions=100,
     bounds_LOAD="package/analysis/policy_bounds.json"
 ):
-    if policy_list is None:
-        policy_list = [
-            "Carbon_price",
-            "Discriminatory_corporate_tax",
-            "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Production_subsidy",
-            "Research_subsidy",
-        ]
-    else:
-        raise ValueError("Policy list not specified = []")
-
+    
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
     
     with open(bounds_LOAD) as f:
-        bounds = json.load(f)
-
+        policy_info_dict = json.load(f)
+    bounds = policy_info_dict["bounds_dict"]
     future_time_steps = base_params["duration_future"]
     base_params["duration_future"] = 0
 
@@ -147,7 +137,7 @@ def main(
     print("DONE ALL POLICY RUNS")
     save_object(results, file_name + "/Data", "results")
     save_object(policy_list, file_name + "/Data", "policy_list")
-    save_object(bounds, file_name + "/Data", "bounds")
+    save_object(policy_info_dict, file_name + "/Data", "policy_info_dict")
 
     data_array = results.reshape( len(policy_list), repetitions, base_params["seed_repetitions"], 3)
 

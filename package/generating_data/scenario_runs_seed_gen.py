@@ -57,6 +57,7 @@ def expand_scenarios_with_seeds(scenarios, seed_list):
             base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
             base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
             base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+            base_params_copy["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
 
             scenario_seeds.append(base_params_copy)
         expanded_scenarios.append(scenario_seeds)

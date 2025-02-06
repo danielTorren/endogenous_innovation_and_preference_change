@@ -25,6 +25,7 @@ def update_base_params_with_seed(base_params, seed):
     base_params["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
     base_params["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
     base_params["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+    base_params["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
     return base_params
 
 def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[dict]:

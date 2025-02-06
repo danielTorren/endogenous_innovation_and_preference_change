@@ -52,7 +52,8 @@ if __name__ == "__main__":
         "innovation_seed": 75,
         "landscape_seed_EV": 11, 
         "choice_seed": 9,
-        "remove_seed": 48
+        "remove_seed": 48,
+        "init_vals_poisson_seed": 95
     },
     "ev_research_start_time":60,
     "ev_production_start_time": 96,
@@ -156,7 +157,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6,
+        "production_emissions":10,
         "delta": 0.00058,
         "delta_P": 0.0116,
         "transportType": 2,
@@ -175,7 +176,7 @@ if __name__ == "__main__":
         "rho":[0,0],
         "delta": 0.000435,
         "delta_P":0.0087,
-        "production_emissions":9,
+        "production_emissions":14,
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7

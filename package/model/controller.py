@@ -9,6 +9,7 @@ from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
 from scipy.stats import poisson
+
 from scipy.special import lambertw
 import matplotlib.pyplot as plt
 
@@ -131,6 +132,7 @@ class Controller:
         self.parameters_controller["parameters_firm"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
         self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
         self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
+        self.parameters_controller["parameters_social_network"]["init_vals_poisson_seed"]  = self.parameters_controller["seeds"]["init_vals_poisson_seed"]
     
 
     def gen_users_parameters(self):
@@ -153,7 +155,8 @@ class Controller:
         #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
         # Step 4: Generate N random distances using the fitted Poisson parameter
         N = self.num_individuals # Number of individuals
-        poisson_samples = poisson.rvs(mu=fitted_lambda, size=N)
+        self.random_state_poisson = np.random.RandomState(self.parameters_social_network["init_vals_poisson_seed"])
+        poisson_samples = self.random_state_poisson.poisson(lam=fitted_lambda, size=N)
         # Step 5: Map the Poisson samples back to the distance range of the original data
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
@@ -171,7 +174,7 @@ class Controller:
         chi_vec_raw = np.round(innovativeness_vec_init_unrounded, 1)
         self.chi_vec = chi_vec_raw*self.chi_max
         self.proportion_zero_chi = np.mean(self.chi_vec == 0)
-        print("self.proportion_zero_chi",self.proportion_zero_chi)
+        #print("self.proportion_zero_chi",self.proportion_zero_chi)
 
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
@@ -341,14 +344,14 @@ class Controller:
 
         W = self.parameters_vehicle_user["W_calibration"]
         D = np.median(self.d_vec)#np.mean(self.d_vec)   
-
+        #print("D")
         min_kappa = 1/(beta*(P-C)) 
-        print("min_kappa CALIBRATION: ", min_kappa)
+        #print("min_kappa CALIBRATION: ", min_kappa)
         
         #Q_vals = (((r-delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
-        Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
+        Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
         
-        print("Q",Q_val)
+        #print("Q",Q_val)
        
         max_q = 4/3*Q_val #(4*Q_max - Q_min)/3
         min_q = 0.8*Q_val#0#(4*Q_min - Q_max)/3

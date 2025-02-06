@@ -7,7 +7,6 @@ class PersonalCar:
         self.component_string = component_string
         self.price = sale_price
         self.original_price = sale_price
-        self.last_price_paid = sale_price
         
         self.timer = 0
 

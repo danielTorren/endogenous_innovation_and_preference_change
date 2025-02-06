@@ -9,7 +9,6 @@ class SecondHandMerchant:
 
         self.age_limit_second_hand = parameters_second_hand["age_limit_second_hand"]
         self.set_up_time_series_social_network()
-        self.car_bin = []
 
         self.r = parameters_second_hand["r"]
         self.max_num_cars = parameters_second_hand["max_num_cars"]
@@ -93,7 +92,7 @@ class SecondHandMerchant:
         second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
         second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
         second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
-        second_hand_delta = vehicle_dict_vecs_second_hand_cars["delta_P"]
+        second_hand_delta_P = vehicle_dict_vecs_second_hand_cars["delta_P"]
 
         first_hand_quality_max = np.max(first_hand_quality)
         first_hand_efficiency_max = np.max(first_hand_efficiency)
@@ -117,7 +116,7 @@ class SecondHandMerchant:
         closest_prices = first_hand_prices[closest_idxs]
 
         # Adjust prices based on car age and depreciation
-        adjusted_prices = closest_prices * (1 - second_hand_delta) ** second_hand_ages
+        adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
 
         return adjusted_prices
 
@@ -172,7 +171,6 @@ class SecondHandMerchant:
         self.cars_on_sale.append(vehicle)
     
     def remove_car(self, vehicle):
-        self.car_bin.append(vehicle)
         self.cars_on_sale.remove(vehicle)
 
 ############################################################################################

@@ -9,36 +9,33 @@ if __name__ == '__main__':
 
     ###################################################################
     base_params = {
-    "seed_repetitions": 10,
-    "duration_burn_in": 60,
+    "seed_repetitions": 8,
+    "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,#156,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
-        "choice_seed": 9,
-        "remove_seed": 48,
-        "landscape_seed_ICE": 26,
-        "landscape_seed_EV": 14, 
-        "init_tech_seed": 99,
-        "innovation_seed": 77,
+        "init_tech_seed": 96,
+        "landscape_seed_ICE": 27,
+        "social_network_seed": 66,
         "network_structure_seed": 8,
         "init_vals_environmental_seed": 66,
-        "init_vals_innovative_seed":99, 
-        "init_vals_price_seed": 8, 
-        "social_network_seed": 66
+        "init_vals_innovative_seed":99,
+        "init_vals_price_seed": 8,
+        "innovation_seed": 75,
+        "landscape_seed_EV": 11, 
+        "choice_seed": 9,
+        "remove_seed": 48,
+        "init_vals_poisson_seed": 95
     },
-    "ev_research_start_time": 60,
-    "ev_production_start_time": 60,
+    "ev_research_start_time":60,
+    "ev_production_start_time": 96,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "rebate": 10000,
-        "used_rebate": 1000,
-        "rebate_count_cap": 70000,
-        "pop": 39370000,
-        "rebate_low": 2500,
-        "used_rebate_low": 1000
+        "rebate": 10,
+        "used_rebate": 1
     },
     "parameters_scenarios":{
         "States":{
@@ -87,145 +84,113 @@ if __name__ == '__main__':
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 15,
+                    "Carbon_price": 10,
                     "Carbon_price_state": "linear"
                 }
             },
             "Discriminatory_corporate_tax":{
-                "Zero":{
-                    "corporate_tax": 0
-                },
-                "Low":{
-                    "corporate_tax": 0.05
-                },
-                "High":{
-                    "corporate_tax": 1
-                }
+                "Zero": 0,
+                "Low":0.05,
+                "High":0.95
             },
             "Electricity_subsidy":{                
-                "Zero":{
-                    "electricity_price_subsidy": 0
-                },
-                "Low":{
-                    "electricity_price_subsidy": 0.1
-                },
-                "High":{
-                    "electricity_price_subsidy": 1
-                }
+                "Zero":0,
+                "Low": 0.01,
+                "High": 1
             },
             "Adoption_subsidy":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 2500
-                },
-                "High":{
-                    "rebate": 50000
-                }
+                "Zero": 0,
+                "Low": 2.5,
+                "High":200
             },
             "Adoption_subsidy_used":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 500
-                },
-                "High":{
-                    "rebate": 1000
-                }
+                "Zero":0,
+                "Low":0.5,
+                "High":20
             },
             "Production_subsidy":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 2500
-                },
-                "High":{
-                    "rebate": 5000
-                }
+                "Zero":0,
+                "Low":2.5,
+                "High":20
             },
             "Research_subsidy":{
-                "Zero":{
-                    "rebate": 0
-                },
-                "Low":{
-                    "rebate": 2500
-                },
-                "High":{
-                    "rebate": 5000
-                }
+                "Zero":0,
+                "Low":2.5,
+                "High":20
             }
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 120,#36,
+        "age_limit_second_hand": 12,
+        "max_num_cars_prop": 1,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 1000
+        "scrap_price": 1
     },
     "parameters_ICE":{
         "N": 15,
-        "K": 4,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6000,
-        "delta": 0.001,
+        "production_emissions":6,
+        "delta": 0.00058,
+        "delta_P": 0.0116,
         "transportType": 2,
-        "min_Price": 20000,
-        "max_Price": 80000,
-        "min_Efficiency": 0.3,
-        "max_Efficiency": 1.444,
-        "min_Cost": 5000,
-        "max_Cost": 30000
-    },
+        "mean_Price": 40,
+        "min_Price": 20,
+        "max_Price": 100,
+        "min_Efficiency": 0.5,
+        "max_Efficiency": 1.5,
+        "min_Cost": 5,
+        "max_Cost": 50
+    }, 
     "parameters_EV":{
         "N": 15,
-        "K": 4,
+        "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":9000,
+        "delta": 0.000435,
+        "delta_P":0.0087,
+        "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7
     },
     "parameters_firm_manager": {
-        "J": 30,
+        "J": 20,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "beta_threshold_percentile": 50,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 5
+        "num_beta_segments": 4
     },
     "parameters_firm":{
+        "lambda": 1e-4,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
-        "lambda": 5,
-
-        "init_U": 10e5,
-        "init_price_multiplier": 3
+        "init_price_multiplier": 1.1,
+        "min profit": 0.1
     },
     "parameters_social_network":{
         "num_individuals": 3000,
-        "d_max": 4000,
-        "d_min": 500,
-        "SW_network_density": 0.05,
-        "SW_prob_rewire": 0.1,
-        "WTP_mean": 0.5,#210,
-        "WTP_sd": 0.1,#175,
-        "gamma_epsilon": 1e-5,
-        "car_lifetime_months": 192,
-        "a_chi": 0.7,
-        "b_chi": 1,
         "chi_max": 0.9,
-        "prob_switch_car": 0.083
+        "a_chi": 1.8,
+        "b_chi": 3,
+        "SW_network_density": 0.01,
+        "SW_prob_rewire": 0.1,
+        "WTP_mean": 40889,
+        "WTP_sd": 34327,
+        "gamma_epsilon": 1e-5,
+
+        "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":30,
-        "r": 0.00417,
-        "mu": 0.05,
-        "nu": 10e-8
+        "kappa":0.15,
+        "U_segments_init": 0,
+        "W_calibration":1e20,
+        "min_W": 0,
+        "r":  0.0002959523726,
+        "mu": 1,
+        "alpha": 0.5
     }
 }
     # Create a profiler object

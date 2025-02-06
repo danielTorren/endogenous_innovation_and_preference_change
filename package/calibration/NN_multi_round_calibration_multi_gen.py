@@ -59,6 +59,7 @@ def update_base_params_with_seed(base_params, seed):
     base_params["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
     base_params["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
     base_params["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+    base_params["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
     
     return base_params
 
@@ -183,9 +184,9 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.5, 4]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.5, 4]},
-        #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1,20]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.5, 3]},
+        #{"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.5, 4]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [0.1,10]},
         #{"name": "prob_switch_car", "subdict": "parameters_social_network", "bounds": [0, 0.03]}
         #{"name": "SW_prob_rewire", "subdict": "parameters_social_network", "bounds": [0, 1]},
         #{"name": "SW_K", "subdict": "parameters_social_network", "bounds": [20, 500]},
