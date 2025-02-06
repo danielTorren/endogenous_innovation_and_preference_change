@@ -188,7 +188,7 @@ class Firm:
                     if car.transportType == 3:
                         price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
                     else:
-                        price_adjust = price_s
+                        price_adjust = price_s                                                  
                     car.car_utility_segments_U[segment_code] =  self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust, car.delta)
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
@@ -518,13 +518,55 @@ class Firm:
 
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     vehicle.expected_profit_segments[segment_code] = expected_profit
-
                 else:
                     # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     expected_profit = 0
                     vehicle.expected_profit_segments[segment_code] = expected_profit
 
         return car_list
+
+    def set_utility_and_profit_grid_production(self, selected_vehicle, market_data, segment_code):
+
+        beta_s = market_data[segment_code]["beta_s_t"]
+        gamma_s = market_data[segment_code]["gamma_s_t"]
+        b_idx, g_idx, e_idx = segment_code
+
+        if (selected_vehicle.transportType == 2) or (e_idx == 1 and selected_vehicle.transportType == 3):
+            price_s = selected_vehicle.optimal_price_segments[segment_code]
+            if selected_vehicle.transportType == 3:
+                price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
+            else:
+                price_adjust = price_s
+            selected_vehicle.car_utility_segments_U[segment_code] = self.calc_utility(selected_vehicle.Quality_a_t, beta_s, gamma_s, selected_vehicle.fuel_cost_c, selected_vehicle.Eff_omega_a_t, selected_vehicle.e_t, selected_vehicle.emissions, price_adjust, selected_vehicle.delta)
+        else:
+            selected_vehicle.car_utility_segments_U[segment_code] = -np.inf
+
+        if selected_vehicle.transportType == 3:#PRODUCTION SUBSIDY
+            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t - self.production_subsidy)
+        else:
+            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t)
+
+        I_s_t = market_data[segment_code]["I_s_t"]
+        W = market_data[segment_code]["W"]
+
+        utility_value = selected_vehicle.car_utility_segments_U[segment_code]
+
+        if utility_value == -np.inf:
+            utility_proportion = 0
+            raw_profit = 0
+        else:
+            #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
+            nu_maxU = market_data[segment_code]["nu_maxU"]
+            utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
+            raw_profit = profit_per_sale * I_s_t * utility_proportion
+
+        if selected_vehicle.transportType == 3:  # EV
+            updated_profit = raw_profit
+        else:  # ICE
+            updated_profit = raw_profit * (1 - self.discriminatory_corporate_tax)
+        
+        return updated_profit
+
 
     def select_car_lambda_production(self, market_data, car_list):
         """
@@ -569,7 +611,6 @@ class Firm:
                     self.selected_vehicle_segment_counts[segment_code] = np.nan
         else:
             self.zero_profit_options_prod = 0
-            selected_vehicles = []  # To store selected vehicles
 
             # Iterate until all segments are covered or the max number of cars are chosen
             for _ in range(len(segments)):
@@ -592,46 +633,8 @@ class Firm:
 
                 for i, segment_code in enumerate(segments):
                     if profit_matrix[i, max_col] != -np.inf:  # Skip covered rows
-                        selected_vehicle.optimal_price_segments[segment_code] = optimal_price_chosen_segment
-
-                        beta_s = market_data[segment_code]["beta_s_t"]
-                        gamma_s = market_data[segment_code]["gamma_s_t"]
-                        b_idx, g_idx, e_idx = segment_code
-
-                        if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
-                            price_s = selected_vehicle.optimal_price_segments[segment_code]
-                            if selected_vehicle.transportType == 3:
-                                price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
-                            else:
-                                price_adjust = price_s
-                            selected_vehicle.car_utility_segments_U[segment_code] = self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust, car.delta)
-                        else:
-                            selected_vehicle.car_utility_segments_U[segment_code] = -np.inf
-
-                        if selected_vehicle.transportType == 3:#PRODUCTION SUBSIDY
-                            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t - self.production_subsidy)
-                        else:
-                            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t)
-
-                        I_s_t = market_data[segment_code]["I_s_t"]
-                        W = market_data[segment_code]["W"]
-
-                        utility_value = selected_vehicle.car_utility_segments_U[segment_code]
-
-                        if utility_value == -np.inf:
-                            utility_proportion = 0
-                            raw_profit = 0
-                        else:
-                            #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
-                            nu_maxU = market_data[segment_code]["nu_maxU"]
-                            utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
-                            raw_profit = profit_per_sale * I_s_t * utility_proportion
-
-                        if selected_vehicle.transportType == 3:  # EV
-                            updated_profit = raw_profit
-                        else:  # ICE
-                            updated_profit = raw_profit * (1 - self.discriminatory_corporate_tax)
-
+                        selected_vehicle.optimal_price_segments[segment_code] = optimal_price_chosen_segment#UPDATE THE PRICE FOR THE SEGEMENT, THIS LOCKS THE PRICE FOR ALL OTHERS SEGMENTS!
+                        updated_profit = self.set_utility_and_profit_grid_production(selected_vehicle, market_data, segment_code)#RECALCULATE TEH UTILITY AND PROFIT BASED ON THIS PRICE
                         profit_matrix[i, max_col] = updated_profit
 
             # Final selection of vehicles with the highest expected profits
@@ -733,7 +736,7 @@ class Firm:
         for car in car_list:
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
-            elif car.transportType == 3:
+            else:#EV
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
         return car_list
