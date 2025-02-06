@@ -268,16 +268,12 @@ class Firm:
                     # Expected profit calculation
                     utility_value = vehicle.car_utility_segments_U[segment_code]
 
-                    #print("utility_value",utility_value)
-
                     if utility_value == -np.inf:
                         utility_proportion = 0
                         raw_profit = 0
                     else:
-                        #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
                         nu_maxU = segment_data["nu_maxU"]
                         utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
-                        #print("utility_proportion", utility_proportion)
                         raw_profit = profit_per_sale * I_s_t * utility_proportion
 
                     if is_ev:
@@ -285,13 +281,12 @@ class Firm:
                     else:
                         expected_profit = raw_profit*(1-self.discriminatory_corporate_tax)
 
-                    # Store profit in the vehicle's expected profit attribute and update the main dictionary
+
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
                 else:#THIS SEGEMNT CANT BUY EVS
-                    # Store profit in the vehicle's expected profit attribute and update the main dictionary
                     expected_profit = self.research_subsidy
                     vehicle.expected_profit_segments[segment_code] = expected_profit 
-                #print("expected_profit ",expected_profit )
+
         return  car_list
     
     def select_car_lambda_research(self, car_list):
@@ -305,20 +300,13 @@ class Firm:
         Returns:
         - CarModel: The vehicle selected for research.
         """
-
-        # Dictionary to store the highest profit for each vehicle
         
         #PICK OUT EACH CARS BEST SEGMENT
         profits = []
 
-        #num_ev = sum(1 for car in car_list if car.transportType == 3)
-        #print("num ev ad prop: ",num_ev, num_ev/len(car_list))
-
         for vehicle in car_list:
             # Calculate profit for each segment
             max_profit = 0
-            #if vehicle.transportType == 3:
-            #    print("profts car", list(vehicle.expected_profit_segments.values()))
             for segment_code, segment_profit in vehicle.expected_profit_segments.items():
                 if segment_profit > max_profit:
                     max_profit = segment_profit
@@ -327,17 +315,12 @@ class Firm:
         # Convert profits list to numpy array
         profits = np.array(profits)
 
-        #ev_profit = sum(profit for car, profit in zip(car_list, profits) if car.transportType == 3)
-        #print("ev_profit", ev_profit)
-
         len_vehicles = len(car_list)  # Length of the car list
 
         if np.sum(profits) == 0:#ALL TECHH HAS 0 UTILITY DUE TO BEIGN VERY BAD, exp caps out
-            #print("0 profit", profits)
             self.zero_profit_options_research = 1
             selected_index = self.random_state.choice(len_vehicles)
         else:
-            #print("proftis raw", profits)
             profits[profits == 0] = -np.inf#if pofit is zero you cant choose it
 
             # Compute the softmax probabilities
@@ -351,23 +334,13 @@ class Firm:
             exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
 
             lambda_profits[valid_profits_mask] = np.exp(exp_input)
-            #lambda_profits = profits**self.lambda_exp
-
-            #print("lambda_profits", lambda_profits)
             sum_profit = np.sum(lambda_profits)
 
             self.zero_profit_options_research = 0
             probabilities = lambda_profits/sum_profit
-
-            #ev_probability = sum(prob for car, prob in zip(car_list, probabilities) if car.transportType == 3)
-            #print("ev_probability", ev_probability)
-
-
             selected_index = self.random_state.choice(len_vehicles, p=probabilities)
 
-        # Select a vehicle based on the computed probabilities
         selected_vehicle = car_list[selected_index]
-        #quit()
 
         return selected_vehicle
 
@@ -431,10 +404,10 @@ class Firm:
     
     def add_new_vehicle_memory(self, vehicle_model_research):
 
-        if vehicle_model_research.transportType == 2:
+        if vehicle_model_research.transportType == 2:#ICE
             if vehicle_model_research not in self.list_technology_memory_ICE:
                 self.list_technology_memory_ICE.append(vehicle_model_research)
-        else:
+        else:#EV
             if vehicle_model_research not in self.list_technology_memory_EV:
                 self.list_technology_memory_EV.append(vehicle_model_research)
 
@@ -452,7 +425,7 @@ class Firm:
     def update_memory_len(self):
         #is the memory list is too long then remove data
 
-        list_technology_memory_all = list(self.list_technology_memory_EV +self.list_technology_memory_ICE)
+        list_technology_memory_all = list(self.list_technology_memory_EV + self.list_technology_memory_ICE)
 
         if len(list_technology_memory_all) > self.memory_cap:
             tech_to_remove = max((tech for tech in list_technology_memory_all if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
