@@ -116,6 +116,7 @@ class Firm_Manager:
         self.parameters_firm["universal_model_repo_EV"] = self.universal_model_repo_EV
         self.parameters_firm["universal_model_repo_ICE"] = self.universal_model_repo_ICE
         self.parameters_firm["segment_codes"] = self.all_segment_codes
+
         #Create the firms, these store the data but dont do anything otherwise
         self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.innovation_seed_list[j]) for j in range(self.J)]
 
@@ -204,7 +205,9 @@ class Firm_Manager:
             segment_counts[seg_code] += 1
 
         # 3) Compute midpoints for each segment
-        for code in self.all_segment_codes:
+        self.beta_s_values = np.zeros(self.num_segments)
+        self.gamma_s_values = np.zeros(self.num_segments)
+        for i, code in enumerate(self.all_segment_codes):
             count = segment_counts[code]
             b_idx, g_idx, _ = code
 
@@ -220,10 +223,14 @@ class Firm_Manager:
             self.market_data[code]["I_s_t"] = count
             self.market_data[code]["beta_s_t"] = beta_midpoint
             self.market_data[code]["gamma_s_t"] = gamma_value
-
+            self.beta_s_values[i] = beta_midpoint
+            self.gamma_s_values[i] = gamma_value
+        
         #4) calc the utility of each car (already did base utility in the car but need the full value including price and emissiosn production)
         for firm in self.firms_list:
+            firm.input_beta_gamma_segments(self.beta_s_values, self.gamma_s_values)
             firm.calc_init_U_segments(self.market_data)
+
 
         # 5) Sum up the utilities across all cars for each segment
         segment_W = defaultdict(float)
@@ -235,8 +242,9 @@ class Firm_Manager:
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                        if U > self.market_data[code]["nu_maxU"]:
-                            self.market_data[code]["nu_maxU"] = U
+                    if U > self.market_data[code]["nu_maxU"]:
+                        self.market_data[code]["nu_maxU"] = U
+
 
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
@@ -247,6 +255,9 @@ class Firm_Manager:
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
             #print("INIT W", self.market_data[code]["W"])
+
+
+        
 
 
     ############################################################################################################################################################

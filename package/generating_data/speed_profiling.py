@@ -5,6 +5,7 @@ import cProfile
 def main(base_params): 
     Data = generate_data(base_params)  # run the simulation
     print("E",Data.social_network.emissions_cumulative)
+    print("uptake: calibration, end",  Data.calc_EV_prop())
 
 if __name__ == '__main__':
 

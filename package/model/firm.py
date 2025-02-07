@@ -71,6 +71,7 @@ class Firm:
 
         self.lambda_exp = parameters_firm["lambda"]
 
+
         self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
         self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
 
@@ -121,18 +122,13 @@ class Firm:
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
+    def input_beta_gamma_segments(self,beta_s_values, gamma_s_values):
+        self.beta_s_values = beta_s_values
+        self.gamma_s_values = gamma_s_values
+
     def calc_utility_prop(self,U,W, nu_maxU):
-        
-        #print("bits",self.kappa*U, self.kappa*self.nu_maxU, W)
         utility_proportion = np.exp(self.kappa*U - self.kappa*nu_maxU)/(np.exp(-self.kappa*nu_maxU)*W + np.exp(self.kappa*U - self.kappa*nu_maxU))
-        #utility_proportion = np.exp(self.kappa*U)/(W + np.exp(self.kappa*U))
-
         return utility_proportion
-
-    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta):
-        #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
-        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
-        return U
 
     def create_car_data(self, car_list):
         """
@@ -158,7 +154,6 @@ class Firm:
                 print(f"Error: Car object does not have attribute '{attr}'")
                 return None  # Or raise an exception
 
-        num_cars = len(car_list)
         car_data = {}
 
         for attr in required_attributes:
@@ -167,15 +162,12 @@ class Firm:
 
         return car_data
 
-    def calc_optimal_price_cars(self, market_data, car_list):
+    def calc_optimal_price_cars(self, market_data, car_list, car_data):
         """Fully vectorized calculation of optimal prices."""
-
-        car_data = self.create_car_data(car_list)
 
         # Pre-compute market segment data (same as before)
         segment_data_values = list(market_data.values())
-        beta_s_values = np.array([segment["beta_s_t"] for segment in segment_data_values])
-        gamma_s_values = np.array([segment["gamma_s_t"] for segment in segment_data_values])
+
         W_s_t_values = np.array([segment["W"] for segment in segment_data_values])
         #num_segments = len(market_data)
 
@@ -198,15 +190,15 @@ class Firm:
 
         # Fully vectorized calculation of 'term'
         term = self.kappa * (self.d_mean * (Quality_a_t[:, np.newaxis]**self.alpha) * ((1 + self.r) / (self.r - (1 - delta[:, np.newaxis])**self.alpha + 1)) \
-            - beta_s_values[np.newaxis, :] * self.d_mean * fuel_cost_c[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) \
-            - gamma_s_values[np.newaxis, :] * (self.d_mean * e_t[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) + E_m[:, np.newaxis]) \
-            - beta_s_values[np.newaxis, :] * C_m_price[:, np.newaxis]) - 1.0
+            - self.beta_s_values[np.newaxis, :] * self.d_mean * fuel_cost_c[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) \
+            - self.gamma_s_values[np.newaxis, :] * (self.d_mean * e_t[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) + E_m[:, np.newaxis]) \
+            - self.beta_s_values[np.newaxis, :] * C_m_price[:, np.newaxis]) - 1.0
 
         log_term = term - np.log(W_s_t_values[np.newaxis, :])
         Arg = np.exp(log_term)
         LW = lambertw(Arg, 0).real
 
-        P = C_m_cost[:, np.newaxis] + (1.0 + LW) / (self.kappa * beta_s_values[np.newaxis, :])
+        P = C_m_cost[:, np.newaxis] + (1.0 + LW) / (self.kappa * self.beta_s_values[np.newaxis, :])
         
         # Store results in the original car objects (CRITICAL CHANGE)
         for i, car in enumerate(car_list):
@@ -214,28 +206,70 @@ class Firm:
                     car.optimal_price_segments[segment_code] = P[i, j]
         return car_list  # Return a dictionary of optimal prices by segment.
 
-    def calc_utility_cars_segments(self, market_data, vehicle_list):
-        for segment_code, segment_data in market_data.items():
-            beta_s =  segment_data["beta_s_t"]
-            gamma_s = segment_data["gamma_s_t"]
-            # Unpack the tuple
-            b_idx, g_idx, e_idx = segment_code  # if your codes are (b, g, e)
-            for car in vehicle_list:
-                if (car.transportType == 2) or (e_idx == 1 and car.transportType == 3):
-                    price_s = car.optimal_price_segments[segment_code]#price for that specific segment
-                    #ADD IN A SUBSIDY
-                    if car.transportType == 3:
-                        price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
-                    else:
-                        price_adjust = price_s                                                  
-                    car.car_utility_segments_U[segment_code] =  self.calc_utility(car.Quality_a_t, beta_s, gamma_s, car.fuel_cost_c, car.Eff_omega_a_t, car.e_t, car.emissions, price_adjust, car.delta)
-                else:
-                    car.car_utility_segments_U[segment_code] = -np.inf
+    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta):
+        #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
+        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
+        return U
 
-        return vehicle_list
+    def calc_utility_cars_segments(self, market_data, car_list, car_data):
+        num_cars = len(car_list)
+        num_segments = len(market_data)
+
+        U = np.full((num_cars, num_segments), -np.inf)
+
+        # Broadcasting car data to match (num_cars, num_segments)
+        Q_values = np.tile(car_data["Quality_a_t"][:, np.newaxis], (1, num_segments))
+        c_values = np.tile(car_data["fuel_cost_c"][:, np.newaxis], (1, num_segments))
+        omega_values = np.tile(car_data["Eff_omega_a_t"][:, np.newaxis], (1, num_segments))
+        e_values = np.tile(car_data["e_t"][:, np.newaxis], (1, num_segments))
+        E_new_values = np.tile(car_data["emissions"][:, np.newaxis], (1, num_segments))
+        delta_values = np.tile(car_data["delta"][:, np.newaxis], (1, num_segments))
+        transport_types = np.tile(car_data["transportType"][:, np.newaxis], (1, num_segments))
+
+        # Broadcast segment parameters to match (num_cars, num_segments)
+        beta_s_broadcast = np.tile(self.beta_s_values, (num_cars, 1))
+        gamma_s_broadcast = np.tile(self.gamma_s_values, (num_cars, 1))
+
+        # Initialize P_adjust and valid_mask
+        P_adjust_values = np.zeros((num_cars, num_segments))
+        valid_mask = np.zeros((num_cars, num_segments), dtype=bool)
+
+        segment_codes = list(market_data.keys())
+
+        # Populate valid_mask and P_adjust_values
+        for i, car in enumerate(car_list):
+            for j, segment_code in enumerate(segment_codes):
+                if (car.transportType == 2) or (segment_code[2] == 1 and car.transportType == 3):
+                    valid_mask[i, j] = True
+                    P_adjust_values[i, j] = car.optimal_price_segments.get(segment_code, 0)
+
+        # Apply rebates for EVs
+        ev_mask = (transport_types == 3) & valid_mask
+        P_adjust_values[ev_mask] = np.maximum(0, P_adjust_values[ev_mask] - (self.rebate + self.rebate_calibration))
+
+        # Calculate utilities only for valid entries
+        U[valid_mask] = self.calc_utility(
+            Q_values[valid_mask], 
+            beta_s_broadcast[valid_mask],
+            gamma_s_broadcast[valid_mask],
+            c_values[valid_mask],
+            omega_values[valid_mask],
+            e_values[valid_mask],
+            E_new_values[valid_mask],
+            P_adjust_values[valid_mask],
+            delta_values[valid_mask]
+        )
+
+        # Assign calculated utilities back to car objects
+        for i, car in enumerate(car_list):
+            for j, segment_code in enumerate(segment_codes):
+                car.car_utility_segments_U[segment_code] = U[i, j]
+
+        return car_list
 
     ########################################################################################################################################
     #INNOVATION
+
     def innovate(self, market_data):
         # create a list of cars in neighbouring memory space                       
         unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
@@ -246,17 +280,22 @@ class Firm:
         else:
             unique_neighbouring_technologies = unique_neighbouring_technologies_ICE +  [self.last_researched_car_ICE]
 
+
         
         # update the prices of models to consider        
         unique_neighbouring_technologies = self.update_prices_and_emissions_intensity(unique_neighbouring_technologies)
         # calculate the optimal price of cars in the memory 
-        unique_neighbouring_technologies = self.calc_optimal_price_cars(market_data, unique_neighbouring_technologies)
+    
+        # Preprocess car data once and pass it to subsequent functions
+        car_data = self.create_car_data(unique_neighbouring_technologies)
+
+        unique_neighbouring_technologies = self.calc_optimal_price_cars(market_data, unique_neighbouring_technologies, car_data)
         # calculate the utility of car segements
-        unique_neighbouring_technologies = self.calc_utility_cars_segments(market_data, unique_neighbouring_technologies)
+        unique_neighbouring_technologies = self.calc_utility_cars_segments(market_data, unique_neighbouring_technologies, car_data)
         # calc the predicted profits of cars
         #unique_neighbouring_technologies, expected_profits_segments = self.calc_predicted_profit_segments_research(market_data, unique_neighbouring_technologies)
         
-        unique_neighbouring_technologies = self.calc_predicted_profit_segments_research(market_data, unique_neighbouring_technologies)
+        unique_neighbouring_technologies = self.calc_predicted_profit_segments_research(market_data, unique_neighbouring_technologies, car_data)
         
         self.vehicle_model_research = self.select_car_lambda_research(unique_neighbouring_technologies)
 
@@ -274,60 +313,76 @@ class Firm:
         # adjust memory bank
         self.update_memory_len()
 
-    def calc_predicted_profit_segments_research(self, market_data, car_list):
+
+    def calc_predicted_profit_segments_research(self, market_data, car_list, car_data):
         """
         THIS INCLUDES THE FLAT SUBSIDY FOR EV RESEARCH!
-        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars, 
+        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars,
         and segments that do not consider EVs only able to buy ICE cars.
         """
 
-        # Loop through each vehicle in car_list to calculate profit for each segment
-        for vehicle in car_list:
-            is_ev = vehicle.transportType == 3  # Assuming transportType 3 is EV; adjust as needed
+        num_cars = len(car_list)
 
-            # Calculate profit for each segment
-            for segment_code, segment_data in market_data.items():
+        # Extract necessary car data
+        transport_types = car_data["transportType"]#np.array([car.transportType for car in car_list])
+        prod_costs = car_data["ProdCost_t"]#np.array([car.ProdCost_t for car in car_list])
+        optimal_prices = np.array([
+            [car.optimal_price_segments.get(segment_code, 0) for segment_code in market_data.keys()] 
+            for car in car_list
+        ])
+        utilities = np.array([
+            [car.car_utility_segments_U.get(segment_code, -np.inf) for segment_code in market_data.keys()] 
+            for car in car_list
+        ])
 
-                b_idx, g_idx, e_idx = segment_code
-                consider_ev = (e_idx == 1) # Determine if the segment considers EVs
+        # Extract market data
+        consider_ev_mask = np.array([segment_code[2] == 1 for segment_code in market_data.keys()])  # Shape (num_segments,)
 
-                # For segments that consider EVs, calculate profit for both EV and ICE vehicles
-                if (is_ev == False) or (consider_ev == True):# if its an ice car, or people dont consider evs
-                    # Include EV only if the segment considers EV, always include ICE                    
+        # Create masks
+        is_ev_mask = transport_types == 3  # Shape (num_cars,)
+        consider_ev_broadcast = np.tile(consider_ev_mask, (num_cars, 1))
+        include_vehicle_mask = (~is_ev_mask[:, np.newaxis]) | consider_ev_broadcast
 
-                    # Calculate profit for this vehicle and segment
-                    if is_ev:#PRODUCTION SUBSIDY
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t - self.production_subsidy) # + self.carbon_price*vehicle.emissions 
-                    else:
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - vehicle.ProdCost_t
-                    
-                    I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
-                    W = segment_data["W"]
-                    
-                    # Expected profit calculation
-                    utility_value = vehicle.car_utility_segments_U[segment_code]
+        # Profit per sale
+        prod_subsidy_adjustment = np.maximum(0, prod_costs[:, np.newaxis] - self.production_subsidy)
+        profit_per_sale = np.where(
+            is_ev_mask[:, np.newaxis],
+            optimal_prices - prod_subsidy_adjustment,
+            optimal_prices - prod_costs[:, np.newaxis]
+        )
 
-                    if utility_value == -np.inf:
-                        utility_proportion = 0
-                        raw_profit = 0
-                    else:
-                        nu_maxU = segment_data["nu_maxU"]
-                        utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
-                        raw_profit = profit_per_sale * I_s_t * utility_proportion
+        # Utility proportion
+        utility_proportion = np.where(
+            utilities == -np.inf,
+            0,
+            self.calc_utility_prop(utilities, self.W_vec[np.newaxis, :], self.nu_maxU_vec[np.newaxis, :])
+        )
 
-                    if is_ev:
-                        expected_profit = raw_profit + self.research_subsidy
-                    else:
-                        expected_profit = raw_profit*(1-self.discriminatory_corporate_tax)
+        # Raw profit
+        raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
+        # Expected profit
+        expected_profit = np.where(
+            is_ev_mask[:, np.newaxis],
+            raw_profit + self.research_subsidy,
+            raw_profit * (1 - self.discriminatory_corporate_tax)
+        )
 
-                    vehicle.expected_profit_segments[segment_code] = expected_profit 
-                else:#THIS SEGEMNT CANT BUY EVS
-                    expected_profit = self.research_subsidy
-                    vehicle.expected_profit_segments[segment_code] = expected_profit 
+        # Apply research subsidy for segments that can't buy EVs
+        expected_profit = np.where(
+            include_vehicle_mask,
+            expected_profit,
+            self.research_subsidy
+        )
 
-        return  car_list
-    
+        # Assign expected profits back to cars
+        segment_codes = list(market_data.keys())
+        for i, car in enumerate(car_list):
+            for j, segment_code in enumerate(segment_codes):
+                car.expected_profit_segments[segment_code] = expected_profit[i, j]
+
+        return car_list
+
     def select_car_lambda_research(self, car_list):
         """
         Probabilistically select a vehicle for research, where the probability of selecting a vehicle
@@ -487,99 +542,131 @@ class Firm:
                 
     ########################################################################################################################################
     #PRODUCTION
-    def calc_predicted_profit_segments_production(self, market_data, car_list):
+    def calc_predicted_profit_segments_production(self, market_data, car_list, car_data):
         """
-        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars, 
+        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars,
         and segments that do not consider EVs only able to buy ICE cars.
         """
+        num_cars = len(car_list)
 
-        # Loop through each vehicle in car_list to calculate profit for each segment
-        for vehicle in car_list:
-            is_ev = vehicle.transportType == 3  # Assuming transportType 3 is EV; adjust as needed
+        # Extract necessary car data
+        transport_types = car_data["transportType"]#np.array([car.transportType for car in car_list])
+        prod_costs = car_data["ProdCost_t"]#np.array([car.ProdCost_t for car in car_list])
+        optimal_prices = np.array([
+            [car.optimal_price_segments.get(segment_code, 0) for segment_code in market_data.keys()] 
+            for car in car_list
+        ])
+        utilities = np.array([
+            [car.car_utility_segments_U.get(segment_code, -np.inf) for segment_code in market_data.keys()] 
+            for car in car_list
+        ])
 
-            # Calculate profit for each segment
-            for segment_code, segment_data in market_data.items():
-                b_idx, g_idx, e_idx = segment_code
-                consider_ev = (e_idx == 1) # Determine if the segment considers EVs
+        # Extract market data
+        consider_ev_mask = np.array([segment_code[2] == 1 for segment_code in market_data.keys()])  # Shape (num_segments,)
 
-                # For segments that consider EVs, calculate profit for both EV and ICE vehicles
-                if (is_ev == False) or (consider_ev == True):  # Include EV only if the segment considers EV, always include ICE                    
+        # Create masks
+        is_ev_mask = transport_types == 3  # Shape (num_cars,)
+        consider_ev_broadcast = np.tile(consider_ev_mask, (num_cars, 1))
+        include_vehicle_mask = (~is_ev_mask[:, np.newaxis]) | consider_ev_broadcast
 
-                    # Calculate profit for this vehicle and segment
-                    if is_ev:#PRODUCTION SUBSIDY
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t - self.production_subsidy) # + self.carbon_price*vehicle.emissions 
-                    else:
-                        profit_per_sale = vehicle.optimal_price_segments[segment_code] - np.maximum(0,vehicle.ProdCost_t)
+        # Profit per sale
+        prod_subsidy_adjustment = np.maximum(0, prod_costs[:, np.newaxis] - self.production_subsidy)
+        profit_per_sale = np.where(
+            is_ev_mask[:, np.newaxis],
+            optimal_prices - prod_subsidy_adjustment,
+            optimal_prices - np.maximum(0, prod_costs[:, np.newaxis])
+        )
 
-                    I_s_t = segment_data["I_s_t"]  # Size of individuals in the segment at time t
-                    W = segment_data["W"]
-                    
-                    # Expected profit calculation
-                    utility_car = vehicle.car_utility_segments_U[segment_code]#max(0,vehicle.car_utility_segments_U[segment_code])
+        # Utility proportion
+        utility_proportion = np.where(
+            utilities == -np.inf,
+            0,
+            self.calc_utility_prop(utilities, self.W_vec[np.newaxis, :], self.nu_maxU_vec[np.newaxis, :])
+        )
 
-                    #utility_proportion = np.exp(self.kappa*utility_car - self.nu_maxU)/(W + np.exp(self.kappa*utility_car - self.nu_maxU))
-                    nu_maxU = segment_data["nu_maxU"]
-                    utility_proportion = self.calc_utility_prop(utility_car,W, nu_maxU)
+        # Raw profit
+        raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
-                    raw_profit = profit_per_sale * I_s_t * utility_proportion
+        # Expected profit
+        expected_profit = np.where(
+            is_ev_mask[:, np.newaxis],
+            raw_profit,
+            raw_profit * (1 - self.discriminatory_corporate_tax)
+        )
 
-                    if is_ev:
-                        expected_profit = raw_profit
-                    else:
-                        expected_profit = raw_profit*(1-self.discriminatory_corporate_tax)
+        # Apply zero profit for segments that can't buy EVs
+        expected_profit = np.where(
+            include_vehicle_mask,
+            expected_profit,
+            0
+        )
 
-                    # Store profit in the vehicle's expected profit attribute and update the main dictionary
-                    vehicle.expected_profit_segments[segment_code] = expected_profit
-                else:
-                    # Store profit in the vehicle's expected profit attribute and update the main dictionary
-                    expected_profit = 0
-                    vehicle.expected_profit_segments[segment_code] = expected_profit
+        # Assign expected profits back to cars
+        segment_codes = list(market_data.keys())
+        for i, car in enumerate(car_list):
+            for j, segment_code in enumerate(segment_codes):
+                car.expected_profit_segments[segment_code] = expected_profit[i, j]
 
         return car_list
 
-    def set_utility_and_profit_grid_production(self, selected_vehicle, market_data, segment_code):
 
-        beta_s = market_data[segment_code]["beta_s_t"]
-        gamma_s = market_data[segment_code]["gamma_s_t"]
-        b_idx, g_idx, e_idx = segment_code
+    def set_utility_and_profit_grid_production(self, selected_vehicle, segment_codes, valid_indices):
 
-        if (selected_vehicle.transportType == 2) or (e_idx == 1 and selected_vehicle.transportType == 3):
-            price_s = selected_vehicle.optimal_price_segments[segment_code]
-            if selected_vehicle.transportType == 3:
-                price_adjust = np.maximum(0,price_s - (self.rebate + self.rebate_calibration))
-            else:
-                price_adjust = price_s
-            selected_vehicle.car_utility_segments_U[segment_code] = self.calc_utility(selected_vehicle.Quality_a_t, beta_s, gamma_s, selected_vehicle.fuel_cost_c, selected_vehicle.Eff_omega_a_t, selected_vehicle.e_t, selected_vehicle.emissions, price_adjust, selected_vehicle.delta)
-        else:
-            selected_vehicle.car_utility_segments_U[segment_code] = -np.inf
+        beta_s_values = self.beta_s_values[valid_indices]#np.array([market_data[code]["beta_s_t"] for code in segment_codes])
+        gamma_s_values = self.gamma_s_values[valid_indices]#np.array([market_data[code]["gamma_s_t"] for code in segment_codes])
+        I_s_t_values = self.I_s_t_vec[valid_indices]#np.array([market_data[code]["I_s_t"] for code in segment_codes])
+        W_values = self.W_vec[valid_indices]#np.array([market_data[code]["W"] for code in segment_codes])
+        nu_maxU_values = self.nu_maxU_vec[valid_indices]#np.array([market_data[code]["nu_maxU"] for code in segment_codes])
 
-        if selected_vehicle.transportType == 3:#PRODUCTION SUBSIDY
-            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t - self.production_subsidy)
-        else:
-            profit_per_sale = selected_vehicle.optimal_price_segments[segment_code] - np.maximum(0,selected_vehicle.ProdCost_t)
+        e_indices = np.array([code[2] for code in segment_codes])
 
-        I_s_t = market_data[segment_code]["I_s_t"]
-        W = market_data[segment_code]["W"]
+        valid_segments = (selected_vehicle.transportType == 2) | ((e_indices == 1) & (selected_vehicle.transportType == 3))
 
-        utility_value = selected_vehicle.car_utility_segments_U[segment_code]
+        price_s_values = np.array([selected_vehicle.optimal_price_segments[code] for code in segment_codes])
+        price_adjust_values = np.where(
+            selected_vehicle.transportType == 3,
+            np.maximum(0, price_s_values - (self.rebate + self.rebate_calibration)),
+            price_s_values
+        )
 
-        if utility_value == -np.inf:
-            utility_proportion = 0
-            raw_profit = 0
-        else:
-            #utility_proportion = np.exp(self.kappa*utility_value - self.nu_maxU)/(W + np.exp(self.kappa*utility_value - self.nu_maxU))
-            nu_maxU = market_data[segment_code]["nu_maxU"]
-            utility_proportion = self.calc_utility_prop(utility_value,W, nu_maxU)
-            raw_profit = profit_per_sale * I_s_t * utility_proportion
+        utilities = np.full(len(segment_codes), -np.inf)
+        utilities[valid_segments] = self.calc_utility(
+            selected_vehicle.Quality_a_t,
+            beta_s_values[valid_segments],
+            gamma_s_values[valid_segments],
+            selected_vehicle.fuel_cost_c,
+            selected_vehicle.Eff_omega_a_t,
+            selected_vehicle.e_t,
+            selected_vehicle.emissions,
+            price_adjust_values[valid_segments],
+            selected_vehicle.delta
+        )
 
-        if selected_vehicle.transportType == 3:  # EV
-            updated_profit = raw_profit
-        else:  # ICE
-            updated_profit = raw_profit * (1 - self.discriminatory_corporate_tax)
-        
-        return updated_profit
+        for idx, code in enumerate(segment_codes):
+            selected_vehicle.car_utility_segments_U[code] = utilities[idx]
 
+        profit_per_sale = np.where(
+            selected_vehicle.transportType == 3,
+            price_s_values - np.maximum(0, selected_vehicle.ProdCost_t - self.production_subsidy),
+            price_s_values - np.maximum(0, selected_vehicle.ProdCost_t)
+        )
 
+        utility_proportions = np.where(
+            utilities == -np.inf,
+            0,
+            self.calc_utility_prop(utilities, W_values, nu_maxU_values)
+        )
+
+        raw_profits = profit_per_sale * I_s_t_values * utility_proportions
+
+        updated_profits = np.where(
+            selected_vehicle.transportType == 3,
+            raw_profits,
+            raw_profits * (1 - self.discriminatory_corporate_tax)
+        )
+
+        return updated_profits
+    
     def select_car_lambda_production(self, market_data, car_list):
         """
         Select vehicles for production based on a matrix of expected profits for each segment and technology combination.
@@ -643,11 +730,15 @@ class Firm:
                 optimal_price_chosen_segment = selected_vehicle.optimal_price_segments[segments[max_row]]
                 selected_vehicle.price = optimal_price_chosen_segment  # SET PRICE
 
-                for i, segment_code in enumerate(segments):
-                    if profit_matrix[i, max_col] != -np.inf:  # Skip covered rows
-                        selected_vehicle.optimal_price_segments[segment_code] = optimal_price_chosen_segment#UPDATE THE PRICE FOR THE SEGEMENT, THIS LOCKS THE PRICE FOR ALL OTHERS SEGMENTS!
-                        updated_profit = self.set_utility_and_profit_grid_production(selected_vehicle, market_data, segment_code)#RECALCULATE TEH UTILITY AND PROFIT BASED ON THIS PRICE
-                        profit_matrix[i, max_col] = updated_profit
+                valid_indices = np.where(profit_matrix[:, max_col] != -np.inf)[0]
+                valid_segment_codes = [segments[i] for i in valid_indices]
+
+                for segment_code in valid_segment_codes:
+                    selected_vehicle.optimal_price_segments[segment_code] = optimal_price_chosen_segment
+
+                updated_profits = self.set_utility_and_profit_grid_production(selected_vehicle, valid_segment_codes, valid_indices)
+
+                profit_matrix[valid_indices, max_col] = updated_profits
 
             # Final selection of vehicles with the highest expected profits
             vehicle_to_max_profit = {}
@@ -680,6 +771,7 @@ class Firm:
 
         return vehicles_selected
 
+
     def choose_cars_segments(self, market_data):
         """
         market_data: includes data on the population of each of the segments and the differnet values of the preferences/sensitivity of those segments
@@ -695,11 +787,14 @@ class Firm:
 
         list_technology_memory_all = self.update_prices_and_emissions_intensity(list_technology_memory_all)#UPDATE TECHNOLOGY WITH NEW PRICES FOR PRODUCTION SELECTION
 
-        list_technology_memory_all = self.calc_optimal_price_cars(market_data,  list_technology_memory_all)#calc the optimal price of all cars, also does the utility and distance!
+        # Preprocess car data once and pass it to subsequent functions
+        car_data = self.create_car_data(list_technology_memory_all)
+
+        list_technology_memory_all = self.calc_optimal_price_cars(market_data,  list_technology_memory_all, car_data)#calc the optimal price of all cars, also does the utility and distance!
         
-        list_technology_memory_all = self.calc_utility_cars_segments(market_data, list_technology_memory_all)#utility of all the cars for all the segments
+        list_technology_memory_all = self.calc_utility_cars_segments(market_data, list_technology_memory_all, car_data)#utility of all the cars for all the segments
         
-        list_technology_memory_all = self.calc_predicted_profit_segments_production(market_data, list_technology_memory_all)#calculte the predicted profit of each segment 
+        list_technology_memory_all = self.calc_predicted_profit_segments_production(market_data, list_technology_memory_all, car_data)#calculte the predicted profit of each segment 
 
         cars_selected = self.select_car_lambda_production(market_data, list_technology_memory_all)#pick the cars for each car
 
@@ -710,7 +805,8 @@ class Firm:
                 car.choosen_tech_bool = 0
 
         return cars_selected
- 
+    
+
 ####################################################################################################
 
     def set_up_time_series_firm(self):
@@ -765,6 +861,11 @@ class Firm:
         self.discriminatory_corporate_tax =  discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
+
+        self.I_s_t_vec = np.array([segment["I_s_t"] for segment in market_data.values()])
+        self.W_vec = np.array([segment["W"] for segment in market_data.values()])
+        self.nu_maxU_vec = np.array([segment["nu_maxU"] for segment in market_data.values()])
+
 
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 

@@ -162,7 +162,6 @@ class Controller:
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
         self.d_vec = poisson_samples * scale_factor + min_bin
         ########################################################################
-
          
         # CHI
                 #CHI
@@ -198,7 +197,6 @@ class Controller:
         WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
         self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = self.WTP_vec*self.beta_vec*r*omega_mean/(self.d_vec*(1+r))
-        #print("Gamma, min,  mean , max",np.min(self.gamma_vec),np.mean(self.gamma_vec), np.max(self.gamma_vec))
 
         ############################################
         #social network data
