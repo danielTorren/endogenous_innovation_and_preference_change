@@ -27,8 +27,8 @@ class Controller:
         self.setup_id_gen()
 
         #SET UP LANDSCAPES
-        self.setup_ICE_landscape(self.parameters_ICE)
-        self.setup_EV_landscape(self.parameters_EV)
+        self.setup_ICE_landscape(self.parameters_ICE)#110101101001110
+        self.setup_EV_landscape(self.parameters_EV)#110111110110001
         self.setup_second_hand_market()
         
         #create firms and social networks
@@ -51,7 +51,6 @@ class Controller:
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
 
-        self.firm_manager.add_social_network(self.social_network)
 
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
@@ -725,7 +724,8 @@ class Controller:
 
     def setup_ICE_landscape(self, parameters_ICE):    
 
-
+        
+        parameters_ICE["init_price_multiplier"] = self.parameters_firm["init_price_multiplier"]
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
         parameters_ICE["median_beta"] = self.beta_median
         parameters_ICE["median_gamma"] = self.gamma_median
@@ -734,9 +734,11 @@ class Controller:
         parameters_ICE["d_mean"] = np.mean(self.d_vec)
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         self.ICE_landscape = NKModel(parameters_ICE)
+        self.ICE_landscape.retrieve_info("110101101001110")#self.landscape_ICE.min_fitness_string
 
     def setup_EV_landscape(self, parameters_EV):
-
+        
+        parameters_EV["init_price_multiplier"] = self.parameters_firm["init_price_multiplier"]
         parameters_EV["r"] = self.parameters_vehicle_user["r"]
         #parameters_EV["delta"] = self.parameters_ICE["delta"]
         parameters_EV["median_beta"] = self.beta_median 
@@ -745,8 +747,8 @@ class Controller:
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
         parameters_EV["d_mean"] = np.mean(self.d_vec)
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
-
         self.EV_landscape = NKModel(parameters_EV)
+        self.ICE_landscape.retrieve_info("110111110110001")
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]

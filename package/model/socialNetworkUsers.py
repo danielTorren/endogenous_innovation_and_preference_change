@@ -195,7 +195,7 @@ class Social_Network:
         
         self.new_bought_vehicles = []#track list of new vehicles
         self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
-        user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
+        #user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
         
         #########################################################
         #LIMIT CALCULATION FOR THOSE THAT DONT NEED TO SWTICH
@@ -243,7 +243,7 @@ class Social_Network:
             user.vehicle.update_timer_L_a_t()# Update the age or timer of the chosen vehicle
             # Handle consequences of the choice
             driven_distance = self.d_vec[person_index]
-            self.update_emisisons(user.vehicle, driven_distance)
+            #self.update_emisisons(user.vehicle, driven_distance)
 
             #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
             if user.vehicle.transportType == 3:
@@ -305,10 +305,10 @@ class Social_Network:
             vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(
                 global_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_index, index_current_cars_start 
             )
-            user_vehicle_list[global_index] = user_vehicle  # Update using the global index
+            #user_vehicle_list[global_index] = user_vehicle  # Update using the global index
 
             driven_distance = self.d_vec[global_index]  # Use the reduced index for the matrix
-            self.update_emisisons(vehicle_chosen, driven_distance)
+            #self.update_emisisons(vehicle_chosen, driven_distance)
 
             #CARBON TAX POLICY OPTIMISATION
             #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#NEEDED FOR OPTIMISATION of carbon tax
@@ -326,7 +326,7 @@ class Social_Network:
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow_history.append(self.emissions_flow)
 
-        return user_vehicle_list
+        #return user_vehicle_list
 
 #####################################################################################################
 
@@ -1082,6 +1082,21 @@ class Social_Network:
             self.emissions_cumulative += vehicle_chosen.emissions
             self.emissions_flow += vehicle_chosen.emissions
 
+    def batch_update_emissions(self):
+        # Convert to NumPy arrays for vectorized operations
+        eff_omega_array = np.array([v.Eff_omega_a_t for v in self.current_vehicles])
+        e_t_array = np.array([v.e_t for v in self.current_vehicles])
+        new_car_flags = np.array([v.scenario == "new_car" for v in self.current_vehicles])
+        production_emissions = np.array([v.emissions for v in self.current_vehicles])
+
+        # Calculate emissions flow
+        emissions_flow = (self.d_vec / eff_omega_array) * e_t_array
+
+        # Update cumulative and flow emissions in bulk
+        self.emissions_cumulative += np.sum(emissions_flow) + np.sum(production_emissions[new_car_flags])
+        self.emissions_flow += np.sum(emissions_flow) + np.sum(production_emissions[new_car_flags])
+
+
     def update_EV_stock(self):
         #CALC EV STOCK
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
@@ -1129,7 +1144,11 @@ class Social_Network:
         self.all_vehicles_available = self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT
 
         self.update_prices_and_emissions_intensity()#UPDATE: the prices and emissions intensities of cars which are currently owned
-        self.current_vehicles = self.update_VehicleUsers()
+        self.update_VehicleUsers()
+
+        self.current_vehicles = [user.vehicle for user in self.vehicleUsers_list]#UPDATE CURRENT VEHICHLES
+        
+        self.batch_update_emissions()
         
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 

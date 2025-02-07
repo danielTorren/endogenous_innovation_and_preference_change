@@ -6,6 +6,7 @@ def main(base_params):
     Data = generate_data(base_params)  # run the simulation
     print("E",Data.social_network.emissions_cumulative)
     print("uptake: calibration, end",  Data.calc_EV_prop())
+    print("region_explored", len(Data.ICE_landscape.attributes_dict.keys())/(2**Data.ICE_landscape.N), len(Data.EV_landscape.attributes_dict.keys())/(2**Data.EV_landscape.N) )
 
 if __name__ == '__main__':
 
@@ -143,7 +144,8 @@ if __name__ == '__main__':
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5,
-        "max_Cost": 50
+        "max_Cost": 50,
+        "prop_explore": 1
     }, 
     "parameters_EV":{
         "N": 15,
@@ -155,7 +157,8 @@ if __name__ == '__main__':
         "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "max_Efficiency": 7,
+        "prop_explore": 1
     },
     "parameters_firm_manager": {
         "J": 20,

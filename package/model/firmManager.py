@@ -92,8 +92,8 @@ class Firm_Manager:
 
         #Generate the initial fitness values of the starting tecnology(ies)
 
-        self.init_tech_component_string_ICE = self.landscape_ICE.min_fitness_string
-        self.init_tech_component_string_EV = self.landscape_EV.min_fitness_string
+        self.init_tech_component_string_ICE = "110101101001110"#self.landscape_ICE.min_fitness_string
+        self.init_tech_component_string_EV = "110111110110001"#self.landscape_EV.min_fitness_string
 
 
         decimal_value_ICE = int(self.init_tech_component_string_ICE, 2)
@@ -137,10 +137,9 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return cars_on_sale_all_firms
 
-    ###########################################################################################################
 
-        ###########################################################################################################
-    # BETA-SEGMETING LOGIC
+    ############################################################################################################################################################
+    #GENERATE MARKET DATA DYNAMIC
 
     def input_social_network_data(self, beta_vec, environmental_awareness_vec, consider_ev_vec, beta_bins):
         """
@@ -168,7 +167,6 @@ class Firm_Manager:
 
     def calc_exp(self, U):
         comp = np.exp(self.kappa*U)
-        
         return comp
 
     def generate_market_data(self):
@@ -229,7 +227,7 @@ class Firm_Manager:
         #4) calc the utility of each car (already did base utility in the car but need the full value including price and emissiosn production)
         for firm in self.firms_list:
             firm.input_beta_gamma_segments(self.beta_s_values, self.gamma_s_values)
-            firm.calc_init_U_segments(self.market_data)
+            firm.calc_init_U_segments()
 
 
         # 5) Sum up the utilities across all cars for each segment
@@ -255,31 +253,10 @@ class Firm_Manager:
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
             #print("INIT W", self.market_data[code]["W"])
-
-
-        
-
-
-    ############################################################################################################################################################
-    #GENERATE MARKET DATA DYNAMIC
-
-    def update_firms(self, market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
-        cars_on_sale_all_firms = []
-        
-        self.zero_profit_options_prod_sum = 0
-        self.zero_profit_options_research_sum = 0
-
-
-        # 4) Now we need to compute the initial W for each segment
-        for firm in self.firms_list:
-            self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
-            self.zero_profit_options_research_sum += firm.zero_profit_options_research
-            cars_on_sale = firm.next_step(market_data, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
-
-            cars_on_sale_all_firms.extend(cars_on_sale)
-
-        return cars_on_sale_all_firms
-
+    
+        self.I_s_t_vec = np.asarray([self.market_data[code]["I_s_t"] for code in self.all_segment_codes])
+        self.W_vec = np.asarray([self.market_data[code]["W"] for code in self.all_segment_codes])
+        self.nu_maxU_vec = np.asarray([self.market_data[code]["nu_maxU"] for code in self.all_segment_codes])
 
     def update_W_immediate(self):
         #calc the total "probability of selection" of the market based on max utility in the segment
@@ -298,7 +275,9 @@ class Firm_Manager:
             for segment, U in car.car_utility_segments_U.items():
                 segment_W[segment] += self.calc_exp(U)
 
-        return segment_W
+        nu_maxU_vec = np.asarray([self.market_data[code]["nu_maxU"] for code in self.all_segment_codes])
+
+        return segment_W, nu_maxU_vec
         
     def update_market_data_moving_average(self, W_segment):
 
@@ -328,6 +307,12 @@ class Firm_Manager:
             # Store the moving averages
             self.market_data[code]["I_s_t"] = moving_avg_I_s_t
             self.market_data[code]["W"] = moving_avg_W
+        
+        I_s_t_vec = np.asarray([self.market_data[code]["I_s_t"] for code in self.all_segment_codes])
+        W_vec = np.asarray([self.market_data[code]["W"] for code in self.all_segment_codes])
+
+        return I_s_t_vec, W_vec
+        
     
     ######################################################################################################################
 
@@ -399,11 +384,6 @@ class Firm_Manager:
         #    profit_margin_EV.append(np.nan)#if no evs then just add nan
         return profit_margin_ICE, profit_margin_EV
     
-    #######################################################################################################################
-    #DEAL WITH REBATE
-    def add_social_network(self,social_network):
-        self.social_network = social_network
-
     #####################################################################################################################
 
     def set_up_time_series_firm_manager(self):
@@ -501,7 +481,26 @@ class Firm_Manager:
         for firm in self.firms_list:
             firm.firm_cars_users = sum(1 for car in past_new_bought_vehicles if car.firm == firm)
 
-    #####################################################################################################################
+
+#####################################################################################################################################################
+    def update_firms(self, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+        cars_on_sale_all_firms = []
+        
+        self.zero_profit_options_prod_sum = 0
+        self.zero_profit_options_research_sum = 0
+
+
+        # 4) Now we need to compute the initial W for each segment
+        for firm in self.firms_list:
+            self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
+            self.zero_profit_options_research_sum += firm.zero_profit_options_research
+            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.nu_maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
+
+            cars_on_sale_all_firms.extend(cars_on_sale)
+
+        return cars_on_sale_all_firms
+
+#####################################################################################################################
 
     def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
         
@@ -515,10 +514,10 @@ class Firm_Manager:
         self.discriminatory_corporate_tax = discriminatory_corporate_tax
         self.production_subsidy = production_subsidy
         
-        self.cars_on_sale_all_firms  = self.update_firms(self.market_data, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
-        self.W_segment = self.update_W_immediate()#calculate the competiveness of the market current
+        self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.W_segment, self.nu_maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
 
         #print("W im:",np.min(list(self.W_segment.values())),np.max(list(self.W_segment.values())))
-        self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
+        self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
 
         return self.cars_on_sale_all_firms

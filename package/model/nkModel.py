@@ -36,50 +36,158 @@ class NKModel:
         self.alpha = parameters["alpha"]
         self.E = parameters["production_emissions"]
 
+        self.prop_explore = parameters["prop_explore"]
+        self.init_price_multiplier = parameters["init_price_multiplier"]
+        
+
         self.min_vec = np.asarray([self.min_Quality, self.min_Efficiency, self.min_Cost])
         self.max_vec = np.asarray([self.max_Quality, self.max_Efficiency, self.max_Cost])
 
         self.fitness_landscape = self.generate_fitness_landscape()
 
-        self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string()
+        self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string(self.prop_explore)
+
+        #print("self.min_fitness_string", self.min_fitness_string)
 
     def calc_present_utility_minimum_single(self, quality, eff, prod_cost):
         """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
-        cost_multiplier = 1.3#markup 30%
+        cost_multiplier = self.init_price_multiplier
         approx_fitness = self.d_mean*(quality**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - self.median_beta*(self.d_mean*self.fuel_cost*(1+self.r)/(self.r*eff) + cost_multiplier*prod_cost) - self.median_gamma*(self.d_mean*self.e_t*(1+self.r)/(self.r*eff) + self.E)
 
         return approx_fitness
 
-    def find_min_fitness_string(self):
+    def find_min_fitness_string(self, prop=1):
         """
-        Finds the minimum fitness string in the NK landscape and stores all fitnesses.
+        Finds the minimum fitness string in the NK landscape based on a sampled prop
+        and stores all fitnesses.
 
         Args:
-            nk_model: An instance of the NKModel class.
+            prop (float): The prop of the landscape to explore (0-1).
 
         Returns:
-            min_fitness_string: The binary string corresponding to the minimum fitness.
-            min_fitness: The minimum fitness value.
-            fitness_dict: A dictionary mapping binary strings to their corresponding fitnesses.
+            min_fitness_string (str): The binary string corresponding to the minimum fitness.
+            min_fitness (float): The minimum fitness value.
+            attributes_dict (dict): A dictionary mapping binary strings to their corresponding fitnesses.
         """
+        
+        if not (0 < prop <= 1):
+            raise ValueError("Percentage must be between 0 and 1.")
+
+        attributes_dict = {}
+
+        total_landscape_size = 2 ** self.N
+        sample_size = int((prop) * total_landscape_size)
+
+        # Sample unique indices from the total landscape using numpy
+        sampled_indices = self.random_state_NK.choice(total_landscape_size, size=sample_size, replace=False)
+
+        # Vectorize binary string conversion
+        binary_strings = np.array([format(i, f'0{self.N}b') for i in sampled_indices])
+        designs = np.array([list(map(int, binary_string)) for binary_string in binary_strings])
+
+        # Vectorized fitness calculation
+        attributes_list = self.calculate_fitness_vectorized(designs)
+        fitness_values = self.calc_present_utility_minimum_single(attributes_list[:, 0], attributes_list[:, 1], attributes_list[:, 2])
+
+        # Find the minimum fitness and corresponding binary string
+        min_index = np.argmin(fitness_values)
+        min_fitness = fitness_values[min_index]
+        min_fitness_string = binary_strings[min_index]
+
+        # Populate attributes_dict
+        attributes_dict = dict(zip(binary_strings, attributes_list))
+
+        return min_fitness_string, min_fitness, attributes_dict
+
+    def calculate_fitness_vectorized(self, designs):
+        """
+        Vectorized calculation of fitness for multiple car designs.
+
+        Args:
+            designs (numpy.ndarray): 2D array representing multiple car designs. Shape: (num_designs, self.N)
+
+        Returns:
+            fitness_scaled (numpy.ndarray): 2D array representing the fitness vectors of the designs. Shape: (num_designs, self.A)
+        """
+        num_designs = designs.shape[0]
+        fitness = np.zeros((num_designs, self.A))
+
+        for n in range(self.N):
+            k_indices = np.array([
+                int(''.join(map(str, (design[(n + i) % self.N] for i in range(self.K + 1)))), 2) for design in designs
+            ])
+            fitness += self.fitness_landscape[k_indices, n, :]
+
+        average_fitness_components = fitness / self.N
+        fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec - self.min_vec)
+
+        return fitness_scaled
+    
+    def find_min_fitness_string_old(self, prop=1):
+        """
+        Finds the minimum fitness string in the NK landscape based on a sampled prop
+        and stores all fitnesses.
+
+        Args:
+            prop (float): The prop of the landscape to explore (0-100).
+
+        Returns:
+            min_fitness_string (str): The binary string corresponding to the minimum fitness.
+            min_fitness (float): The minimum fitness value.
+            attributes_dict (dict): A dictionary mapping binary strings to their corresponding fitnesses.
+        """
+        
+        if not (0 < prop <= 1):
+            raise ValueError("Prop must be between 0 and 1.")
 
         attributes_dict = {}
         min_fitness = float('inf')
         min_fitness_string = None
 
-        for i in range(2**self.N):
+        total_landscape_size = 2**self.N
+        sample_size = int(prop* total_landscape_size)
+
+        # Sample unique indices from the total landscape using numpy
+        sampled_indices = self.random_state_NK.choice(total_landscape_size, size=sample_size, replace=False)
+
+        for i in sampled_indices:
             binary_string = format(i, f'0{self.N}b')
             design = np.array(list(map(int, binary_string)))
             attributes = self.calculate_fitness(design)
-            fitness =  self.calc_present_utility_minimum_single(attributes[0],  attributes[1], attributes[2])
-            #fitness = np.sum(attributes)
+            fitness = self.calc_present_utility_minimum_single(attributes[0], attributes[1], attributes[2])
+
             attributes_dict[binary_string] = attributes
+
             if fitness < min_fitness:
                 min_fitness = fitness
                 min_fitness_string = binary_string
 
-
         return min_fitness_string, min_fitness, attributes_dict
+
+    def calculate_fitness(self, design):
+        """
+        Calculate the fitness of a car design.
+
+        Args:
+        - design (numpy.ndarray): 1D array representing the state of each component.
+                                   Shape: (self.N,)
+        - landscapes (numpy.ndarray): 3D array containing fitness landscapes for all attributes.
+                                      Shape: (2**(self.K+1), self.N, self.A)
+
+        Returns:
+        - fitness (numpy.ndarray): 1D array representing the fitness vec of the design.
+                                    Shape: (self.A,)
+        """
+        
+        fitness = np.zeros(self.A)
+        for a in range(self.A):
+            for n in range(self.N):
+                k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2) #REVIST THIS AND UNDERSTAND WHAT IS GOING ON BETTER
+                fitness[a] +=  self.fitness_landscape[k, n, a]
+        average_fitness_components = fitness / self.N
+
+        fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec-self.min_vec)
+        return fitness_scaled
 
     def generate_fitness_landscape(self):
         """
@@ -119,30 +227,6 @@ class NKModel:
 
         return L
     
-    def calculate_fitness(self, design):
-        """
-        Calculate the fitness of a car design.
-
-        Args:
-        - design (numpy.ndarray): 1D array representing the state of each component.
-                                   Shape: (self.N,)
-        - landscapes (numpy.ndarray): 3D array containing fitness landscapes for all attributes.
-                                      Shape: (2**(self.K+1), self.N, self.A)
-
-        Returns:
-        - fitness (numpy.ndarray): 1D array representing the fitness vec of the design.
-                                    Shape: (self.A,)
-        """
-        
-        fitness = np.zeros(self.A)
-        for a in range(self.A):
-            for n in range(self.N):
-                k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2) #REVIST THIS AND UNDERSTAND WHAT IS GOING ON BETTER
-                fitness[a] +=  self.fitness_landscape[k, n, a]
-        average_fitness_components = fitness / self.N
-
-        fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec-self.min_vec)
-        return fitness_scaled
 
     def invert_bits_one_at_a_time(self, decimal_value):
         """THIS IS ONLY USED ONCE I THINK"""
@@ -153,4 +237,14 @@ class NKModel:
             inverted_binary_values.append(inverted_binary_value)
 
         return inverted_binary_values
+
+    def retrieve_info(self, component_string):
+        attributes = self.attributes_dict.get(component_string)
+        
+        if attributes is None:
+            attributes = self.calculate_fitness(component_string)
+            self.attributes_dict[component_string] = attributes
+
+        return attributes
+
     

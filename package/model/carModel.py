@@ -21,7 +21,7 @@ class CarModel:
         #FITNESS
         self.nk_landscape = nk_landscape
         #self.attributes_fitness = self.nk_landscape.calculate_fitness(self.component_string)
-        self.attributes_fitness = self.nk_landscape.attributes_dict[self.component_string]
+        self.attributes_fitness = self.nk_landscape.retrieve_info(self.component_string)
         
         self.inverted_tech_strings = self.nk_landscape.invert_bits_one_at_a_time(self.decimal_value)
 
