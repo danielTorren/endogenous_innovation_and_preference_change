@@ -145,7 +145,7 @@ if __name__ == '__main__':
         "max_Efficiency": 1.5,
         "min_Cost": 5,
         "max_Cost": 50,
-        "prop_explore": 1
+        "prop_explore": 0.1
     }, 
     "parameters_EV":{
         "N": 15,
@@ -158,7 +158,7 @@ if __name__ == '__main__':
         "transportType": 3,
         "min_Efficiency": 4,
         "max_Efficiency": 7,
-        "prop_explore": 1
+        "prop_explore": 0.1
     },
     "parameters_firm_manager": {
         "J": 20,

@@ -49,6 +49,7 @@ class Social_Network:
 
         self.emissions_cumulative = 0
         self.emissions_flow = 0
+
         if self.save_timeseries_data_state:
             self.emissions_flow_history = []
 
@@ -205,9 +206,9 @@ class Social_Network:
         num_switchers = len(switcher_indices)
         non_switcher_indices = np.where(~switch_draws)[0]  # e.g., [0, 1, 3, 4, 6, ...]
 
-
+        
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-            self.emissions_flow = 0#MEASURIBNG THE FLOW
+            
             self.zero_util_count = 0 #are people actually choosing or beign forced to choose the same
             self.num_switchers = num_switchers
             self.drive_min_num = 0
@@ -219,12 +220,6 @@ class Social_Network:
         # Generate current utilities and vehicles
         #Calculate the optimal distance for all user with current car, NEEDS TO BE DONE ALWAYS AND FOR ALL USERS
         CV_vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs(self.current_vehicles)
-
-        # NEED THIS FOR SOME OF THE COUNTERS I THINK - CHECK THIS
-        if self.second_hand_cars:
-            index_current_cars_start = len(self.new_cars) + len(self.second_hand_cars)
-        else:
-            index_current_cars_start = len(self.new_cars)
 
         ##########################################################################################################################
         #I now have all the information neccessary all the calcualtions are done
@@ -303,12 +298,12 @@ class Social_Network:
             
             user = self.vehicleUsers_list[global_index]  # Use the global index to access the user
             vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(
-                global_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_index, index_current_cars_start 
+                user, available_and_current_vehicles_list, utilities_kappa, reduced_index
             )
             #user_vehicle_list[global_index] = user_vehicle  # Update using the global index
 
             driven_distance = self.d_vec[global_index]  # Use the reduced index for the matrix
-            #self.update_emisisons(vehicle_chosen, driven_distance)
+            #self.update_emisisons(vehicle_chosen)
 
             #CARBON TAX POLICY OPTIMISATION
             #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#NEEDED FOR OPTIMISATION of carbon tax
@@ -423,29 +418,14 @@ class Social_Network:
 
 #########################################################################################################################################################
     #choosing vehicles
-    def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start ):
+    def user_chooses(self, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index):
         # Select individual-specific utilities
         individual_specific_util_kappa = utilities_kappa[reduced_person_index]  
         
-        #check for nans and set them to 0
-        if np.isnan(individual_specific_util_kappa).any():
-            individual_specific_util_kappa = np.nan_to_num(individual_specific_util_kappa)#Set all the nans to 0
-
-        #SWICHING_CLAUSE
-        if not np.any(individual_specific_util_kappa):#NO car option all zero, THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
-            #keep current car
-            choice_index = index_current_cars_start + reduced_person_index
-            if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-                self.zero_util_count += 1
-        else:#at leat 1 non zero probability
-            # Calculate the probability of choosing each vehicle              
-            sum_U_kappa = np.sum(individual_specific_util_kappa)
-            #print("sum_U_kappa", sum_U_kappa)
-
-            probability_choose = individual_specific_util_kappa / sum_U_kappa
-
-            choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
-            #choice_index = np.argmax(probability_choose)
+        # Calculate the probability of choosing each vehicle              
+        sum_U_kappa = np.sum(individual_specific_util_kappa)
+        probability_choose = individual_specific_util_kappa / sum_U_kappa
+        choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
 
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
@@ -477,7 +457,6 @@ class Social_Network:
                 utilities_kappa[:, choice_index] = 0#THIS STOPS OTHER INDIVIDUALS FROM BUYING SECOND HAND CAR THAT YOU BOUGHT, VERY IMPORANT LINE
                 ###############################################################
                 
-                
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
                 user.vehicle = vehicle_chosen
@@ -488,10 +467,14 @@ class Social_Network:
                     self.car_prices_sold_second_hand.append(user.vehicle.price)
                     self.buy_second_hand_car+= 1
                     self.second_hand_bought += 1
+
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
                 #ADOPTION SUBSIDY OPTIMIZATION
                 if vehicle_chosen.transportType == 3:
-                    self.policy_distortion += self.rebate    
+                    self.policy_distortion += self.rebate
+
+                #ADD EMISISONS 
+                self.emissions_flow += vehicle_chosen.emissions   
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
@@ -1072,29 +1055,14 @@ class Social_Network:
 
         self.history_zero_util_count.append(self.zero_util_count/self.num_switchers)
     
-    def update_emisisons(self, vehicle_chosen, driven_distance):      
-        
-        emissions_flow = (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_t
-        self.emissions_cumulative += emissions_flow
-        self.emissions_flow += emissions_flow
-
-        if vehicle_chosen.scenario == "new_car":  #if its a new car add emisisons
-            self.emissions_cumulative += vehicle_chosen.emissions
-            self.emissions_flow += vehicle_chosen.emissions
-
     def batch_update_emissions(self):
         # Convert to NumPy arrays for vectorized operations
         eff_omega_array = np.array([v.Eff_omega_a_t for v in self.current_vehicles])
         e_t_array = np.array([v.e_t for v in self.current_vehicles])
-        new_car_flags = np.array([v.scenario == "new_car" for v in self.current_vehicles])
-        production_emissions = np.array([v.emissions for v in self.current_vehicles])
-
         # Calculate emissions flow
         emissions_flow = (self.d_vec / eff_omega_array) * e_t_array
-
         # Update cumulative and flow emissions in bulk
-        self.emissions_cumulative += np.sum(emissions_flow) + np.sum(production_emissions[new_car_flags])
-        self.emissions_flow += np.sum(emissions_flow) + np.sum(production_emissions[new_car_flags])
+        self.emissions_flow += np.sum(emissions_flow) 
 
 
     def update_EV_stock(self):
@@ -1129,6 +1097,8 @@ class Social_Network:
 
         self.t_social_network +=1
 
+        self.emissions_flow = 0#MEASURIBNG THE FLOW
+
         self.carbon_price = carbon_price
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
@@ -1147,10 +1117,12 @@ class Social_Network:
         self.update_VehicleUsers()
 
         self.current_vehicles = [user.vehicle for user in self.vehicleUsers_list]#UPDATE CURRENT VEHICHLES
-        
-        self.batch_update_emissions()
-        
+
+        self.batch_update_emissions()#Add distance driven that time step
+        self.emissions_cumulative += self.emissions_flow
+
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
+        
         
         return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

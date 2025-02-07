@@ -47,8 +47,6 @@ class NKModel:
 
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string(self.prop_explore)
 
-        #print("self.min_fitness_string", self.min_fitness_string)
-
     def calc_present_utility_minimum_single(self, quality, eff, prod_cost):
         """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
         cost_multiplier = self.init_price_multiplier
@@ -123,48 +121,7 @@ class NKModel:
 
         return fitness_scaled
     
-    def find_min_fitness_string_old(self, prop=1):
-        """
-        Finds the minimum fitness string in the NK landscape based on a sampled prop
-        and stores all fitnesses.
-
-        Args:
-            prop (float): The prop of the landscape to explore (0-100).
-
-        Returns:
-            min_fitness_string (str): The binary string corresponding to the minimum fitness.
-            min_fitness (float): The minimum fitness value.
-            attributes_dict (dict): A dictionary mapping binary strings to their corresponding fitnesses.
-        """
-        
-        if not (0 < prop <= 1):
-            raise ValueError("Prop must be between 0 and 1.")
-
-        attributes_dict = {}
-        min_fitness = float('inf')
-        min_fitness_string = None
-
-        total_landscape_size = 2**self.N
-        sample_size = int(prop* total_landscape_size)
-
-        # Sample unique indices from the total landscape using numpy
-        sampled_indices = self.random_state_NK.choice(total_landscape_size, size=sample_size, replace=False)
-
-        for i in sampled_indices:
-            binary_string = format(i, f'0{self.N}b')
-            design = np.array(list(map(int, binary_string)))
-            attributes = self.calculate_fitness(design)
-            fitness = self.calc_present_utility_minimum_single(attributes[0], attributes[1], attributes[2])
-
-            attributes_dict[binary_string] = attributes
-
-            if fitness < min_fitness:
-                min_fitness = fitness
-                min_fitness_string = binary_string
-
-        return min_fitness_string, min_fitness, attributes_dict
-
-    def calculate_fitness(self, design):
+    def calculate_fitness_single(self, design):
         """
         Calculate the fitness of a car design.
 
@@ -227,7 +184,6 @@ class NKModel:
 
         return L
     
-
     def invert_bits_one_at_a_time(self, decimal_value):
         """THIS IS ONLY USED ONCE I THINK"""
         inverted_binary_values = []
@@ -242,7 +198,7 @@ class NKModel:
         attributes = self.attributes_dict.get(component_string)
         
         if attributes is None:
-            attributes = self.calculate_fitness(component_string)
+            attributes = self.calculate_fitness_single(component_string)
             self.attributes_dict[component_string] = attributes
 
         return attributes

@@ -92,13 +92,11 @@ class Firm_Manager:
 
         #Generate the initial fitness values of the starting tecnology(ies)
 
-        self.init_tech_component_string_ICE = "110101101001110"#self.landscape_ICE.min_fitness_string
-        self.init_tech_component_string_EV = "110111110110001"#self.landscape_EV.min_fitness_string
-
+        self.init_tech_component_string_ICE = self.landscape_ICE.min_fitness_string
+        self.init_tech_component_string_EV = self.landscape_EV.min_fitness_string
 
         decimal_value_ICE = int(self.init_tech_component_string_ICE, 2)
         decimal_value_EV = int(self.init_tech_component_string_EV, 2)
-
 
         init_tech_component_string_list_N_ICE = self.invert_bits_one_at_a_time(decimal_value_ICE, len(self.init_tech_component_string_ICE))
         init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
