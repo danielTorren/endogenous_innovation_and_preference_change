@@ -138,7 +138,7 @@ class Controller:
     def gen_users_parameters(self):
 
         self.num_individuals = self.parameters_social_network["num_individuals"]
-
+        
         #########################################
         #GENERATING DISTANCES
         #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
@@ -865,7 +865,7 @@ class Controller:
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()
-        self.second_hand_cars = self.get_second_hand_cars()
+        self.second_hand_cars  = self.get_second_hand_cars()
         self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()

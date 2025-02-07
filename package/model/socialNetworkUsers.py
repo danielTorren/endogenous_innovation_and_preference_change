@@ -92,6 +92,7 @@ class Social_Network:
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
         self.carbon_price =  parameters_social_network["carbon_price"]
 
+
     def init_network_settings(self, parameters_social_network):
         self.network_structure_seed = int(round(parameters_social_network["network_structure_seed"]))
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
@@ -534,8 +535,6 @@ class Social_Network:
         # Extract properties using list comprehensions
         quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
         eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
-        price = np.array([vehicle.price for vehicle in list_vehicles])
-        production_emissions = np.array([vehicle.emissions for vehicle in list_vehicles])
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
         fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
@@ -546,8 +545,6 @@ class Social_Network:
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
             "Eff_omega_a_t": eff_omega_a_t,
-            "price": price,
-            "production_emissions": production_emissions,
             "fuel_cost_c": fuel_cost_c,
             "e_t": e_t,
             "L_a_t": l_a_t,
@@ -565,7 +562,7 @@ class Social_Network:
 
         # Generate utilities
         #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
-        NC_utilities = self.vectorised_calculate_utility_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec)
+        NC_utilities = self.vectorised_calculate_utility_new_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec)
 
         # Calculate the total columns needed for utilities 
         total_columns = NC_utilities.shape[1]
@@ -648,7 +645,6 @@ class Social_Network:
         production_emissions = np.array([vehicle.emissions for vehicle in list_vehicles])
         fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
         e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
-        l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
         rebate_vec = np.where(transport_type == 3, self.rebate_calibration + self.rebate, 0)
@@ -661,7 +657,6 @@ class Social_Network:
             "production_emissions": production_emissions,
             "fuel_cost_c": fuel_cost_c,
             "e_t": e_t,
-            "L_a_t": l_a_t,
             "transportType": transport_type,
             "rebate": rebate_vec,
             "delta": delta
@@ -676,7 +671,6 @@ class Social_Network:
         quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
         eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
         price = np.array([vehicle.price for vehicle in list_vehicles])
-        production_emissions = np.array([vehicle.emissions for vehicle in list_vehicles])
         fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
         e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
         l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
@@ -689,7 +683,6 @@ class Social_Network:
             "Quality_a_t": quality_a_t,
             "Eff_omega_a_t": eff_omega_a_t,
             "price": price,
-            "production_emissions": production_emissions,
             "fuel_cost_c": fuel_cost_c,
             "e_t": e_t,
             "L_a_t": l_a_t,
@@ -715,7 +708,7 @@ class Social_Network:
         U_a_i_t_matrix = term_1 - term_2 - term_3
         return U_a_i_t_matrix
     
-    def vectorised_calculate_utility_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
+    def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
 
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
         price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis])  # Apply rebate
@@ -724,7 +717,7 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        term_1 = d_vec[:, np.newaxis]*(vehicle_dict_vecs["Quality_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.alpha*((1+self.r)/(self.r - (1 - vehicle_dict_vecs["delta"])**self.alpha + 1))
+        term_1 = d_vec[:, np.newaxis]*(vehicle_dict_vecs["Quality_a_t"])**self.alpha*((1+self.r)/(self.r - (1 - vehicle_dict_vecs["delta"])**self.alpha + 1))
         term_2 = beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T)
         term_3 = gamma_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) +  vehicle_dict_vecs["production_emissions"])
         

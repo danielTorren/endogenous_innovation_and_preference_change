@@ -133,48 +133,87 @@ class Firm:
         #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
         U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
         return U
-    
-    def calc_optimal_price_cars(self, market_data, car_list): 
-        """Calculate the optimal price for each car in the car list based on market data. USED WHEN FIRST STUDYING A CAR"""
 
-        for car in car_list:
-            E_m = car.emissions  # Emissions for the current car                                                  
-            C_m = car.ProdCost_t  
-            C_m_cost = car.ProdCost_t  
-            C_m_price = car.ProdCost_t 
-            delta = car.delta
+    def create_car_data(self, car_list):
+        """
+        Converts a list of car objects into a dictionary of NumPy arrays for vectorized calculations.
 
-            #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
-            if car.transportType == 3:#EV
-                #C_m  = car.ProdCost_t - self.production_subsidy
-                C_m_cost  = np.maximum(0,car.ProdCost_t - self.production_subsidy)
-                C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy + self.rebate + self.rebate_calibration))
-                #C_m_price = np.maximum(0,car.ProdCost_t - (self.production_subsidy))
+        Args:
+            car_list: A list of car objects.  Each car object is assumed to have 
+                    attributes like emissions, ProdCost_t, transportType, etc.
 
-            # Iterate over each market segment to calculate utilities and distances
-            for segment_code, segment_data in market_data.items():
-                beta_s = segment_data["beta_s_t"]
-                gamma_s = segment_data["gamma_s_t"]
-                W_s_t = segment_data["W"]
-                nu_maxU = segment_data["nu_maxU"]
-                
-                term = self.kappa*(self.d_mean*(car.Quality_a_t**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta_s*self.d_mean*car.fuel_cost_c*(1+self.r)/(self.r*car.Eff_omega_a_t) - gamma_s*(self.d_mean*car.e_t*(1+self.r)/(self.r*car.Eff_omega_a_t) + E_m) - beta_s*C_m_price) - 1.0 
+        Returns:
+            A dictionary where keys are car attribute names (e.g., "emissions", "ProdCost_t")
+            and values are NumPy arrays containing the corresponding attribute values for all cars.
+            Returns None if car_list is empty or if car objects don't have the expected attributes.
+        """
 
-                log_term = term - np.log(W_s_t)
-                Arg = np.exp(log_term)
+        if not car_list:
+            return None
 
-                LW   = lambertw(Arg, 0).real  # principal branch
-                
-                P = C_m_cost + (1.0 + LW)/(self.kappa*beta_s)
+        # Check if car objects have the necessary attributes (you might want to add more checks)
+        required_attributes = ["emissions", "ProdCost_t", "transportType", "delta", "Quality_a_t", "Eff_omega_a_t", "e_t", "fuel_cost_c"]
+        for attr in required_attributes:
+            if not hasattr(car_list[0], attr):
+                print(f"Error: Car object does not have attribute '{attr}'")
+                return None  # Or raise an exception
 
-                if P < C_m:
-                    print(P,C_m, Arg)
-                    raise ValueError("P LESS THAN C")
-                #CHECK THAT THIS IS POSITIVE AND MORE THAN C
-                car.optimal_price_segments[segment_code] = P
+        num_cars = len(car_list)
+        car_data = {}
 
-        return car_list
-    
+        for attr in required_attributes:
+            # Use a list comprehension to extract the attribute values and then convert to a NumPy array
+            car_data[attr] = np.array([getattr(car, attr) for car in car_list])
+
+        return car_data
+
+    def calc_optimal_price_cars(self, market_data, car_list):
+        """Fully vectorized calculation of optimal prices."""
+
+        car_data = self.create_car_data(car_list)
+
+        # Pre-compute market segment data (same as before)
+        segment_data_values = list(market_data.values())
+        beta_s_values = np.array([segment["beta_s_t"] for segment in segment_data_values])
+        gamma_s_values = np.array([segment["gamma_s_t"] for segment in segment_data_values])
+        W_s_t_values = np.array([segment["W"] for segment in segment_data_values])
+        #num_segments = len(market_data)
+
+        # Convert car data to NumPy arrays (CRITICAL CHANGE)
+        E_m = car_data["emissions"]  # Array of emissions for all cars
+        C_m = car_data["ProdCost_t"]
+        transport_types = car_data["transportType"]
+        delta = car_data["delta"]
+        Quality_a_t = car_data["Quality_a_t"]
+        Eff_omega_a_t = car_data["Eff_omega_a_t"]
+        e_t = car_data["e_t"]
+        fuel_cost_c = car_data["fuel_cost_c"]
+
+        # Apply EV-specific calculations using boolean indexing
+        ev_mask = transport_types == 3  # Boolean mask for EV cars
+        C_m_cost = C_m.copy()  # Important: Create a copy to avoid modifying original
+        C_m_price = C_m.copy()
+        C_m_cost[ev_mask] = np.maximum(0, C_m[ev_mask] - self.production_subsidy)
+        C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
+
+        # Fully vectorized calculation of 'term'
+        term = self.kappa * (self.d_mean * (Quality_a_t[:, np.newaxis]**self.alpha) * ((1 + self.r) / (self.r - (1 - delta[:, np.newaxis])**self.alpha + 1)) \
+            - beta_s_values[np.newaxis, :] * self.d_mean * fuel_cost_c[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) \
+            - gamma_s_values[np.newaxis, :] * (self.d_mean * e_t[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) + E_m[:, np.newaxis]) \
+            - beta_s_values[np.newaxis, :] * C_m_price[:, np.newaxis]) - 1.0
+
+        log_term = term - np.log(W_s_t_values[np.newaxis, :])
+        Arg = np.exp(log_term)
+        LW = lambertw(Arg, 0).real
+
+        P = C_m_cost[:, np.newaxis] + (1.0 + LW) / (self.kappa * beta_s_values[np.newaxis, :])
+        
+        # Store results in the original car objects (CRITICAL CHANGE)
+        for i, car in enumerate(car_list):
+                for j, segment_code in enumerate(market_data):  # Use enumerate directly on the dictionary
+                    car.optimal_price_segments[segment_code] = P[i, j]
+        return car_list  # Return a dictionary of optimal prices by segment.
+
     def calc_utility_cars_segments(self, market_data, vehicle_list):
         for segment_code, segment_data in market_data.items():
             beta_s =  segment_data["beta_s_t"]

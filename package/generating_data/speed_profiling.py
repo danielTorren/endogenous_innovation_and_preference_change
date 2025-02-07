@@ -4,6 +4,7 @@ import cProfile
 
 def main(base_params): 
     Data = generate_data(base_params)  # run the simulation
+    print("E",Data.social_network.emissions_cumulative)
 
 if __name__ == '__main__':
 
@@ -12,8 +13,8 @@ if __name__ == '__main__':
     "seed_repetitions": 8,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
-    "save_timeseries_data_state": 1,
+    "duration_future": 0,
+    "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
     "seeds":{
         "init_tech_seed": 96,
