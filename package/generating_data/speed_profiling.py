@@ -15,7 +15,7 @@ if __name__ == '__main__':
     "seed_repetitions": 8,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
     "seeds":{
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals": 10000,
         "chi_max": 0.9,
         "a_chi": 1.8,
         "b_chi": 3,
