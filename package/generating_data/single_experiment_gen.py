@@ -88,7 +88,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":10,
+        "production_emissions":6,
         "delta": 0.00058,
         "delta_P": 0.0116,
         "transportType": 2,
@@ -167,7 +167,8 @@ if __name__ == "__main__":
         "min_Efficiency": 0.5,
         "max_Efficiency": 1.5,
         "min_Cost": 5,
-        "max_Cost": 50
+        "max_Cost": 50,
+        "prop_explore": 0.1
     }, 
     "parameters_EV":{
         "N": 15,
@@ -176,10 +177,11 @@ if __name__ == "__main__":
         "rho":[0,0],
         "delta": 0.000435,
         "delta_P":0.0087,
-        "production_emissions":14,
+        "production_emissions":9,
         "transportType": 3,
         "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "max_Efficiency": 7,
+        "prop_explore": 0.1
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -197,10 +199,10 @@ if __name__ == "__main__":
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals": 10000,
         "chi_max": 0.9,
-        "a_chi": 1.8,
-        "b_chi": 3,
+        "a_chi": 1,
+        "b_chi": 1,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 40889,
@@ -220,7 +222,6 @@ if __name__ == "__main__":
     }
 }
     
-
 
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
