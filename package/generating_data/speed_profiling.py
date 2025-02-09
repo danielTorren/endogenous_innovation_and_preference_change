@@ -192,7 +192,7 @@ if __name__ == '__main__':
         "kappa":0.15,
         "U_segments_init": 0,
         "W_calibration":1e20,
-        "min_W": 0,
+        "min_W": 1e-5,
         "r":  0.0002959523726,
         "mu": 1,
         "alpha": 0.5

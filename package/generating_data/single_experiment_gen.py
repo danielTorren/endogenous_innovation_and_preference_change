@@ -201,8 +201,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 10000,
         "chi_max": 0.9,
-        "a_chi": 1,
-        "b_chi": 1,
+        "a_chi": 2,
+        "b_chi": 2,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 40889,
@@ -212,10 +212,10 @@ if __name__ == "__main__":
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":0.15,
+        "kappa":2,#0.15,
         "U_segments_init": 0,
         "W_calibration":1e20,
-        "min_W": 0,
+        "min_W": 1e-5,
         "r":  0.0002959523726,
         "mu": 1,
         "alpha": 0.5

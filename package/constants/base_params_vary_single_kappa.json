@@ -173,7 +173,7 @@
         "kappa":3,
         "B_segments_init": 1,
         "W_calibration":1e8,
-        "min_W": 0,
+        "min_W": 1e-5,
         "r": 0.0016,
         "mu": 1,
         "nu":1
