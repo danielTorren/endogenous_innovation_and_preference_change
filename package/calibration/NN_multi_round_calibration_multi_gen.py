@@ -50,7 +50,8 @@ def run_single_simulation(theta, base_params, param_list):
     arr_history = np.asarray(controller.social_network.history_prop_EV)
     return convert_data(arr_history, base_params)
 
-def run_simulation_for_seed(seed, parameters_list, prior, proposal, num_simulations, base_params):
+def run_simulation_for_seed(seed, parameters_list, prior, proposal, num_simulations, base_params,  round_idx):
+    print("round_idx, Seed ",  round_idx, seed)
     seeded_params = update_base_params_with_seed(base_params.copy(), seed)
     seeded_simulator = partial(run_single_simulation, base_params=seeded_params, param_list=parameters_list)
     sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=False)
@@ -85,7 +86,7 @@ def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME
         with multiprocessing.Pool() as pool:
             results = pool.starmap(
                 run_simulation_for_seed,
-                [(seed, parameters_list, prior, proposal, num_simulations, base_params) for seed in seeds]
+                [(seed, parameters_list, prior, proposal, num_simulations, base_params, round_idx) for seed in seeds]
             )
         for theta, x in results:
             inference.append_simulations(theta, x, proposal=proposal)
