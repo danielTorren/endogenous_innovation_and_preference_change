@@ -46,6 +46,7 @@ def update_base_params_with_seed(base_params, seed):
 def run_single_simulation(theta, base_params, param_list):
     for i, param in enumerate(param_list):
         base_params[param["subdict"]][param["name"]] = theta[i].item()
+        print("theta[i].item()", theta[i].item())
     controller = generate_data(base_params)
     arr_history = np.asarray(controller.social_network.history_prop_EV)
     return convert_data(arr_history, base_params)
