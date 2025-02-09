@@ -74,6 +74,7 @@ def run_single_simulation(theta, base_params, param_list):
         subdict = param["subdict"]
         name = param["name"]
         base_params[subdict][name] = theta[i].item()
+        print(name, theta[i].item())
 
     # Run the market simulation
     controller = generate_data(base_params)
