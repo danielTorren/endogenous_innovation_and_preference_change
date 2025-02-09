@@ -46,13 +46,13 @@ def update_base_params_with_seed(base_params, seed):
 def run_single_simulation(theta, base_params, param_list):
     for i, param in enumerate(param_list):
         base_params[param["subdict"]][param["name"]] = theta[i].item()
-        print("theta[i].item()", theta[i].item())
+        #print("theta[i].item()", theta[i].item())
     controller = generate_data(base_params)
     arr_history = np.asarray(controller.social_network.history_prop_EV)
     return convert_data(arr_history, base_params)
 
 def run_simulation_for_seed(seed, parameters_list, prior, proposal, num_simulations, base_params,  round_idx):
-    print("round_idx, Seed ",  round_idx, seed)
+    #print("round_idx, Seed ",  round_idx, seed)
     seeded_params = update_base_params_with_seed(base_params.copy(), seed)
     seeded_simulator = partial(run_single_simulation, base_params=seeded_params, param_list=parameters_list)
     sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=False)
