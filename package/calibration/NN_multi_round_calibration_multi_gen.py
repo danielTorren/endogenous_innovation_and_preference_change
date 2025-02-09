@@ -109,5 +109,5 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=128
+        num_simulations=256
     )
