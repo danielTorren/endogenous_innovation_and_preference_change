@@ -189,8 +189,9 @@ class Firm:
             - self.gamma_s_values[np.newaxis, :] * (self.d_mean * e_t[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) + E_m[:, np.newaxis]) \
             - self.beta_s_values[np.newaxis, :] * C_m_price[:, np.newaxis]) - 1.0
 
-        log_term = term - np.log(self.W_vec[np.newaxis, :])
-        Arg = np.exp(log_term)
+        exp_input = term - np.log(self.W_vec[np.newaxis, :])
+        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        Arg = np.exp(exp_input)
         LW = lambertw(Arg, 0).real
 
         P = C_m_cost[:, np.newaxis] + (1.0 + LW) / (self.kappa * self.beta_s_values[np.newaxis, :])
