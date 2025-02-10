@@ -327,35 +327,23 @@ class Controller:
         #Qmin poor, Q min rich, Qmax poor, Qmax rich
         omega = omega_mean#np.array([omega_max, omega_max,omega_min , omega_min])
         gamma = np.max(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
-        #print("gamma", gamma)
-        #quit()
-        #beta = np.array([np.min(self.beta_segment_vals), np.mean(self.beta_vec)]) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+
         beta = np.min(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
 
-        #P = np.array([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])#np.array([self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"], self.parameters_ICE["min_Price"], self.parameters_ICE["max_Price"]])
+       
         P = self.parameters_ICE["max_Price"]
-        #omega = omega_mean#np.array([omega_min, omega_mean, omega_max])
-        #C = np.array([C_min,C_max]) #np.array([C_min,C_max,C_min,C_max]) 
 
         C = C_max
 
         W = self.parameters_vehicle_user["W_calibration"]
-        D = np.median(self.d_vec)#np.mean(self.d_vec)   
-        #print("D")
+        D = np.median(self.d_vec)
+
         min_kappa = 1/(beta*(P-C)) 
-        #print("min_kappa CALIBRATION: ", min_kappa)
-        
-        #Q_vals = (((r-delta)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E +    (beta*c + gamma*e)/(r*omega)))**(1/alpha)
+
         Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
-        
-        #print("Q",Q_val)
        
         max_q = 4/3*Q_val #(4*Q_max - Q_min)/3
-        min_q = 0.8*Q_val#0#(4*Q_min - Q_max)/3
-        
-        #print("min_q", min_q)
-        #print("max_q", max_q)
-
+        min_q = 0.8*Q_val
 
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
