@@ -1,7 +1,7 @@
 {
     "property_varied": "a_chi",
     "subdict":"parameters_social_network",
-    "min": 0.4,
-    "max": 0.9,
+    "min": 0.3,
+    "max": 3,
     "reps": 12
 }     

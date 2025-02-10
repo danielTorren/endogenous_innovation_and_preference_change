@@ -84,7 +84,7 @@ def main(
     data_array_ev_prop = data_flat_ev_prop.reshape(len(vary_1["property_list"]),len(vary_2["property_list"]),base_params["seed_repetitions"], len(data_flat_ev_prop[0]))
     
     save_object(data_array_ev_prop  , fileName + "/Data", "data_array_ev_prop")
-    save_object(params_list, fileName + "/Data", "params_list_flat")
+    #save_object(params_list, fileName + "/Data", "params_list_flat")
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(vary_1 , fileName + "/Data", "vary_1")
     save_object(vary_2 , fileName + "/Data", "vary_2")
@@ -94,6 +94,6 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_MAPE_2D.json",
-        VARY_LOAD_1 ="package/constants/vary_single_beta_a_innov.json", 
-        VARY_LOAD_2 ="package/constants/vary_single_beta_b_innov.json",
+        VARY_LOAD_1 ="package/constants/vary_single_beta_a_innov_MAPE.json", 
+        VARY_LOAD_2 ="package/constants/vary_single_kappa_MAPE.json",
         )
