@@ -77,17 +77,18 @@ def main(
 
 
     createFolder(fileName)
-
+    save_object(base_params, fileName + "/Data", "base_params")
     save_object(data_flat_ev_prop  , fileName + "/Data", "data_flat_ev_prop")
-
+    save_object(vary_1 , fileName + "/Data", "vary_1")
+    save_object(vary_2 , fileName + "/Data", "vary_2")
+    
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
     data_array_ev_prop = data_flat_ev_prop.reshape(len(vary_1["property_list"]),len(vary_2["property_list"]),base_params["seed_repetitions"], len(data_flat_ev_prop[0]))
     
     save_object(data_array_ev_prop  , fileName + "/Data", "data_array_ev_prop")
     #save_object(params_list, fileName + "/Data", "params_list_flat")
-    save_object(base_params, fileName + "/Data", "base_params")
-    save_object(vary_1 , fileName + "/Data", "vary_1")
-    save_object(vary_2 , fileName + "/Data", "vary_2")
+    
+
 
     return params_list
 
