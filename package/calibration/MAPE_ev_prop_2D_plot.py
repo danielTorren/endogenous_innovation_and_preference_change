@@ -336,10 +336,10 @@ def main(fileName, dpi=600):
     # Plot MAPE heatmap
     #plot_mape_heatmap(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     #plot_mape_heatmaps_per_seed(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    #plot_ev_stock_all_combinations(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     #plot_ev_stock_per_seed(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_ev_stock_per_seed_mape(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_ev_stock_per_seed_mape(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_12_42_41__24_12_2024")
+    main("results/MAPE_ev_2D_13_55_58__10_02_2025")
