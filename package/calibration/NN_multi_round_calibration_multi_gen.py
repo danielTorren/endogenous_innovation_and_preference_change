@@ -83,7 +83,7 @@ def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME
     proposal = prior
 
     for round_idx in range(rounds):
-        print(f"ROUND: {round_idx + 1}/3")
+        print(f"ROUND: {round_idx + 1}/{rounds}")
         with multiprocessing.Pool() as pool:
             results = pool.starmap(
                 run_simulation_for_seed,
