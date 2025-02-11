@@ -580,8 +580,6 @@ def main(fileName, dpi=600):
     history_efficiency_EV= load_object( fileName + "/Data", "history_efficiency_EV")
     history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
     history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
-    history_distance_individual_ICE = load_object( fileName + "/Data", "history_distance_individual_ICE")
-    history_distance_individual_EV = load_object( fileName + "/Data", "history_distance_individual_EV")
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
@@ -636,13 +634,6 @@ def main(fileName, dpi=600):
         fileName
     )
 
-    plot_distance_individuals_mean_median_type_multiple_seeds(
-        base_params, 
-        history_distance_individual_EV, 
-        history_distance_individual_ICE, 
-        fileName
-    )
-
     plot_history_car_age_multiple_seeds(
         base_params, history_car_age_arr, fileName, dpi
     )
@@ -658,4 +649,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_16_34_07__05_02_2025")
+    main("results/multi_seed_single_12_54_31__11_02_2025")
