@@ -131,7 +131,7 @@
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Cost": 12.91,
-        "max_Cost": 43.72,
+        "max_Cost": 43.72
     }, 
     "parameters_EV":{
         "N": 15,
@@ -170,7 +170,6 @@
         "WTP_mean": 46646.65434,
         "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
-
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{

@@ -20,9 +20,8 @@ def load_data_and_params(file_path):
 def prepare_training_data(data_array_ev_prop, real_data):
     num_samples = data_array_ev_prop.shape[0] * data_array_ev_prop.shape[1] * data_array_ev_prop.shape[2]
     X = data_array_ev_prop.reshape(num_samples, -1)
-    y = np.tile(real_data.flatten(), (num_samples, 1))
+    y = real_data#np.tile(real_data.flatten(), (num_samples, 1))
     return torch.tensor(X, dtype=torch.float32), torch.tensor(y, dtype=torch.float32)
-
 
 def train_neural_network(parameters_list, X, y, file_path):
     #low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -53,6 +52,9 @@ def main(file_path):
 
     base_params, data_array_ev_prop, EV_stock_prop_2010_22, vary_1, vary_2, vary_3 = load_data_and_params(file_path)
     X, y = prepare_training_data(data_array_ev_prop, EV_stock_prop_2010_22)
+
+    print("y",y)
+    quit()
     parameters_list = [vary_1, vary_2, vary_3]
 
     output_file_name = produce_name_datetime("NN_calibration_multi")

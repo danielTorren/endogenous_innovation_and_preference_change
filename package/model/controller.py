@@ -316,21 +316,20 @@ class Controller:
 
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
 
-        omega_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
-        omega_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        #omega_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
+        #omega_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
         C_max = self.parameters_ICE["min_Cost"] + 0.8*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
-        C_min = self.parameters_ICE["min_Cost"] + 0.2*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
+        #C_min = self.parameters_ICE["min_Cost"] + 0.2*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
         #C_mean = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2
 
         #Qmin poor, Q min rich, Qmax poor, Qmax rich
         omega = omega_mean#np.array([omega_max, omega_max,omega_min , omega_min])
-        gamma = np.max(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
+        gamma = np.mean(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
 
-        beta = np.min(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+        beta = np.max(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
 
-       
         P = self.parameters_ICE["max_Price"]
 
         C = C_max
@@ -338,12 +337,13 @@ class Controller:
         W = self.parameters_vehicle_user["W_calibration"]
         D = np.median(self.d_vec)
 
-        min_kappa = 1/(beta*(P-C)) 
+        #min_kappa = 1/(beta*(P-C)) 
+        #print("min kappa", min_kappa)
 
         Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
        
-        max_q = 4/3*Q_val #(4*Q_max - Q_min)/3
-        min_q = 0.8*Q_val
+        max_q = 0.8*Q_val
+        min_q = 0
 
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
