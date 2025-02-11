@@ -65,7 +65,7 @@ def run_simulation_for_seed(seed, parameters_list, prior, proposal, num_simulati
     )
     return theta, x
 
-def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME, num_simulations=100):
+def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME, num_simulations=100, rounds = 5):
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
@@ -82,7 +82,7 @@ def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME
     seeds = np.arange(1, base_params["seed_repetitions"] + 1)
     proposal = prior
 
-    for round_idx in range(3):
+    for round_idx in range(rounds):
         print(f"ROUND: {round_idx + 1}/3")
         with multiprocessing.Pool() as pool:
             results = pool.starmap(
@@ -97,13 +97,13 @@ def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME
 
     createFolder(fileName)
     save_object(posterior, f"{fileName}/Data", "posterior")
-    samples = posterior.sample((100000,), x=x_o)
+    samples = posterior.sample((10000,), x=x_o)
     save_object(samples, f"{fileName}/Data", "samples")
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.7, 3]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.7, 3]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.5, 5]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.5, 5]},
         {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [0.064, 2]},
     ]
     main(
@@ -111,5 +111,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=256
+        num_simulations=256, 
+        rounds = 5
     )
