@@ -44,7 +44,8 @@ def train_neural_network(parameters_list, X, y, file_path):
     save_object(X, f"{file_path}/Data", "X")
     save_object(y, f"{file_path}/Data", "y")
 
-    samples = posterior.sample_batched((100000,), x=y)
+    samples = posterior.sample((100000,), x=y.unsqueeze(0))
+
     save_object(samples, f"{file_path}/Data", "samples")
 
 def main(file_path):
