@@ -422,7 +422,6 @@ class Social_Network:
 
         return utilities_kappa
 
-
 #########################################################################################################################################################
     #choosing vehicles
     def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start ):

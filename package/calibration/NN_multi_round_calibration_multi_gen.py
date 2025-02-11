@@ -97,7 +97,7 @@ def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME
 
     createFolder(fileName)
     save_object(posterior, f"{fileName}/Data", "posterior")
-    samples = posterior.sample((10000000,), x=x_o)
+    samples = posterior.sample((100000,), x=x_o)
     save_object(samples, f"{fileName}/Data", "samples")
 
 if __name__ == "__main__":

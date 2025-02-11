@@ -39,7 +39,6 @@ class NKModel:
         self.prop_explore = parameters["prop_explore"]
         self.init_price_multiplier = parameters["init_price_multiplier"]
         
-
         self.min_vec = np.asarray([self.min_Quality, self.min_Efficiency, self.min_Cost])
         self.max_vec = np.asarray([self.max_Quality, self.max_Efficiency, self.max_Cost])
 
