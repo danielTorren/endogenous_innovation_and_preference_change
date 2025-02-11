@@ -128,10 +128,10 @@
         "mean_Price": 40,
         "min_Price": 20,
         "max_Price": 100,
-        "min_Efficiency": 0.5,
-        "max_Efficiency": 1.5,
-        "min_Cost": 5,
-        "max_Cost": 50
+        "min_Efficiency": 0.79,
+        "max_Efficiency": 3.09,
+        "min_Cost": 12.91,
+        "max_Cost": 43.72,
     }, 
     "parameters_EV":{
         "N": 15,
@@ -142,8 +142,8 @@
         "delta_P":0.0087,
         "production_emissions":14,
         "transportType": 3,
-        "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "min_Efficiency": 2.73,
+        "max_Efficiency": 9.73
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -167,8 +167,8 @@
         "b_chi": 3,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 40889,
-        "WTP_sd": 34327,
+        "WTP_mean": 46646.65434,
+        "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
 
         "prob_switch_car":0.083

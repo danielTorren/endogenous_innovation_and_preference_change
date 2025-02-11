@@ -23,7 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake: calibration, end",  controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price],controller.calc_EV_prop())
+    #print("uptake: calibration, end",  controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price],controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
     print("mean price", controller.social_network.history_mean_price[-1])
     createFolder(fileName)
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "seed_repetitions": 8,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         "init_vals_poisson_seed": 95
     },
     "ev_research_start_time":60,
-    "ev_production_start_time": 96,
+    "ev_production_start_time": 120,#96,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -148,26 +148,26 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 1,
+        "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 1
+        "scrap_price": 0.6698
     },
     "parameters_ICE":{
         "N": 15,
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6,
+        "production_emissions":10,
         "delta": 0.00058,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 40,
         "min_Price": 20,
         "max_Price": 100,
-        "min_Efficiency": 0.5,
-        "max_Efficiency": 1.5,
-        "min_Cost": 5,
-        "max_Cost": 50,
+        "min_Efficiency": 0.79,
+        "max_Efficiency": 3.09,
+        "min_Cost": 12.91,
+        "max_Cost": 43.72,
         "prop_explore": 0.1
     }, 
     "parameters_EV":{
@@ -177,10 +177,10 @@ if __name__ == "__main__":
         "rho":[0,0],
         "delta": 0.000435,
         "delta_P":0.0087,
-        "production_emissions":9,
+        "production_emissions":14,
         "transportType": 3,
-        "min_Efficiency": 4,
-        "max_Efficiency": 7,
+        "min_Efficiency": 2.73,
+        "max_Efficiency": 9.73,
         "prop_explore": 0.1
     },
     "parameters_firm_manager": {
@@ -199,20 +199,19 @@ if __name__ == "__main__":
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 5000,
         "chi_max": 0.9,
-        "a_chi": 2,
-        "b_chi": 2,
+        "a_chi": 1.74,
+        "b_chi": 4.68,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 40889,
-        "WTP_sd": 34327,
+        "WTP_mean": 46646.65434,
+        "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
-
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":2,#0.15,
+        "kappa":0.15,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,

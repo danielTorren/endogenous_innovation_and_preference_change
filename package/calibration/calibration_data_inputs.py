@@ -32,6 +32,10 @@ def load_in_calibration_data():
     # If you want the normalized value relative to 2020
     dec_2017_relative_value = CPI_california_df.loc["2017-12-01", "2020 relative Weighted Average"]
     print("dec_2017_relative_value (For Gamma)",dec_2017_relative_value)
+    # If you want the normalized value relative to 2020
+    dec_2015_relative_value = CPI_california_df.loc["2015-01-01", "2020 relative Weighted Average"]
+    print("dec_2015_relative_value (For Costs Grieco)",dec_2015_relative_value)
+    quit()
 
     #Gasoline Price
     gas_price_california_df = pd.read_excel("package/calibration_data/gas_price_california.xlsx") 

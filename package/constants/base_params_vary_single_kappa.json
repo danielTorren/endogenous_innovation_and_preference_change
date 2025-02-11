@@ -126,8 +126,8 @@
         "mean_Price": 4,
         "min_Price": 2,
         "max_Price": 10,
-        "min_Efficiency": 0.5,
-        "max_Efficiency": 1.5,
+        "min_Efficiency": 0.79,
+        "max_Efficiency": 3.09,
         "min_Cost": 0.5,
         "max_Cost": 5
     },
@@ -138,8 +138,8 @@
         "rho":[0,0],
         "production_emissions":0.9,
         "transportType": 3,
-        "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "min_Efficiency": 2.73,
+        "max_Efficiency": 9.73
     },
     "parameters_firm_manager": {
         "J": 20,

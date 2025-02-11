@@ -120,6 +120,60 @@ def plot_best_parameters_all_metrics(base_params, real_data, data_array_ev_prop,
 
     save_and_show(fig, fileName, "best_parameters_all_metrics", dpi)
 
+def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+    num_vary_1 = len(vary_1["property_list"])
+    num_vary_2 = len(vary_2["property_list"])
+
+    fig, axes = plt.subplots(
+        nrows=num_vary_1, ncols=num_vary_2, figsize=(20, 20), sharex=True, sharey=True
+    )
+
+    x_values = np.arange(len(real_data))  # Assuming time series index
+
+    for i, param_1 in enumerate(vary_1["property_list"]):
+        print("",i)
+        for j, param_2 in enumerate(vary_2["property_list"]):
+            ax = axes[i, j]
+
+            # Extract predictions for current parameter pair
+            predictions = data_array_ev_prop[i, j, :, :]  # Shape: (seeds, time steps)
+            processed_data_seeds = [convert_data(data, base_params) for data in predictions]
+            # Convert to numpy array and ensure consistent dimensions
+            processed_data_array = np.array(processed_data_seeds)
+
+            # Calculate mean and confidence intervals across seeds
+            means = np.mean(processed_data_array, axis=0)
+            confidence_intervals = t.ppf(0.975, len(processed_data_array)-1) * sem(processed_data_array, axis=0)
+
+            lower_bounds = means - confidence_intervals
+            upper_bounds = means + confidence_intervals
+
+            # Plot mean and confidence intervals
+            ax.plot(x_values, means, color='blue')
+            ax.fill_between(x_values, lower_bounds, upper_bounds, color='blue', alpha=0.2)
+            ax.plot(x_values, real_data, color='orange', linestyle='--', linewidth=2)
+
+            # Hide major and minor ticks
+            ax.set_xticks([])
+            ax.set_xticks([], minor=True)
+            ax.set_yticks([])
+            ax.set_yticks([], minor=True)
+
+            # Add parameter values as a tuple in the top left corner
+            param_tuple = (round(param_1, 3), round(param_2, 3))
+            ax.text(0.02, 0.95, f"{param_tuple}", transform=ax.transAxes, fontsize=10, verticalalignment='top')
+
+            ax.set_ylim([min(real_data), max(real_data)])
+
+    # Add labels for the entire figure
+    fig.supxlabel(vary_1["property_varied"])
+    fig.supylabel(vary_2["property_varied"])
+
+    # Adjust layout and save the figure
+    plt.tight_layout()
+    save_and_show(fig, fileName, "plot_ev_stock_combinations", dpi)
+
+
 # Main function
 def main(fileName, dpi=600):
     try:
@@ -138,13 +192,15 @@ def main(fileName, dpi=600):
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
     # Plot heatmaps for different metrics
-    plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
     # Plot best parameters from all metrics
-    plot_best_parameters_all_metrics(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_best_parameters_all_metrics(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    
+    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName)
 
     plt.show()
 

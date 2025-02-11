@@ -120,13 +120,13 @@
         "K": 3,
         "A": 3,
         "rho":[0,0],
-        "production_emissions":6000,
+        "production_emissions":10000,
         "delta": 0.002,
         "transportType": 2,
         "min_Price": 20000,
         "max_Price": 120000,
-        "min_Efficiency": 0.5,
-        "max_Efficiency": 1.5,
+        "min_Efficiency": 0.79,
+        "max_Efficiency": 3.09,
         "min_Cost": 5000,
         "max_Cost": 30000
     },
@@ -137,8 +137,8 @@
         "rho":[0,0],
         "production_emissions":9000,
         "transportType": 3,
-        "min_Efficiency": 4,
-        "max_Efficiency": 7
+        "min_Efficiency": 2.73,
+        "max_Efficiency": 9.73
     },
     "parameters_firm_manager": {
         "J": 10,
