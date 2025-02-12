@@ -96,7 +96,7 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-    num_rounds = 5
+    num_rounds = 3
 
     # Observed data
     x_o = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     ]
     main(
         parameters_list=parameters_list,
-        BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round_multi.json",
+        BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
         num_simulations=256
