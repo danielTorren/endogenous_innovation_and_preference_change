@@ -165,8 +165,8 @@
     "parameters_social_network":{
         "num_individuals": 5000,
         "chi_max": 0.9,
-        "a_chi": 1.74,
-        "b_chi": 4.68,
+        "a_chi": 2.0657,
+        "b_chi": 3.6634,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
@@ -175,7 +175,7 @@
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":0.15,
+        "kappa":0.0641,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,

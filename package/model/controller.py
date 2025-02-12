@@ -328,7 +328,7 @@ class Controller:
         omega = omega_mean#np.array([omega_max, omega_max,omega_min , omega_min])
         gamma = np.mean(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
 
-        beta = np.max(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
+        beta = np.min(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
 
         P = self.parameters_ICE["max_Price"]
 
@@ -337,37 +337,24 @@ class Controller:
         W = self.parameters_vehicle_user["W_calibration"]
         D = np.median(self.d_vec)
 
-        #min_kappa = 1/(beta*(P-C)) 
-        #print("min kappa", min_kappa)
-
+        min_kappa = 1/(beta*(P-C)) 
+        print("min kappa, kappa", min_kappa, kappa)
+        quit()
         Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
-       
+        print("Q_val",Q_val)
+
         max_q = 0.8*Q_val
         min_q = 0
 
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
+        
+
+
         self.parameters_EV["min_Quality"] = min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
 
-        #NOW USE THIS QUALITY TO CALCUALTE THE UTILITY!
-        
-        Q =  max_q
-        #U = D*(Q**alpha)*((1+r)/(r-delta)) - beta*(D*c/(r*omega) + P) - gamma*(D*e/(r*omega) + E)
-        P_max = np.max(P)
-        U = D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*(D*c*(1+r)/(r*omega) + P_max) - gamma*(D*e*(1+r)/(r*omega) + E)
-        #print("U", U)
-        #########
-        
-        #term = kappa*(D*(Q**alpha)*((1+r)/(r-delta)) - beta*D*c/(r*omega) - gamma*(D*e/(r*omega) + E) - beta*C) - 1.0
-        term = kappa*(D*(Q**alpha)*((1+r)/(r - (1 - delta)**alpha + 1)) - beta*D*c*(1+r)/(r*omega) - gamma*(D*e*(1+r)/(r*omega) + E) - beta*C) - 1.0
-        Arg = np.exp(term)/W
-        LW = lambertw(Arg, 0).real  # principal branch
-        P = C + (U*(1.0 + LW))/(kappa*beta)
-        #print("max expected price", P)
-
-
-        #quit()
+        quit()
 
     #####################################################################################################################################
     def manage_burn_in(self):

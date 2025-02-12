@@ -76,22 +76,22 @@ def main(fileName):
     param_names = [p["name"] for p in var_dict]
 
     # Test posterior samples and plot results
-    #samples = posterior.sample((10000000,), x=x_o)
-    #log_probability_samples = posterior.log_prob(samples, x=x_o)
+    samples = posterior.sample((10000000,), x=x_o)
+    log_probability_samples = posterior.log_prob(samples, x=x_o)
     #print("Log probabilities:", log_probability_samples)
 
     # Find sample with greatest log probability
-    #max_log_prob_index = log_probability_samples.argmax()
-    #best_sample = samples[max_log_prob_index]
+    max_log_prob_index = log_probability_samples.argmax()
+    best_sample = samples[max_log_prob_index]
     print("Sample with the greatest log probability:", best_sample)
-    #print("Greatest log probability:", log_probability_samples[max_log_prob_index])
+    print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
-    #save_object(best_sample, fileName + "/Data", "best_sample")
+    save_object(best_sample, fileName + "/Data", "best_sample")
     
     # Plot results
     plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_10_36_45__21_01_2025",
+        fileName="results/NN_calibration_multi_09_18_17__12_02_2025",
     )

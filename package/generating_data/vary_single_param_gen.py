@@ -26,22 +26,40 @@ def update_base_params_with_seed(base_params, seed):
     base_params["parameters_firm"]["innovation_seed"] = int(seed + 8 * seed_repetitions)
     return base_params
 
+def params_list_with_seed(base_params):
+    """
+    Expand the list of scenarios by varying the seed parameters.
+    """
+    base_params_list = []
+    seed_repetitions = base_params["seed_repetitions"]
+
+    for seed in range(1, seed_repetitions + 1):
+        base_params_copy = deepcopy(base_params)
+        # VARY ALL THE SEEDS
+        base_params_copy["seeds"]["init_tech_seed"] = seed + seed_repetitions
+        base_params_copy["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
+        base_params_copy["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
+        base_params_copy["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
+        base_params_copy["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
+        base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
+        base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
+        base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
+        base_params_copy["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
+       
+        base_params_list.append(base_params_copy)
+    
+    return base_params_list
 
 def produce_param_list(params: dict, property_list: list, subdict, property: str) -> list[dict]:
     params_list = []
 
     for i in property_list:
-        params_updated = deepcopy(params)
-        params_updated[subdict][property] = i
-
-        for seed in np.arange(1, params_updated["seed_repetitions"] + 1):
-
-            params_updated = update_base_params_with_seed(params_updated, seed)
-
-            params_list.append(
-                deepcopy(params_updated)
-            )  # have to make a copy so that it actually appends a new dict and not just the location of the params dict
-
+        params[subdict][property] = i
+        seeds_base_params_list = params_list_with_seed(params)
+        params_list.extend(seeds_base_params_list)
     return params_list
 
 def main(
@@ -73,7 +91,7 @@ def main(
     data_flat_distance, data_flat_ev_prop, data_flat_age, data_flat_price , data_flat_emissions, efficiency_list= distance_ev_prop_age_price_emissions_parallel_run(params_list) 
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
-    data_array_distance = data_flat_distance.reshape(len(property_values_list),seed_repetitions, len(data_flat_distance[0]), base_params["parameters_social_network"]["num_individuals"])
+   
     data_array_ev_prop = data_flat_ev_prop.reshape(len(property_values_list),seed_repetitions, len(data_flat_ev_prop[0]))
     data_array_age = data_flat_age.reshape(len(property_values_list),seed_repetitions, len(data_flat_age[0]), base_params["parameters_social_network"]["num_individuals"])
     data_array_price = data_flat_price.reshape(len(property_values_list),seed_repetitions, len(data_flat_price[0]), 2, 2)
@@ -95,5 +113,5 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_a_innov.json", #"package/constants/vary_single_delta.json"
+        VARY_LOAD ="package/constants/vary_single_kappa.json", #"package/constants/vary_single_delta.json"
         )

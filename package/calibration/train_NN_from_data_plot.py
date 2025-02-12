@@ -61,12 +61,18 @@ def main(file_path):
     Args:
         file_path (str): Path to the directory containing the data.
     """
-    y_tiled = load_object(file_path + "/Data", "y")
-    y = y_tiled[0]
-    print("y", y)
-
+    real_data = load_object(file_path + "/Data", "real_data")
     posterior = load_object(file_path + "/Data", "posterior")
-    samples = posterior.sample((100000,), x=y)
+    X = load_object(file_path + "/Data", "X")
+
+    conditioned_posterior = posterior.condition(x=real_data.unsqueeze(0))
+    samples = conditioned_posterior.sample((100000,))
+    quit()
+
+
+    samples = posterior.sample((100000,), x=real_data.unsqueeze(0))
+
+    
     
     save_object(samples, f"{file_path}/Data", "samples")
 
@@ -75,4 +81,4 @@ def main(file_path):
 
 
 if __name__ == "__main__":
-    main("results/NN_calibration_multi_11_44_07__12_02_2025")
+    main("results/MAPE_ev_3D_17_21_36__11_02_2025")

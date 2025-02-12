@@ -211,7 +211,7 @@ if __name__ == "__main__":
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":0.15,
+        "kappa":0.065,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,

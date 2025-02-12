@@ -1,8 +1,8 @@
 {
-    "seed_repetitions": 32,
+    "seed_repetitions": 3,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -20,7 +20,7 @@
         "init_vals_poisson_seed": 95
     },
     "ev_research_start_time":60,
-    "ev_production_start_time": 96,
+    "ev_production_start_time": 120,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -52,7 +52,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
+            "Carbon_price": "High",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -112,9 +112,9 @@
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 1,
+        "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 1
+        "scrap_price": 0.6698
     },
     "parameters_ICE":{
         "N": 15,
@@ -131,7 +131,8 @@
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Cost": 12.91,
-        "max_Cost": 43.72
+        "max_Cost": 43.72,
+        "prop_explore": 0.1
     }, 
     "parameters_EV":{
         "N": 15,
@@ -143,7 +144,8 @@
         "production_emissions":14,
         "transportType": 3,
         "min_Efficiency": 2.73,
-        "max_Efficiency": 9.73
+        "max_Efficiency": 9.73,
+        "prop_explore": 0.1
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -161,10 +163,10 @@
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals": 5000,
         "chi_max": 0.9,
-        "a_chi": 1.8,
-        "b_chi": 3,
+        "a_chi": 2.0657,
+        "b_chi": 3.6634,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
@@ -173,7 +175,7 @@
         "prob_switch_car":0.083
     },
     "parameters_vehicle_user":{
-        "kappa":0.15,
+        "kappa":0.0641,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
