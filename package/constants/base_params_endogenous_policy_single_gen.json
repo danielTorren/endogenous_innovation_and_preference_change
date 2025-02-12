@@ -3,7 +3,7 @@
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
-    "save_timeseries_data_state": 0,
+    "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
         "init_tech_seed": 96,
@@ -19,8 +19,8 @@
         "remove_seed": 48,
         "init_vals_poisson_seed": 95
     },
-    "ev_research_start_time":60,
-    "ev_production_start_time": 96,
+    "ev_research_start_time":96,
+    "ev_production_start_time": 120,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -112,11 +112,12 @@
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 1,
+        "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 1
+        "scrap_price": 0.6698
     },
     "parameters_ICE":{
+        "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 3,
@@ -132,8 +133,11 @@
         "max_Efficiency": 3.09,
         "min_Cost": 12.91,
         "max_Cost": 43.72,
+        "min_Quality": 0,
+        "max_Quality": 1e-7
     }, 
     "parameters_EV":{
+        "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 3,
@@ -161,20 +165,20 @@
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 10000,
+        "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1.8,
-        "b_chi": 3,
+        "a_chi": 1.15,
+        "b_chi": 2,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
         "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
-
-        "prob_switch_car":0.083
+        "prob_switch_car":0.083,
+        "proportion_zero_target": 0.005
     },
     "parameters_vehicle_user":{
-        "kappa":0.15,
+        "kappa":0.2,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,

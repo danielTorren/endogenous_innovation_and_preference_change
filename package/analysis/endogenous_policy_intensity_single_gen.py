@@ -264,7 +264,8 @@ def main(
             "Adoption_subsidy",
             "Production_subsidy",
             "Research_subsidy"
-            ]
+            ],
+        target_ev_uptake = 0.5
     ) -> str: 
 
     # Load base parameters
@@ -317,7 +318,7 @@ def main(
             controller_list,
             policy_name,
             intensity_level_init = policy_params_dict["init_val_dict"][policy_name],
-            target_ev_uptake=0.9,
+            target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy_name],
             initial_step_size = initial_step_size,
             adaptive_factor= 0.5,
@@ -331,7 +332,8 @@ def main(
     save_object(policy_outcomes, fileName + "/Data", "policy_outcomes")
     save_object(runs_data, fileName + "/Data", "runs_data")
     save_object(base_params, fileName + "/Data", "base_params")
-
+    save_object(target_ev_uptake, fileName + "/Data", "target_ev_uptake")
+    
 
 if __name__ == "__main__":
     results = main(
@@ -342,5 +344,6 @@ if __name__ == "__main__":
             "Adoption_subsidy",
             "Carbon_price",
             ],
-            BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json"
+        BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
+        target_ev_uptake = 0.5
         )
