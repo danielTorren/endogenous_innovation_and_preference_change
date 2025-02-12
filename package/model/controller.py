@@ -366,10 +366,10 @@ class Controller:
         D = np.median(self.d_vec)
 
         min_kappa = 1/(beta*(P-C)) 
-        print("min kappa, kappa", min_kappa, kappa)
+        #print("min kappa, kappa", min_kappa, kappa)
         #quit()
         Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
-        print("Q_val",Q_val)
+        #print("Q_val",Q_val)
 
         max_q = 0.8*Q_val
         min_q = 0

@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 64,
+    "seed_repetitions": 16,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
@@ -52,7 +52,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "High",
+            "Carbon_price": "Zero",
             "Discriminatory_corporate_tax": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
@@ -178,7 +178,7 @@
         "proportion_zero_target": 0.005
     },
     "parameters_vehicle_user":{
-        "kappa":0.064,
+        "kappa":0.2,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,

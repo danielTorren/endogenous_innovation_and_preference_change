@@ -203,7 +203,7 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1,
+        "a_chi": 1.25,
         "b_chi": 2,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         "proportion_zero_target": 0.005
     },
     "parameters_vehicle_user":{
-        "kappa":0.064,
+        "kappa":0.2,#0.064,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,

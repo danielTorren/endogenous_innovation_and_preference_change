@@ -568,7 +568,7 @@ def main(fileName, dpi=600):
 
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
     history_prop_EV_arr= load_object(fileName + "/Data", "history_prop_EV_arr")
-    history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
+    #history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
     history_mean_price_ICE_EV_arr= load_object( fileName + "/Data", "history_mean_price_ICE_EV_arr")
     history_median_price_ICE_EV_arr= load_object( fileName + "/Data", "history_median_price_ICE_EV_arr")
     history_total_utility_arr= load_object(fileName + "/Data", "history_total_utility_arr")
@@ -632,10 +632,6 @@ def main(fileName, dpi=600):
         history_efficiency_ICE, history_efficiency_EV, 
         history_production_cost_ICE, history_production_cost_EV, 
         fileName
-    )
-
-    plot_history_car_age_multiple_seeds(
-        base_params, history_car_age_arr, fileName, dpi
     )
 
     plot_history_mean_price_multiple_seeds(

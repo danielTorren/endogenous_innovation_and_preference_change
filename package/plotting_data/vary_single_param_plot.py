@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import sem, t
 from package.resources.utility import load_object
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
 
 def plot_distance(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
     """
@@ -76,9 +79,8 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
     fig.savefig(f"{fileName}/user_distance_multi_{property_save}.png", dpi=dpi)
     #plt.show()
 
+
 def plot_ev_prop(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
-
-
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -86,40 +88,50 @@ def plot_ev_prop(data_array, property_values_list, fileName, name_property, prop
     # Create time series array if you don't have one
     time_series = np.arange(time_steps)
 
-    fig, axes = plt.subplots(nrows=1, ncols=num_deltas, figsize=(5 * num_deltas, 5), sharey=True)
+    # Create a 2-row subplot: first for individual seeds, second for mean + confidence interval
+    fig, axes = plt.subplots(nrows=2, ncols=num_deltas, figsize=(5 * num_deltas, 10), sharex=True, sharey='row')
 
-    # If there's only one delta, axes might not be an array
+    # If there's only one delta, axes might not be an array of arrays
     if num_deltas == 1:
-        axes = [axes]
+        axes = np.array([[axes[0]], [axes[1]]])
 
     for i, delta in enumerate(property_values_list):
-        ax = axes[i]
+        ax_individual = axes[0, i]
+        ax_mean = axes[1, i]
 
-        # For each seed, compute the mean over individuals and plot
+        # For each seed, plot individual data
         for seed in range(num_seeds):
-            # data for this delta and seed: shape (time_steps, num_individuals)
-            data = data_array[i, seed, :]  # shape (time_steps, num_individuals)
-            # Plot mean and capture the line object
-            ax.plot(time_series, data , label=f"Seed {seed+1}", alpha=0.7)
+            data = data_array[i, seed, :]  # shape (time_steps,)
+            ax_individual.plot(time_series, data, label=f"Seed {seed+1}", alpha=0.7)
 
-        # Format each subplot
-        ax.set_title(f"{delta}")
-        #ax.set_xlabel("Time Step")
-        #if i == 0:
-        #    ax.set_ylabel("EV prop")
+        # Calculate mean and 85% confidence interval across seeds
+        mean_data = np.mean(data_array[i, :, :], axis=0)
+        sem_data = stats.sem(data_array[i, :, :], axis=0)
+        ci_range = sem_data * stats.t.ppf((1 + 0.85) / 2., num_seeds - 1)
 
-        ax.grid()
+        # Plot mean and confidence interval
+        ax_mean.plot(time_series, mean_data, color='black', label='Mean', linewidth=2)
+        ax_mean.fill_between(time_series, mean_data - ci_range, mean_data + ci_range, color='gray', alpha=0.3, label='85% CI')
 
-        # Add a legend if desired (or only in one subplot)
-        #ax.legend()
+        # Format individual seed plots
+        ax_individual.set_title(f"{delta}")
+        ax_individual.grid()
+
+        # Format mean and confidence interval plots
+        ax_mean.set_title(f"{delta} (Mean with 85% CI)")
+        ax_mean.grid()
+        ax_mean.legend()
 
     fig.supxlabel("Time Step")
     fig.supylabel("EV prop")
-    # Adjust layout
-    #plt.tight_layout()
 
-    # Save and show
+    # Adjust layout
+    plt.tight_layout()
+
+    # Save the figure
     fig.savefig(f"{fileName}/user_ev_prop_multi_{property_save}.png", dpi=dpi)
+
+
 
 def plot_age(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
     """
@@ -364,10 +376,10 @@ def main(fileName, dpi=600):
     plot_ev_prop(data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
     #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
     plot_price(data_array_price , property_values_list, fileName, name_property, property_save, 600)
-    plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
+    #plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
     #plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_16_52_13__12_02_2025")
+    main("results/single_param_vary_17_01_22__12_02_2025")

@@ -99,9 +99,7 @@ def main(
     
     createFolder(fileName)
 
-    #save_object(data_array_distance, fileName + "/Data", "data_array_distance")
     save_object(data_array_ev_prop , fileName + "/Data", "data_array_ev_prop")
-    save_object(data_array_age , fileName + "/Data", "data_array_age")
     save_object(data_array_price , fileName + "/Data", "data_array_price")
     save_object(data_array_emissions  , fileName + "/Data", "data_array_emissions")
     save_object(base_params, fileName + "/Data", "base_params")
