@@ -1,9 +1,9 @@
 import torch
 from sbi.analysis import pairplot
 import matplotlib.pyplot as plt
-from package.resources.utility import load_object, createFolder
+from package.resources.utility import load_object, createFolder, save_object
 
-def load_samples_and_params(file_path):
+def load_params(file_path):
     """
     Load posterior samples and parameter details from the first script's output.
     
@@ -15,7 +15,7 @@ def load_samples_and_params(file_path):
         param_bounds (list): List of parameter bounds.
         param_names (list): List of parameter names.
     """
-    samples = load_object(file_path + "/Data", "samples")
+
     
     # Load parameter variation details
     vary_1 = load_object(file_path + "/Data", "vary_1")
@@ -28,7 +28,7 @@ def load_samples_and_params(file_path):
     
     param_names = [vary_1["name"], vary_2["name"], vary_3["name"]]
     
-    return samples, param_bounds, param_names
+    return param_bounds, param_names
 
 
 def plot_posterior_samples(samples, param_bounds, param_names, output_file_path):
@@ -61,9 +61,18 @@ def main(file_path):
     Args:
         file_path (str): Path to the directory containing the data.
     """
-    samples, param_bounds, param_names = load_samples_and_params(file_path)
+    y_tiled = load_object(file_path + "/Data", "y")
+    y = y_tiled[0]
+    print("y", y)
+
+    posterior = load_object(file_path + "/Data", "posterior")
+    samples = posterior.sample((100000,), x=y)
+    
+    save_object(samples, f"{file_path}/Data", "samples")
+
+    samples, param_bounds, param_names = load_params(file_path)
     plot_posterior_samples(samples, param_bounds, param_names, file_path)
 
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_3D_23_56_09__10_02_2025")
+    main("results/NN_calibration_multi_11_44_07__12_02_2025")

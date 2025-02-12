@@ -76,9 +76,6 @@ def plot_combined_best_metrics(best_params_dict, data_array_ev_prop, real_data, 
 
 
 def process_metrics(metric_function, metric_name, base_params, real_data, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi=600):
-    num_vary_1 = len(vary_1["property_list"])
-    num_vary_2 = len(vary_2["property_list"])
-    num_vary_3 = len(vary_3["property_list"])
 
     all_metrics = []
 
@@ -123,4 +120,4 @@ def main(fileName, dpi=600):
 
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_3D_23_56_09__10_02_2025")
+    main("results/MAPE_ev_3D_17_21_36__11_02_2025")
