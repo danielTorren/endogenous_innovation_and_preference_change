@@ -1,4 +1,4 @@
-import torch 
+import torch
 from sbi.utils import BoxUniform
 from sbi.inference import NPE, simulate_for_sbi
 from sbi.utils.user_input_checks import (
@@ -43,29 +43,15 @@ def update_base_params_with_seed(base_params, seed):
     }
     return base_params
 
-def run_single_simulation(theta, base_params, param_list):
-    for i, param in enumerate(param_list):
-        base_params[param["subdict"]][param["name"]] = theta[i].item()
-        #print("theta[i].item()", theta[i].item())
-    controller = generate_data(base_params)
-    arr_history = np.asarray(controller.social_network.history_prop_EV)
-    return convert_data(arr_history, base_params)
-
-def run_simulation_for_seed(seed, parameters_list, prior, proposal, num_simulations, base_params,  round_idx):
-    #print("round_idx, Seed ",  round_idx, seed)
+def run_single_simulation(theta, seed, base_params, param_list):
     seeded_params = update_base_params_with_seed(base_params.copy(), seed)
-    seeded_simulator = partial(run_single_simulation, base_params=seeded_params, param_list=parameters_list)
-    sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=False)
-    check_sbi_inputs(sim_for_seed, prior)
-    theta, x = simulate_for_sbi(
-        sim_for_seed,
-        proposal,
-        num_simulations=num_simulations,
-        num_workers=max(1, multiprocessing.cpu_count() // 2)
-    )
-    return theta, x
+    for i, param in enumerate(param_list):
+        seeded_params[param["subdict"]][param["name"]] = theta[i].item()
+    controller = generate_data(seeded_params)
+    arr_history = np.asarray(controller.social_network.history_prop_EV)
+    return convert_data(arr_history, seeded_params)
 
-def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME, num_simulations=100, rounds = 5):
+def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME, num_simulations=100, rounds=5):
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
@@ -84,13 +70,18 @@ def main(parameters_list, BASE_PARAMS_LOAD, OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME
 
     for round_idx in range(rounds):
         print(f"ROUND: {round_idx + 1}/{rounds}")
+
+        # Generate all parameter-seed combinations upfront
+        combinations = [(prior.sample(), seed, base_params, parameters_list) for seed in seeds for _ in range(num_simulations)]
+
         with multiprocessing.Pool() as pool:
-            results = pool.starmap(
-                run_simulation_for_seed,
-                [(seed, parameters_list, prior, proposal, num_simulations, base_params, round_idx) for seed in seeds]
-            )
-        for theta, x in results:
-            inference.append_simulations(theta, x, proposal=proposal)
+            results = pool.starmap(run_single_simulation, combinations)
+
+        # Organize results
+        theta = torch.stack([combo[0] for combo in combinations])
+        x = torch.tensor(results, dtype=torch.float32)
+
+        inference.append_simulations(theta, x, proposal=proposal)
         density_estimator = inference.train()
         posterior = inference.build_posterior(density_estimator)
         proposal = posterior.set_default_x(x_o)
@@ -111,6 +102,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=256, 
-        rounds = 5
+        num_simulations=256,
+        rounds=5
     )
