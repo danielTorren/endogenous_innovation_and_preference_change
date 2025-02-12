@@ -20,6 +20,10 @@ class Controller:
 
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
+        
+        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
+        self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
+
         self.calc_variables()
 
         self.update_time_series_data()
@@ -163,7 +167,32 @@ class Controller:
         ########################################################################
          
         # CHI
-                #CHI
+        self.a_chi = self.parameters_social_network["a_chi"]
+        self.b_chi = self.parameters_social_network["b_chi"]
+        self.chi_max = self.parameters_social_network["chi_max"]
+        self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
+
+        self.random_state_chi = np.random.RandomState(self.parameters_social_network["init_vals_innovative_seed"])
+
+        # Step 1: Generate continuous Beta distribution
+        innovativeness_vec_continuous = self.random_state_chi.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+
+        # Step 2: Introduce zeros based on target proportion
+        num_zeros = int(self.proportion_zero_target * self.num_individuals)
+        zero_indices = self.random_state_chi.choice(self.num_individuals, size=num_zeros, replace=False)
+        innovativeness_vec_continuous[zero_indices] = 0
+
+        # Step 3: Scale to chi_max without rounding
+        self.chi_vec = innovativeness_vec_continuous * self.chi_max
+
+        # Check the actual proportion of zeros
+        self.proportion_zero_chi = np.mean(self.chi_vec == 0)
+
+        # Debugging
+        #print("Target Proportion of Zero Chi:", self.proportion_zero_target)
+        #print("Actual Proportion of Zero Chi:", self.proportion_zero_chi)
+
+        """
         self.a_chi = self.parameters_social_network["a_chi"]
         self.b_chi = self.parameters_social_network["b_chi"]
         self.chi_max = self.parameters_social_network["chi_max"]
@@ -172,6 +201,7 @@ class Controller:
         chi_vec_raw = np.round(innovativeness_vec_init_unrounded, 1)
         self.chi_vec = chi_vec_raw*self.chi_max
         self.proportion_zero_chi = np.mean(self.chi_vec == 0)
+        """
         #print("self.proportion_zero_chi",self.proportion_zero_chi)
 
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
@@ -219,8 +249,6 @@ class Controller:
         gamma_val_upper = (self.gamma_bins[2]  + self.gamma_bins[1])/2
         self.parameters_firm_manager["gamma_val_empty_lower"] = gamma_val_lower
         self.parameters_firm_manager["gamma_val_empty_upper"] = gamma_val_upper
-
-        #print(" gamma_val_lower,  gamma_val_upper", gamma_val_lower,  gamma_val_upper)
 
         #create the beta and gamma vectors:
         beta_values = []
@@ -339,7 +367,7 @@ class Controller:
 
         min_kappa = 1/(beta*(P-C)) 
         print("min kappa, kappa", min_kappa, kappa)
-        quit()
+        #quit()
         Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
         print("Q_val",Q_val)
 
@@ -348,13 +376,10 @@ class Controller:
 
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
-        
-
-
         self.parameters_EV["min_Quality"] = min_q
         self.parameters_EV["max_Quality"] = max_q #max_q
 
-        quit()
+        #quit()
 
     #####################################################################################################################################
     def manage_burn_in(self):

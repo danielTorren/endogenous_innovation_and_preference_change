@@ -8,7 +8,7 @@ from package.plotting_data.single_experiment_plot import save_and_show
 
 
 def calc_mape_vectorized(actual, predicted):
-    return np.mean(np.abs((actual - predicted) / actual), axis=1) * 100
+    return np.mean(np.abs((actual - predicted) / actual)) * 100
 
 
 def calc_smape(actual, predicted):

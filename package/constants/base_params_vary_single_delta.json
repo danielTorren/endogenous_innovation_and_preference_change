@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 3,
+    "seed_repetitions": 64,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 0,
@@ -19,7 +19,7 @@
         "remove_seed": 48,
         "init_vals_poisson_seed": 95
     },
-    "ev_research_start_time":60,
+    "ev_research_start_time":96,
     "ev_production_start_time": 120,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
@@ -117,6 +117,7 @@
         "scrap_price": 0.6698
     },
     "parameters_ICE":{
+        "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 3,
@@ -132,9 +133,11 @@
         "max_Efficiency": 3.09,
         "min_Cost": 12.91,
         "max_Cost": 43.72,
-        "prop_explore": 0.1
+        "min_Quality": 0,
+        "max_Quality": 1e-7
     }, 
     "parameters_EV":{
+        "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 3,
@@ -144,8 +147,7 @@
         "production_emissions":14,
         "transportType": 3,
         "min_Efficiency": 2.73,
-        "max_Efficiency": 9.73,
-        "prop_explore": 0.1
+        "max_Efficiency": 9.73
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -163,19 +165,20 @@
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 5000,
+        "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 2.0657,
-        "b_chi": 3.6634,
+        "a_chi": 1.5,
+        "b_chi": 2,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
         "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
-        "prob_switch_car":0.083
+        "prob_switch_car":0.083,
+        "proportion_zero_target": 0.005
     },
     "parameters_vehicle_user":{
-        "kappa":0.0641,
+        "kappa":0.064,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
