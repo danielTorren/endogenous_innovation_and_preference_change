@@ -42,10 +42,11 @@ def generate_single_policy_scenarios_with_seeds(base_params, policy_list, repeti
     scenarios = []
     for policy in policy_list:
         min_val, max_val = bounds[policy]
-        print(min_val, max_val)
-        quit()
+        #print(min_val, max_val)
+        #quit()
         intensities = np.linspace(min_val, max_val, repetitions)
         for intensity in intensities:
+            print(intensity)
             base_params_copy = deepcopy(base_params)
 
             base_params_copy["parameters_policies"]["States"][policy] = "High"#TURN ON THE POLICY
@@ -56,9 +57,8 @@ def generate_single_policy_scenarios_with_seeds(base_params, policy_list, repeti
                 base_params_copy["parameters_policies"]["Values"][policy]["High"] = intensity
             
             seed_variations = params_list_with_seed(base_params_copy)
-            for seed_params in seed_variations:
-                scenarios.append(seed_params)
-    
+            scenarios.extend(seed_variations)
+    print("scearnios",len(scenarios))
     return scenarios
 
 def single_policy_simulation(params, controller_load):
