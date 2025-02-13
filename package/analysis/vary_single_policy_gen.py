@@ -5,6 +5,8 @@ from joblib import Parallel, delayed, dump, load
 import multiprocessing
 from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import createFolder, save_object, produce_name_datetime
+import shutil  # Add this import at the top of your script
+from pathlib import Path  # For easier path handling
 
 def params_list_with_seed(base_params):
     """
@@ -131,7 +133,6 @@ def main(
 
     # Generate policy scenarios with different seeds
     grid_scenarios = generate_single_policy_scenarios_with_seeds(base_params, policy_list, repetitions, bounds)
-    print()
     print("Base params list runs:", len(base_params_list))
     print("Grid scenarios runs:", len(grid_scenarios))
 
@@ -162,6 +163,13 @@ def main(
 
     save_object(data_array, file_name + "/Data", "data_array")
 
+    # Cleanup: Delete the calibration data folder and all its contents
+    calibration_folder = Path(file_name) / "Calibration_runs"
+    if calibration_folder.exists():
+        print(f"Deleting calibration data folder: {calibration_folder}")
+        shutil.rmtree(calibration_folder)
+    else:
+        print(f"Calibration data folder not found: {calibration_folder}")
 
 if __name__ == "__main__":
     main(
