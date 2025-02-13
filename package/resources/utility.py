@@ -57,6 +57,12 @@ def createFolder(fileName: str) -> str:
     dataName = fileName + "/Data"
     if str(os.path.exists(dataName)) == "False":
         os.mkdir(dataName)
+
+    # make Calibration_data folder:#
+    dataName = fileName + "/Calibration_runs"
+    if str(os.path.exists(dataName)) == "False":
+        os.mkdir(dataName)
+        
     # make plots folder:
     plotsName = fileName + "/Plots"
     if str(os.path.exists(plotsName)) == "False":

@@ -95,8 +95,8 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
 
     def run_and_save(param, idx):
         controller = generate_data(param)  # Run calibration
-        dump(controller, f"{save_path}/Data/controller_seed_{idx}.pkl")  # Save
-        return f"{save_path}/Data/controller_seed_{idx}.pkl"  # Return filename
+        dump(controller, f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl")  # Save
+        return f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl"  # Return filename
 
     controller_files = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
@@ -166,7 +166,7 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=10,
+        repetitions=50,
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
