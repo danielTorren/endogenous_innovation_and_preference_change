@@ -20,13 +20,13 @@ def plot_policy_intensity_effects(data_array, policy_list, file_name, dpi=600):
         policy_data = data_array[i]
         intensities = np.linspace(0, 1, policy_data.shape[0])  # Assuming intensities are normalized from 0 to 1
         
-        print(policy_data.shape)
+        #print(policy_data.shape)
         #print(policy_data[:, 0])
 
         # Calculate mean and standard deviation across seeds
         mean_ev_uptake = np.mean(policy_data[:,:, 0], axis=1)
-        print(mean_ev_uptake , mean_ev_uptake.shape)
-        quit()
+        #print(mean_ev_uptake , mean_ev_uptake.shape)
+        #quit()
         std_ev_uptake = policy_data.std(axis=1)[:, 0]
         mean_policy_distortion = policy_data.mean(axis=1)[:, 1]
         std_policy_distortion = policy_data.std(axis=1)[:, 1]
@@ -58,7 +58,7 @@ def plot_policy_intensity_effects(data_array, policy_list, file_name, dpi=600):
         axes[i, 2].legend()
     
     plt.tight_layout()
-    plt.savefig(f'{file_name}_policy_intensity_effects.png', dpi=dpi)
+    plt.savefig(f'{file_name}/Plots/policy_intensity_effects.png', dpi=dpi)
     plt.show()
 
 def main(file_name):
@@ -70,4 +70,4 @@ def main(file_name):
     plot_policy_intensity_effects(data_array, policy_list, file_name)
 
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_13_14_52__13_02_2025")
+    main(file_name="results/vary_single_policy_gen_14_35_28__13_02_2025")
