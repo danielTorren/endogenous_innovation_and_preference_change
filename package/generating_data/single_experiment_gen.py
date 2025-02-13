@@ -23,6 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
+    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[420])
     print("uptake end",controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
     print("mean price", controller.social_network.history_mean_price[-1])
@@ -35,10 +36,10 @@ def main(
 if __name__ == "__main__":
 
     base_params ={
-    "seed_repetitions": 16,
+    "seed_repetitions": 1,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -88,62 +89,26 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
-            "Discriminatory_corporate_tax": "Zero",
-            "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "Zero",
-            "Adoption_subsidy_used": "Zero",
-            "Production_subsidy": "Zero",
-            "Research_subsidy": "Zero"
+            "Carbon_price": 1,
+            "Discriminatory_corporate_tax": 0,
+            "Electricity_subsidy": 0,
+            "Adoption_subsidy": 0,
+            "Adoption_subsidy_used": 0,
+            "Production_subsidy": 0,
+            "Research_subsidy": 0
         },
         "Values":{
             "Carbon_price":{
-                "Zero":{
-                    "Carbon_price_init": 0,
-                    "Carbon_price": 0,
-                    "Carbon_price_state": "linear"
-                },
-                "Low":{
-                    "Carbon_price_init": 0,
-                    "Carbon_price": 0.1,
-                    "Carbon_price_state": "linear"
-                },
-                "High":{
-                    "Carbon_price_init": 0,
-                    "Carbon_price": 10,
-                    "Carbon_price_state": "linear"
-                }
+                "Carbon_price_init": 0,
+                "Carbon_price": 100,
+                "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":{
-                "Zero": 0,
-                "Low":0.05,
-                "High":0.95
-            },
-            "Electricity_subsidy":{                
-                "Zero":0,
-                "Low": 0.01,
-                "High": 1
-            },
-            "Adoption_subsidy":{
-                "Zero": 0,
-                "Low": 2.5,
-                "High":200
-            },
-            "Adoption_subsidy_used":{
-                "Zero":0,
-                "Low":0.5,
-                "High":20
-            },
-            "Production_subsidy":{
-                "Zero":0,
-                "Low":2.5,
-                "High":20
-            },
-            "Research_subsidy":{
-                "Zero":0,
-                "Low":2.5,
-                "High":20
-            }
+            "Discriminatory_corporate_tax":0.95,
+            "Electricity_subsidy":1,
+            "Adoption_subsidy":200,
+            "Adoption_subsidy_used":20,
+            "Production_subsidy":20,
+            "Research_subsidy":20
         }
     },
     "parameters_second_hand":{
@@ -203,22 +168,22 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1.4,
+        "a_chi": 1.2,
         "b_chi": 2,
-        "SW_network_density": 0.01,
+        "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
         "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.005
+        "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa":0.2,
+        "kappa":5,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
-        "r":  0.0002959523726,
+        "r":  0.0016515813,
         "mu": 1,
         "alpha": 0.5
     }

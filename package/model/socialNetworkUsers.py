@@ -414,7 +414,7 @@ class Social_Network:
 
         # Step 5: Compute safe exponentiation input and clip to prevent overflow
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
-        np.clip(exp_input, -700, 700, out=exp_input)
+        #np.clip(exp_input, -700, 700, out=exp_input)
 
         # Step 6: Exponentiate, directly filling only valid entries
         utilities_kappa = np.zeros_like(utilities_matrix)
@@ -722,6 +722,16 @@ class Social_Network:
         term_2 = beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T)
         term_3 = gamma_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) +  vehicle_dict_vecs["production_emissions"])
         
+        
+        #print("self t", self.t_social_network)
+        #print("utility, transport type ",  (term_1 - term_2 - term_3)[0][0], vehicle_dict_vecs["transportType"][0])
+        #print("utility terms size", term_1[0][0], -term_2[0][0], -term_3[0][0] )
+        #print("terms discted", term_1[0][0], -(beta_vec[:, np.newaxis]*d_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))[0][0], -(beta_vec[:, np.newaxis]*price_difference_T)[0][0],  -(gamma_vec[:, np.newaxis]*d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))[0][0], -(gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"])[0][0])
+        #print("Sinumalte carobn price, multiply cost by 4:",-(beta_vec[:, np.newaxis]*d_vec[:, np.newaxis]*(4*vehicle_dict_vecs["fuel_cost_c"])*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))[0][0])
+        #print("Alt utility", (term_1 - beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*(4*vehicle_dict_vecs["fuel_cost_c"])*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T)- term_3)[0][0])
+        
+        #quit()
+
         U_a_i_t_matrix = term_1 - term_2 - term_3
         
         return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)

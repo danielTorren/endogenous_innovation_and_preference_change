@@ -366,8 +366,6 @@ def main(fileName, dpi=600):
     #data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
     vary_single = load_object(fileName + "/Data", "vary_single")
     
-
-    
     property_values_list = vary_single["property_values_list"]
     name_property = vary_single["property_varied"] 
     property_save = vary_single["property_varied"]
@@ -382,4 +380,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_17_30_34__12_02_2025")
+    main("results/single_param_vary_22_41_21__13_02_2025")

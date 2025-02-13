@@ -129,9 +129,9 @@ class Firm:
 
     def calc_utility_prop(self,U,W, nu_maxU):
         exp_input = self.kappa*U - self.kappa*nu_maxU
-        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         norm_exp_input = -self.kappa*nu_maxU
-        np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
+        #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
         utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
 
@@ -196,7 +196,7 @@ class Firm:
             - self.beta_s_values[np.newaxis, :] * C_m_price[:, np.newaxis]) - 1.0
 
         exp_input = term - np.log(self.W_vec[np.newaxis, :])
-        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         Arg = np.exp(exp_input)
         LW = lambertw(Arg, 0).real
 
@@ -422,7 +422,7 @@ class Firm:
             exp_input = self.lambda_exp*(profits[valid_profits_mask]  - np.max(profits[valid_profits_mask]))
             #print("exp input",exp_input)
 
-            exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
+            #exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
 
             lambda_profits[valid_profits_mask] = np.exp(exp_input)
             sum_profit = np.sum(lambda_profits)

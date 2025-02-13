@@ -15,7 +15,6 @@ class Firm_Manager:
 
         self.zero_profit_options_prod_sum = 0
 
-
         self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
@@ -63,19 +62,13 @@ class Firm_Manager:
         Using random assortment of cars intially pick some random cars and set a random age distribution
         """
 
-        #model_choices = self.random_state.choice(self.cars_on_sale_all_firms, self.num_individuals)
-        #age_range = np.arange(0,self.age_max)
-        #age_list = self.random_state.choice(age_range, self.num_individuals)
-
         model_choices = self.random_state.choice(self.cars_on_sale_all_firms, self.num_individuals)
-
         # Define mean and standard deviation for normal distribution
         mu = 120#self.age_max / 2  # Mean age at half of max age
         sigma = 60#self.age_max / 4  # Standard deviation (adjustable)
 
         # Generate normally distributed ages, ensuring values are within range
         age_list = np.clip(self.random_state.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
-
 
         car_list = []
         for i, car in enumerate(model_choices):
@@ -165,7 +158,7 @@ class Firm_Manager:
 
     def calc_exp(self, U):
         exp_input = self.kappa*U
-        exp_input = np.clip(exp_input, -700, 700)#CLIP SO DONT GET OVERFLOWS
+        #exp_input = np.clip(exp_input, -700, 700)#CLIP SO DONT GET OVERFLOWS
         comp = np.exp(exp_input)
         return comp
 

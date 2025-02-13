@@ -375,10 +375,12 @@ class Controller:
         min_q = 0
         #print("max_q", max_q)
         #quit()
+
+        ratio_Q = self.parameters_EV["ratio_Q"]
         self.parameters_ICE["min_Quality"] = min_q
         self.parameters_ICE["max_Quality"] = max_q #max_q
         self.parameters_EV["min_Quality"] = min_q
-        self.parameters_EV["max_Quality"] = max_q #max_q
+        self.parameters_EV["max_Quality"] = max_q*ratio_Q #max_q
 
         #quit()
 
@@ -422,7 +424,7 @@ class Controller:
         elif self.Gas_price_state == "Current":
             self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["Current"]
         elif self.Gas_price_state == "High":
-            self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["High"]
+            self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]
         else:
             raise ValueError("Invalid gas price state")
         self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
@@ -433,7 +435,7 @@ class Controller:
         elif self.Electricity_price_state == "Current":
             self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]["Current"]
         elif self.Electricity_price_state == "High":
-            self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]["High"]
+            self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]
         else:
             raise ValueError("Invalid electricity price state")
         self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
@@ -453,7 +455,6 @@ class Controller:
     def manage_policies(self):
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
-        #print(self.Carbon_price_state)
         self.Discriminatory_corporate_tax_state =  self.parameters_controller["parameters_policies"]["States"]["Discriminatory_corporate_tax"]
         self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
@@ -462,88 +463,57 @@ class Controller:
         self.Research_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Research_subsidy"]
 
         # Carbon price calculation
-        if self.Carbon_price_state == "Zero":
-            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price_state"]
-            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price_init"]
-            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Zero"]["Carbon_price"]
-        elif self.Carbon_price_state == "Low":
-            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["Carbon_price_state"]
-            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["Carbon_price_init"]
-            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Low"]["Carbon_price"]
-        elif self.Carbon_price_state == "High":
-            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_state"]
-            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_init"]
-            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price"]
-            
+        if self.Carbon_price_state:
+            self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_state"]
+            self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_init"]
+            self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"]
             #print("self.future_carbon_price_policy", self.future_carbon_price_policy)
         else:
-            raise ValueError("Invalid Carbon price state")
+            self.future_carbon_price_state = 0
+            self.future_carbon_price_init = 0
+            self.future_carbon_price_policy = 0
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
         #print("self.carbon_price_time_series", self.carbon_price_time_series)
         # Discriminatory_corporate_tax calculation
-        if self.Discriminatory_corporate_tax_state == "Zero":
-            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Zero"]
-        elif self.Discriminatory_corporate_tax_state == "Low":
-            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Low"]
-        elif self.Discriminatory_corporate_tax_state == "High":
-            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["High"]
+        if self.Discriminatory_corporate_tax_state:
+            self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]
         else:
-            raise ValueError("Invalid Discriminatory_corporate_tax state")
+            self.Discriminatory_corporate_tax = 0
         self.discriminatory_corporate_tax_time_series_future = np.asarray([self.Discriminatory_corporate_tax]*self.duration_future)
 
         # Electricity_subsidy calculation
-        if self.Electricity_subsidy_state == "Zero":
-            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Zero"]
-        elif self.Electricity_subsidy_state == "Low":
-            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["Low"]
-        elif self.Electricity_subsidy_state == "High":
-            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]["High"]
+        if self.Electricity_subsidy_state:
+            self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]
         else:
-            raise ValueError("Invalid electricity_price_subsidy state")
+            self.Electricity_subsidy = 0
         self.electricity_price_subsidy_time_series_future = np.asarray([self.Electricity_subsidy]*self.duration_future)
 
         # Adoption subsidy calculation
-        if self.Adoption_subsidy_state == "Zero":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Zero"]
-        elif self.Adoption_subsidy_state == "Low":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["Low"]
-        elif self.Adoption_subsidy_state == "High":
-            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]["High"]
+        if self.Adoption_subsidy_state:
+            self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]
         else:
-            raise ValueError("Invalid Adoption subsidy state")
+            self.Adoption_subsidy = 0
         self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
 
-        if self.Adoption_subsidy_used_state == "Zero":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]["Zero"]
-        elif self.Adoption_subsidy_used_state == "Low":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]["Low"]
-        elif self.Adoption_subsidy_used_state == "High":
-            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]["High"]
+        if self.Adoption_subsidy_used_state:
+            self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]
         else:
-            raise ValueError("Invalid Adoption subsidy state")
+            self.Used_adoption_subsidy = 0
         self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
 
         # Production_subsidy calculation
-        if self.Production_subsidy_state == "Zero":
-            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Zero"]
-        elif self.Production_subsidy_state == "Low":
-            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["Low"]
-        elif self.Production_subsidy_state == "High":
-            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]["High"]
+        if self.Production_subsidy_state:
+            self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]
         else:
-            raise ValueError("Invalid Production_subsidy state")
+            self.Production_subsidy = 0
         self.production_subsidy_time_series_future = np.asarray([self.Production_subsidy]*self.duration_future)
 
         # Research_subsidy calculation
-        if self.Research_subsidy_state == "Zero":
-            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Zero"]
-        elif self.Research_subsidy_state == "Low":
-            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["Low"]
-        elif self.Research_subsidy_state == "High":
-            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]["High"]
+        if self.Research_subsidy_state:
+            self.Research_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"]
         else:
-            raise ValueError("Invalid Research_subsidy state")
+            self.Research_subsidy = 0
         self.research_subsidy_time_series_future = np.asarray([self.Research_subsidy]*self.duration_future)
 
     #############################################################################################################################
@@ -738,7 +708,7 @@ class Controller:
         parameters_ICE["d_mean"] = np.mean(self.d_vec)
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         self.ICE_landscape = NKModel(parameters_ICE)
-        self.ICE_landscape.retrieve_info("110101101001110")#self.landscape_ICE.min_fitness_string
+        #self.ICE_landscape.retrieve_info("110101101001110")#self.landscape_ICE.min_fitness_string
 
     def setup_EV_landscape(self, parameters_EV):
         
@@ -752,7 +722,7 @@ class Controller:
         parameters_EV["d_mean"] = np.mean(self.d_vec)
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
         self.EV_landscape = NKModel(parameters_EV)
-        self.ICE_landscape.retrieve_info("110111110110001")
+        #self.ICE_landscape.retrieve_info("110111110110001")
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
@@ -818,8 +788,8 @@ class Controller:
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
-        if self.t_controller > 420:
-            print("self.future_carbon_price_policy self.gas_price", self.future_carbon_price_policy, self.gas_price)
+        #if self.t_controller > 420:
+        #    print("self.future_carbon_price_policy self.gas_price", self.future_carbon_price_policy, self.gas_price)
         #self.gas_price = self.gas_price_california_vec[self.t_controller]
         self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!

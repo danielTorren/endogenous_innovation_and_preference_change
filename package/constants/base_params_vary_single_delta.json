@@ -1,8 +1,8 @@
 {
-    "seed_repetitions": 16,
+    "seed_repetitions": 64,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -52,62 +52,26 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": "Zero",
-            "Discriminatory_corporate_tax": "Zero",
-            "Electricity_subsidy": "Zero",
-            "Adoption_subsidy": "Zero",
-            "Adoption_subsidy_used": "Zero",
-            "Production_subsidy": "Zero",
-            "Research_subsidy": "Zero"
+            "Carbon_price": 1,
+            "Discriminatory_corporate_tax": 0,
+            "Electricity_subsidy": 0,
+            "Adoption_subsidy": 0,
+            "Adoption_subsidy_used": 0,
+            "Production_subsidy": 0,
+            "Research_subsidy": 0
         },
         "Values":{
             "Carbon_price":{
-                "Zero":{
-                    "Carbon_price_init": 0,
-                    "Carbon_price": 0,
-                    "Carbon_price_state": "linear"
-                },
-                "Low":{
-                    "Carbon_price_init": 0,
-                    "Carbon_price": 0.1,
-                    "Carbon_price_state": "linear"
-                },
-                "High":{
-                    "Carbon_price_init": 0,
-                    "Carbon_price": 10,
-                    "Carbon_price_state": "linear"
-                }
+                "Carbon_price_init": 0,
+                "Carbon_price": 1,
+                "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":{
-                "Zero": 0,
-                "Low":0.05,
-                "High":0.95
-            },
-            "Electricity_subsidy":{                
-                "Zero":0,
-                "Low": 0.01,
-                "High": 1
-            },
-            "Adoption_subsidy":{
-                "Zero": 0,
-                "Low": 2.5,
-                "High":200
-            },
-            "Adoption_subsidy_used":{
-                "Zero":0,
-                "Low":0.5,
-                "High":20
-            },
-            "Production_subsidy":{
-                "Zero":0,
-                "Low":2.5,
-                "High":20
-            },
-            "Research_subsidy":{
-                "Zero":0,
-                "Low":2.5,
-                "High":20
-            }
+            "Discriminatory_corporate_tax":0.95,
+            "Electricity_subsidy":1,
+            "Adoption_subsidy":200,
+            "Adoption_subsidy_used":20,
+            "Production_subsidy":20,
+            "Research_subsidy":20
         }
     },
     "parameters_second_hand":{
@@ -147,7 +111,8 @@
         "production_emissions":14,
         "transportType": 3,
         "min_Efficiency": 2.73,
-        "max_Efficiency": 9.73
+        "max_Efficiency": 9.73,
+        "ratio_Q": 0.5
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -167,22 +132,22 @@
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1.15,
+        "a_chi": 1.7,
         "b_chi": 2,
-        "SW_network_density": 0.01,
+        "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
         "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.005
+        "proportion_zero_target": 0.05
     },
     "parameters_vehicle_user":{
-        "kappa":0.2,
+        "kappa":1,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
-        "r":  0.0002959523726,
+        "r":  0.0016515813,
         "mu": 1,
         "alpha": 0.5
     }
