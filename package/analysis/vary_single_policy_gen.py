@@ -62,6 +62,7 @@ def single_policy_simulation(params, controller_load):
     """
     data = load_in_controller(controller_load, params)
     EV_uptake = data.calc_EV_prop()
+    print("EV_uptake", EV_uptake)
     policy_distortion = data.calc_total_policy_distortion()
     cum_em = data.social_network.emissions_cumulative
     return EV_uptake, policy_distortion, cum_em
