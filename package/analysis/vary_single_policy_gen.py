@@ -108,9 +108,10 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
         dump(controller, f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl")  # Save
         return f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl"  # Return filename
 
-    controller_files = Parallel(n_jobs=num_cores, verbose=10)(
-        delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
-    )
+    controller_files = [run_and_save( params_dict[i], i) for i in range(len(params_dict))]
+    #controller_files = Parallel(n_jobs=num_cores, verbose=10)(
+    #    delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
+    #)
 
     return controller_files  # Return list of file paths
 
