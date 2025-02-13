@@ -885,6 +885,8 @@ class Controller:
         self.manage_scenario()
         self.manage_policies() 
 
+        print("self.state", self.Carbon_price_state)
+        print("self.future_carbon_price_policy", self.future_carbon_price_policy)
         print("self.gas_price_series_future", self.gas_price_series_future[0], self.gas_price_series_future.shape)
         print("self.pre_future_gas_price_california_vec", self.pre_future_gas_price_california_vec[-1], self.pre_future_gas_price_california_vec.shape)
         quit()
