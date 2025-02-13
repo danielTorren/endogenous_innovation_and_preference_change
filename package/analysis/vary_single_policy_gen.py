@@ -73,7 +73,7 @@ def grid_search_policy_with_seeds(grid_scenarios, controller_list):
     num_cores = multiprocessing.cpu_count()
 
     def run_scenario(scenario_params, controller):
-        EV_uptake, total_cost, cum_em = single_policy_simulation(scenario_params, deepcopy(controller))
+        EV_uptake, total_cost, cum_em = single_policy_simulation(scenario_params, controller)
         return EV_uptake, total_cost, cum_em
 
     results = Parallel(n_jobs=num_cores, verbose=10)(
