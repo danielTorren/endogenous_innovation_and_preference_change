@@ -121,6 +121,7 @@ def main(
         policy_info_dict = json.load(f)
     bounds = policy_info_dict["bounds_dict"]
     future_time_steps = base_params["duration_future"]
+    
     base_params["duration_future"] = 0
 
     file_name = produce_name_datetime("vary_single_policy_gen")
@@ -130,17 +131,15 @@ def main(
 
     # Generate policy scenarios with different seeds
     grid_scenarios = generate_single_policy_scenarios_with_seeds(base_params, policy_list, repetitions, bounds)
-    
+    print()
     print("Base params list runs:", len(base_params_list))
     print("Grid scenarios runs:", len(grid_scenarios))
 
     # Ensure directory exists
     createFolder(file_name)
-
+    
     # Run initial seed calibrations and save controllers
     controller_files = parallel_multi_run(base_params_list, save_path=file_name)
-
-
 
     print("Finished Calibration Runs")
 
@@ -148,7 +147,8 @@ def main(
     save_object(base_params, file_name + "/Data", "base_params")
 
     # Restore duration
-    base_params["duration_future"] = future_time_steps
+    for params in grid_scenarios:
+         params["duration_future"] = future_time_steps
 
     # Run policy scenarios starting from saved calibration controllers
     results = grid_search_policy_with_seeds(grid_scenarios, controller_files)
@@ -166,7 +166,7 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=50,
+        repetitions=10,
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
