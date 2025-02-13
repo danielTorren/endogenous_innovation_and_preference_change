@@ -165,7 +165,7 @@ class Firm_Manager:
 
     def calc_exp(self, U):
         exp_input = self.kappa*U
-        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        exp_input = np.clip(exp_input, -700, 700)#CLIP SO DONT GET OVERFLOWS
         comp = np.exp(exp_input)
         return comp
 
