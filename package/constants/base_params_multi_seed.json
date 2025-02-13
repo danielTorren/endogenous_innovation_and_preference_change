@@ -1,8 +1,8 @@
 {
-    "seed_repetitions": 8,
+    "seed_repetitions": 64,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -74,7 +74,7 @@
                 },
                 "High":{
                     "Carbon_price_init": 0,
-                    "Carbon_price": 10,
+                    "Carbon_price": 0.5,
                     "Carbon_price_state": "linear"
                 }
             },
@@ -165,8 +165,8 @@
     "parameters_social_network":{
         "num_individuals": 5000,
         "chi_max": 0.9,
-        "a_chi": 2.0657,
-        "b_chi": 3.6634,
+        "a_chi": 1.3272,
+        "b_chi": 2.3021,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,
