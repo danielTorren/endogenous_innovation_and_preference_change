@@ -203,8 +203,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1.4,
-        "b_chi": 2,
+        "a_chi": 1.3272,
+        "b_chi": 2.3021,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_mean": 46646.65434,

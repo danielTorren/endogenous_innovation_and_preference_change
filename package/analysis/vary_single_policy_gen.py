@@ -127,7 +127,7 @@ def main(
 
     print("FINISHED RUNS")
 
-    save_object(controller_list, file_name + "/Data", "controller_list")
+    #save_object(controller_list, file_name + "/Data", "controller_list")
     save_object(base_params, file_name + "/Data", "base_params")
 
     base_params["duration_future"] = future_time_steps
@@ -147,7 +147,7 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=100,
+        repetitions=10,
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
