@@ -179,8 +179,8 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
         repetitions=10,
         policy_list = [
-            "Carbon_price",
-            #"Discriminatory_corporate_tax",
+            #"Carbon_price",
+            "Discriminatory_corporate_tax",
             #"Electricity_subsidy",
             #"Adoption_subsidy",
             #"Adoption_subsidy_used",
