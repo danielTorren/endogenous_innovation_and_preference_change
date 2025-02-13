@@ -98,6 +98,7 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
 
     def run_and_save(param, idx):
         controller = generate_data(param)  # Run calibration
+        print(controller.calc_EV_prop())
         dump(controller, f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl")  # Save
         return f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl"  # Return filename
 
