@@ -574,12 +574,12 @@ def main(fileName, dpi=600):
     history_total_utility_arr= load_object(fileName + "/Data", "history_total_utility_arr")
     history_market_concentration_arr= load_object( fileName + "/Data", "history_market_concentration_arr")
     history_total_profit_arr= load_object( fileName + "/Data", "history_total_profit_arr")
-    history_quality_ICE= load_object( fileName + "/Data", "history_quality_ICE")
-    history_quality_EV= load_object( fileName + "/Data", "history_quality_EV")
-    history_efficiency_ICE= load_object( fileName + "/Data", "history_efficiency_ICE")
-    history_efficiency_EV= load_object( fileName + "/Data", "history_efficiency_EV")
-    history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
-    history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
+    #history_quality_ICE= load_object( fileName + "/Data", "history_quality_ICE")
+    #history_quality_EV= load_object( fileName + "/Data", "history_quality_EV")
+    #history_efficiency_ICE= load_object( fileName + "/Data", "history_efficiency_ICE")
+    #history_efficiency_EV= load_object( fileName + "/Data", "history_efficiency_EV")
+    #history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
+    #history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
@@ -626,6 +626,7 @@ def main(fileName, dpi=600):
                         "Total Profit, $", 
                         "history_total_profit")
 
+    """
     plot_vehicle_attribute_time_series_by_type_split(
         base_params, 
         history_quality_ICE, history_quality_EV, 
@@ -633,6 +634,7 @@ def main(fileName, dpi=600):
         history_production_cost_ICE, history_production_cost_EV, 
         fileName
     )
+    """
 
     plot_history_mean_price_multiple_seeds(
     base_params, 
@@ -645,4 +647,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_14_02_35__12_02_2025")
+    main("results/multi_seed_single_11_24_28__13_02_2025")
