@@ -819,7 +819,7 @@ class Controller:
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
         if self.t_controller > 420:
-            print("self.gas_price", self.gas_price)
+            print("self.future_carbon_price_policy self.gas_price", self.future_carbon_price_policy, self.gas_price)
         #self.gas_price = self.gas_price_california_vec[self.t_controller]
         self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
