@@ -1,11 +1,10 @@
 from copy import deepcopy
 import json
 import numpy as np
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, dump, load
 import multiprocessing
 from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import createFolder, save_object, produce_name_datetime
-
 
 def params_list_with_seed(base_params):
     """
@@ -66,32 +65,45 @@ def single_policy_simulation(params, controller_load):
     return EV_uptake, policy_distortion, cum_em
 
 
-def grid_search_policy_with_seeds(grid_scenarios, controller_list):
+def grid_search_policy_with_seeds(grid_scenarios, controller_files):
     """
-    Perform parallel execution of all policy scenarios and seeds.
+    Perform parallel execution of all policy scenarios and seeds,
+    ensuring each run starts from a fresh copy of the calibrated controller.
     """
     num_cores = multiprocessing.cpu_count()
 
-    def run_scenario(scenario_params, controller):
-        EV_uptake, total_cost, cum_em = single_policy_simulation(scenario_params, controller)
-        return EV_uptake, total_cost, cum_em
+    def run_scenario(scenario_params, controller_file):
+        controller = load(controller_file)  # Load a fresh copy
+        return single_policy_simulation(scenario_params, controller)
 
     results = Parallel(n_jobs=num_cores, verbose=10)(
-        delayed(run_scenario)(grid_scenarios[i], deepcopy(controller_list[i % len(controller_list)]))
+        delayed(run_scenario)(grid_scenarios[i], controller_files[i % len(controller_files)])
         for i in range(len(grid_scenarios))
     )
 
     return np.asarray(results)
 
-####################################################
-def parallel_multi_run(
-        params_dict: list[dict]
-):
-    num_cores = multiprocessing.cpu_count()
-    #res = [generate_data(i) for i in params_dict]
-    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_data)(i) for i in params_dict)
 
-    return res
+####################################################
+
+def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controllers"):
+    """
+    Runs calibration for multiple seeds in parallel and saves them.
+    """
+    num_cores = multiprocessing.cpu_count()
+    #createFolder(save_path)  # Ensure directory exists
+
+    def run_and_save(param, idx):
+        controller = generate_data(param)  # Run calibration
+        dump(controller, f"{save_path}/Data/controller_seed_{idx}.pkl")  # Save
+        return f"{save_path}/Data/controller_seed_{idx}.pkl"  # Return filename
+
+    controller_files = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
+    )
+
+    return controller_files  # Return list of file paths
+
 
 ####################################################
 
@@ -116,23 +128,30 @@ def main(
 
     base_params_list = params_list_with_seed(base_params)
 
+    # Generate policy scenarios with different seeds
     grid_scenarios = generate_single_policy_scenarios_with_seeds(base_params, policy_list, repetitions, bounds)
     
-    print("base_params_list runs", len(base_params_list))
-    print("grid_scenarios runs ", len(grid_scenarios))
+    print("Base params list runs:", len(base_params_list))
+    print("Grid scenarios runs:", len(grid_scenarios))
 
-    controller_list = parallel_multi_run(base_params_list)
-    
+    # Ensure directory exists
     createFolder(file_name)
 
-    print("FINISHED RUNS")
+    # Run initial seed calibrations and save controllers
+    controller_files = parallel_multi_run(base_params_list, save_path=file_name)
 
-    #save_object(controller_list, file_name + "/Data", "controller_list")
+
+
+    print("Finished Calibration Runs")
+
+    # Save base params
     save_object(base_params, file_name + "/Data", "base_params")
 
+    # Restore duration
     base_params["duration_future"] = future_time_steps
 
-    results = grid_search_policy_with_seeds(grid_scenarios, controller_list)
+    # Run policy scenarios starting from saved calibration controllers
+    results = grid_search_policy_with_seeds(grid_scenarios, controller_files)
 
     print("DONE ALL POLICY RUNS")
     save_object(results, file_name + "/Data", "results")
