@@ -86,10 +86,12 @@ def grid_search_policy_with_seeds(grid_scenarios, controller_files):
         controller = load(controller_file)  # Load a fresh copy
         return single_policy_simulation(scenario_params, controller)
 
-    results = Parallel(n_jobs=num_cores, verbose=10)(
-        delayed(run_scenario)(grid_scenarios[i], controller_files[i % len(controller_files)])
-        for i in range(len(grid_scenarios))
-    )
+    results = [run_scenario(grid_scenarios[i], controller_files[i % len(controller_files)])   for i in range(len(grid_scenarios))]
+    #results = Parallel(n_jobs=num_cores, verbose=10)(
+    #    delayed(run_scenario)(grid_scenarios[i], controller_files[i % len(controller_files)])
+    #    for i in range(len(grid_scenarios))
+    #)
+    print("DONE")
 
     return np.asarray(results)
 
@@ -113,6 +115,7 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     #    delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
     #)
 
+    print("done controlere!")
     return controller_files  # Return list of file paths
 
 
