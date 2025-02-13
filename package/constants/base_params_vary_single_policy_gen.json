@@ -167,7 +167,7 @@
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1,
+        "a_chi": 2,
         "b_chi": 2,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
