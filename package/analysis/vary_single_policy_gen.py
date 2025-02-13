@@ -184,8 +184,8 @@ if __name__ == "__main__":
             #"Electricity_subsidy",
             #"Adoption_subsidy",
             #"Adoption_subsidy_used",
-            "Production_subsidy",
-            #"Research_subsidy",
+            #"Production_subsidy",
+            "Research_subsidy",
         ],
         bounds_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
     )
