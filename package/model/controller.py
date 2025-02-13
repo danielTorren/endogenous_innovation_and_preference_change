@@ -878,7 +878,7 @@ class Controller:
 
         self.parameters_controller = updated_parameters
 
-        print(self.parameters_controller["parameters_policies"]["states"])
+        print(self.parameters_controller["parameters_policies"]["States"])
 
         self.duration_future = self.parameters_controller["duration_future"]
         self.time_steps_max = self.parameters_controller["time_steps_max"]
