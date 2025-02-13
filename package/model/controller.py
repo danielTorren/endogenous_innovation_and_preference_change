@@ -815,7 +815,8 @@ class Controller:
                 
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
-        print("self.carbon_price", self.carbon_price)
+        if self.t_controller > 400:
+            print("self.carbon_price", self.carbon_price)
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
         #self.gas_price = self.gas_price_california_vec[self.t_controller]
