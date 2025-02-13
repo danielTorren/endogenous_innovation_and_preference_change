@@ -180,12 +180,12 @@ if __name__ == "__main__":
         repetitions=20,
         policy_list = [
             "Carbon_price",
-            "Discriminatory_corporate_tax",
+            #"Discriminatory_corporate_tax",
             #"Electricity_subsidy",
-            "Adoption_subsidy",
-            "Adoption_subsidy_used",
-            "Production_subsidy",
-            "Research_subsidy",
+            #"Adoption_subsidy",
+            #"Adoption_subsidy_used",
+            #"Production_subsidy",
+            #"Research_subsidy",
         ],
         bounds_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
     )

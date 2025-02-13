@@ -36,6 +36,9 @@ def plot_policy_intensity_effects(data_array, policy_list, file_name, policy_inf
         intensities = np.linspace(min_val, max_val, policy_data.shape[0])  # Generate intensity values
         
         # Calculate mean and standard deviation across seeds
+        ev_uptake = policy_data[:, :, 0]
+        print(ev_uptake)
+        
         mean_ev_uptake = np.mean(policy_data[:, :, 0], axis=1)
         std_ev_uptake = policy_data[:, :, 0].std(axis=1)
         mean_policy_distortion = np.mean(policy_data[:, :, 1], axis=1)
@@ -88,4 +91,4 @@ def main(file_name):
     plot_policy_intensity_effects(data_array, policy_list, file_name, policy_info_dict)
 
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_16_48_01__13_02_2025")
+    main(file_name="results/vary_single_policy_gen_17_00_20__13_02_2025")

@@ -885,6 +885,9 @@ class Controller:
         self.manage_scenario()
         self.manage_policies() 
 
+        print("self.gas_price_series_future", self.gas_price_series_future[0], self.gas_price_series_future.shape)
+        print("self.pre_future_gas_price_california_vec", self.pre_future_gas_price_california_vec[-1], self.pre_future_gas_price_california_vec.shape)
+        quit()
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
