@@ -453,6 +453,7 @@ class Controller:
     def manage_policies(self):
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
+        print(self.Carbon_price_state)
         self.Discriminatory_corporate_tax_state =  self.parameters_controller["parameters_policies"]["States"]["Discriminatory_corporate_tax"]
         self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
@@ -473,11 +474,12 @@ class Controller:
             self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_state"]
             self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_init"]
             self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price"]
+            print("self.future_carbon_price_policy", self.future_carbon_price_policy)
         else:
             raise ValueError("Invalid Carbon price state")
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
-
+        print("self.carbon_price_time_series", self.carbon_price_time_series)
         # Discriminatory_corporate_tax calculation
         if self.Discriminatory_corporate_tax_state == "Zero":
             self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Zero"]
@@ -813,7 +815,7 @@ class Controller:
                 
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
-
+        print("self.carbon_price", self.carbon_price)
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
         #self.gas_price = self.gas_price_california_vec[self.t_controller]
