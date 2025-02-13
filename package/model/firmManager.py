@@ -164,7 +164,9 @@ class Firm_Manager:
         self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
     def calc_exp(self, U):
-        comp = np.exp(self.kappa*U)
+        exp_input = self.kappa*U
+        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        comp = np.exp(exp_input)
         return comp
 
     def generate_market_data(self):
