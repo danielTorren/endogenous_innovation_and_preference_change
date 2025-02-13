@@ -2,7 +2,7 @@
     "bounds_dict":{
         "Carbon_price": [0, 1],
         "Discriminatory_corporate_tax": [0, 0.9],
-        "Electricity_subsidy": [0, 0.9],
+        "Electricity_subsidy": [0, 0.8],
         "Adoption_subsidy": [0, 20],
         "Adoption_subsidy_used": [0, 20],
         "Production_subsidy": [0, 20],
