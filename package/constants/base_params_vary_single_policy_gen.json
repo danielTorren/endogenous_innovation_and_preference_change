@@ -178,12 +178,12 @@
         "proportion_zero_target": 0.005
     },
     "parameters_vehicle_user":{
-        "kappa":0.2,
+        "kappa":1,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
         "r":  0.0002959523726,
         "mu": 1,
-        "alpha": 0.3
+        "alpha": 0.5
     }
 }

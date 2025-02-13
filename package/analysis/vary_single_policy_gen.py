@@ -181,7 +181,7 @@ if __name__ == "__main__":
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
-            "Electricity_subsidy",
+            #"Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",
             "Production_subsidy",
