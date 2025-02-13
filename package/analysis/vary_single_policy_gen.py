@@ -58,13 +58,15 @@ def generate_single_policy_scenarios_with_seeds(base_params, policy_list, repeti
             
             seed_variations = params_list_with_seed(base_params_copy)
             scenarios.extend(seed_variations)
-    print("scearnios",len(scenarios))
+
     return scenarios
 
 def single_policy_simulation(params, controller_load):
     """
     Run a single simulation and return EV uptake and policy distortion.
     """
+    print("value policy", params["parameters_policies"]["Values"]["Carbon_price"])
+    quit()
     data = load_in_controller(controller_load, params)
     EV_uptake = data.calc_EV_prop()
     policy_distortion = data.calc_total_policy_distortion()
