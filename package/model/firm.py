@@ -128,7 +128,13 @@ class Firm:
         self.gamma_s_values = gamma_s_values
 
     def calc_utility_prop(self,U,W, nu_maxU):
-        utility_proportion = np.exp(self.kappa*U - self.kappa*nu_maxU)/(np.exp(-self.kappa*nu_maxU)*W + np.exp(self.kappa*U - self.kappa*nu_maxU))
+        exp_input = self.kappa*U - self.kappa*nu_maxU
+        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        norm_exp_input = -self.kappa*nu_maxU
+        np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
+        
+        utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
+
         return utility_proportion
 
     def create_car_data(self, car_list):
