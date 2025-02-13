@@ -42,6 +42,8 @@ def generate_single_policy_scenarios_with_seeds(base_params, policy_list, repeti
     scenarios = []
     for policy in policy_list:
         min_val, max_val = bounds[policy]
+        print(min_val, max_val)
+        quit()
         intensities = np.linspace(min_val, max_val, repetitions)
         for intensity in intensities:
             base_params_copy = deepcopy(base_params)
