@@ -453,7 +453,7 @@ class Controller:
     def manage_policies(self):
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
-        print(self.Carbon_price_state)
+        #print(self.Carbon_price_state)
         self.Discriminatory_corporate_tax_state =  self.parameters_controller["parameters_policies"]["States"]["Discriminatory_corporate_tax"]
         self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
@@ -474,12 +474,13 @@ class Controller:
             self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_state"]
             self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price_init"]
             self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["High"]["Carbon_price"]
-            print("self.future_carbon_price_policy", self.future_carbon_price_policy)
+            
+            #print("self.future_carbon_price_policy", self.future_carbon_price_policy)
         else:
             raise ValueError("Invalid Carbon price state")
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
-        print("self.carbon_price_time_series", self.carbon_price_time_series)
+        #print("self.carbon_price_time_series", self.carbon_price_time_series)
         # Discriminatory_corporate_tax calculation
         if self.Discriminatory_corporate_tax_state == "Zero":
             self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]["Zero"]
@@ -815,10 +816,10 @@ class Controller:
                 
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
-        if self.t_controller > 400:
-            print("self.carbon_price", self.carbon_price)
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
+        if self.t_controller > 400:
+            print("self.gas_price", self.gas_price)
         #self.gas_price = self.gas_price_california_vec[self.t_controller]
         self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
@@ -888,11 +889,11 @@ class Controller:
         self.manage_scenario()
         self.manage_policies() 
 
-        print("self.state", self.Carbon_price_state)
-        print("self.future_carbon_price_policy", self.future_carbon_price_policy)
-        print("self.gas_price_series_future", self.gas_price_series_future[0], self.gas_price_series_future.shape)
-        print("self.pre_future_gas_price_california_vec", self.pre_future_gas_price_california_vec[-1], self.pre_future_gas_price_california_vec.shape)
-        quit()
+        #print("self.state", self.Carbon_price_state)
+        #print("self.future_carbon_price_policy", self.future_carbon_price_policy)
+        #print("self.gas_price_series_future", self.gas_price_series_future[0], self.gas_price_series_future.shape)
+        #print("self.pre_future_gas_price_california_vec", self.pre_future_gas_price_california_vec[-1], self.pre_future_gas_price_california_vec.shape)
+        #quit()
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
