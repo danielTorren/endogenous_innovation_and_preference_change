@@ -177,15 +177,15 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=3,
+        repetitions=10,
         policy_list = [
             "Carbon_price",
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Adoption_subsidy_used",
-            "Production_subsidy",
-            "Research_subsidy",
+            #"Adoption_subsidy",
+            #"Adoption_subsidy_used",
+            #"Production_subsidy",
+            #"Research_subsidy",
         ],
         bounds_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
     )
