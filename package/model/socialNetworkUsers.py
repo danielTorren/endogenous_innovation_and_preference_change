@@ -33,6 +33,7 @@ class Social_Network:
 
         #self.delta = parameters_social_network["delta"]
         self.alpha = parameters_social_network["alpha"]
+        self.zeta = parameters_social_network["zeta"]
 
         self.scrap_price = parameters_social_network["scrap_price"]
 
@@ -516,12 +517,13 @@ class Social_Network:
 ##############################################################################################################################################################
     #CURRENT
     
-    def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec):# -> NDArray:
+    def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):# -> NDArray:
         """
         Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
         """
 
-        U_a_i_t_vec = d_vec*((vehicle_dict_vecs["Quality_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r - (1 - vehicle_dict_vecs["delta"])**self.alpha + 1)) - beta_vec*(d_vec*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"])) - gamma_vec*(d_vec*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))
+        U_a_i_t_vec = ((1+self.r)*(beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha))/self.r + ((1+self.r)*(nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta))/(1 + self.r - (1- vehicle_dict_vecs["delta"])**self.zeta) - d_vec*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
         
@@ -694,7 +696,7 @@ class Social_Network:
 
         return vehicle_dict_vecs
 
-    def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
+    def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
         
         price_difference_raw = vehicle_dict_vecs["price"][:, np.newaxis] -  vehicle_dict_vecs["used_rebate"][:, np.newaxis]
 
@@ -702,14 +704,12 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        term_1 = d_vec[:, np.newaxis]*((vehicle_dict_vecs["Quality_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.alpha)*((1+self.r)/(self.r - (1 - vehicle_dict_vecs["delta"])**self.alpha + 1))
-        term_2 = beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T)
-        term_3 = gamma_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))
+        #U_a_i_t_matrix = ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])))/self.r - price_difference_T - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r-vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_matrix  = -price_difference_T + ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha))/self.r + ((1+self.r)*(nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta))/(1 + self.r - (1- vehicle_dict_vecs["delta"])**self.zeta) - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
         
-        U_a_i_t_matrix = term_1 - term_2 - term_3
         return U_a_i_t_matrix
     
-    def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
+    def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
 
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
         price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis])  # Apply rebate
@@ -718,22 +718,9 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        term_1 = d_vec[:, np.newaxis]*(vehicle_dict_vecs["Quality_a_t"])**self.alpha*((1+self.r)/(self.r - (1 - vehicle_dict_vecs["delta"])**self.alpha + 1))
-        term_2 = beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T)
-        term_3 = gamma_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) +  vehicle_dict_vecs["production_emissions"])
-        
-        
-        #print("self t", self.t_social_network)
-        #print("utility, transport type ",  (term_1 - term_2 - term_3)[0][0], vehicle_dict_vecs["transportType"][0])
-        #print("utility terms size", term_1[0][0], -term_2[0][0], -term_3[0][0] )
-        #print("terms discted", term_1[0][0], -(beta_vec[:, np.newaxis]*d_vec[:, np.newaxis]*vehicle_dict_vecs["fuel_cost_c"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))[0][0], -(beta_vec[:, np.newaxis]*price_difference_T)[0][0],  -(gamma_vec[:, np.newaxis]*d_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))[0][0], -(gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"])[0][0])
-        #print("Sinumalte carobn price, multiply cost by 4:",-(beta_vec[:, np.newaxis]*d_vec[:, np.newaxis]*(4*vehicle_dict_vecs["fuel_cost_c"])*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]))[0][0])
-        #print("Alt utility", (term_1 - beta_vec[:, np.newaxis]*(d_vec[:, np.newaxis]*(4*vehicle_dict_vecs["fuel_cost_c"])*(1+self.r)/(self.r*vehicle_dict_vecs["Eff_omega_a_t"]) + price_difference_T)- term_3)[0][0])
-        
-        #quit()
+        #U_a_i_t_matrix = ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta))/self.r - price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r-vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_matrix  = -price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha))/self.r + ((1+self.r)*(nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta))/(1 + self.r - (1- vehicle_dict_vecs["delta"])**self.zeta) - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
 
-        U_a_i_t_matrix = term_1 - term_2 - term_3
-        
         return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)
     
     ################################################################################################################################

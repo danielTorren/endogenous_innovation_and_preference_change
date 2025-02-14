@@ -54,7 +54,8 @@ if __name__ == "__main__":
         "landscape_seed_EV": 11, 
         "choice_seed": 9,
         "remove_seed": 48,
-        "init_vals_poisson_seed": 95
+        "init_vals_poisson_seed": 95,
+        "init_vals_range_seed": 77
     },
     "ev_research_start_time":96,
     "ev_production_start_time": 120,
@@ -135,20 +136,23 @@ if __name__ == "__main__":
         "min_Cost": 12.91,
         "max_Cost": 43.72,
         "min_Quality": 0,
-        "max_Quality": 1e-7
+        "max_Quality": 1,
+        "fuel_tank": 674
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
         "N": 15,
         "K": 3,
-        "A": 3,
+        "A": 4,
         "rho":[0,0],
         "delta": 0.000435,
         "delta_P":0.0087,
         "production_emissions":14,
         "transportType": 3,
         "min_Efficiency": 2.73,
-        "max_Efficiency": 9.73
+        "max_Efficiency": 9.73,
+        "min_Battery_size": 10,
+        "max_Battery_size": 150
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -172,9 +176,12 @@ if __name__ == "__main__":
         "b_chi": 2,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 46646.65434,
-        "WTP_sd": 39160.31118,
+        "WTP_E_mean": 46646.65434,
+        "WTP_E_sd": 39160.31118,
+        "WTP_R_mean": 86,
+        "WTP_R_sd": 51,
         "gamma_epsilon": 1e-5,
+        "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
         "proportion_zero_target": 0.01
     },

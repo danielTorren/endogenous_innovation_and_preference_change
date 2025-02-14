@@ -53,7 +53,12 @@ class CarModel:
 
         self.emissions = self.parameters["production_emissions"]  # Emissions factor for the vehicle (E_a_t).
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
-    
+
+        if self.transportType == 2:
+            self.B = self.parameters["fuel_tank"] #ICE VEHICLE kWhr fixed assuming 20 gallons
+        else:
+            self.B = self.attributes_fitness[3]#BATTERY kWhr
+
     def update_timer(self):
         if not self.choosen_tech_bool:
             self.timer+=1

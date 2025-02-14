@@ -1,7 +1,7 @@
 """Define controller than manages exchange of information between social network and firms
 Created: 22/12/2023
 """
-from package.model.nkModel import NKModel
+from package.model.nkModel_EV import NKModel
 from package.model.firmManager import Firm_Manager 
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
@@ -136,7 +136,7 @@ class Controller:
         self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
         self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
         self.parameters_controller["parameters_social_network"]["init_vals_poisson_seed"]  = self.parameters_controller["seeds"]["init_vals_poisson_seed"]
-    
+        self.parameters_controller["parameters_social_network"]["init_vals_range_seed"] = self.parameters_controller["seeds"]["init_vals_range_seed"]
 
     def gen_users_parameters(self):
 
@@ -164,8 +164,8 @@ class Controller:
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
         self.d_vec = poisson_samples * scale_factor + min_bin
+
         ########################################################################
-         
         # CHI
         self.a_chi = self.parameters_social_network["a_chi"]
         self.b_chi = self.parameters_social_network["b_chi"]
@@ -188,47 +188,43 @@ class Controller:
         # Check the actual proportion of zeros
         self.proportion_zero_chi = np.mean(self.chi_vec == 0)
 
-        # Debugging
-        #print("Target Proportion of Zero Chi:", self.proportion_zero_target)
-        #print("Actual Proportion of Zero Chi:", self.proportion_zero_chi)
-
-        """
-        self.a_chi = self.parameters_social_network["a_chi"]
-        self.b_chi = self.parameters_social_network["b_chi"]
-        self.chi_max = self.parameters_social_network["chi_max"]
-        self.random_state_chi = np.random.RandomState(self.parameters_social_network["init_vals_innovative_seed"])
-        innovativeness_vec_init_unrounded = self.random_state_chi.beta(self.a_chi, self.b_chi, size=self.num_individuals)
-        chi_vec_raw = np.round(innovativeness_vec_init_unrounded, 1)
-        self.chi_vec = chi_vec_raw*self.chi_max
-        self.proportion_zero_chi = np.mean(self.chi_vec == 0)
-        """
-        #print("self.proportion_zero_chi",self.proportion_zero_chi)
-
-        self.ev_adoption_state_vec = np.zeros(self.num_individuals)
-
+        ####################################################################################################################################
+        #GAMMA
+        r = self.parameters_vehicle_user["r"]
+        delta = self.parameters_ICE["delta"]
+        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
+        
+        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
+        self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
+        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
+        WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
+        self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
+        self.gamma_vec = self.WTP_E_vec*(r - delta- r*delta)*omega_mean/(self.d_vec*(1+r)*(1-delta))
+        print("gamma mean ",np.mean(self.gamma_vec))
+        ####################################################################################################################################
+        #NU
+        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_range_seed"])
+        self.WTP_R_mean = self.parameters_social_network["WTP_R_mean"]
+        self.WTP_R_sd = self.parameters_social_network["WTP_R_sd"]     
+        WTP_R_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_R_mean, scale = self.WTP_R_sd, size = self.num_individuals)
+        self.nu_vec = np.clip(WTP_R_vec_unclipped, a_min = self.parameters_social_network["nu_epsilon"], a_max = np.inf)     
+        print("nu mean",np.mean(self.nu_vec))
+        ####################################################################################################################################
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
-        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
-
+        median_beta = self.calc_beta_s()
+        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
+        #self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
-
         error = 0.001#just to make sure you catch everything
         # Calculate the bin edges using quantiles
         self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
 
-        #GAMMA
-        r = self.parameters_vehicle_user["r"]
-        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
-        
-        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
-        self.WTP_mean = self.parameters_social_network["WTP_mean"]
-        self.WTP_sd = self.parameters_social_network["WTP_sd"]     
-        WTP_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_mean, scale = self.WTP_sd, size = self.num_individuals)
-        self.WTP_vec = np.clip(WTP_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        self.gamma_vec = self.WTP_vec*self.beta_vec*r*omega_mean/(self.d_vec*(1+r))
-
-        ############################################
+        ####################################################################################################################################
         #social network data
+        
+        self.ev_adoption_state_vec = np.zeros(self.num_individuals)
+
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["chi_vec"] = self.chi_vec 
@@ -278,7 +274,7 @@ class Controller:
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
 
-    def generate_beta_values_quintiles(self,n, quintile_incomes):
+    def generate_beta_values_quintiles(self,n, quintile_incomes, median_beta):
         """
         Generate a list of beta values for n agents based on quintile incomes.
         Beta for each quintile is calculated as:
@@ -292,8 +288,8 @@ class Controller:
             list: A list of beta values of length n.
         """
         # Calculate beta values for each quintile
-        lowest_income = quintile_incomes[0]
-        beta_vals = [lowest_income / income for income in quintile_incomes]
+        median_income = quintile_incomes[2]
+        beta_vals = [median_beta*median_income/income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
         proportions = [0.2] * len(quintile_incomes)
@@ -316,6 +312,54 @@ class Controller:
         self.random_state_beta.shuffle(beta_list)
         
         return np.asarray(beta_list)
+
+    def calc_beta_s(self):
+        """
+        Calculate beta_s based on the given equation.
+        """
+        # Extract parameters
+        E = self.parameters_ICE["production_emissions"]
+        delta = self.parameters_ICE["delta"]
+        r = self.parameters_vehicle_user["r"]
+        kappa = self.parameters_vehicle_user["kappa"]
+        alpha = self.parameters_vehicle_user["alpha"]
+        zeta = self.parameters_vehicle_user["zeta"]
+        
+        # Calculate average gasoline cost and emissions
+        c = np.mean(self.calibration_gas_price_california_vec)
+        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+        
+        # Calculate mean efficiency
+        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"]) / 2
+        # Calculate maximum cost
+        C_mean = (self.parameters_ICE["max_Cost"] + self.parameters_ICE["min_Cost"])/2
+        # Set other parameters
+        omega = omega_mean
+        gamma = np.median(self.gamma_vec)
+        nu = np.median(self.nu_vec)
+        P = self.parameters_ICE["mean_Price"]
+        C = C_mean
+        W = self.parameters_vehicle_user["W_calibration"]
+        D = np.median(self.d_vec)
+        
+        # Calculate Q_mt (assuming Q_mt is given or calculated elsewhere)
+        Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
+        B = self.parameters_ICE["fuel_tank"]
+
+        # Calculate the components of the equation
+        term1 = r / ((1 + r) * Q_mt**alpha)
+        
+        log_term = np.log(W * (kappa * (P - C) - 1))
+        term2 = (log_term * (1 / kappa)) + P + gamma * E
+        
+        term3 = ((1 + r) * (nu * (B * omega)**zeta)) / (1 + r - (1 - delta)**zeta)
+        
+        term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
+        
+        # Combine all terms to calculate beta_s
+        beta_s = term1 * (term2 + term3 + term4)
+        
+        return beta_s
 
     def calc_variables(self):
 
@@ -365,22 +409,6 @@ class Controller:
         W = self.parameters_vehicle_user["W_calibration"]
         D = np.median(self.d_vec)
 
-        #min_kappa = 1/(beta*(P-C)) 
-        #print("min kappa, kappa", min_kappa, kappa)
-        #quit()
-        Q_val = (((r - (1 - delta)**alpha + 1)/(D*(1+r)))*((1/kappa)*np.log(W*(kappa*beta*(P-C) - 1)) + beta*P + gamma*E + (1+r)*(beta*c + gamma*e)/(r*omega)))**(1/alpha)
-        #print("Q_val",Q_val)
-
-        max_q = 0.8*Q_val
-        min_q = 0
-        #print("max_q", max_q)
-        #quit()
-
-        ratio_Q = self.parameters_EV["ratio_Q"]
-        self.parameters_ICE["min_Quality"] = min_q
-        self.parameters_ICE["max_Quality"] = max_q #max_q
-        self.parameters_EV["min_Quality"] = min_q
-        self.parameters_EV["max_Quality"] = max_q*ratio_Q #max_q
 
         #quit()
 
@@ -721,6 +749,8 @@ class Controller:
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
         parameters_EV["d_mean"] = np.mean(self.d_vec)
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
+        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
+        self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
         self.EV_landscape = NKModel(parameters_EV)
         #self.ICE_landscape.retrieve_info("110111110110001")
 

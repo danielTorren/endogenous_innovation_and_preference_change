@@ -161,8 +161,8 @@
         "chi_max": 0.9,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 0.0210,
-        "WTP_sd": 0.0175,
+        "WTP_E_mean": 0.0210,
+        "WTP_E_sd": 0.0175,
         "gamma_epsilon": 1e-5,
 
         "a_chi": 1,

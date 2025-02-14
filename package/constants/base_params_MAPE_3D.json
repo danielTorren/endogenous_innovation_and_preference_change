@@ -169,8 +169,8 @@
         "b_chi": 4.68,
         "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
-        "WTP_mean": 46646.65434,
-        "WTP_sd": 39160.31118,
+        "WTP_E_mean": 46646.65434,
+        "WTP_E_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
         "prob_switch_car":0.083
     },

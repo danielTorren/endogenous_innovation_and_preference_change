@@ -160,7 +160,7 @@ def future_calibration_data():
     # Return the relevant column
     return electricity_emissions_intensity_future_df["Mean KgCO2 per kWh"]
 
-def data_tanks():
+def data_range():
 
     ###############################################################################
 
@@ -177,7 +177,7 @@ def data_tanks():
     #What is the distance travelled by your typical car?
     average_gas_tank_size = 16#Gallons https://mechanicbase.com/cars/average-gas-tank-size/  https://millsequipment.com/blogs/blogs/understanding-average-fuel-tank-size-what-you-need-to-know
     efficiency_and_power_df["Average Distance km"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*average_gas_tank_size*km_to_miles
-    print("what is this",efficiency_and_power_df["Average Distance km"])
+    print("ICE VEHICLE RANGE",efficiency_and_power_df["Average Distance km"])
 
     #print(efficiency_and_power_df)
     #MIN in 2000 is 509.838912km, MAX in 2022 its 669.485440km
@@ -190,6 +190,10 @@ def data_tanks():
 
     # Align the indices to yearly for calculation
     yearly_data = EV_range_df.join(efficiency_and_power_df["Average Distance km"], how="inner")
+
+    print("ICE VEHICLE RANGE", yearly_data["EV Range (km)"])
+    
+    """
 
     # Calculate the year-wise range ratio
     yearly_data["Range Ratio (ICE to EV)"] = yearly_data["Average Distance km"] / yearly_data["EV Range (km)"]
@@ -209,10 +213,11 @@ def data_tanks():
 
     #print("EV_range_monthly_data", EV_range_monthly_data)
     print(EV_range_monthly_data["Range Ratio (ICE to EV)"])
+    """
 if __name__ == "__main__":
 
-    data_tanks()
-    quit()
+    data_range()
+
     calibration_data_input = {}
 
     calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()

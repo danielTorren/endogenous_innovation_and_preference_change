@@ -181,7 +181,7 @@ class Firm_Manager:
                 "W": self.min_W,#0.0,
                 "history_I_s_t": [],
                 "history_W": [],
-                "nu_maxU": 0
+                "maxU": 0
             }
 
         # 2) Count how many individuals fall into each segment code
@@ -233,8 +233,8 @@ class Firm_Manager:
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                    if U > self.market_data[code]["nu_maxU"]:
-                        self.market_data[code]["nu_maxU"] = U
+                    if U > self.market_data[code]["maxU"]:
+                        self.market_data[code]["maxU"] = U
 
 
         for firm in self.firms_list:
@@ -249,7 +249,7 @@ class Firm_Manager:
     
         self.I_s_t_vec = np.asarray([self.market_data[code]["I_s_t"] for code in self.all_segment_codes])
         self.W_vec = np.asarray([self.market_data[code]["W"] for code in self.all_segment_codes])
-        self.nu_maxU_vec = np.asarray([self.market_data[code]["nu_maxU"] for code in self.all_segment_codes])
+        self.maxU_vec = np.asarray([self.market_data[code]["maxU"] for code in self.all_segment_codes])
 
     def update_W_immediate(self):
         #calc the total "probability of selection" of the market based on max utility in the segment
@@ -261,16 +261,16 @@ class Firm_Manager:
         #UPDATE U MAX
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                    if U > self.market_data[segment]["nu_maxU"]:
-                            self.market_data[segment]["nu_maxU"] = U
+                    if U > self.market_data[segment]["maxU"]:
+                            self.market_data[segment]["maxU"] = U
 
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
                 segment_W[segment] += self.calc_exp(U)
 
-        nu_maxU_vec = np.asarray([self.market_data[code]["nu_maxU"] for code in self.all_segment_codes])
+        maxU_vec = np.asarray([self.market_data[code]["maxU"] for code in self.all_segment_codes])
 
-        return segment_W, nu_maxU_vec
+        return segment_W, maxU_vec
         
     def update_market_data_moving_average(self, W_segment):
 
@@ -487,7 +487,7 @@ class Firm_Manager:
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
-            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.nu_maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
+            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
 
@@ -508,7 +508,7 @@ class Firm_Manager:
         self.production_subsidy = production_subsidy
         
         self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
-        self.W_segment, self.nu_maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
+        self.W_segment, self.maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
 
         #print("W im:",np.min(list(self.W_segment.values())),np.max(list(self.W_segment.values())))
         self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues

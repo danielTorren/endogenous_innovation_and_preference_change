@@ -26,14 +26,18 @@ class NKModel:
         self.max_Efficiency = parameters["max_Efficiency"]
         self.max_Cost = parameters["max_Cost"]
 
+        self.fuel_tank = parameters["fuel_tank"] 
+
         self.r = parameters["r"]
         self.delta =  parameters["delta"]
         self.median_beta = parameters["median_beta"]
         self.median_gamma = parameters["median_gamma"]
+        self.median_nu = parameters["median_nu"]
         self.fuel_cost = parameters["fuel_cost_c"]
         self.e_t = parameters["e_t"]
         self.d_mean = parameters["d_mean"]
         self.alpha = parameters["alpha"]
+        self.zeta = parameters["zeta"]
         self.E = parameters["production_emissions"]
 
         self.prop_explore = parameters["prop_explore"]
@@ -46,12 +50,12 @@ class NKModel:
 
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string(self.prop_explore)
 
-    def calc_present_utility_minimum_single(self, quality, eff, prod_cost):
+    def calc_present_utility_minimum_single(self, Q, omega, prod_cost, B):
         """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
         cost_multiplier = self.init_price_multiplier
-        approx_fitness = self.d_mean*(quality**self.alpha)*((1+self.r)/(self.r - (1 - self.delta)**self.alpha + 1)) - self.median_beta*(self.d_mean*self.fuel_cost*(1+self.r)/(self.r*eff) + cost_multiplier*prod_cost) - self.median_gamma*(self.d_mean*self.e_t*(1+self.r)/(self.r*eff) + self.E)
-
-        return approx_fitness
+        U = -cost_multiplier*prod_cost - self.median_gamma*self.E + ((1+self.r)*(self.median_beta*Q**self.alpha))/self.r + ((1+self.r)*(self.median_nu*(B*omega)**self.zeta))/(1 + self.r - (1- self.delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-self.delta)*(self.fuel_cost + self.median_gamma*self.e_t))/(omega*(self.r - self.delta - self.r*self.delta)))
+        
+        return U
 
     def find_min_fitness_string(self, prop=1):
         """
@@ -84,7 +88,7 @@ class NKModel:
 
         # Vectorized fitness calculation
         attributes_list = self.calculate_fitness_vectorized(designs)
-        fitness_values = self.calc_present_utility_minimum_single(attributes_list[:, 0], attributes_list[:, 1], attributes_list[:, 2])
+        fitness_values = self.calc_present_utility_minimum_single(attributes_list[:, 0], attributes_list[:, 1], attributes_list[:, 2], self.fuel_tank)
 
         # Find the minimum fitness and corresponding binary string
         min_index = np.argmin(fitness_values)

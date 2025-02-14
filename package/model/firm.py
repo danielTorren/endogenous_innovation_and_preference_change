@@ -27,7 +27,9 @@ class Firm:
         self.compression_factor_state = parameters_firm["compression_factor_state"]
         self.id_generator = parameters_firm["IDGenerator_firms"]  
 
-        self.d_mean = parameters_firm["d_mean"]  
+        self.d_mean = parameters_firm["d_mean"]
+        self.nu = parameters_firm["nu"]  
+        self.zeta = parameters_firm["zeta"]
         self.alpha = parameters_firm["alpha"]
 
         self.firm_id = firm_id
@@ -127,10 +129,10 @@ class Firm:
         self.beta_s_values = beta_s_values
         self.gamma_s_values = gamma_s_values
 
-    def calc_utility_prop(self,U,W, nu_maxU):
-        exp_input = self.kappa*U - self.kappa*nu_maxU
+    def calc_utility_prop(self,U,W, maxU):
+        exp_input = self.kappa*U - self.kappa*maxU
         #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
-        norm_exp_input = -self.kappa*nu_maxU
+        norm_exp_input = -self.kappa*maxU
         #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
         utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
@@ -155,7 +157,7 @@ class Firm:
             return None
 
         # Check if car objects have the necessary attributes (you might want to add more checks)
-        required_attributes = ["emissions", "ProdCost_t", "transportType", "delta", "Quality_a_t", "Eff_omega_a_t", "e_t", "fuel_cost_c"]
+        required_attributes = ["emissions", "ProdCost_t", "transportType", "delta", "Quality_a_t", "Eff_omega_a_t", "e_t", "fuel_cost_c", "B"]
         for attr in required_attributes:
             if not hasattr(car_list[0], attr):
                 print(f"Error: Car object does not have attribute '{attr}'")
@@ -181,6 +183,7 @@ class Firm:
         Eff_omega_a_t = car_data["Eff_omega_a_t"]
         e_t = car_data["e_t"]
         fuel_cost_c = car_data["fuel_cost_c"]
+        B = car_data["B"]
 
         # Apply EV-specific calculations using boolean indexing
         ev_mask = transport_types == 3  # Boolean mask for EV cars
@@ -189,13 +192,10 @@ class Firm:
         C_m_cost[ev_mask] = np.maximum(0, C_m[ev_mask] - self.production_subsidy)
         C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
 
-        # Fully vectorized calculation of 'term'
-        term = self.kappa * (self.d_mean * (Quality_a_t[:, np.newaxis]**self.alpha) * ((1 + self.r) / (self.r - (1 - delta[:, np.newaxis])**self.alpha + 1)) \
-            - self.beta_s_values[np.newaxis, :] * self.d_mean * fuel_cost_c[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) \
-            - self.gamma_s_values[np.newaxis, :] * (self.d_mean * e_t[:, np.newaxis] * (1 + self.r) / (self.r * Eff_omega_a_t[:, np.newaxis]) + E_m[:, np.newaxis]) \
-            - self.beta_s_values[np.newaxis, :] * C_m_price[:, np.newaxis]) - 1.0
-
-        exp_input = term - np.log(self.W_vec[np.newaxis, :])
+        U = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] + ((1+self.r)*(self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis]**self.alpha))/self.r + ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))/(1 + self.r - (1- delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-delta)*(fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :]*e_t[:, np.newaxis]))/(Eff_omega_a_t[:, np.newaxis]*(self.r - delta - self.r*delta)))
+        
+        exp_input = (self.kappa*U - 1) - np.log(self.W_vec[np.newaxis, :])
+        
         #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         Arg = np.exp(exp_input)
         LW = lambertw(Arg, 0).real
@@ -208,9 +208,10 @@ class Firm:
                     car.optimal_price_segments[segment_code] = P[i, j]
         return car_list  # Return a dictionary of optimal prices by segment.
 
-    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta):
-        #U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r-self.delta)) - beta*(self.d_mean*c/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e/(self.r*omega) + E_new)
-        U = self.d_mean*(Q**self.alpha)*((1+self.r)/(self.r - (1 - delta)**self.alpha + 1)) - beta*(self.d_mean*c*(1+self.r)/(self.r*omega) + P_adjust) - gamma*(self.d_mean*e*(1+self.r)/(self.r*omega) + E_new)
+    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta, B):
+
+        U = - P_adjust - gamma*E_new + ((1+self.r)*(beta*Q**self.alpha))/self.r + ((1+self.r)*(self.nu*(B*omega)**self.zeta))/(1 + self.r - (1- delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-delta)*(c + gamma*e))/(omega*(self.r - delta - self.r*delta)))
+        
         return U
 
     def calc_utility_cars_segments(self, car_list, car_data):
@@ -353,7 +354,7 @@ class Firm:
         utility_proportion = np.where(
             utilities == -np.inf,
             0,
-            self.calc_utility_prop(utilities, self.W_vec[np.newaxis, :], self.nu_maxU_vec[np.newaxis, :])
+            self.calc_utility_prop(utilities, self.W_vec[np.newaxis, :], self.maxU_vec[np.newaxis, :])
         )
 
         # Raw profit
@@ -578,7 +579,7 @@ class Firm:
         utility_proportion = np.where(
             utilities == -np.inf,
             0,
-            self.calc_utility_prop(utilities, self.W_vec[np.newaxis, :], self.nu_maxU_vec[np.newaxis, :])
+            self.calc_utility_prop(utilities, self.W_vec[np.newaxis, :], self.maxU_vec[np.newaxis, :])
         )
 
         # Raw profit
@@ -612,7 +613,7 @@ class Firm:
         gamma_s_values = self.gamma_s_values[valid_indices]
         I_s_t_values = self.I_s_t_vec[valid_indices]
         W_values = self.W_vec[valid_indices]
-        nu_maxU_values = self.nu_maxU_vec[valid_indices]
+        maxU_values = self.maxU_vec[valid_indices]
 
         e_indices = np.array([code[2] for code in segment_codes_reduc])
 
@@ -650,7 +651,7 @@ class Firm:
         utility_proportions = np.where(
             utilities == -np.inf,
             0,
-            self.calc_utility_prop(utilities, W_values, nu_maxU_values)
+            self.calc_utility_prop(utilities, W_values, maxU_values)
         )
 
         raw_profits = profit_per_sale * I_s_t_values * utility_proportions
@@ -845,7 +846,7 @@ class Firm:
 
         self.I_s_t_vec = I_s_t_vec
         self.W_vec =  W_vec
-        self.nu_maxU_vec = nu_UMax_vec
+        self.maxU_vec = nu_UMax_vec
         self.carbon_price = carbon_price
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
