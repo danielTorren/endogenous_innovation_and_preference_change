@@ -90,7 +90,7 @@ def load_in_output_data():
 
     #USE THESE VALUES OF THE MIN AND THE MAX TO PARAMETERISE THE LANSCAPE
     #"min_max_Efficiency":[4,7], historial min and max for 2006-2022 period are (4.73335294117647,6.43736)
-
+    
     ##############################################################################################################################
     #EMISSIONS INTENSITY OF FLEET
     emissions_intensity_cars_df = pd.read_excel("package/calibration_data/emissions_intensity_cars.xlsx") 
@@ -101,6 +101,7 @@ def load_in_output_data():
     MMTCO2e_df = pd.read_excel("package/calibration_data/emissions_passenger_vehicle_2000_21.xlsx") 
     MMTCO2e_data = MMTCO2e_df["MMTCO2e"].to_numpy()
     CO2_index = MMTCO2e_data/max(MMTCO2e_data)
+
     return merged_data_filtered['EV Prop'].to_numpy(), kg_CO2_per_km_vec, CO2_index
 
 if __name__ == "__main__":

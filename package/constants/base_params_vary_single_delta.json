@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 64,
+    "seed_repetitions": 2,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
@@ -140,7 +140,7 @@
         "WTP_sd": 39160.31118,
         "gamma_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.05
+        "proportion_zero_target": 0.99
     },
     "parameters_vehicle_user":{
         "kappa":1,
