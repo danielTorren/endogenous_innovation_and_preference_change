@@ -178,15 +178,15 @@ if __name__ == "__main__":
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
-        "WTP_R_mean": 86,
-        "WTP_R_sd": 51,
+        "WTP_R_mean": 0.086,
+        "WTP_R_sd": 0.051,
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
         "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa":5,
+        "kappa":1,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
