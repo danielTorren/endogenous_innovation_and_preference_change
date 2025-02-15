@@ -29,6 +29,8 @@ class Social_Network:
         self.beta_vec = parameters_social_network["beta_vec"] 
         self.gamma_vec = parameters_social_network["gamma_vec"]
         self.chi_vec = parameters_social_network["chi_vec"]
+        self.nu_vec = parameters_social_network["nu_vec"]
+
         self.d_vec = parameters_social_network["d_vec"]
 
         #self.delta = parameters_social_network["delta"]
@@ -218,6 +220,7 @@ class Social_Network:
         self.sub_beta_vec = self.beta_vec[switcher_indices]
         self.sub_gamma_vec = self.gamma_vec[switcher_indices]
         self.sub_d_vec = self.d_vec[switcher_indices]
+        self.sub_nu_vec = self.nu_vec[switcher_indices]
 
         # Generate current utilities and vehicles
         #Calculate the optimal distance for all user with current car, NEEDS TO BE DONE ALWAYS AND FOR ALL USERS
@@ -238,7 +241,7 @@ class Social_Network:
         #NON-SWTICHERS
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
-            __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec)
+            __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
 
 
         for i, person_index in enumerate(non_switcher_indices):
@@ -271,12 +274,12 @@ class Social_Network:
 
         #THIS CAN BE DONE FOR THE SUBSET OF USERS
         CV_filtered_vechicles_dicts, CV_filtered_vehicles = self.filter_vehicle_dict_for_switchers(CV_vehicle_dict_vecs, self.current_vehicles, switcher_indices)
-        utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec, self.sub_d_vec)
+        utilities_current_matrix, __ = self.generate_utilities_current(CV_filtered_vechicles_dicts, self.sub_beta_vec, self.sub_gamma_vec, self.sub_d_vec, self.sub_nu_vec)
 
         self.second_hand_merchant_offer_price = self.calc_offer_prices_heursitic(self.NC_vehicle_dict_vecs, CV_filtered_vechicles_dicts, CV_filtered_vehicles)
 
         # pass those indices to generate_utilities
-        utilities_buying_matrix_switchers, buying_vehicles_list = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price, self.sub_d_vec)
+        utilities_buying_matrix_switchers, buying_vehicles_list = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price, self.sub_d_vec, self.sub_nu_vec)
 
         # Preallocate the final utilities and distance matrices
         total_columns = utilities_buying_matrix_switchers.shape[1] + utilities_current_matrix.shape[1]#number of cars which is new+secodn hand + current in the switchers
@@ -544,6 +547,7 @@ class Social_Network:
         e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
         delta_P = np.array([vehicle.delta_P for vehicle in list_vehicles])
+        B = np.array([vehicle.B for vehicle in list_vehicles])
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
@@ -553,26 +557,27 @@ class Social_Network:
             "L_a_t": l_a_t,
             "transportType": transport_type,
             "delta": delta,
-            "delta_P": delta_P
+            "delta_P": delta_P,
+            "B": B
         }
 
         return vehicle_dict_vecs
 
 ##############################################################################################################################################################
 
-    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec):
+    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
 
 
         # Generate utilities
         #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
-        NC_utilities = self.vectorised_calculate_utility_new_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec)
+        NC_utilities = self.vectorised_calculate_utility_new_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec)
 
         # Calculate the total columns needed for utilities 
         total_columns = NC_utilities.shape[1]
 
         if self.second_hand_cars:
             SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_second_hand(self.second_hand_cars)
-            SH_utilities = self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price,  d_vec)
+            SH_utilities = self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec)
             total_columns += SH_utilities.shape[1]
 
         # Preallocate arrays with the total required columns
@@ -651,7 +656,7 @@ class Social_Network:
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
         rebate_vec = np.where(transport_type == 3, self.rebate_calibration + self.rebate, 0)
-
+        B = np.array([vehicle.B for vehicle in list_vehicles])
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
@@ -662,7 +667,8 @@ class Social_Network:
             "e_t": e_t,
             "transportType": transport_type,
             "rebate": rebate_vec,
-            "delta": delta
+            "delta": delta,
+            "B": B
         }
 
         return vehicle_dict_vecs
@@ -680,7 +686,7 @@ class Social_Network:
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
         used_rebate_vec = np.where(transport_type == 3, self.used_rebate_calibration + self.used_rebate, 0)
-
+        B = np.array([vehicle.B for vehicle in list_vehicles])
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
@@ -691,7 +697,8 @@ class Social_Network:
             "L_a_t": l_a_t,
             "transportType": transport_type,
             "used_rebate": used_rebate_vec,
-            "delta": delta
+            "delta": delta,
+            "B":B
         }
 
         return vehicle_dict_vecs

@@ -1,17 +1,14 @@
 """Define controller than manages exchange of information between social network and firms
 Created: 22/12/2023
 """
-from package.model.nkModel_EV import NKModel
+from package.model.nkModel_ICE import NKModel as NKModel_ICE
+from package.model.nkModel_EV import NKModel as NKModel_EV
 from package.model.firmManager import Firm_Manager 
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
-from scipy.stats import poisson
-
-from scipy.special import lambertw
-import matplotlib.pyplot as plt
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -209,6 +206,7 @@ class Controller:
         WTP_R_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_R_mean, scale = self.WTP_R_sd, size = self.num_individuals)
         self.nu_vec = np.clip(WTP_R_vec_unclipped, a_min = self.parameters_social_network["nu_epsilon"], a_max = np.inf)     
         print("nu mean",np.mean(self.nu_vec))
+
         ####################################################################################################################################
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
@@ -228,13 +226,16 @@ class Controller:
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["chi_vec"] = self.chi_vec 
+        self.parameters_social_network["nu_vec"] = self.nu_vec 
         self.parameters_social_network["d_vec"] = self.d_vec
 
         self.beta_median = np.median(self.beta_vec)
         self.gamma_median = np.median(self.gamma_vec)
+        self.nu_median = np.median(self.nu_vec)
 
         self.parameters_social_network["beta_median"] = self.beta_median
         self.parameters_social_network["gamma_median"] = self.gamma_median 
+        self.parameters_social_network["nu_median"] = self.nu_median
 
         #firm data
         self.gamma_bins = np.linspace(min(self.gamma_vec) , max(self.gamma_vec), 2+1)#np.linspace(min(self.gamma_vec) - error, max(self.gamma_vec) + error, 2+1)
@@ -662,8 +663,9 @@ class Controller:
         self.parameters_firm_manager["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm_manager["kappa"] = self.parameters_vehicle_user["kappa"]
         self.parameters_firm_manager["N"] = self.parameters_ICE["N"]
-        #self.parameters_firm_manager["nu"] = self.parameters_vehicle_user["nu"]
+        self.parameters_firm_manager["nu"] = self.nu_median
         self.parameters_firm_manager["min_W"] = self.parameters_vehicle_user["min_W"]
+        self.parameters_firm_manager["zeta"] = self.parameters_vehicle_user["zeta"]
 
     def setup_firm_parameters(self):
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -683,8 +685,9 @@ class Controller:
         self.parameters_firm["rebate_calibration"] = self.rebate_calibration
         self.parameters_firm["d_mean"] = np.mean(self.d_vec)
         self.parameters_firm["U_segments_init"] = self.parameters_vehicle_user["U_segments_init"]
-        #self.parameters_firm["nu"] = self.parameters_vehicle_user["nu"]
+        self.parameters_firm["nu"] = self.nu_median
         self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
+        self.parameters_firm["zeta"] = self.parameters_vehicle_user["zeta"]
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
@@ -719,6 +722,7 @@ class Controller:
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
         #self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_social_network["alpha"] = self.parameters_vehicle_user["alpha"]
+        self.parameters_social_network["zeta"] = self.parameters_vehicle_user["zeta"]
 
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
@@ -731,11 +735,13 @@ class Controller:
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
         parameters_ICE["median_beta"] = self.beta_median
         parameters_ICE["median_gamma"] = self.gamma_median
+        parameters_ICE["median_nu"] = self.nu_median
         parameters_ICE["fuel_cost_c"] = self.parameters_calibration_data["gas_price_california_vec"][0]
         parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         parameters_ICE["d_mean"] = np.mean(self.d_vec)
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
-        self.ICE_landscape = NKModel(parameters_ICE)
+        parameters_ICE["zeta"] = self.parameters_vehicle_user["zeta"]
+        self.ICE_landscape = NKModel_ICE(parameters_ICE)
         #self.ICE_landscape.retrieve_info("110101101001110")#self.landscape_ICE.min_fitness_string
 
     def setup_EV_landscape(self, parameters_EV):
@@ -745,13 +751,15 @@ class Controller:
         #parameters_EV["delta"] = self.parameters_ICE["delta"]
         parameters_EV["median_beta"] = self.beta_median 
         parameters_EV["median_gamma"] = self.gamma_median
+        parameters_EV["median_nu"] = self.nu_median
         parameters_EV["fuel_cost_c"] = self.parameters_calibration_data["electricity_price_vec"][0]
         parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
         parameters_EV["d_mean"] = np.mean(self.d_vec)
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
+        parameters_EV["zeta"] = self.parameters_vehicle_user["zeta"]
         self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
         self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
-        self.EV_landscape = NKModel(parameters_EV)
+        self.EV_landscape = NKModel_EV(parameters_EV)
         #self.ICE_landscape.retrieve_info("110111110110001")
 
     def setup_second_hand_market(self):
@@ -866,7 +874,7 @@ class Controller:
     def next_step(self,):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
-        #print("TIME STEP", self.t_controller)
+        print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()

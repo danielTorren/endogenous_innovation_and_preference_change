@@ -192,7 +192,12 @@ class Firm:
         C_m_cost[ev_mask] = np.maximum(0, C_m[ev_mask] - self.production_subsidy)
         C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
 
-        U = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] + ((1+self.r)*(self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis]**self.alpha))/self.r + ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))/(1 + self.r - (1- delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-delta)*(fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :]*e_t[:, np.newaxis]))/(Eff_omega_a_t[:, np.newaxis]*(self.r - delta - self.r*delta)))
+        term1 = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] # Matrix with shape: num cars x num segments
+        term2 = ((1+self.r)*(self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis]**self.alpha))/self.r# Matrix with shape: num cars x num segments
+        term3 = ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))/(1 + self.r - (1- delta[:, np.newaxis])**self.zeta)# Matrix with shape: num cars x num segments
+        term4 = - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis])) / (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
+
+        U = term1 + term2 + term3 + term4# Matrix with shape: num cars x num segments
         
         exp_input = (self.kappa*U - 1) - np.log(self.W_vec[np.newaxis, :])
         
@@ -227,6 +232,7 @@ class Firm:
         E_new_values = np.tile(car_data["emissions"][:, np.newaxis], (1, self.num_segments))
         delta_values = np.tile(car_data["delta"][:, np.newaxis], (1, self.num_segments))
         transport_types = np.tile(car_data["transportType"][:, np.newaxis], (1, self.num_segments))
+        B_values = np.tile(car_data["B"][:, np.newaxis], (1, self.num_segments))
 
         # Broadcast segment parameters to match (num_cars, num_segments)
         beta_s_broadcast = np.tile(self.beta_s_values, (num_cars, 1))
@@ -257,7 +263,8 @@ class Firm:
             e_values[valid_mask],
             E_new_values[valid_mask],
             P_adjust_values[valid_mask],
-            delta_values[valid_mask]
+            delta_values[valid_mask],
+            B_values[valid_mask]
         )
 
         # Assign calculated utilities back to car objects
@@ -418,11 +425,9 @@ class Firm:
             # Compute the softmax probabilities
             lambda_profits = np.zeros_like(profits)
             valid_profits_mask = profits != -np.inf
-            #print("valid_profits_mask", valid_profits_mask)
+
 
             exp_input = self.lambda_exp*(profits[valid_profits_mask]  - np.max(profits[valid_profits_mask]))
-            #print("exp input",exp_input)
-
             #exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
 
             lambda_profits[valid_profits_mask] = np.exp(exp_input)
@@ -636,7 +641,8 @@ class Firm:
             selected_vehicle.e_t,
             selected_vehicle.emissions,
             price_adjust_values[valid_segments],
-            selected_vehicle.delta
+            selected_vehicle.delta,
+            selected_vehicle.B
         )
 
         for idx, code in enumerate(segment_codes_reduc):

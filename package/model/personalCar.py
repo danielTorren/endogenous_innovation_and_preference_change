@@ -37,9 +37,17 @@ class PersonalCar:
 
         self.emissions = parameters["production_emissions"]  # Emissions factor for the vehicle (E_a_t).
                                     # Represents the environmental impact of using the vehicle, often quantified as the amount of emissions (e.g., CO2) produced per unit distance traveled.
+        
+        if self.transportType == 2:
+            self.B = parameters["fuel_tank"] #ICE VEHICLE kWhr fixed assuming 20 gallons
+        else:
+            self.B = self.attributes_fitness[3]#BATTERY kWhr
+        
         self.total_distance = 0
         self.total_driving_emmissions = 0
         self.total_emissions = self.emissions
+
+
 
     def update_timer_L_a_t(self):
         self.L_a_t += 1#0.5 + np.random.uniform()#THE ADDED AGE RANGES FROM 0.5 to 1.5 to avoid cyclic behaviour of agents

@@ -144,7 +144,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[0,0],
+        "rho":[0,0,0],
         "delta": 0.000435,
         "delta_P":0.0087,
         "production_emissions":14,
@@ -192,7 +192,8 @@ if __name__ == "__main__":
         "min_W": 1e-5,
         "r":  0.0016515813,
         "mu": 1,
-        "alpha": 0.5
+        "alpha": 0.5,
+        "zeta":0.9
     }
 }
     
