@@ -101,7 +101,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 1,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
@@ -170,10 +170,10 @@ if __name__ == "__main__":
         "min profit": 0.1
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals":5000,
         "chi_max": 0.9,
-        "a_chi": 0.01,
-        "b_chi": 5,
+        "a_chi": 2,
+        "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         "r":  0.005,#0.0016515813,
         "mu": 1,
         "alpha": 0.5,
-        "zeta":0.3
+        "zeta":0.1
     }
 }
     
