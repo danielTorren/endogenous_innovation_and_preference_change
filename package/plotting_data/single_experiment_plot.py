@@ -2870,6 +2870,30 @@ def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600):
     save_and_show(fig, fileName, "plot_history_W", dpi)
 
 
+def plot_market_concentration_yearly(firm_manager, time_series, fileName, dpi=600):
+    # Ensure the data is in numpy arrays for easier manipulation
+    time_steps = np.array(time_series)
+    concentration = np.array(firm_manager.history_market_concentration)
+
+    # Calculate the number of years
+    num_months = len(time_steps)
+    num_years = num_months // 12  # Integer division to get the number of full years
+
+    # Reshape the concentration data into years (12 months per year)
+    yearly_concentration = concentration[:num_years * 12].reshape(num_years, 12)
+
+    # Calculate yearly averages
+    yearly_avg_concentration = np.mean(yearly_concentration, axis=1)
+
+    # Create a list of years for the x-axis
+    years = np.arange(1, num_years + 1)  # Year labels (1, 2, 3, ..., num_years)
+
+    # Plot the yearly averages
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(years, yearly_avg_concentration, marker='o')
+    format_plot(ax, "Yearly Average Market Concentration", "Year", "Market Concentration", legend=False)
+    save_and_show(fig, fileName, "market_concentration_yearly", dpi)
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -2911,6 +2935,7 @@ def main(fileName, dpi=600):
     plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
     plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    plot_market_concentration_yearly(firm_manager, time_series, fileName, dpi)
     plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_segment_count_grid(firm_manager, time_series, fileName)

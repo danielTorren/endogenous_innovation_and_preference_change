@@ -189,6 +189,10 @@ class Controller:
         #GAMMA
         r = self.parameters_vehicle_user["r"]
         delta = self.parameters_ICE["delta"]
+        if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
+            raise Exception("r <= delta/(1-delta)), raise r or lower delta")
+        print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
+
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
@@ -196,8 +200,10 @@ class Controller:
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        self.gamma_vec = self.WTP_E_vec*(r - delta- r*delta)*omega_mean/(self.d_vec*(1+r)*(1-delta))
+        self.gamma_vec = self.WTP_E_vec*omega_mean*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
         print("gamma mean ",np.mean(self.gamma_vec))
+        #quit()
+
         ####################################################################################################################################
         #NU
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_range_seed"])
@@ -352,13 +358,13 @@ class Controller:
         
         log_term = np.log(W * (kappa * (P - C) - 1))
         term2 = (log_term * (1 / kappa)) + P + gamma * E
-        
         term3 = ((1 + r) * (nu * (B * omega)**zeta)) / (1 + r - (1 - delta)**zeta)
-        
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
         
         # Combine all terms to calculate beta_s
         beta_s = term1 * (term2 + term3 + term4)
+        print("beta_s", beta_s)
+        #quit()
         
         return beta_s
 
@@ -874,7 +880,7 @@ class Controller:
     def next_step(self,):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
-        print("TIME STEP", self.t_controller)
+        #print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()

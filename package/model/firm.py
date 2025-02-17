@@ -135,6 +135,7 @@ class Firm:
         norm_exp_input = -self.kappa*maxU
         #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
+        #print("size", np.exp(norm_exp_input),W, np.exp(exp_input))
         utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
 
         return utility_proportion
@@ -193,14 +194,27 @@ class Firm:
         C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
 
         term1 = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] # Matrix with shape: num cars x num segments
-        term2 = ((1+self.r)*(self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis]**self.alpha))/self.r# Matrix with shape: num cars x num segments
+        term2 = ((1+self.r)*self.beta_s_values[np.newaxis, :]*(Quality_a_t[:, np.newaxis]**self.alpha))/self.r# Matrix with shape: num cars x num segments
         term3 = ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))/(1 + self.r - (1- delta[:, np.newaxis])**self.zeta)# Matrix with shape: num cars x num segments
         term4 = - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis])) / (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
-
+        
+        ##print("Quality",term2)
+        #print("rpices and emisison",term1)
+        #print("quality inside", self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis])
+        #print("otehr terms",self.zeta,  self.r, (1+self.r)/(1 + self.r - (1- delta[:, np.newaxis])**self.zeta), delta[:, np.newaxis] )
+        #quit()
+        #print("range",term3)
+        #print("range term inside", self.nu*B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])
+        #print("fuel costs and emissions",term4)
+        #print(self.beta_s_values)
+        #quit()
         U = term1 + term2 + term3 + term4# Matrix with shape: num cars x num segments
-        
+        #print("U",U)
+        #quit()
         exp_input = (self.kappa*U - 1) - np.log(self.W_vec[np.newaxis, :])
-        
+        #print("self.kappa*U",self.kappa*U)
+        #print("np.log(self.W_vec[np.newaxis, :])", np.log(self.W_vec[np.newaxis, :]))
+        #quit()
         #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         Arg = np.exp(exp_input)
         LW = lambertw(Arg, 0).real

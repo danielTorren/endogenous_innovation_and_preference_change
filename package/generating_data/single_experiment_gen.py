@@ -101,15 +101,15 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 100,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
-            "Electricity_subsidy":1,
-            "Adoption_subsidy":200,
+            "Electricity_subsidy":0.99,
+            "Adoption_subsidy":20,
             "Adoption_subsidy_used":20,
             "Production_subsidy":20,
-            "Research_subsidy":20
+            "Research_subsidy":200
         }
     },
     "parameters_second_hand":{
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":10,
-        "delta": 0.00058,
+        "delta": 0.002,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 40,
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 4,
         "rho":[0,0,0],
-        "delta": 0.000435,
+        "delta": 0.004,
         "delta_P":0.0087,
         "production_emissions":14,
         "transportType": 3,
@@ -172,8 +172,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals": 3000,
         "chi_max": 0.9,
-        "a_chi": 1.2,
-        "b_chi": 2,
+        "a_chi": 0.01,
+        "b_chi": 5,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -190,10 +190,10 @@ if __name__ == "__main__":
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
-        "r":  0.0016515813,
+        "r":  0.005,#0.0016515813,
         "mu": 1,
         "alpha": 0.5,
-        "zeta":0.9
+        "zeta":0.3
     }
 }
     
@@ -205,6 +205,6 @@ if __name__ == "__main__":
     Will also plot stuff at the same time for convieniency
     """
     RUN_PLOT = 1
-
+    print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
