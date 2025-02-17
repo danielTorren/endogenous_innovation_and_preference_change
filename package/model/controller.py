@@ -190,8 +190,9 @@ class Controller:
         r = self.parameters_vehicle_user["r"]
         delta = self.parameters_ICE["delta"]
         if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
+            print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
-        print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
+        
 
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         

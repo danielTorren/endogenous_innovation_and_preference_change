@@ -57,8 +57,8 @@ if __name__ == "__main__":
         "init_vals_poisson_seed": 95,
         "init_vals_range_seed": 77
     },
-    "ev_research_start_time":96,
-    "ev_production_start_time": 120,
+    "ev_research_start_time":60,
+    "ev_production_start_time": 96,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
@@ -102,7 +102,7 @@ if __name__ == "__main__":
             "Carbon_price":{
                 "Carbon_price_init": 0,
                 "Carbon_price": 1,
-                "Carbon_price_state": "flat"
+                "Carbon_price_state": "linear"
             },
             "Discriminatory_corporate_tax":0.95,
             "Electricity_subsidy":0.99,
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[0,0],
         "production_emissions":10,
-        "delta": 0.002,
+        "delta": 0.001,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 40,
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 4,
         "rho":[0,0,0],
-        "delta": 0.004,
+        "delta": 0.001,
         "delta_P":0.0087,
         "production_emissions":14,
         "transportType": 3,
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":5000,
         "chi_max": 0.9,
-        "a_chi": 2,
+        "a_chi": 1,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -186,14 +186,14 @@ if __name__ == "__main__":
         "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa":1,
+        "kappa": 1,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
-        "r":  0.005,#0.0016515813,
+        "r":  0.0016515813,
         "mu": 1,
         "alpha": 0.5,
-        "zeta":0.1
+        "zeta":0.2
     }
 }
     
