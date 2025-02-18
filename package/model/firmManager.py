@@ -404,6 +404,7 @@ class Firm_Manager:
         self.history_quality_EV = []
         self.history_efficiency_EV = []
         self.history_production_cost_EV = []
+        self.history_battery_EV = []
 
 
     def save_timeseries_data_firm_manager(self):
@@ -441,6 +442,7 @@ class Firm_Manager:
         self.quality_vals_EV = []
         self.efficiency_vals_EV = []
         self.production_cost_vals_EV = []
+        self.battery_EV = []
 
         for car in self.cars_on_sale_all_firms:
             if car.transportType == 2:#ICE 
@@ -451,15 +453,19 @@ class Firm_Manager:
                 self.quality_vals_EV.append(car.Quality_a_t)#done here for efficiency
                 self.efficiency_vals_EV.append(car.Eff_omega_a_t)
                 self.production_cost_vals_EV.append(car.ProdCost_t)
+                self.battery_EV.append(car.B)
+
 
         if self.quality_vals_EV:
             self.history_quality_EV.append(self.quality_vals_EV)
             self.history_efficiency_EV.append(self.efficiency_vals_EV)
             self.history_production_cost_EV.append(self.production_cost_vals_EV)
+            self.history_battery_EV.append(self.battery_EV)
         else:
             self.history_quality_EV.append([np.nan])
             self.history_efficiency_EV.append([np.nan])
             self.history_production_cost_EV.append([np.nan])
+            self.history_battery_EV.append([np.nan])
 
         if self.quality_vals_ICE:
             self.history_quality_ICE.append(self.quality_vals_ICE)

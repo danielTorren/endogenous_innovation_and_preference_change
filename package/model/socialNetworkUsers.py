@@ -784,6 +784,7 @@ class Social_Network:
         self.buy_second_hand_car = 0
 
         self.second_hand_merchant_price_paid = []
+        self.battery_EV = []
     
     def update_counters(self, person_index, vehicle_chosen, driven_distance, utility):
         #ADD TOTAL EMISSIONS     
@@ -833,6 +834,7 @@ class Social_Network:
             self.quality_vals_EV.append(vehicle_chosen.Quality_a_t)#done here for efficiency
             self.efficiency_vals_EV.append(vehicle_chosen.Eff_omega_a_t)
             self.production_cost_vals_EV.append(vehicle_chosen.ProdCost_t)
+            self.battery_EV.append(vehicle_chosen.B)
             self.total_driving_emissions_EV += car_driving_emissions 
             self.EV_users += 1
             
@@ -878,6 +880,7 @@ class Social_Network:
         self.history_quality_EV = []
         self.history_efficiency_EV = []
         self.history_production_cost_EV = []
+        self.history_battery_EV = []
 
         self.history_attributes_EV_cars_on_sale_all_firms = []
         self.history_attributes_ICE_cars_on_sale_all_firms = []
@@ -1046,11 +1049,13 @@ class Social_Network:
             self.history_quality_EV.append(self.quality_vals_EV)
             self.history_efficiency_EV.append(self.efficiency_vals_EV)
             self.history_production_cost_EV.append(self.production_cost_vals_EV)
+            self.history_battery_EV.append(self.battery_EV)
             self.history_mean_efficiency_vals_EV.append(np.mean(self.efficiency_vals_EV))
         else:
             self.history_quality_EV.append([np.nan])
             self.history_efficiency_EV.append([np.nan])
             self.history_production_cost_EV.append([np.nan])
+            self.history_battery_EV.append([np.nan])
             self.history_mean_efficiency_vals_EV.append([np.nan])
 
         data_ev = [[vehicle.Quality_a_t, vehicle.Eff_omega_a_t, vehicle.ProdCost_t]  for vehicle in self.all_vehicles_available if vehicle.transportType == 3]

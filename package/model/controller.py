@@ -282,6 +282,8 @@ class Controller:
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
 
+        
+
     def generate_beta_values_quintiles(self,n, quintile_incomes, median_beta):
         """
         Generate a list of beta values for n agents based on quintile incomes.

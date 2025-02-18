@@ -190,7 +190,7 @@ if __name__ == "__main__":
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
-        "r":  0.0016515813,
+        "r": 0.00643403011,#0.0016515813,
         "mu": 1,
         "alpha": 0.5,
         "zeta":0.2
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
