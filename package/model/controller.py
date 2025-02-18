@@ -206,18 +206,15 @@ class Controller:
         #quit()
 
         ####################################################################################################################################
-        #NU
-        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_range_seed"])
-        self.WTP_R_mean = self.parameters_social_network["WTP_R_mean"]
-        self.WTP_R_sd = self.parameters_social_network["WTP_R_sd"]     
-        WTP_R_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_R_mean, scale = self.WTP_R_sd, size = self.num_individuals)
-        self.nu_vec = np.clip(WTP_R_vec_unclipped, a_min = self.parameters_social_network["nu_epsilon"], a_max = np.inf)     
+        #NU  
+        self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
         print("nu mean",np.mean(self.nu_vec))
+        
 
         ####################################################################################################################################
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
-        median_beta = self.calc_beta_s()
+        median_beta = self.calc_beta_median()
         self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
         #self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
@@ -299,6 +296,7 @@ class Controller:
         """
         # Calculate beta values for each quintile
         median_income = quintile_incomes[2]
+        print("median_income", median_income)
         beta_vals = [median_beta*median_income/income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
@@ -323,7 +321,7 @@ class Controller:
         
         return np.asarray(beta_list)
 
-    def calc_beta_s(self):
+    def calc_beta_median(self):
         """
         Calculate beta_s based on the given equation.
         """
@@ -361,12 +359,12 @@ class Controller:
         
         log_term = np.log(W * (kappa * (P - C) - 1))
         term2 = (log_term * (1 / kappa)) + P + gamma * E
-        term3 = ((1 + r) * (nu * (B * omega)**zeta)) / (1 + r - (1 - delta)**zeta)
+        term3 = ((1 + r) * (nu*(B*omega)**zeta)) / (1 + r - (1 - delta)**zeta)
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
         
         # Combine all terms to calculate beta_s
         beta_s = term1 * (term2 + term3 + term4)
-        print("beta_s", beta_s)
+        print("beta_median", beta_s)
         #quit()
         
         return beta_s

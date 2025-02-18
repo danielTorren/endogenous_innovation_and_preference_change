@@ -330,6 +330,7 @@ def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network
     # Save and show the plot
     save_and_show(fig, fileName, "vehicle_attribute_time_series_ICE_EV", dpi)
 
+
 def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, time_series):
     """
     Helper function to plot a single attribute (Quality or Production Cost).
@@ -417,16 +418,92 @@ def plot_single_efficiency(ax, title, attr_name, base_params, social_network, ti
     add_vertical_lines(ax, base_params)
 
 
+def plot_vehicle_attribute_time_series_by_type_split_snap(base_params, social_network, time_series, fileName, dpi=600):
+    attributes = {
+        "Quality": ("history_quality_ICE", "history_quality_EV"),
+        "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV"),
+    }
+    efficiency_attributes = ("history_efficiency_ICE", "history_efficiency_EV")
+
+    snapshot_steps = [0, 200, 300, 400, len(time_series) - 1]
+
+    fig = plt.figure(figsize=(15, 10))
+    gs = fig.add_gridspec(2, 2, height_ratios=[2, 1])
+
+    ax_quality = fig.add_subplot(gs[0, 0])
+    plot_attribute_histogram_snapshots(ax_quality, "Quality", attributes["Quality"], base_params, social_network, time_series, snapshot_steps)
+
+    ax_cost = fig.add_subplot(gs[0, 1])
+    plot_attribute_histogram_snapshots(ax_cost, "Production Cost", attributes["Production Cost"], base_params, social_network, time_series, snapshot_steps)
+
+    ax_efficiency_ice = fig.add_subplot(gs[1, 0])
+    plot_single_efficiency_histogram_snapshots(
+        ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, social_network, time_series, snapshot_steps, color="blue"
+    )
+
+    ax_efficiency_ev = fig.add_subplot(gs[1, 1])
+    plot_single_efficiency_histogram_snapshots(
+        ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, social_network, time_series, snapshot_steps, color="green"
+    )
+
+    fig.suptitle("Vehicle Attributes (ICE and EV) - Histograms at Snapshots")
+    plt.tight_layout()
+    save_and_show(fig, fileName, "vehicle_attribute_histograms_snapshots", dpi)
+
+def plot_attribute_histogram_snapshots(ax, attribute_name, attr_names, base_params, social_network, time_series, snapshot_steps):
+    add_vertical_lines(ax, base_params)
+
+    ice_attr, ev_attr = attr_names
+    ice_history = getattr(social_network, ice_attr, [])
+    ev_history = getattr(social_network, ev_attr, [])
+
+    for step in snapshot_steps:
+        if step < len(ice_history) and ice_history[step]:
+            ice_data = np.array(ice_history[step])
+            ice_data = ice_data[~np.isnan(ice_data)]  # Filter out NaN values
+            if ice_data.size > 0:
+                ax.hist(ice_data, bins=20, alpha=0.5, label=f"ICE {attribute_name} (t={time_series[step]})", color="blue")
+
+        if step < len(ev_history) and ev_history[step]:
+            ev_data = np.array(ev_history[step])
+            ev_data = ev_data[~np.isnan(ev_data)]  # Filter out NaN values
+            if ev_data.size > 0:
+                ax.hist(ev_data, bins=20, alpha=0.5, label=f"EV {attribute_name} (t={time_series[step]})", color="green")
+
+    ax.set_title(f"{attribute_name} at Snapshots")
+    ax.set_xlabel(attribute_name)
+    ax.set_ylabel("Frequency")
+    ax.grid()
+    ax.legend()
+
+def plot_single_efficiency_histogram_snapshots(ax, title, attr_name, base_params, social_network, time_series, snapshot_steps, color):
+    add_vertical_lines(ax, base_params)
+
+    history = getattr(social_network, attr_name, [])
+
+    for step in snapshot_steps:
+        if step < len(history) and history[step]:
+            efficiency_data = np.array(history[step])
+            efficiency_data = efficiency_data[~np.isnan(efficiency_data)]  # Filter out NaN values
+            if efficiency_data.size > 0:
+                ax.hist(efficiency_data, bins=20, alpha=0.5, label=f"{title} (t={time_series[step]})", color=color)
+
+    ax.set_title(f"{title} at Snapshots")
+    ax.set_xlabel("Efficiency")
+    ax.set_ylabel("Frequency")
+    ax.grid()
+    ax.legend()
+
+
 def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi=600):
     """
-    Plots time series of Quality, Efficiency (separate for ICE and EV), Production Cost for both ICE and EV,
-    and Battery (for EV) with means and confidence intervals.
+    Plots time series of Quality, Efficiency (separate for ICE and EV), 
+    and Production Cost for both ICE and EV with means and confidence intervals.
 
     Args:
-        base_params (object): Contains base parameters for the simulation.
-        firm_manager (object): Contains the history of vehicle attributes for ICE and EV.
+        social_network (object): Contains the history of vehicle attributes for ICE and EV.
         time_series (list): Time steps to plot on the x-axis.
-        fileName (str): Directory or file name to save the plots.
+        file_name (str): Directory or file name to save the plots.
         dpi (int): Resolution for saving the plots.
     """
     # Attributes for ICE and EV
@@ -435,10 +512,9 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
         "Production Cost": ("history_production_cost_ICE", "history_production_cost_EV"),
     }
     efficiency_attributes = ("history_efficiency_ICE", "history_efficiency_EV")
-    battery_attribute = "history_battery_EV"  # New attribute for EV battery
 
-    fig = plt.figure(figsize=(10, 10))  # Increase figure size to accommodate the new subplot
-    gs = fig.add_gridspec(3, 2, height_ratios=[2, 1, 1])  # Create a 3x2 grid layout
+    fig = plt.figure(figsize=(10, 7))
+    gs = fig.add_gridspec(2, 2, height_ratios=[2, 1])  # Create a 2x2 grid layout
 
     # Plot Quality (big plot, top-left)
     ax_quality = fig.add_subplot(gs[0, 0])
@@ -448,22 +524,16 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     ax_cost = fig.add_subplot(gs[0, 1])
     plot_attribute(ax_cost, "Production Cost", attributes["Production Cost"], base_params, firm_manager, time_series)
 
-    # Plot Efficiency ICE (middle-left)
+    # Plot Efficiency ICE (bottom-left)
     ax_efficiency_ice = fig.add_subplot(gs[1, 0])
     plot_single_efficiency(
         ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, firm_manager, time_series, color="blue"
     )
 
-    # Plot Efficiency EV (middle-right)
+    # Plot Efficiency EV (bottom-right)
     ax_efficiency_ev = fig.add_subplot(gs[1, 1])
     plot_single_efficiency(
         ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, firm_manager, time_series, color="green"
-    )
-
-    # Plot Battery EV (bottom-left)
-    ax_battery_ev = fig.add_subplot(gs[2, 0])
-    plot_single_attribute(
-        ax_battery_ev, "Battery (EV)", battery_attribute, base_params, firm_manager, time_series, color="orange"
     )
 
     fig.suptitle("Prod Vehicle Attributes (ICE and EV) Over Time")
@@ -472,35 +542,6 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     # Save and show the plot
     save_and_show(fig, fileName, "vehicle_prod_attribute_time_series_ICE_EV", dpi)
 
-def plot_single_attribute(ax, title, attribute, base_params, firm_manager, time_series, color):
-    """
-    Helper function to plot a single attribute with mean and confidence intervals.
-
-    Args:
-        ax (matplotlib.axes.Axes): The axis to plot on.
-        title (str): Title of the plot.
-        attribute (str): Attribute to plot (e.g., "history_battery_EV").
-        base_params (object): Contains base parameters for the simulation.
-        firm_manager (object): Contains the history of vehicle attributes.
-        time_series (list): Time steps to plot on the x-axis.
-        color (str): Color for the plot.
-    """
-    # Extract data for the attribute
-    data = getattr(firm_manager, attribute)
-
-    # Calculate mean and confidence intervals
-    mean = np.mean(data, axis=1)
-    lower = np.percentile(data, 2.5, axis=1)
-    upper = np.percentile(data, 97.5, axis=1)
-
-    # Plot the mean and confidence intervals
-    ax.plot(time_series, mean, color=color, label=title)
-    ax.fill_between(time_series, lower, upper, color=color, alpha=0.2)
-
-    ax.set_title(title)
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Value")
-    ax.legend()
 
 def plot_research_time_series_multiple_firms(firms, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -2813,8 +2854,7 @@ def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600):
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    print()
-    
+
     data = np.asarray(firm_manager.history_W).T
     for i, data_segment in enumerate(data):
         ax.plot(time_series, data_segment, label = i)
@@ -2853,6 +2893,53 @@ def plot_market_concentration_yearly(firm_manager, time_series, fileName, dpi=60
     format_plot(ax, "Yearly Average Market Concentration", "Year", "Market Concentration", legend=False)
     save_and_show(fig, fileName, "market_concentration_yearly", dpi)
 
+def plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi=600):
+
+    used_history = social_network.history_battery_EV
+    prod_history = firm_manager.history_battery_EV
+    # Calculate means and confidence intervals
+    prod_means = [np.mean(values) if values else np.nan for values in prod_history]
+    prod_max = [np.max(values) if values else np.nan for values in prod_history]
+    prod_min = [np.min(values) if values else np.nan for values in prod_history]
+    prod_confidence_intervals = [1.96 * sem(values) if values else 0 for values in prod_history]
+
+    used_means = [np.mean(values) if values else np.nan for values in used_history]
+    used_max = [np.max(values) if values else np.nan for values in used_history]
+    used_min = [np.min(values) if values else np.nan for values in used_history]
+    used_confidence_intervals = [1.96 * sem(values) if values else 0 for values in used_history]
+
+    #print(len(ice_means), len(ice_means ), len(ev_means))
+    #quit()
+    # Plot ICE data
+    fig, axes = plt.subplots(figsize=(10, 6))
+
+    ax1 = axes[0]
+    ax2 = axes[1]
+    #prod
+    ax1.plot(time_series, prod_means, label=f"Produced", color="blue")
+    ax1.plot(time_series, prod_max, color="blue", linestyle = "--")
+    ax1.plot(time_series, prod_min, color="blue", linestyle = "--")
+    ax1.fill_between(
+        time_series,
+        np.array(prod_means) - np.array(prod_confidence_intervals),
+        np.array(prod_means) + np.array(prod_confidence_intervals),
+        color="blue", alpha=0.2
+    )
+    #used
+    ax2.plot(time_series, used_means, label=f"Used", color="orange")
+    ax2.plot(time_series, used_max, color="orange", linestyle = "--")
+    ax2.plot(time_series, used_min, color="orange", linestyle = "--")
+    ax2.fill_between(
+        time_series,
+        np.array(used_means) - np.array(used_confidence_intervals),
+        np.array(used_means) + np.array(used_confidence_intervals),
+        color="orange", alpha=0.2
+    )
+    add_vertical_lines(ax1, base_params)
+    add_vertical_lines(ax2, base_params)
+    save_and_show(fig, fileName, "battery_evolution", dpi)
+
+
 # Sample main function
 def main(fileName, dpi=600):
     try:
@@ -2878,11 +2965,11 @@ def main(fileName, dpi=600):
 
 
     #KEY PLOTS
-    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
-    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+
+    plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
-    emissions_decomposed(social_network, time_series, fileName, dpi)
+    #emissions_decomposed(social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
     plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName)
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
@@ -2893,12 +2980,14 @@ def main(fileName, dpi=600):
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
-    plot_market_concentration(firm_manager, time_series, fileName, dpi)
+    #plot_market_concentration(firm_manager, time_series, fileName, dpi)
     plot_market_concentration_yearly(firm_manager, time_series, fileName, dpi)
     #plot_history_num_cars_on_sale(firm_manager, time_series, fileName)
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    #plot_segment_count_grid(firm_manager, time_series, fileName)
-    #plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_segment_count_grid(firm_manager, time_series, fileName)
+    plot_car_sale_prop(social_network, time_series, fileName, dpi)
+    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
     
     #plot_history_W(base_params, firm_manager,time_series,  fileName)
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
@@ -2999,4 +3088,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_11_22_07__18_02_2025")
+    main("results/single_experiment_11_48_46__18_02_2025")

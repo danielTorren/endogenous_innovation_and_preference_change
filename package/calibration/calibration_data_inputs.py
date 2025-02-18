@@ -33,9 +33,12 @@ def load_in_calibration_data():
     dec_2017_relative_value = CPI_california_df.loc["2017-12-01", "2020 relative Weighted Average"]
     print("dec_2017_relative_value (For Gamma)",dec_2017_relative_value)
     # If you want the normalized value relative to 2020
-    dec_2015_relative_value = CPI_california_df.loc["2015-01-01", "2020 relative Weighted Average"]
-    print("dec_2015_relative_value (For Costs Grieco)",dec_2015_relative_value)
-    quit()
+    jan_2015_relative_value = CPI_california_df.loc["2015-01-01", "2020 relative Weighted Average"]
+    print("dec_2015_relative_value (For Costs Grieco)",jan_2015_relative_value)
+
+    sept_2009_relative_value = CPI_california_df.loc["2009-09-01", "2020 relative Weighted Average"]
+    print("sept_2009_relative_value (For Battery )",sept_2009_relative_value)
+    
 
     #Gasoline Price
     gas_price_california_df = pd.read_excel("package/calibration_data/gas_price_california.xlsx") 
@@ -222,8 +225,8 @@ if __name__ == "__main__":
 
     calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
 
-    scale_dollars = 0.001
-    scale_co2 = 0.001
+    scale_dollars = 0.0001#Tens of thousands
+    scale_co2 = 0.0001
 
     calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()*scale_dollars
     calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()*scale_dollars
