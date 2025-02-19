@@ -20,7 +20,7 @@ import multiprocessing
 
 def convert_data(data_to_fit, base_params):
 
-    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2000 to 2022
+    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
     # Define the starting and ending indices for the years 2010 to 2022
     start_year = 2010
     end_year = 2022
@@ -30,7 +30,7 @@ def convert_data(data_to_fit, base_params):
 
     #print("filtered_data", filtered_data)
     for year in range(start_year, end_year + 1):
-        year_start_index = (year - 2000) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
+        year_start_index = (year - 2001) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
         start_idx = year_start_index + 9  # October index
         end_idx = year_start_index + 12  # December index (exclusive)
         # Ensure the indices are within bounds

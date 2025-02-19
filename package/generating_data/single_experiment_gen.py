@@ -23,7 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[420])
+    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[408])
     print("uptake end",controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
     print("mean price", controller.social_network.history_mean_price[-1])
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     base_params = {
     "seed_repetitions": 1,
     "duration_burn_in": 144,
-    "duration_no_carbon_price": 276,
+    "duration_no_carbon_price": 264,
     "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
@@ -187,10 +187,10 @@ if __name__ == "__main__":
         "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa": 10,
+        "kappa": 1,
         "U_segments_init": 0,
         "W_calibration":1e20,
-        "min_W": 1e-5,
+        "min_W": 1,
         "r": 0.0016515813,#0.00643403011
         "mu": 1,
         "alpha": 0.5,

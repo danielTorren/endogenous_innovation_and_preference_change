@@ -16,7 +16,7 @@ from copy import deepcopy
 # modules
 ####################################################################################################################################################
 #LOAD IN THE DATA TIME SERIES
-#THE IDEA HERE IS THAT I LOAD IN ALL THE TIME SERIES DATA FOR CALIFORNIA FROM 2000 TO 2024 WHere i have it
+#THE IDEA HERE IS THAT I LOAD IN ALL THE TIME SERIES DATA FOR CALIFORNIA FROM 2001 TO 2022 WHere i have it
 
 #####################################################################################################################################################
 ####SINGLE SHOT RUN
