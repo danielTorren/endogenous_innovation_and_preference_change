@@ -50,7 +50,7 @@ def update_base_params_with_seed(base_params, seed):
             "network_structure_seed", "init_vals_environmental_seed",
             "init_vals_innovative_seed", "init_vals_price_seed",
             "innovation_seed", "landscape_seed_EV", "choice_seed",
-            "remove_seed", "init_vals_poisson_seed"
+            "remove_seed", "init_vals_poisson_seed","init_vals_range_seed"
         ])
     }
     return base_params
