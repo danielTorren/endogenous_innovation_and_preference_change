@@ -193,12 +193,12 @@ class Controller:
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = self.WTP_E_vec*omega_mean*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
-        print("gamma mean ",np.mean(self.gamma_vec))
+
 
         ####################################################################################################################################
         #NU  
         self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
-        print("nu mean",np.mean(self.nu_vec))
+
         
         ####################################################################################################################################
         #BETA
@@ -254,7 +254,7 @@ class Controller:
             beta_lower = self.beta_bins[beta_idx]
             beta_upper = self.beta_bins[beta_idx + 1]
             beta_midpoint = (beta_lower + beta_upper) / 2
-            #print("beta_midpoint", beta_midpoint)
+
             beta_segment_vals_set.add(beta_midpoint)
             
             beta_values.append(beta_midpoint)
@@ -263,7 +263,6 @@ class Controller:
             gamma_value = gamma_val_upper if gamma_idx == 1 else gamma_val_lower
             gamma_values.append(gamma_value)
 
-        #print("beta_midpoint, segments", self.num_beta_segments, beta_segment_vals_set)
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
 
@@ -281,10 +280,9 @@ class Controller:
             list: A list of beta values of length n.
         """
         # Calculate beta values for each quintile
-        #print("quintile_incomes", quintile_incomes)
-        #quit()
+
         median_income = quintile_incomes[2]
-        print("median_income", median_income)
+
         beta_vals = [median_beta*median_income/income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
@@ -351,8 +349,7 @@ class Controller:
         
         # Combine all terms to calculate beta_s
         beta_s = (1/(Q_mt**alpha))*(term2 + term3 + term4)
-        print("beta_median", beta_s)
-        #quit()
+
         
         return beta_s
 
@@ -490,14 +487,13 @@ class Controller:
             self.future_carbon_price_state = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_state"]
             self.future_carbon_price_init = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_init"]
             self.future_carbon_price_policy = self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"]
-            #print("self.future_carbon_price_policy", self.future_carbon_price_policy)
         else:
             self.future_carbon_price_state = 0
             self.future_carbon_price_init = 0
             self.future_carbon_price_policy = 0
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
-        #print("self.carbon_price_time_series", self.carbon_price_time_series)
+
         # Discriminatory_corporate_tax calculation
         if self.Discriminatory_corporate_tax_state:
             self.Discriminatory_corporate_tax = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]
@@ -820,9 +816,7 @@ class Controller:
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
-        #if self.t_controller > 420:
-        #    print("self.future_carbon_price_policy self.gas_price", self.future_carbon_price_policy, self.gas_price)
-        #self.gas_price = self.gas_price_california_vec[self.t_controller]
+
         self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
 
@@ -891,11 +885,7 @@ class Controller:
         self.manage_scenario()
         self.manage_policies() 
 
-        #print("self.state", self.Carbon_price_state)
-        #print("self.future_carbon_price_policy", self.future_carbon_price_policy)
-        #print("self.gas_price_series_future", self.gas_price_series_future[0], self.gas_price_series_future.shape)
-        #print("self.pre_future_gas_price_california_vec", self.pre_future_gas_price_california_vec[-1], self.pre_future_gas_price_california_vec.shape)
-        #quit()
+   
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 

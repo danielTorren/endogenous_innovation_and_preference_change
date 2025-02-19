@@ -187,9 +187,9 @@ if __name__ == "__main__":
         "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa": 1,
+        "kappa": 10,
         "U_segments_init": 0,
-        "W_calibration":1e78,
+        "W_calibration":1e20,
         "min_W": 1e-5,
         "r": 0.0016515813,#0.00643403011
         "mu": 1,
