@@ -153,7 +153,7 @@
         "kappa": 1,
         "U_segments_init": 0,
         "W_calibration":1e20,
-        "min_W": 1e-5,
+        "min_W": 1,
         "r": 0.0016515813,
         "mu": 1,
         "alpha": 0.5,
