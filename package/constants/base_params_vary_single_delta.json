@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 2,
+    "seed_repetitions": 3,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
     "duration_future": 156,
@@ -17,15 +17,16 @@
         "landscape_seed_EV": 11, 
         "choice_seed": 9,
         "remove_seed": 48,
-        "init_vals_poisson_seed": 95
+        "init_vals_poisson_seed": 95,
+        "init_vals_range_seed": 77
     },
-    "ev_research_start_time":96,
-    "ev_production_start_time": 120,
+    "ev_research_start_time":60,
+    "ev_production_start_time": 96,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 120,
-        "rebate": 10,
-        "used_rebate": 1
+        "rebate": 1,
+        "used_rebate": 0.1
     },
     "parameters_scenarios":{
         "States":{
@@ -52,7 +53,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -67,10 +68,10 @@
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
-            "Electricity_subsidy":1,
-            "Adoption_subsidy":200,
-            "Adoption_subsidy_used":20,
-            "Production_subsidy":20,
+            "Electricity_subsidy":0.99,
+            "Adoption_subsidy":2,
+            "Adoption_subsidy_used":2,
+            "Production_subsidy":2,
             "Research_subsidy":20
         }
     },
@@ -78,41 +79,45 @@
         "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 0.6698
+        "scrap_price": 0.06698
     },
     "parameters_ICE":{
         "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 3,
-        "rho":[0,0],
-        "production_emissions":10,
-        "delta": 0.00058,
+        "rho":[1,0,0],
+        "production_emissions":1,
+        "delta": 0.001,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 40,
-        "min_Price": 20,
-        "max_Price": 100,
+        "mean_Price": 4,
+        "min_Price": 2,
+        "max_Price": 10,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
-        "min_Cost": 12.91,
-        "max_Cost": 43.72,
         "min_Quality": 0,
-        "max_Quality": 1e-7
+        "max_Quality": 1,
+        "fuel_tank": 674,
+        "min_Cost": 1.291,
+        "max_Cost": 4.372
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
         "N": 15,
         "K": 3,
-        "A": 3,
-        "rho":[0,0],
-        "delta": 0.000435,
+        "A": 4,
+        "rho":[1,0,0, 0.5],
+        "delta": 0.001,
         "delta_P":0.0087,
-        "production_emissions":14,
+        "production_emissions":1.4,
         "transportType": 3,
         "min_Efficiency": 2.73,
         "max_Efficiency": 9.73,
-        "ratio_Q": 0.5
+        "min_Battery_size": 0,
+        "max_Battery_size": 150,
+        "min_Cost": 1.291,
+        "max_Cost": 6
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -122,33 +127,36 @@
         "num_beta_segments": 4
     },
     "parameters_firm":{
-        "lambda": 1e-4,
+        "lambda": 1e-5,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
-        "min profit": 0.1
+        "min profit": 0.01
     },
     "parameters_social_network":{
-        "num_individuals": 3000,
+        "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.7,
-        "b_chi": 2,
+        "a_chi": 1,
+        "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
+        "nu":  0.117365,
         "gamma_epsilon": 1e-5,
+        "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.99
+        "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa":1,
+        "kappa": 1,
         "U_segments_init": 0,
-        "W_calibration":1e20,
+        "W_calibration":1e78,
         "min_W": 1e-5,
-        "r":  0.0016515813,
+        "r": 0.0016515813,
         "mu": 1,
-        "alpha": 0.5
+        "alpha": 0.5,
+        "zeta":0.29697
     }
 }

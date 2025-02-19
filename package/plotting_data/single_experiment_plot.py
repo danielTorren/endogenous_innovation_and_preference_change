@@ -2908,13 +2908,36 @@ def plot_battery(base_params, firm_manager,social_network,time_series,  fileName
     used_min = [np.min(values) if values else np.nan for values in used_history]
     used_confidence_intervals = [1.96 * sem(values) if values else 0 for values in used_history]
 
+    eff_used_history = social_network.history_efficiency_EV
+    eff_prod_history = firm_manager.history_efficiency_EV
+
+    # Calculate range_prod and range_used
+    range_prod = [np.array(battery) * np.array(eff) if battery and eff else np.nan 
+                for battery, eff in zip(prod_history, eff_prod_history)]
+
+    range_used = [np.array(battery) * np.array(eff) if battery and eff else np.nan 
+                for battery, eff in zip(used_history, eff_used_history)]
+
+    # Calculate means, max, min, and confidence intervals for range_prod
+    range_prod_means = [np.mean(values) if not np.isnan(values).all() else np.nan for values in range_prod]
+    range_prod_max = [np.max(values) if not np.isnan(values).all() else np.nan for values in range_prod]
+    range_prod_min = [np.min(values) if not np.isnan(values).all() else np.nan for values in range_prod]
+    range_prod_confidence_intervals = [1.96 * sem(values) if values.size > 0 and not np.isnan(values).all() else 0 for values in range_prod]
+
+    # Calculate means, max, min, and confidence intervals for range_used
+    range_used_means = [np.mean(values) if not np.isnan(values).all() else np.nan for values in range_used]
+    range_used_max = [np.max(values) if not np.isnan(values).all() else np.nan for values in range_used]
+    range_used_min = [np.min(values) if not np.isnan(values).all() else np.nan for values in range_used]
+    range_used_confidence_intervals = [1.96 * sem(values) if values.size > 0 and not np.isnan(values).all() else 0 for values in range_used]
     #print(len(ice_means), len(ice_means ), len(ev_means))
     #quit()
     # Plot ICE data
-    fig, axes = plt.subplots(figsize=(10, 6))
+    fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(10, 6))
 
-    ax1 = axes[0]
-    ax2 = axes[1]
+    ax1 = axes[0][0]
+    ax2 = axes[0][1]
+    ax3 = axes[1][0]
+    ax4 = axes[1][1]
     #prod
     ax1.plot(time_series, prod_means, label=f"Produced", color="blue")
     ax1.plot(time_series, prod_max, color="blue", linestyle = "--")
@@ -2925,6 +2948,10 @@ def plot_battery(base_params, firm_manager,social_network,time_series,  fileName
         np.array(prod_means) + np.array(prod_confidence_intervals),
         color="blue", alpha=0.2
     )
+    ax1.set_ylabel("Battery Size (kWhr)")
+    ax1.set_xlabel("Time Step")
+    ax1.set_title("Production")
+
     #used
     ax2.plot(time_series, used_means, label=f"Used", color="orange")
     ax2.plot(time_series, used_max, color="orange", linestyle = "--")
@@ -2935,8 +2962,42 @@ def plot_battery(base_params, firm_manager,social_network,time_series,  fileName
         np.array(used_means) + np.array(used_confidence_intervals),
         color="orange", alpha=0.2
     )
+    #ax1.set_ylabel("Battery Size (kWhr)")
+    ax2.set_xlabel("Time Step")
+    ax2.set_title("In use")
     add_vertical_lines(ax1, base_params)
     add_vertical_lines(ax2, base_params)
+
+    #prod
+    ax3.plot(time_series, range_prod_means, label=f"Produced", color="blue")
+    ax3.plot(time_series, range_prod_max, color="blue", linestyle = "--")
+    ax3.plot(time_series, range_prod_min, color="blue", linestyle = "--")
+    ax3.fill_between(
+        time_series,
+        np.array(range_prod_means) - np.array(range_prod_confidence_intervals),
+        np.array(range_prod_means) + np.array(range_prod_confidence_intervals),
+        color="blue", alpha=0.2
+    )
+    ax3.set_ylabel("EV Range (km)")
+    ax3.set_xlabel("Time Step")
+    #ax3.set_title("Production")
+
+    #used
+    ax4.plot(time_series, range_used_means, label=f"Used", color="orange")
+    ax4.plot(time_series, range_used_max, color="orange", linestyle = "--")
+    ax4.plot(time_series, range_used_min, color="orange", linestyle = "--")
+    ax4.fill_between(
+        time_series,
+        np.array(range_used_means) - np.array(range_used_confidence_intervals),
+        np.array(range_used_means) + np.array(range_used_confidence_intervals),
+        color="orange", alpha=0.2
+    )
+    #ax1.set_ylabel("Battery Size (kWhr)")
+    ax4.set_xlabel("Time Step")
+    #ax4.set_title("In use")
+    add_vertical_lines(ax3, base_params)
+    add_vertical_lines(ax4, base_params)
+
     save_and_show(fig, fileName, "battery_evolution", dpi)
 
 
@@ -2989,7 +3050,7 @@ def main(fileName, dpi=600):
     plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
     plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
     
-    #plot_history_W(base_params, firm_manager,time_series,  fileName)
+    plot_history_W(base_params, firm_manager,time_series,  fileName)
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
     #plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
     #plot_history_second_hand_merchant_offer_price(base_params,social_network, time_series, fileName, dpi)
@@ -3088,4 +3149,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_11_48_46__18_02_2025")
+    main("results/single_experiment_11_44_21__19_02_2025")

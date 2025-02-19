@@ -12,7 +12,6 @@ def load_in_calibration_data():
     kWr_per_MJ = 0.2777777778
     gasoline_Kgco2_per_Kilowatt_Hour = gasoline_Kgco2_per_MJ/kWr_per_MJ
     #print("gasoline_Kgco2_per_Kilowatt_Hour", gasoline_Kgco2_per_Kilowatt_Hour)
-    #quit()
     
     #CPI
     CPI_california_df = pd.read_excel("package/calibration_data/CPI_california.xlsx") 
@@ -38,6 +37,9 @@ def load_in_calibration_data():
 
     sept_2009_relative_value = CPI_california_df.loc["2009-09-01", "2020 relative Weighted Average"]
     print("sept_2009_relative_value (For Battery )",sept_2009_relative_value)
+
+    jan_2018_relative_value = CPI_california_df.loc["2018-01-01", "2020 relative Weighted Average"]
+    print("jan_2018_relative_value (For Cost)",jan_2018_relative_value)
     
 
     #Gasoline Price
@@ -225,8 +227,8 @@ if __name__ == "__main__":
 
     calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
 
-    scale_dollars = 0.0001#Tens of thousands
-    scale_co2 = 0.0001
+    scale_dollars = 0.00001#Tens of thousands dollars
+    scale_co2 = 0.00001#Tens of thousands kr co2
 
     calibration_data_input["gas_price_california_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour"].to_numpy()*scale_dollars
     calibration_data_input["electricity_price_vec"] = calibration_data_output["Real Dollars per Kilowatt-Hour (City Average)"].to_numpy()*scale_dollars

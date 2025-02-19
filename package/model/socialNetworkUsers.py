@@ -525,7 +525,7 @@ class Social_Network:
         Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
         """
 
-        U_a_i_t_vec = ((1+self.r)*(beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha))/self.r + ((1+self.r)*(nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta))/(1 + self.r - (1- vehicle_dict_vecs["delta"])**self.zeta) - d_vec*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_vec = beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - d_vec*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
         
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
@@ -711,8 +711,7 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        #U_a_i_t_matrix = ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])))/self.r - price_difference_T - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r-vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-        U_a_i_t_matrix  = -price_difference_T + ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha))/self.r + ((1+self.r)*(nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta))/(1 + self.r - (1- vehicle_dict_vecs["delta"])**self.zeta) - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_matrix  = -price_difference_T + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
         
         return U_a_i_t_matrix
     
@@ -726,7 +725,7 @@ class Social_Network:
         price_difference_T = price_difference.T
 
         #U_a_i_t_matrix = ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta))/self.r - price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r-vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-        U_a_i_t_matrix  = -price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha))/self.r + ((1+self.r)*(nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta))/(1 + self.r - (1- vehicle_dict_vecs["delta"])**self.zeta) - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_matrix  = -price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
 
         return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)
     

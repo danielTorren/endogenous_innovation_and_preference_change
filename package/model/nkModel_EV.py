@@ -15,7 +15,7 @@ class NKModel:
         self.N = int(round(parameters["N"]))
         self.K = int(round(parameters["K"]))
         self.A = parameters["A"]
-        self.rho = [1] + parameters["rho"]  # Adding 1 as the first correlation coefficient
+        self.rho = parameters["rho"] 
 
         self.random_state_NK = np.random.RandomState(parameters["landscape_seed"])  # Local random state
 
@@ -54,8 +54,7 @@ class NKModel:
     def calc_present_utility_minimum_single(self, Q, omega, prod_cost, B):
         """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
         cost_multiplier = self.init_price_multiplier
-        U = -cost_multiplier*prod_cost - self.median_gamma*self.E + ((1+self.r)*(self.median_beta*Q**self.alpha))/self.r + ((1+self.r)*(self.median_nu*(B*omega)**self.zeta))/(1 + self.r - (1- self.delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-self.delta)*(self.fuel_cost + self.median_gamma*self.e_t))/(omega*(self.r - self.delta - self.r*self.delta)))
-        
+        U = -cost_multiplier*prod_cost - self.median_gamma*self.E + self.median_beta*Q**self.alpha + self.median_nu*(B*omega)**self.zeta - self.d_mean*(((1+self.r)*(1-self.delta)*(self.fuel_cost + self.median_gamma*self.e_t))/(omega*(self.r - self.delta - self.r*self.delta)))
         return U
 
     def find_min_fitness_string(self, prop=1):
@@ -160,41 +159,40 @@ class NKModel:
         """    
 
         #CHECK SEED STUFF FOR REPRODUCIBILITY 
-
-        L = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
-        L_efficiency = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
         L_cost = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
+        L_quality = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
+        L_efficiency = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
         L_battery_size = self.random_state_NK.rand(2**(self.K+1), self.N, self.A)
         
-        # Iterate over each attribute starting from the second one
-
+        #(Cost, quality, efficiency, battery)
+        # Iterate over each attribute
+        
         if self.rho[1] == 0:
-            L[:, :, 1] = L_efficiency[:, :, 1]
+            L_cost[:, :, 1] = L_quality[:, :, 1]
         else:
             #FOR COST ITS CORRELATION IS 0.5
             Q_a_size = int(abs(self.rho[1]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-            #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
             Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
-            L[:, Q_a, 1] = L_efficiency[:, Q_a, 1]  # Copy fitness contribution from attribute 1
-        
+            L_cost[:, Q_a, 1] = L_quality[:, Q_a, 1]  # Copy fitness contribution from attribute 1
 
         if self.rho[2] == 0:
-            L[:, :, 2] = L_cost[:, :, 2]
+            L_cost[:, :, 1] = L_efficiency[:, :, 2]
         else:
             #FOR COST ITS CORRELATION IS 0.5
             Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
             Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
-            L[:, Q_a, 2] = L_cost[:, Q_a, 2]  # Copy fitness contribution from attribute 1
+            L_cost[:, Q_a, 2] = L_efficiency[:, Q_a, 2]  # Copy fitness contribution from attribute 1
         
         if self.rho[3] == 0:
-            L[:, :, 3] = L_battery_size[:, :, 3]
+            L_cost[:, :, 3] = L_battery_size[:, :, 3]
         else:
             #FOR COST ITS CORRELATION IS 0.5
             Q_a_size = int(abs(self.rho[3]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
             Q_a = self.random_state_NK.choice(self.N, size=Q_a_size, replace=False)
-            L[:, Q_a, 3] = L_battery_size[:, Q_a, 3]  # Copy fitness contribution from attribute 1
+            L_cost[:, Q_a, 3] = L_battery_size[:, Q_a, 3]  # Copy fitness contribution from attribute 1
 
-        return L
+        return L_cost
     
     def invert_bits_one_at_a_time(self, decimal_value):
         """THIS IS ONLY USED ONCE I THINK"""

@@ -86,14 +86,7 @@ class Controller:
         self.parameters_EV = parameters_controller["parameters_EV"]
         self.parameters_second_hand = parameters_controller["parameters_second_hand"]
         
-        self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]
-
-        #self.parameters_EV["min_Quality"] = self.parameters_EV["min_Quality"]
-        #self.parameters_EV["max_Quality"] = self.parameters_EV["max_Quality"]
-        self.parameters_EV["min_Cost"] = self.parameters_ICE["min_Cost"]
-        self.parameters_EV["max_Cost"] = self.parameters_ICE["max_Cost"]
-        #self.parameters_EV["delta"] = self.parameters_ICE["delta"]
-        
+        self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]        
 
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
@@ -168,7 +161,6 @@ class Controller:
         self.b_chi = self.parameters_social_network["b_chi"]
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
-
         self.random_state_chi = np.random.RandomState(self.parameters_social_network["init_vals_innovative_seed"])
 
         # Step 1: Generate continuous Beta distribution
@@ -193,7 +185,6 @@ class Controller:
             print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
-
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
@@ -203,14 +194,12 @@ class Controller:
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = self.WTP_E_vec*omega_mean*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
         print("gamma mean ",np.mean(self.gamma_vec))
-        #quit()
 
         ####################################################################################################################################
         #NU  
         self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
         print("nu mean",np.mean(self.nu_vec))
         
-
         ####################################################################################################################################
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
@@ -275,11 +264,8 @@ class Controller:
             gamma_values.append(gamma_value)
 
         #print("beta_midpoint, segments", self.num_beta_segments, beta_segment_vals_set)
-
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
-
-        
 
     def generate_beta_values_quintiles(self,n, quintile_incomes, median_beta):
         """
@@ -295,6 +281,8 @@ class Controller:
             list: A list of beta values of length n.
         """
         # Calculate beta values for each quintile
+        #print("quintile_incomes", quintile_incomes)
+        #quit()
         median_income = quintile_incomes[2]
         print("median_income", median_income)
         beta_vals = [median_beta*median_income/income for income in quintile_incomes]
@@ -355,15 +343,14 @@ class Controller:
         B = self.parameters_ICE["fuel_tank"]
 
         # Calculate the components of the equation
-        term1 = r / ((1 + r) * Q_mt**alpha)
-        
+
         log_term = np.log(W * (kappa * (P - C) - 1))
         term2 = (log_term * (1 / kappa)) + P + gamma * E
-        term3 = ((1 + r) * (nu*(B*omega)**zeta)) / (1 + r - (1 - delta)**zeta)
+        term3 = -(nu*(B*omega)**zeta)
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
         
         # Combine all terms to calculate beta_s
-        beta_s = term1 * (term2 + term3 + term4)
+        beta_s = (1/(Q_mt**alpha))*(term2 + term3 + term4)
         print("beta_median", beta_s)
         #quit()
         

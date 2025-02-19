@@ -130,12 +130,15 @@ class Firm:
         self.gamma_s_values = gamma_s_values
 
     def calc_utility_prop(self,U,W, maxU):
+        #print("self.kappa*U", self.kappa*U)
+        #print("self.kappa*maxU", self.kappa*maxU)
         exp_input = self.kappa*U - self.kappa*maxU
         #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         norm_exp_input = -self.kappa*maxU
         #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
-        #print("size", np.exp(norm_exp_input),W, np.exp(exp_input))
+        #print("size", norm_exp_input,W, exp_input)
+        #quit()
         utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
 
         return utility_proportion
@@ -194,19 +197,26 @@ class Firm:
         C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
 
         term1 = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] # Matrix with shape: num cars x num segments
-        term2 = ((1+self.r)*self.beta_s_values[np.newaxis, :]*(Quality_a_t[:, np.newaxis]**self.alpha))/self.r# Matrix with shape: num cars x num segments
-        term3 = ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))/(1 + self.r - (1- delta[:, np.newaxis])**self.zeta)# Matrix with shape: num cars x num segments
+        term2 = self.beta_s_values[np.newaxis, :]*(Quality_a_t[:, np.newaxis]**self.alpha)# Matrix with shape: num cars x num segments
+        term3 =self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta# Matrix with shape: num cars x num segments
         term4 = - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis])) / (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
         
-        ##print("Quality",term2)
+        #print("car range", B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis],B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis]/1.6 )
+        #quit()
+        #print("Priceing and em", term1)
+        #print("Quality term",term2)
         #print("rpices and emisison",term1)
         #print("quality inside", self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis])
         #print("otehr terms",self.zeta,  self.r, (1+self.r)/(1 + self.r - (1- delta[:, np.newaxis])**self.zeta), delta[:, np.newaxis] )
         #quit()
-        #print("range",term3)
+        #print("Range term ",term3)
+        #print("((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))", ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta)))
+        #print("(1 + self.r - (1- delta[:, np.newaxis])**self.zeta)", (1 + self.r - (1- delta[:, np.newaxis])**self.zeta))
         #print("range term inside", self.nu*B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])
-        #print("fuel costs and emissions",term4)
-        #print(self.beta_s_values)
+        #print("fuel costs and emissions term",term4)
+        #print("- self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis]))", - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis]))))
+        #print("(Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))", (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
+        #print("beta vlaues term",self.beta_s_values)
         #quit()
         U = term1 + term2 + term3 + term4# Matrix with shape: num cars x num segments
         #print("U",U)
@@ -219,7 +229,7 @@ class Firm:
         Arg = np.exp(exp_input)
         LW = lambertw(Arg, 0).real
 
-        P = C_m_cost[:, np.newaxis] + (1.0 + LW) / (self.kappa * self.beta_s_values[np.newaxis, :])
+        P = C_m_cost[:, np.newaxis] + (1.0 + LW)/self.kappa
         
         # Store results in the original car objects (CRITICAL CHANGE)
         for i, car in enumerate(car_list):
@@ -229,7 +239,7 @@ class Firm:
 
     def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta, B):
 
-        U = - P_adjust - gamma*E_new + ((1+self.r)*(beta*Q**self.alpha))/self.r + ((1+self.r)*(self.nu*(B*omega)**self.zeta))/(1 + self.r - (1- delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-delta)*(c + gamma*e))/(omega*(self.r - delta - self.r*delta)))
+        U = - P_adjust - gamma*E_new + beta*Q**self.alpha + self.nu*(B*omega)**self.zeta - self.d_mean*(((1+self.r)*(1-delta)*(c + gamma*e))/(omega*(self.r - delta - self.r*delta)))
         
         return U
 

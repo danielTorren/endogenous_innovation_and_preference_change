@@ -35,7 +35,7 @@ def main(
 
 if __name__ == "__main__":
 
-    base_params ={
+    base_params = {
     "seed_repetitions": 1,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 276,
@@ -102,7 +102,7 @@ if __name__ == "__main__":
             "Carbon_price":{
                 "Carbon_price_init": 0,
                 "Carbon_price": 1,
-                "Carbon_price_state": "linear"
+                "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
             "Electricity_subsidy":0.99,
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 3,
-        "rho":[0,0],
+        "rho":[1,0,0],
         "production_emissions":1,
         "delta": 0.001,
         "delta_P": 0.0116,
@@ -133,26 +133,28 @@ if __name__ == "__main__":
         "max_Price": 10,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
-        "min_Cost": 1.291,
-        "max_Cost": 4.372,
         "min_Quality": 0,
         "max_Quality": 1,
-        "fuel_tank": 674
+        "fuel_tank": 674,
+        "min_Cost": 1.291,
+        "max_Cost": 4.372
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[0,0,0],
+        "rho":[1,0,0, 0.5],
         "delta": 0.001,
         "delta_P":0.0087,
         "production_emissions":1.4,
         "transportType": 3,
         "min_Efficiency": 2.73,
         "max_Efficiency": 9.73,
-        "min_Battery_size": 10,
-        "max_Battery_size": 150
+        "min_Battery_size": 0,
+        "max_Battery_size": 150,
+        "min_Cost": 1.291,#3.3950,
+        "max_Cost": 6#5.7294,
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -162,7 +164,7 @@ if __name__ == "__main__":
         "num_beta_segments": 4
     },
     "parameters_firm":{
-        "lambda": 1e-4,
+        "lambda": 1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -170,15 +172,15 @@ if __name__ == "__main__":
         "min profit": 0.01
     },
     "parameters_social_network":{
-        "num_individuals":5000,
+        "num_individuals":3000,
         "chi_max": 0.9,
         "a_chi": 1,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
-        "WTP_E_mean": 4664.665434,
-        "WTP_E_sd": 3916.031118,
-        "nu":  117.44,#0.0086,
+        "WTP_E_mean": 46646.65434,
+        "WTP_E_sd": 39160.31118,
+        "nu":  0.117365,#0.011744,#0.0086,
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
@@ -187,12 +189,12 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 1,
         "U_segments_init": 0,
-        "W_calibration":1e20,
+        "W_calibration":1e78,
         "min_W": 1e-5,
         "r": 0.0016515813,#0.00643403011
         "mu": 1,
         "alpha": 0.5,
-        "zeta":0.8548903824
+        "zeta":0.29697#0.8548903824
     }
 }
     
