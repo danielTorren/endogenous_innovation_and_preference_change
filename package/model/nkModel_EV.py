@@ -1,5 +1,4 @@
 import numpy as np
-from pyro import param
 
 class NKModel:
     def __init__(self, parameters):

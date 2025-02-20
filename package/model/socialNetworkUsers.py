@@ -7,7 +7,6 @@ import numpy as np
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
-from sklearn.linear_model import LinearRegression
 
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
