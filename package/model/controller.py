@@ -183,21 +183,19 @@ class Controller:
             print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
-        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        self.gamma_vec = self.WTP_E_vec*omega_mean*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
+        self.gamma_vec = self.WTP_E_vec*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
 
 
         ####################################################################################################################################
         #NU  
         self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
 
-        
         ####################################################################################################################################
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
