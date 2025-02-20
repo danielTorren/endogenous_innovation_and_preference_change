@@ -169,7 +169,7 @@ def main(
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
-
+    print("best_sample", best_sample)
     save_object(samples, fileName + "/Data", "samples")
     save_object(best_sample, fileName + "/Data", "best_sample")
     save_object(inference, fileName + "/Data", "inference")
