@@ -52,9 +52,9 @@ def generate_single_policy_scenarios_with_seeds(base_params, policy_list, repeti
             base_params_copy["parameters_policies"]["States"][policy] = "High"#TURN ON THE POLICY
             #SET THE POLICY INTENSITY
             if policy == "Carbon_price":
-                base_params_copy["parameters_policies"]["Values"][policy]["High"]["Carbon_price"] = intensity
+                base_params_copy["parameters_policies"]["Values"][policy]["Carbon_price"] = intensity
             else:
-                base_params_copy["parameters_policies"]["Values"][policy]["High"] = intensity
+                base_params_copy["parameters_policies"]["Values"][policy] = intensity
             
             seed_variations = params_list_with_seed(base_params_copy)
             scenarios.extend(seed_variations)
