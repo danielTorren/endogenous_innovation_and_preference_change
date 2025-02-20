@@ -164,7 +164,7 @@ def main(
     save_object(parameters_list, fileName + "/Data", "var_dict")
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(x_o, fileName + "/Data", "x_o")
-
+    
     samples = posterior.sample((1000000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     max_log_prob_index = log_probability_samples.argmax()
@@ -172,6 +172,8 @@ def main(
 
     save_object(samples, fileName + "/Data", "samples")
     save_object(best_sample, fileName + "/Data", "best_sample")
+    save_object(inference, fileName + "/Data", "inference")
+
 
 if __name__ == "__main__":
     parameters_list = [
