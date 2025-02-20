@@ -3,7 +3,7 @@ from package.resources.utility import save_object
 
 def load_in_calibration_data():
 
-    gasoline_Kilowatt_Hour_per_gallon = 1/0.030#33.41 #Gasoline gallon equivalent (GGE) https://afdc.energy.gov/fuels/properties
+    gasoline_Kilowatt_Hour_per_gallon = 33.41 #Gasoline gallon equivalent (GGE) https://afdc.energy.gov/fuels/properties
     km_to_miles = 1.60934
     gasoline_g_co2_per_MJ = 92#FROM https://www.ipcc.ch/report/ar6/wg3/downloads/report/IPCC_AR6_WGIII_Chapter10.pdf table 10.8 p1145
     gasoline_Kgco2_per_MJ = gasoline_g_co2_per_MJ/1000
@@ -17,11 +17,13 @@ def load_in_calibration_data():
     CPI_california_df.set_index('Date', inplace=True)
     reference_value = CPI_california_df.loc["2020-01-01", "Weighted Average"]
     CPI_california_df["CPI 2020 Real"] = CPI_california_df["Weighted Average"] / reference_value
-    
-    dec_2017_relative_value = CPI_california_df.loc["2017-12-01", "CPI 2020 Real"]
-    jan_2015_relative_value = CPI_california_df.loc["2015-01-01", "CPI 2020 Real"]
-    sept_2009_relative_value = CPI_california_df.loc["2009-09-01", "CPI 2020 Real"]
-    jan_2018_relative_value = CPI_california_df.loc["2018-01-01", "CPI 2020 Real"]
+     # Filter data to start from 2001
+    CPI_california_df = CPI_california_df[CPI_california_df.index >= "2001-01-01"]
+
+    #dec_2017_relative_value = CPI_california_df.loc["2017-12-01", "CPI 2020 Real"]
+    #jan_2015_relative_value = CPI_california_df.loc["2015-01-01", "CPI 2020 Real"]
+    #sept_2009_relative_value = CPI_california_df.loc["2009-09-01", "CPI 2020 Real"]
+    #jan_2018_relative_value = CPI_california_df.loc["2018-01-01", "CPI 2020 Real"]
 
     #Gasoline Price
     gas_price_california_df = pd.read_excel("package/calibration_data/gas_price_california.xlsx") 
@@ -123,7 +125,7 @@ def data_range():
 
     average_gas_tank_size = 16
     efficiency_and_power_df["Average Distance km"] = efficiency_and_power_df["Avg Fuel Economy mpg"]*average_gas_tank_size*km_to_miles
-    print("ICE VEHICLE RANGE",efficiency_and_power_df["Average Distance km"])
+    #print("ICE VEHICLE RANGE",efficiency_and_power_df["Average Distance km"])
 
     EV_range_df = pd.read_excel("package/calibration_data/EVrange.xlsx")
     EV_range_df["Date"] = pd.to_datetime(EV_range_df["Date"])
@@ -131,7 +133,7 @@ def data_range():
 
     yearly_data = EV_range_df.join(efficiency_and_power_df["Average Distance km"], how="inner")
 
-    print("ICE VEHICLE RANGE", yearly_data["EV Range (km)"])
+    #print("ICE VEHICLE RANGE", yearly_data["EV Range (km)"])
 
 if __name__ == "__main__":
     calibration_data_input = {}
@@ -152,6 +154,6 @@ if __name__ == "__main__":
     
     calibration_data_input["scale_co2"] = scale_co2
     calibration_data_input["scale_dollars"] = scale_dollars
-    print("gas price 2022",calibration_data_input["Gas_price_2022"] )
+    #print("gas price 2022",calibration_data_input["Gas_price_2022"] )
 
     save_object( calibration_data_input, "package/calibration_data", "calibration_data_input")

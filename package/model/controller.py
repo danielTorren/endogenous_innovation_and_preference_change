@@ -21,8 +21,6 @@ class Controller:
         self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
         self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
 
-        self.calc_variables()
-
         self.update_time_series_data()
 
         self.setup_id_gen()
@@ -340,6 +338,7 @@ class Controller:
         Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
         B = self.parameters_ICE["fuel_tank"]
 
+        print("Min val kappa", 1/(P-C))
         # Calculate the components of the equation
 
         log_term = np.log(W * (kappa * (P - C) - 1))
@@ -352,57 +351,6 @@ class Controller:
 
         
         return beta_s
-
-    def calc_variables(self):
-
-        """
-        minQ: Quality required for the least sensitive Segment to buy the cheapest car.
-            beta = Lowest segment, P = cheap car, use average gamma, efficicny, fuel cost, fuel emisisons, C = cheapest
-
-        maxQ: Quality required for the average Segment to buy the most expensive car.
-            beta = mean , P = expensive car, use average gamma, efficicny, fuel cost, fuel emisisons, C = expensive
-
-        C goes from a range to 5 to 50K
-        Omega from 1.25 to 2.46 (ICE)
-        Gamma 0 to 2.5
-
-        """
-        E = self.parameters_ICE["production_emissions"]
-        delta = self.parameters_ICE["delta"]
-        r = self.parameters_vehicle_user["r"]
-        kappa = self.parameters_vehicle_user["kappa"]
-
-        alpha = self.parameters_vehicle_user["alpha"]
-        
-        c_plus =  np.max(self.calibration_gas_price_california_vec)#0.16853363453157436# upper bound cost of gasoline per kwhr
-        c_minus = np.min(self.calibration_gas_price_california_vec)
-        c = (c_plus + c_minus)/2
-
-        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]#0.26599820413049985# upper bound emission of gasoline per kwhr
-
-        #omega_max = self.parameters_ICE["min_Efficiency"] + 0.8*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
-        #omega_min = self.parameters_ICE["min_Efficiency"] + 0.2*(self.parameters_ICE["max_Efficiency"] - self.parameters_ICE["min_Efficiency"])
-        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
-        
-        C_max = self.parameters_ICE["min_Cost"] + 0.8*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
-        #C_min = self.parameters_ICE["min_Cost"] + 0.2*(self.parameters_ICE["max_Cost"] - self.parameters_ICE["min_Cost"])
-        #C_mean = (self.parameters_ICE["min_Cost"] + self.parameters_ICE["max_Cost"])/2
-
-        #Qmin poor, Q min rich, Qmax poor, Qmax rich
-        omega = omega_mean#np.array([omega_max, omega_max,omega_min , omega_min])
-        gamma = np.mean(self.gamma_vec)#np.array([np.min(self.gamma_vec), np.min(self.gamma_vec), np.max(self.gamma_vec) , np.max(self.gamma_vec)])#np.max(self.gamma_vec)
-
-        beta = np.min(self.beta_vec) #np.array([np.max(self.beta_vec), np.min(self.beta_vec), np.max(self.beta_vec) , np.min(self.beta_vec)])#np.array([np.min(self.beta_vec), np.median(self.beta_vec), np.max(self.beta_vec)])
-
-        P = self.parameters_ICE["max_Price"]
-
-        C = C_max
-
-        W = self.parameters_vehicle_user["W_calibration"]
-        D = np.median(self.d_vec)
-
-
-        #quit()
 
     #####################################################################################################################################
     def manage_burn_in(self):
@@ -419,7 +367,6 @@ class Controller:
 
         self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
@@ -594,7 +541,6 @@ class Controller:
         self.calibration_electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
 
         self.manage_burn_in()
-
         self.manage_calibration()
 
         #JOIN BURN IN AND CALIBRATION

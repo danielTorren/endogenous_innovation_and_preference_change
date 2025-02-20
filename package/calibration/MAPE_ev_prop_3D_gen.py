@@ -97,5 +97,5 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_MAPE_3D.json",
         VARY_LOAD_1="package/constants/vary_single_beta_a_innov_MAPE.json", 
         VARY_LOAD_2="package/constants/vary_single_beta_b_innov_MAPE.json",
-        VARY_LOAD_3="package/constants/vary_single_kappa_MAPE.json"
+        VARY_LOAD_3="package/constants/vary_single_proportion_zero_target_MAPE.json"
     )

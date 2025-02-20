@@ -23,7 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[406])
+    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price - 2])
     print("uptake end",controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
     print("mean price", controller.social_network.history_mean_price[-1])
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 1,
-    "duration_burn_in": 144,
+    "duration_burn_in": 240,#144,
     "duration_no_carbon_price": 264,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
@@ -58,10 +58,10 @@ if __name__ == "__main__":
         "init_vals_range_seed": 77
     },
     "ev_research_start_time":60,
-    "ev_production_start_time": 96,
+    "ev_production_start_time": 60,#96,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
-        "start_time": 120,
+        "start_time": 108,#120,
         "rebate": 1,
         "used_rebate": 0.1
     },
@@ -125,27 +125,25 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":1,
-        "delta": 0.001,
+        "delta": 0.0016,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 4,
-        "min_Price": 2,
-        "max_Price": 10,
+        "mean_Price": 3.929,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
-        "fuel_tank": 674,
-        "min_Cost": 1.291,
-        "max_Cost": 4.372
+        "fuel_tank": 469.4,
+        "min_Cost": 0,
+        "max_Cost": 5.815
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0,0, 0.5],
-        "delta": 0.001,
+        "rho":[1,0,0,0.5],
+        "delta": 0.0016,
         "delta_P":0.0087,
         "production_emissions":1.4,
         "transportType": 3,
@@ -153,8 +151,8 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 1.291,#3.3950,
-        "max_Cost": 6#5.7294,
+        "min_Cost": 0,
+        "max_Cost": 5.815
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -174,7 +172,7 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1,
+        "a_chi": 2,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -189,9 +187,9 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 1,
         "U_segments_init": 0,
-        "W_calibration":1e78,
+        "W_calibration":1e20,
         "min_W": 1e-5,
-        "r": 0.0016515813,#0.00643403011
+        "r": 0.0016515813,#0.00643403011, #
         "mu": 1,
         "alpha": 0.5,
         "zeta":0.29697#0.8548903824
@@ -204,7 +202,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

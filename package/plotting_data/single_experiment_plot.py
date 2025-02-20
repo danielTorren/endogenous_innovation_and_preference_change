@@ -36,10 +36,11 @@ def save_and_show(fig, fileName, plot_name, dpi=600):
     save_path = os.path.join(fileName, "Plots")
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
+import matplotlib.pyplot as plt
 
 def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     """
-    Adds dashed vertical lines to the plot at specified steps.
+    Adds dashed vertical lines to the plot at specified steps, ensuring data is plotted only from the end of the burn-in period onwards.
 
     Parameters:
     ax : matplotlib.axes.Axes
@@ -47,7 +48,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     base_params : dict
         Dictionary containing 'duration_burn_in' and 'duration_no_carbon_price'.
     color : str, optional
-        Color of the dashed lines. Default is 'red'.
+        Color of the dashed lines. Default is 'black'.
     linestyle : str, optional
         Style of the dashed lines. Default is '--'.
     """
@@ -56,16 +57,22 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     ev_research_start_time = base_params["ev_research_start_time"]
     ev_production_start_time = base_params["ev_production_start_time"]
     second_hand_burn_in = base_params["parameters_second_hand"]["burn_in_second_hand_market"]
+
+    # Ensure the x-axis limits start at the end of the burn-in period
+    ax.set_xlim(left=burn_in)
+    
     # Adding the dashed lines
     ax.axvline(second_hand_burn_in, color=color, linestyle='-.', label="Second hand market start")
     ax.axvline(burn_in, color=color, linestyle='--', label="Burn-in period end")
-    ax.axvline( burn_in  + ev_research_start_time, color=color, linestyle=':', label="EV research start")
-    ax.axvline( burn_in  + ev_production_start_time, color="red", linestyle=':', label="EV sale start")
+    ax.axvline(burn_in + ev_research_start_time, color=color, linestyle=':', label="EV research start")
+    ax.axvline(burn_in + ev_production_start_time, color="red", linestyle=':', label="EV sale start")
     
     if base_params["EV_rebate_state"]:
-        ax.axvline( burn_in  + base_params["parameters_rebate_calibration"]["start_time"], color="red", linestyle='-.', label="EV adoption subsidy start")
+        ax.axvline(burn_in + base_params["parameters_rebate_calibration"]["start_time"], 
+                   color="red", linestyle='-.', label="EV adoption subsidy start")
     if base_params["duration_future"] > 0:
         ax.axvline(burn_in + no_carbon_price, color="red", linestyle='--', label="Policy start")
+
     
 # Plot functions with `time_series` where applicable
 def plot_emissions(social_network, time_series, fileName, dpi=600):
@@ -3037,7 +3044,7 @@ def main(fileName, dpi=600):
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
     plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
-    #plot_preferences(social_network, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
@@ -3052,8 +3059,8 @@ def main(fileName, dpi=600):
     
     plot_history_W(base_params, firm_manager,time_series,  fileName)
     #plot_history_profit_second_hand(second_hand_merchant, fileName, dpi)
-    #plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
-    #plot_history_second_hand_merchant_offer_price(base_params,social_network, time_series, fileName, dpi)
+    plot_history_second_hand_merchant_price_paid(base_params,social_network, time_series, fileName, dpi)
+    plot_history_second_hand_merchant_offer_price(base_params,social_network, time_series, fileName, dpi)
     #plot_history_quality_users_raw_adjusted(social_network, fileName, dpi)
     #plot_price_history_new_second_hand(base_params,social_network, time_series, fileName, dpi)
 
@@ -3093,7 +3100,7 @@ def main(fileName, dpi=600):
     #
     #plot_history_car_age_scatter(social_network, time_series,fileName, dpi)
     #plot_total_distance(social_network, time_series, fileName, dpi)
-    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
+    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     #SEGEMENT PLOTS
     
@@ -3149,4 +3156,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_11_55_10__20_02_2025")
+    main("results/single_experiment_14_03_07__20_02_2025")
