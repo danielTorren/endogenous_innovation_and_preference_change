@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 512,
+    "seed_repetitions": 20,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
     "duration_future": 156,
@@ -64,7 +64,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 1,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
@@ -135,7 +135,7 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 2,
+        "a_chi": 1.5,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -148,7 +148,7 @@
         "proportion_zero_target": 0.01
     },
     "parameters_vehicle_user":{
-        "kappa": 1,
+        "kappa": 1.5,
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
