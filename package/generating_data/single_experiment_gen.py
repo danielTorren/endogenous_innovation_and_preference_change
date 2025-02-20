@@ -23,7 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[408])
+    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[406])
     print("uptake end",controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
     print("mean price", controller.social_network.history_mean_price[-1])
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     "seed_repetitions": 1,
     "duration_burn_in": 144,
     "duration_no_carbon_price": 264,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
-        "nu":  0.117365,#0.011744,#0.0086,
+        "nu":  0.011744,
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
@@ -189,8 +189,8 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 1,
         "U_segments_init": 0,
-        "W_calibration":1e20,
-        "min_W": 1,
+        "W_calibration":1e78,
+        "min_W": 1e-5,
         "r": 0.0016515813,#0.00643403011
         "mu": 1,
         "alpha": 0.5,
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

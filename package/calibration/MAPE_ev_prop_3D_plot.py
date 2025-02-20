@@ -5,7 +5,8 @@ from scipy.stats import sem, t
 from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
 from package.resources.utility import load_object
 from package.plotting_data.single_experiment_plot import save_and_show
-
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 def calc_mape_vectorized(actual, predicted):
     return np.mean(np.abs((actual - predicted) / actual)) * 100
@@ -94,10 +95,54 @@ def process_metrics(metric_function, metric_name, base_params, real_data, data_a
         json.dump({"best_parameters": best_params, f"best_{metric_name}": best_metric}, f, indent=4)
 
 
+
+def plot_ev_uptake_over_time(data_array_ev_prop, real_data, vary_1, vary_2, vary_3, base_params, fileName, dpi=600):
+    # Convert real-world data to yearly format
+    num_real_time_steps = real_data.shape[0] if real_data.ndim == 1 else real_data.shape[1]
+    time_steps = np.arange(num_real_time_steps)  # Ensure the correct length of time steps
+
+    num_rows = len(vary_1["property_list"])
+    num_cols = len(vary_2["property_list"])
+
+    fig, axs = plt.subplots(num_rows, num_cols, figsize=(18,15), sharex=True, sharey=True)
+    axs = np.array(axs)  # Ensure axs is always an array, even if 1D
+
+    norm = mcolors.Normalize(vmin=min(vary_3["property_list"]), vmax=max(vary_3["property_list"]))
+    sm = cm.ScalarMappable(cmap='viridis', norm=norm)
+    sm.set_array([])
+
+    for i, param_1 in enumerate(vary_1["property_list"]):
+        for j, param_2 in enumerate(vary_2["property_list"]):
+            ax = axs[i, j] if num_rows > 1 and num_cols > 1 else axs[max(i, j)]
+            
+            for k, param_3 in enumerate(vary_3["property_list"]):
+                predictions = np.array(data_array_ev_prop[i, j, k])  # Convert to NumPy array
+                
+                # Convert monthly data to yearly using `convert_data`
+                yearly_predictions = np.array([convert_data(pred, base_params) for pred in predictions])
+
+                if yearly_predictions.shape[1] != num_real_time_steps:
+                    raise ValueError(f"Shape mismatch: converted predictions {yearly_predictions.shape[1]} vs. real data {num_real_time_steps}")
+
+                mean_val = np.mean(yearly_predictions, axis=0)  # Compute mean over seeds
+                ax.plot(time_steps, mean_val, color=cm.viridis(norm(param_3)), alpha=0.8, label=f'{param_3}')
+
+            # Add real-world data
+            #ax.plot(time_steps, real_data.flatten(), linestyle='--', color='orange', linewidth=2)
+
+            #ax.set_title(f"{vary_1['property_varied']}={param_1}, {vary_2['property_varied']}={param_2}")
+    fig.supxlabel("Time Steps (Years)")
+    fig.supylabel("EV Uptake")
+
+    fig.colorbar(sm, ax=axs, orientation='vertical', label=vary_3['property_varied'])
+    #plt.tight_layout()
+    save_and_show(fig, fileName, "ev_timeseries", dpi)
+
 def main(fileName, dpi=600):
     try:
         serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
         base_params = load_object(fileName + "/Data", "base_params")
+        data_flat_ev_prop = load_object(fileName + "/Data", "data_flat_ev_prop")
         data_array_ev_prop = load_object(fileName + "/Data", "data_array_ev_prop")
         vary_1 = load_object(fileName + "/Data", "vary_1")
         vary_2 = load_object(fileName + "/Data", "vary_2")
@@ -108,6 +153,10 @@ def main(fileName, dpi=600):
 
     calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+
+    print("Max",np.max(data_array_ev_prop))
+
+    plot_ev_uptake_over_time(data_array_ev_prop, EV_stock_prop_2010_22, vary_1, vary_2, vary_3, base_params, fileName)
 
     best_params_dict = {}
     process_metrics(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
@@ -120,4 +169,4 @@ def main(fileName, dpi=600):
 
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_3D_17_21_36__11_02_2025")
+    main("results/MAPE_ev_3D_19_17_36__19_02_2025")

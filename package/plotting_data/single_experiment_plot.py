@@ -3037,7 +3037,7 @@ def main(fileName, dpi=600):
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(social_network, time_series, fileName, dpi)
     plot_ev_consider_adoption_rate( base_params, social_network, time_series, fileName, dpi)
-    plot_preferences(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     #plot_history_research_type(firm_manager, time_series, fileName, dpi)
     #plot_total_utility_vs_total_profit(social_network, firm_manager, time_series, fileName)
     plot_total_profit(firm_manager, time_series, fileName, dpi)
@@ -3149,4 +3149,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_11_44_21__19_02_2025")
+    main("results/single_experiment_11_55_10__20_02_2025")
