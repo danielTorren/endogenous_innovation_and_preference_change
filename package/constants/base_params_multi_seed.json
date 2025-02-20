@@ -3,7 +3,7 @@
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
     "duration_future": 156,
-    "save_timeseries_data_state": 0,
+    "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seeds":{
         "init_tech_seed": 96,
