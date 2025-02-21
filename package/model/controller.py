@@ -202,7 +202,7 @@ class Controller:
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals)
-        quants = [0.2, 0.4, 0.6, 0.8]
+        
         
         #print(self.parameters_social_network["income"])
         #print(np.median(incomes), self.parameters_social_network["income"][2])
@@ -215,14 +215,21 @@ class Controller:
 
         
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
-        error = 0.001#just to make sure you catch everything
+        #error = 0.001#just to make sure you catch everything
         # Calculate the bin edges using quantiles
-        quantiles = [np.quantile(incomes, quant) for quant in quants]
-        print(quantiles)
-        self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
-        print(self.beta_bins)
+        quants = np.linspace(0,1,self.num_beta_segments + 1)
+        print("quants",quants)
+        self.beta_bins =  np.quantile(self.beta_vec, quants)
+        #print("quantiles + 1: ",quantiles)
+        #self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
+        print("bins",self.beta_bins)
 
-        quit()
+        # Step 1: Define the percentiles for the midpoints
+        percentiles = np.linspace(1 / (2 * self.num_beta_segments), 1 - 1 / (2 * self.num_beta_segments), self.num_beta_segments)
+        print("percentiles", percentiles)
+
+        self.beta_s = np.quantile(self.beta_vec, percentiles)
+        print()
 
         ####################################################################################################################################
         #social network data
@@ -259,18 +266,10 @@ class Controller:
 
         segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
         self.num_segments = len(segment_codes) 
-        beta_segment_vals_set = set()
+
         for code in segment_codes:
             beta_idx, gamma_idx, _ = code  # Unpack the segment code
-
-            # Calculate the midpoint for the beta segment
-            beta_lower = self.beta_bins[beta_idx]
-            beta_upper = self.beta_bins[beta_idx + 1]
-            beta_midpoint = (beta_lower + beta_upper) / 2
-
-            beta_segment_vals_set.add(beta_midpoint)
-            
-            beta_values.append(beta_midpoint)
+            beta_values.append(self.beta_s[beta_idx])
 
             # Assign gamma value based on the binary index
             gamma_value = gamma_val_upper if gamma_idx == 1 else gamma_val_lower
@@ -632,6 +631,8 @@ class Controller:
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_firm["kappa"] = self.parameters_vehicle_user["kappa"]
+        self.parameters_firm["beta_segment_vals"] = self.beta_segment_vals 
+        self.parameters_firm["gamma_segment_vals"] = self.gamma_segment_vals 
 
         self.parameters_firm["ICE_landscape"] = self.ICE_landscape
         self.parameters_firm["EV_landscape"] = self.EV_landscape

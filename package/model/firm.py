@@ -32,6 +32,9 @@ class Firm:
         self.zeta = parameters_firm["zeta"]
         self.alpha = parameters_firm["alpha"]
 
+        self.beta_s_values = parameters_firm["beta_segment_vals"] 
+        self.gamma_s_values = parameters_firm["gamma_segment_vals"] 
+
         self.firm_id = firm_id
         #ICE
         self.init_tech_ICE = init_tech_ICE
@@ -124,10 +127,6 @@ class Firm:
                     car.car_utility_segments_U[segment_code] = self.U_segments_init#SET AS FIXED CONSTANT TO START FIRST TURN
                 else:
                     car.car_utility_segments_U[segment_code] = -np.inf
-
-    def input_beta_gamma_segments(self,beta_s_values, gamma_s_values):
-        self.beta_s_values = beta_s_values
-        self.gamma_s_values = gamma_s_values
 
     def calc_utility_prop(self,U,W, maxU):
         #print("self.kappa*U", self.kappa*U)

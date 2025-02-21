@@ -196,30 +196,14 @@ class Firm_Manager:
             segment_counts[seg_code] += 1
 
         # 3) Compute midpoints for each segment
-        self.beta_s_values = np.zeros(self.num_segments)
-        self.gamma_s_values = np.zeros(self.num_segments)
         for i, code in enumerate(self.all_segment_codes):
-            count = segment_counts[code]
             b_idx, g_idx, _ = code
 
-            # Compute beta midpoint
-            beta_lower = self.beta_bins[b_idx]
-            beta_upper = self.beta_bins[b_idx + 1]
-            beta_midpoint = (beta_lower + beta_upper) / 2
-
-            # Compute gamma value based on binary index
-            gamma_value = self.gamma_val_empty_upper if g_idx == 1 else self.gamma_val_empty_lower
-
             # Assign values to the market data
-            self.market_data[code]["I_s_t"] = count
-            self.market_data[code]["beta_s_t"] = beta_midpoint
-            self.market_data[code]["gamma_s_t"] = gamma_value
-            self.beta_s_values[i] = beta_midpoint
-            self.gamma_s_values[i] = gamma_value
+            self.market_data[code]["I_s_t"] = segment_counts[code]
         
         #4) calc the utility of each car (already did base utility in the car but need the full value including price and emissiosn production)
         for firm in self.firms_list:
-            firm.input_beta_gamma_segments(self.beta_s_values, self.gamma_s_values)
             firm.calc_init_U_segments()
 
 
