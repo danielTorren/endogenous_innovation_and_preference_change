@@ -69,7 +69,7 @@ def main(fileName):
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
     samples = load_object(fileName + "/Data", "samples")
-    best_sample = load_object(fileName + "/Data", "best_sample")
+    #best_sample = load_object(fileName + "/Data", "best_sample")
 
     # Extract parameter bounds and names dynamically
     param_bounds = [p["bounds"] for p in var_dict]
@@ -77,21 +77,21 @@ def main(fileName):
 
     # Test posterior samples and plot results
     #samples = posterior.sample((10000000,), x=x_o)
-    log_probability_samples = posterior.log_prob(samples, x=x_o)
+    #log_probability_samples = posterior.log_prob(samples, x=x_o)
     #print("Log probabilities:", log_probability_samples)
 
     # Find sample with greatest log probability
-    max_log_prob_index = log_probability_samples.argmax()
-    best_sample = samples[max_log_prob_index]
-    print("Sample with the greatest log probability:", best_sample)
-    print("Greatest log probability:", log_probability_samples[max_log_prob_index])
+    #max_log_prob_index = log_probability_samples.argmax()
+    #best_sample = samples[max_log_prob_index]
+    #print("Sample with the greatest log probability:", best_sample)
+    #print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
-    save_object(best_sample, fileName + "/Data", "best_sample")
+    #save_object(best_sample, fileName + "/Data", "best_sample")
     
     # Plot results
     plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_00_30_15__13_02_2025",
+        fileName="results/NN_calibration_multi_19_25_05__20_02_2025",
     )

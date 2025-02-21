@@ -307,6 +307,8 @@ def parallel_run_multi_seed(params_list):
     
     # Return results as arrays where applicable
     return (
+        np.asarray(history_driving_emissions),#Emmissions flow
+        np.asarray(history_production_emissions),#Emmissions flow
         np.asarray(history_total_emissions),#Emmissions flow
         np.asarray(history_prop_EV), 
         np.asarray(history_car_age), 
