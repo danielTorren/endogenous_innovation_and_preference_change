@@ -53,7 +53,9 @@ def main(
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
     (
-        history_total_emissions_arr,#Emmissions flow
+        history_driving_emissions_arr,#Emmissions flow
+        history_production_emissions_arr,
+        history_total_emissions_arr,
         history_prop_EV_arr, 
         history_car_age_arr, 
         history_mean_price_ICE_EV_arr,
@@ -75,6 +77,8 @@ def main(
 
     createFolder(fileName)
     
+    save_object(history_driving_emissions_arr, fileName + "/Data", "history_driving_emissions_arr")
+    save_object(history_production_emissions_arr, fileName + "/Data", "history_production_emissions_arr")
     save_object(history_total_emissions_arr, fileName + "/Data", "history_total_emissions_arr")
     save_object(history_prop_EV_arr, fileName + "/Data", "history_prop_EV_arr")
     #save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")

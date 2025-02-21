@@ -256,6 +256,8 @@ def generate_multi_seed(params: dict):
     """
     data = generate_data(params)
     return (
+        data.social_network.history_driving_emissions,#Emmissions flow
+        data.social_network.history_production_emissions,#Emmissions flow
         data.social_network.history_total_emissions,#Emmissions flow
         data.social_network.history_prop_EV, 
         data.social_network.history_car_age, 
@@ -283,6 +285,8 @@ def parallel_run_multi_seed(params_list):
     
     # Unpack the results
     (
+        history_driving_emissions,
+        history_production_emissions,
         history_total_emissions,#Emmissions flow
         history_prop_EV, 
         history_car_age, 
