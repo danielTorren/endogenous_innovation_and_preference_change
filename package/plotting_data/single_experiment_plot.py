@@ -59,7 +59,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
     second_hand_burn_in = base_params["parameters_second_hand"]["burn_in_second_hand_market"]
 
     # Ensure the x-axis limits start at the end of the burn-in period
-    ax.set_xlim(left=burn_in)
+    #ax.set_xlim(left=burn_in)
     
     # Adding the dashed lines
     ax.axvline(second_hand_burn_in, color=color, linestyle='-.', label="Second hand market start")

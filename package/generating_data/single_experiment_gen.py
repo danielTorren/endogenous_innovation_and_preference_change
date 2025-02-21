@@ -165,7 +165,7 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
+        "lambda": 1,#1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,

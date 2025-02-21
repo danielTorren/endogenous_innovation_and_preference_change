@@ -634,7 +634,6 @@ class Firm:
 
         return car_list
 
-
     def set_utility_and_profit_grid_production(self, selected_vehicle, segment_codes_reduc, valid_indices):
 
         beta_s_values = self.beta_s_values[valid_indices]
