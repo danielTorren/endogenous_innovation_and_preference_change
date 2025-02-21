@@ -9,6 +9,7 @@ from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
+from scipy.stats import lognorm
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -200,12 +201,24 @@ class Controller:
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
+        #incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals)
+        #quants = [0.2, 0.4, 0.6, 0.8]
+        #print([np.quantile(incomes, quant) for quant in quants])
+        #print(self.parameters_social_network["income"])
+        #print(np.median(incomes), self.parameters_social_network["income"][2])
+        #print(min(incomes), max(incomes))
+        #quit()
+        #self.beta_vec = self.generate_beta_values_lognorm(incomes, median_beta)
+        #print("self.beta_vec", self.beta_vec.shape, np.min(self.beta_vec),np.max(self.beta_vec))
+        #quit()
         self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
-        #self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
+
+        
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         error = 0.001#just to make sure you catch everything
         # Calculate the bin edges using quantiles
         self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
+        print(self.beta_bins)
 
         ####################################################################################################################################
         #social network data
@@ -262,6 +275,15 @@ class Controller:
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
 
+    def generate_beta_values_lognorm(self, incomes, median_beta):
+
+        median_income = np.median(incomes)
+        beta_vec =   median_beta*median_income/incomes
+        # Shuffle to randomize the order of agents
+        self.random_state_beta.shuffle(beta_vec)
+        
+        return np.asarray(beta_vec)
+    
     def generate_beta_values_quintiles(self,n, quintile_incomes, median_beta):
         """
         Generate a list of beta values for n agents based on quintile incomes.
