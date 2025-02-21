@@ -43,7 +43,7 @@ if __name__ == "__main__":
     "duration_future": 154,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1e-3,
+    "computing_coefficient": 1e-4,
     "seeds":{
         "init_tech_seed": 96,
         "landscape_seed_ICE": 27,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 0.0001,
         "U_segments_init": 0,
-        "W_calibration":1e25,
+        "W_calibration":1e10,
         "min_W": 1e-5,
         "r": 0.0016515813,#0.00643403011, #
         "mu": 1,

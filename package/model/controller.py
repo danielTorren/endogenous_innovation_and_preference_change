@@ -115,7 +115,7 @@ class Controller:
         self.update_scale()
 
     def update_scale(self):
-        """SCALE DOLLARS and CO2"""
+        """SCALE DOLLARS"""
 
         #MULTIPLY
 
@@ -130,29 +130,24 @@ class Controller:
         
         self.parameters_calibration_data["Gas_price_2022"] = self.parameters_calibration_data["Gas_price_2022"]*self.computing_coefficient
         self.parameters_calibration_data["Electricity_price_2022"] = self.parameters_calibration_data["Electricity_price_2022"]*self.computing_coefficient
-        self.parameters_calibration_data["Electricity_emissions_intensity_2022"] = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]*self.computing_coefficient
 
         self.parameters_calibration_data["gas_price_california_vec"] = self.parameters_calibration_data["gas_price_california_vec"]*self.computing_coefficient
         self.parameters_calibration_data["electricity_price_vec"] = self.parameters_calibration_data["electricity_price_vec"]*self.computing_coefficient
-        self.parameters_calibration_data["electricity_emissions_intensity_vec"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"]*self.computing_coefficient
 
         self.parameters_second_hand["scrap_price"] = self.parameters_second_hand["scrap_price"]*self.computing_coefficient
 
-        self.parameters_ICE["production_emissions"] = self.parameters_ICE["production_emissions"]*self.computing_coefficient
         self.parameters_ICE["mean_Price"] = self.parameters_ICE["mean_Price"]*self.computing_coefficient
         self.parameters_ICE["min_Cost"] = self.parameters_ICE["min_Cost"]*self.computing_coefficient
         self.parameters_ICE["max_Cost"] = self.parameters_ICE["max_Cost"]*self.computing_coefficient
 
-        self.parameters_EV["production_emissions"] = self.parameters_EV["production_emissions"]*self.computing_coefficient
         self.parameters_EV["min_Cost"] = self.parameters_EV["min_Cost"]*self.computing_coefficient
         self.parameters_EV["max_Cost"] = self.parameters_EV["max_Cost"]*self.computing_coefficient
 
+        self.parameters_social_network["WTP_E_mean"] = self.parameters_social_network["WTP_E_mean"]*self.computing_coefficient
+        self.parameters_social_network["WTP_E_sd"] = self.parameters_social_network["WTP_E_sd"]*self.computing_coefficient
         self.parameters_social_network["nu"] = self.parameters_social_network["nu"]*self.computing_coefficient
-         
-        self.parameters_firm["min_profit"] = self.parameters_firm["min_profit"]*self.computing_coefficient
-        
 
-        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
+        self.parameters_firm["min_profit"] = self.parameters_firm["min_profit"]*self.computing_coefficient
 
         #DIVIDE
         self.parameters_firm["lambda"] = self.parameters_firm["lambda"]/self.computing_coefficient
@@ -236,7 +231,9 @@ class Controller:
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        self.gamma_vec = self.WTP_E_vec*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
+        
+        self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
+
         
         self.num_gamma_segments = self.parameters_firm_manager["num_gamma_segments"]
         # Calculate the bin edges using quantiles
@@ -250,11 +247,13 @@ class Controller:
         ####################################################################################################################################
         #NU  
         self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
-
+        
         ####################################################################################################################################
+        
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
+        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_beta)
         self.beta_vec = self.generate_beta_values_lognorm(incomes, median_beta)
 
@@ -303,7 +302,7 @@ class Controller:
 
     def generate_beta_values_lognorm(self, incomes, median_beta):
         median_income = np.median(incomes)
-        beta_vec = median_beta*median_income/incomes
+        beta_vec = median_beta*(median_income/incomes)
         self.random_state_beta.shuffle(beta_vec)# Shuffle to randomize the order of agents
         return np.asarray(beta_vec)
     
@@ -311,6 +310,8 @@ class Controller:
         """
         Calculate beta_s based on the given equation.
         """
+
+        print("units Dollars", 1/self.computing_coefficient)
         # Extract parameters
         E = self.parameters_ICE["production_emissions"]
         delta = self.parameters_ICE["delta"]
@@ -321,21 +322,26 @@ class Controller:
         
         # Calculate average gasoline cost and emissions
         c = np.mean(self.calibration_gas_price_california_vec)
+        print("c", c)
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
         
         # Calculate mean efficiency
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"]) / 2
         # Calculate maximum cost
         C_mean = (self.parameters_ICE["max_Cost"] + self.parameters_ICE["min_Cost"])/2
+        
         # Set other parameters
         omega = omega_mean
         gamma = np.median(self.gamma_vec)
+        print("gamma", gamma)
         nu = np.median(self.nu_vec)
+        print("nu", nu)
         P = self.parameters_ICE["mean_Price"]
-        C = C_mean
+        print("P", P)
         W = self.parameters_vehicle_user["W_calibration"]
+        print("W", W)
         D = np.median(self.d_vec)
-        
+
         # Calculate Q_mt (assuming Q_mt is given or calculated elsewhere)
         Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
         B = self.parameters_ICE["fuel_tank"]
@@ -343,14 +349,16 @@ class Controller:
         #print("Min val kappa", 1/(P-C))
         # Calculate the components of the equation
 
-        log_term = np.log(W * (kappa * (P - C) - 1))
+        log_term = np.log(W * (kappa * (P - C_mean) - 1))
         term2 = (log_term * (1 / kappa)) + P + gamma * E
         term3 = -(nu*(B*omega)**zeta)
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
         
         # Combine all terms to calculate beta_s
+        print("dollars term", (term2 + term3 + term4))
         beta_s = (1/(Q_mt**alpha))*(term2 + term3 + term4)
-
+        print("beta_s", beta_s)
+        quit()
         return beta_s
 
     #####################################################################################################################################
@@ -675,7 +683,7 @@ class Controller:
         parameters_ICE["median_gamma"] = self.gamma_median
         parameters_ICE["median_nu"] = self.nu_median
         parameters_ICE["fuel_cost_c"] = self.parameters_calibration_data["gas_price_california_vec"][0]
-        parameters_ICE["e_t"] = self.gas_emissions_intensity
+        parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         parameters_ICE["d_mean"] = np.mean(self.d_vec)
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_ICE["zeta"] = self.parameters_vehicle_user["zeta"]
@@ -759,7 +767,7 @@ class Controller:
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
         #update_prices_and_emmisions
-        self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
+        self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
 
         self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
