@@ -117,12 +117,13 @@ class Controller:
     def update_scale(self):
         """SCALE DOLLARS and CO2"""
 
+        #MULTIPLY
+
         self.computing_coefficient = self.parameters_controller["computing_coefficient"]
+
         self.parameters_rebate_calibration["rebate"] = self.parameters_rebate_calibration["rebate"]*self.computing_coefficient
         self.parameters_rebate_calibration["used_rebate"] = self.parameters_rebate_calibration["used_rebate"]*self.computing_coefficient
         
-        self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"] = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]*self.computing_coefficient
-        self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]*self.computing_coefficient
         self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]*self.computing_coefficient
         self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]*self.computing_coefficient
         self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]*self.computing_coefficient
@@ -149,8 +150,13 @@ class Controller:
         self.parameters_social_network["nu"] = self.parameters_social_network["nu"]*self.computing_coefficient
          
         self.parameters_firm["min_profit"] = self.parameters_firm["min_profit"]*self.computing_coefficient
+        
 
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
+
+        #DIVIDE
+        self.parameters_firm["lambda"] = self.parameters_firm["lambda"]/self.computing_coefficient
+        self.parameters_vehicle_user["kappa"] = self.parameters_vehicle_user["kappa"]/self.computing_coefficient
 
     def set_seed(self):
 

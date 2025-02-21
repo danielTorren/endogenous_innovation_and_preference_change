@@ -38,12 +38,12 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 1,
-    "duration_burn_in": 240,#144,
+    "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
     "duration_future": 154,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1e-4,
+    "computing_coefficient": 1e-3,
     "seeds":{
         "init_tech_seed": 96,
         "landscape_seed_ICE": 27,
@@ -60,10 +60,10 @@ if __name__ == "__main__":
         "init_vals_range_seed": 77
     },
     "ev_research_start_time":60,
-    "ev_production_start_time": 60,#96,
+    "ev_production_start_time": 60,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
-        "start_time": 108,#120,
+        "start_time": 108,
         "rebate": 10000,
         "used_rebate": 1000
     },
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 1.5,
+                "Carbon_price": 1,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
@@ -130,14 +130,14 @@ if __name__ == "__main__":
         "delta": 0.0016,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 39290,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
         "min_Cost": 0,
-        "max_Cost": 58150
+        "max_Cost": 58150,
+        "mean_Price": 39290
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 5,#1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
+        "lambda": 0.0001,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -189,9 +189,9 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1.0006,
+        "kappa": 0.0001,
         "U_segments_init": 0,
-        "W_calibration":1e20,
+        "W_calibration":1e25,
         "min_W": 1e-5,
         "r": 0.0016515813,#0.00643403011, #
         "mu": 1,
