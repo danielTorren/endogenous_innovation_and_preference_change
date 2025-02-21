@@ -82,7 +82,7 @@ def grid_search_policy_with_seeds(grid_scenarios, controller_files):
     num_cores = multiprocessing.cpu_count()
 
     def run_scenario(scenario_params, controller_file):
-        print("controller_file", controller_file)
+        #print("controller_file", controller_file)
         controller = load(controller_file)  # Load a fresh copy
         return single_policy_simulation(scenario_params, controller)
 
