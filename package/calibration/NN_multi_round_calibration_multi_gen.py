@@ -81,13 +81,17 @@ def main(
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=100
+        num_simulations=100,
+        num_rounds = 3
     ) -> str:
 
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
 
+    total_runs = num_rounds*num_simulations* base_params["seed_repetitions"]
+    print("TOTAL RUNS: ", total_runs)
+    
     # Load observed data
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
@@ -95,8 +99,6 @@ def main(
     root = "NN_calibration_multi"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
-
-    num_rounds = 3
 
     # Observed data
     x_o = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
@@ -188,5 +190,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=128
+        num_simulations=128,
+        num_rounds= 3
     )
