@@ -84,6 +84,7 @@ class Controller:
         self.parameters_ICE = parameters_controller["parameters_ICE"]
         self.parameters_EV = parameters_controller["parameters_EV"]
         self.parameters_second_hand = parameters_controller["parameters_second_hand"]
+        self.parameters_calibration_data = self.parameters_controller["calibration_data"]
         
         self.parameters_rebate_calibration = self.parameters_controller["parameters_rebate_calibration"]        
 
@@ -126,6 +127,14 @@ class Controller:
         self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]*self.computing_coefficient
         self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]*self.computing_coefficient
         
+        self.parameters_calibration_data["Gas_price_2022"] = self.parameters_calibration_data["Gas_price_2022"]*self.computing_coefficient
+        self.parameters_calibration_data["Electricity_price_2022"] = self.parameters_calibration_data["Electricity_price_2022"]*self.computing_coefficient
+        self.parameters_calibration_data["Electricity_emissions_intensity_2022"] = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]*self.computing_coefficient
+
+        self.parameters_calibration_data["gas_price_california_vec"] = self.parameters_calibration_data["gas_price_california_vec"]*self.computing_coefficient
+        self.parameters_calibration_data["electricity_price_vec"] = self.parameters_calibration_data["electricity_price_vec"]*self.computing_coefficient
+        self.parameters_calibration_data["electricity_emissions_intensity_vec"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"]*self.computing_coefficient
+
         self.parameters_second_hand["scrap_price"] = self.parameters_second_hand["scrap_price"]*self.computing_coefficient
 
         self.parameters_ICE["production_emissions"] = self.parameters_ICE["production_emissions"]*self.computing_coefficient
@@ -137,7 +146,11 @@ class Controller:
         self.parameters_EV["min_Cost"] = self.parameters_EV["min_Cost"]*self.computing_coefficient
         self.parameters_EV["max_Cost"] = self.parameters_EV["max_Cost"]*self.computing_coefficient
 
+        self.parameters_social_network["nu"] = self.parameters_social_network["nu"]*self.computing_coefficient
+         
         self.parameters_firm["min_profit"] = self.parameters_firm["min_profit"]*self.computing_coefficient
+
+        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
 
     def set_seed(self):
 
@@ -248,7 +261,6 @@ class Controller:
         percentiles = np.linspace(1 / (2 * self.num_beta_segments), 1 - 1 / (2 * self.num_beta_segments), self.num_beta_segments)
         self.beta_s = np.quantile(self.beta_vec, percentiles)
 
-
         ####################################################################################################################################
         #social network data
         
@@ -284,55 +296,11 @@ class Controller:
         self.gamma_segment_vals = np.array(gamma_values)
 
     def generate_beta_values_lognorm(self, incomes, median_beta):
-
         median_income = np.median(incomes)
-        beta_vec =   median_beta*median_income/incomes
-        # Shuffle to randomize the order of agents
-        self.random_state_beta.shuffle(beta_vec)
-        
+        beta_vec = median_beta*median_income/incomes
+        self.random_state_beta.shuffle(beta_vec)# Shuffle to randomize the order of agents
         return np.asarray(beta_vec)
     
-    def generate_beta_values_quintiles(self,n, quintile_incomes, median_beta):
-        """
-        Generate a list of beta values for n agents based on quintile incomes.
-        Beta for each quintile is calculated as:
-            beta = 1 * (lowest_quintile_income / quintile_income)
-        
-        Args:
-            n (int): Total number of agents.
-            quintile_incomes (list): List of incomes for each quintile (from lowest to highest).
-            
-        Returns:
-            list: A list of beta values of length n.
-        """
-        # Calculate beta values for each quintile
-
-        median_income = quintile_incomes[2]
-
-        beta_vals = [median_beta*median_income/income for income in quintile_incomes]
-        
-        # Assign proportions for each quintile (evenly split 20% each)
-        proportions = [0.2] * len(quintile_incomes)
-        
-        # Compute the number of agents for each quintile
-        agent_counts = [int(round(p * n)) for p in proportions]
-        
-        # Adjust for rounding discrepancies to ensure sum(agent_counts) == n
-        while sum(agent_counts) < n:
-            agent_counts[agent_counts.index(min(agent_counts))] += 1
-        while sum(agent_counts) > n:
-            agent_counts[agent_counts.index(max(agent_counts))] -= 1
-        
-        # Generate the beta values list
-        beta_list = []
-        for count, beta in zip(agent_counts, beta_vals):
-            beta_list.extend([beta] * count)
-        
-        # Shuffle to randomize the order of agents
-        self.random_state_beta.shuffle(beta_list)
-        
-        return np.asarray(beta_list)
-
     def calc_beta_median(self):
         """
         Calculate beta_s based on the given equation.
@@ -369,7 +337,6 @@ class Controller:
         #print("Min val kappa", 1/(P-C))
         # Calculate the components of the equation
 
-
         log_term = np.log(W * (kappa * (P - C) - 1))
         term2 = (log_term * (1 / kappa)) + P + gamma * E
         term3 = -(nu*(B*omega)**zeta)
@@ -378,7 +345,6 @@ class Controller:
         # Combine all terms to calculate beta_s
         beta_s = (1/(Q_mt**alpha))*(term2 + term3 + term4)
 
-        
         return beta_s
 
     #####################################################################################################################################
@@ -393,9 +359,6 @@ class Controller:
     #DEAL WITH CALIBRATION
     
     def manage_calibration(self):
-
-        self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
-        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
@@ -403,20 +366,18 @@ class Controller:
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
 
-        self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
-
     #############################################################################################################################
     #DEAL WITH SCENARIOS
 
     def manage_scenario(self):
 
-        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]*self.computing_coefficient
-        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]*self.computing_coefficient
-        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]*self.computing_coefficient
+        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]
+        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]
+        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]
         
-        self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]*self.computing_coefficient
-        self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]*self.computing_coefficient
-        self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]*self.computing_coefficient
+        self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
+        self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]
+        self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]
 
         if self.Gas_price_state == "Low":
             self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["Low"]
@@ -569,7 +530,6 @@ class Controller:
     def gen_time_series_calibration_scenarios_policies(self):
         """Put together the calibration, scenarios and policies data"""
         
-        self.parameters_calibration_data = self.parameters_controller["calibration_data"]
         self.calibration_gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
         self.calibration_electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
         self.calibration_electricity_emissions_intensity_vec = self.parameters_calibration_data["electricity_emissions_intensity_vec"]
@@ -709,7 +669,7 @@ class Controller:
         parameters_ICE["median_gamma"] = self.gamma_median
         parameters_ICE["median_nu"] = self.nu_median
         parameters_ICE["fuel_cost_c"] = self.parameters_calibration_data["gas_price_california_vec"][0]
-        parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+        parameters_ICE["e_t"] = self.gas_emissions_intensity
         parameters_ICE["d_mean"] = np.mean(self.d_vec)
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_ICE["zeta"] = self.parameters_vehicle_user["zeta"]
@@ -736,14 +696,11 @@ class Controller:
 
     def setup_second_hand_market(self):
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
-
         #self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
-
         self.parameters_second_hand["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_second_hand["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_second_hand["max_num_cars"] = int(np.round(self.parameters_social_network["num_individuals"] * self.parameters_second_hand["max_num_cars_prop"]))  
-
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
@@ -752,7 +709,6 @@ class Controller:
     
     def gen_social_network(self):
 
-        #self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
         self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
 
 ##########################################################################################################################################

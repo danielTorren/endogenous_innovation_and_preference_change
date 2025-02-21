@@ -26,7 +26,7 @@ def main(
     print("E, total",controller.social_network.emissions_cumulative)
     print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price - 2])
     print("uptake end",controller.calc_EV_prop())
-    print("distortion",controller.calc_total_policy_distortion())
+    print("distortion",controller.calc_total_policy_distortion()/controller.computing_coefficient)
     print("mean price", np.asarray(controller.social_network.history_mean_price[-1])/controller.computing_coefficient)
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "seed_repetitions": 1,
     "duration_burn_in": 240,#144,
     "duration_no_carbon_price": 264,
-    "duration_future": 0,
+    "duration_future": 154,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "computing_coefficient": 1e-4,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 1,
+                "Carbon_price": 1.5,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,
@@ -160,12 +160,11 @@ if __name__ == "__main__":
         "J": 20,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "gamma_threshold_percentile": 50,
         "num_beta_segments": 4,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1,#1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
+        "lambda": 5,#1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -181,7 +180,7 @@ if __name__ == "__main__":
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
-        "nu":  0.011744,
+        "nu":  1173.65,
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,

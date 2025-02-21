@@ -164,7 +164,7 @@ if __name__ == '__main__':
         "J": 20,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
-        "gamma_threshold_percentile": 50,
+
         "num_beta_segments": 4
     },
     "parameters_firm":{
