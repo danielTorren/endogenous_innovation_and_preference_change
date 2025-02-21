@@ -212,7 +212,6 @@ class Controller:
             print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
-        
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
@@ -237,7 +236,7 @@ class Controller:
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
-        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals)
+        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_beta)
         self.beta_vec = self.generate_beta_values_lognorm(incomes, median_beta)
 
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
