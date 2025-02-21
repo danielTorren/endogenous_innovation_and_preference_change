@@ -111,6 +111,34 @@ class Controller:
 
         self.time_steps_max = parameters_controller["time_steps_max"]
 
+        self.update_scale()
+
+    def update_scale(self):
+        """SCALE DOLLARS and CO2"""
+
+        self.computing_coefficient = self.parameters_controller["computing_coefficient"]
+        self.parameters_rebate_calibration["rebate"] = self.parameters_rebate_calibration["rebate"]*self.computing_coefficient
+        self.parameters_rebate_calibration["used_rebate"] = self.parameters_rebate_calibration["used_rebate"]*self.computing_coefficient
+        
+        self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"] = self.parameters_controller["parameters_policies"]["Values"]["Discriminatory_corporate_tax"]*self.computing_coefficient
+        self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]*self.computing_coefficient
+        self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]*self.computing_coefficient
+        self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]*self.computing_coefficient
+        self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]*self.computing_coefficient
+        
+        self.parameters_second_hand["scrap_price"] = self.parameters_second_hand["scrap_price"]*self.computing_coefficient
+
+        self.parameters_ICE["production_emissions"] = self.parameters_ICE["production_emissions"]*self.computing_coefficient
+        self.parameters_ICE["mean_Price"] = self.parameters_ICE["mean_Price"]*self.computing_coefficient
+        self.parameters_ICE["min_Cost"] = self.parameters_ICE["min_Cost"]*self.computing_coefficient
+        self.parameters_ICE["max_Cost"] = self.parameters_ICE["max_Cost"]*self.computing_coefficient
+
+        self.parameters_EV["production_emissions"] = self.parameters_EV["production_emissions"]*self.computing_coefficient
+        self.parameters_EV["min_Cost"] = self.parameters_EV["min_Cost"]*self.computing_coefficient
+        self.parameters_EV["max_Cost"] = self.parameters_EV["max_Cost"]*self.computing_coefficient
+
+        self.parameters_firm["min_profit"] = self.parameters_firm["min_profit"]*self.computing_coefficient
+
     def set_seed(self):
 
         self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
@@ -320,7 +348,7 @@ class Controller:
         
         # Calculate average gasoline cost and emissions
         c = np.mean(self.calibration_gas_price_california_vec)
-        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+        e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
         
         # Calculate mean efficiency
         omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"]) / 2
@@ -341,6 +369,7 @@ class Controller:
 
         #print("Min val kappa", 1/(P-C))
         # Calculate the components of the equation
+
 
         log_term = np.log(W * (kappa * (P - C) - 1))
         term2 = (log_term * (1 / kappa)) + P + gamma * E
@@ -366,8 +395,8 @@ class Controller:
     
     def manage_calibration(self):
 
-        self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+        self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
+        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
@@ -382,11 +411,14 @@ class Controller:
 
     def manage_scenario(self):
 
-        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]
-        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]
-        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]
+        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]*self.computing_coefficient
+        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]*self.computing_coefficient
+        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]*self.computing_coefficient
         
-        self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
+        self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]*self.computing_coefficient
+        self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]*self.computing_coefficient
+        self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]*self.computing_coefficient
+
         if self.Gas_price_state == "Low":
             self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["Low"]
         elif self.Gas_price_state == "Current":
@@ -395,9 +427,9 @@ class Controller:
             self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]
         else:
             raise ValueError("Invalid gas price state")
+        
         self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
 
-        self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]
         if self.Electricity_price_state == "Low":
             self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]["Low"]
         elif self.Electricity_price_state == "Current":
@@ -406,15 +438,17 @@ class Controller:
             self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]
         else:
             raise ValueError("Invalid electricity price state")
+        
         self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
         
-        self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]
+
         if self.Grid_emissions_intensity_state == "Weaker":
             self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Grid_emissions_intensity"]["Weaker"]
         elif self.Grid_emissions_intensity_state == "Decarbonised":
             self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Grid_emissions_intensity"]["Decarbonised"]
         else:
             raise ValueError("Invalid Grid emissions intensity state")
+        
         self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.duration_future)
         
     #############################################################################################################################
@@ -833,7 +867,6 @@ class Controller:
         self.manage_calibration()
         self.manage_scenario()
         self.manage_policies() 
-
    
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 

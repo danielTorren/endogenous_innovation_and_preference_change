@@ -11,6 +11,7 @@ from package.resources.utility import (
 )
 from package.plotting_data.single_experiment_plot import main as plotting_main
 import pyperclip
+import numpy as np
 
 def main(
     base_params
@@ -26,7 +27,7 @@ def main(
     print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price - 2])
     print("uptake end",controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion())
-    print("mean price", controller.social_network.history_mean_price[-1])
+    print("mean price", np.asarray(controller.social_network.history_mean_price[-1])/controller.computing_coefficient)
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
+    "computing_coefficient": 1e-4,
     "seeds":{
         "init_tech_seed": 96,
         "landscape_seed_ICE": 27,
@@ -62,8 +64,8 @@ if __name__ == "__main__":
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 108,#120,
-        "rebate": 1,
-        "used_rebate": 0.1
+        "rebate": 10000,
+        "used_rebate": 1000
     },
     "parameters_scenarios":{
         "States":{
@@ -106,17 +108,17 @@ if __name__ == "__main__":
             },
             "Discriminatory_corporate_tax":0.95,
             "Electricity_subsidy":0.99,
-            "Adoption_subsidy":2,
-            "Adoption_subsidy_used":2,
-            "Production_subsidy":2,
-            "Research_subsidy":20
+            "Adoption_subsidy":20000,
+            "Adoption_subsidy_used":20000,
+            "Production_subsidy":20000,
+            "Research_subsidy":200000
         }
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 0.06698
+        "scrap_price": 669.8
     },
     "parameters_ICE":{
         "prop_explore": 0.1,
@@ -124,18 +126,18 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[1,0,0],
-        "production_emissions":1,
+        "production_emissions":10000,
         "delta": 0.0016,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 3.929,
+        "mean_Price": 39290,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
         "min_Cost": 0,
-        "max_Cost": 5.815
+        "max_Cost": 58150
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
@@ -145,14 +147,14 @@ if __name__ == "__main__":
         "rho":[1,0,0,0.5],
         "delta": 0.0016,
         "delta_P":0.0087,
-        "production_emissions":1.4,
+        "production_emissions":14000,
         "transportType": 3,
         "min_Efficiency": 2.73,
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
         "min_Cost": 0,
-        "max_Cost": 5.815
+        "max_Cost": 58150
     },
     "parameters_firm_manager": {
         "J": 20,
@@ -168,7 +170,7 @@ if __name__ == "__main__":
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
-        "min profit": 0.01
+        "min_profit": 1000
     },
     "parameters_social_network":{
         "num_individuals":3000,
