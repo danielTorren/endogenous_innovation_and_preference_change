@@ -60,7 +60,7 @@ class Controller:
         self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)        
 
         #pass information across one time
-        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
+        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins, self.gamma_bins)
 
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
@@ -191,7 +191,15 @@ class Controller:
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = self.WTP_E_vec*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
+        
+        self.num_gamma_segments = self.parameters_firm_manager["num_gamma_segments"]
+        # Calculate the bin edges using quantiles
+        quants_gamma = np.linspace(0,1,self.num_gamma_segments + 1)
+        self.gamma_bins =  np.quantile(self.gamma_vec, quants_gamma)
 
+        # Step 1: Define the percentiles for the midpoints
+        percentiles_gamma = np.linspace(1 / (2 * self.num_gamma_segments), 1 - 1 / (2 * self.num_gamma_segments), self.num_gamma_segments)
+        self.gamma_s = np.quantile(self.gamma_vec, percentiles_gamma)
 
         ####################################################################################################################################
         #NU  
@@ -202,34 +210,17 @@ class Controller:
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals)
-        
-        
-        #print(self.parameters_social_network["income"])
-        #print(np.median(incomes), self.parameters_social_network["income"][2])
-        #print(min(incomes), max(incomes))
-        #quit()
         self.beta_vec = self.generate_beta_values_lognorm(incomes, median_beta)
-        #print("self.beta_vec", self.beta_vec.shape, np.min(self.beta_vec),np.max(self.beta_vec))
-        #quit()
-        #self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
 
-        
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
-        #error = 0.001#just to make sure you catch everything
         # Calculate the bin edges using quantiles
         quants = np.linspace(0,1,self.num_beta_segments + 1)
-        print("quants",quants)
         self.beta_bins =  np.quantile(self.beta_vec, quants)
-        #print("quantiles + 1: ",quantiles)
-        #self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
-        print("bins",self.beta_bins)
 
         # Step 1: Define the percentiles for the midpoints
         percentiles = np.linspace(1 / (2 * self.num_beta_segments), 1 - 1 / (2 * self.num_beta_segments), self.num_beta_segments)
-        print("percentiles", percentiles)
-
         self.beta_s = np.quantile(self.beta_vec, percentiles)
-        print()
+
 
         ####################################################################################################################################
         #social network data
@@ -250,16 +241,6 @@ class Controller:
         self.parameters_social_network["gamma_median"] = self.gamma_median 
         self.parameters_social_network["nu_median"] = self.nu_median
 
-        #firm data
-        self.gamma_bins = np.linspace(min(self.gamma_vec) , max(self.gamma_vec), 2+1)#np.linspace(min(self.gamma_vec) - error, max(self.gamma_vec) + error, 2+1)
-
-        self.parameters_firm_manager["gamma_threshold"] = np.mean(self.gamma_vec)#np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
-        
-        gamma_val_lower = (self.gamma_bins[1] + self.gamma_bins[0])/2
-        gamma_val_upper = (self.gamma_bins[2]  + self.gamma_bins[1])/2
-        self.parameters_firm_manager["gamma_val_empty_lower"] = gamma_val_lower
-        self.parameters_firm_manager["gamma_val_empty_upper"] = gamma_val_upper
-
         #create the beta and gamma vectors:
         beta_values = []
         gamma_values = []
@@ -270,10 +251,7 @@ class Controller:
         for code in segment_codes:
             beta_idx, gamma_idx, _ = code  # Unpack the segment code
             beta_values.append(self.beta_s[beta_idx])
-
-            # Assign gamma value based on the binary index
-            gamma_value = gamma_val_upper if gamma_idx == 1 else gamma_val_lower
-            gamma_values.append(gamma_value)
+            gamma_values.append(self.gamma_s[gamma_idx])
 
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)

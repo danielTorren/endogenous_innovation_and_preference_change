@@ -159,7 +159,8 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4
+        "num_beta_segments": 4,
+        "num_gamma_segments": 2
     },
     "parameters_firm":{
         "lambda": 1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
