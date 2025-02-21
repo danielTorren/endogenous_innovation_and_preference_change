@@ -64,7 +64,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 1,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.95,

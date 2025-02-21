@@ -201,24 +201,28 @@ class Controller:
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
-        #incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals)
-        #quants = [0.2, 0.4, 0.6, 0.8]
-        #print([np.quantile(incomes, quant) for quant in quants])
+        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals)
+        quants = [0.2, 0.4, 0.6, 0.8]
+        
         #print(self.parameters_social_network["income"])
         #print(np.median(incomes), self.parameters_social_network["income"][2])
         #print(min(incomes), max(incomes))
         #quit()
-        #self.beta_vec = self.generate_beta_values_lognorm(incomes, median_beta)
+        self.beta_vec = self.generate_beta_values_lognorm(incomes, median_beta)
         #print("self.beta_vec", self.beta_vec.shape, np.min(self.beta_vec),np.max(self.beta_vec))
         #quit()
-        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
+        #self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
 
         
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         error = 0.001#just to make sure you catch everything
         # Calculate the bin edges using quantiles
+        quantiles = [np.quantile(incomes, quant) for quant in quants]
+        print(quantiles)
         self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
         print(self.beta_bins)
+
+        quit()
 
         ####################################################################################################################################
         #social network data
