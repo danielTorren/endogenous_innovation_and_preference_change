@@ -345,5 +345,5 @@ if __name__ == "__main__":
             "Carbon_price",
             ],
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
-        target_ev_uptake = 0.5
+        target_ev_uptake = 0.9
         )

@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 1,
-    "duration_burn_in": 240,#144,
+    "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
     "duration_future": 154,
     "save_timeseries_data_state": 1,
@@ -59,10 +59,10 @@ if __name__ == "__main__":
         "init_vals_range_seed": 77
     },
     "ev_research_start_time":60,
-    "ev_production_start_time": 60,#96,
+    "ev_production_start_time": 60,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
-        "start_time": 108,#120,
+        "start_time": 108,
         "rebate": 10000,
         "used_rebate": 1000
     },
