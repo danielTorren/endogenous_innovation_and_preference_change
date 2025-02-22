@@ -115,71 +115,70 @@ class Controller:
         self.time_steps_max = parameters_controller["time_steps_max"]
 
     def update_scale(self):
-        """SCALE DOLLARS"""
 
-        # MULTIPLY
+        #DOLLARS
         self.computing_coefficient = self.parameters_controller["computing_coefficient"]
-        print(f"Computing Coefficient: {self.computing_coefficient}")
+        #print(f"Computing Coefficient: {self.computing_coefficient}")
 
         self.parameters_rebate_calibration["rebate"] *= self.computing_coefficient
-        print(f"Rebate: {self.parameters_rebate_calibration['rebate']}")
+        #print(f"Rebate: {self.parameters_rebate_calibration['rebate']}")
         
         self.parameters_rebate_calibration["used_rebate"] *= self.computing_coefficient
-        print(f"Used Rebate: {self.parameters_rebate_calibration['used_rebate']}")
+        #print(f"Used Rebate: {self.parameters_rebate_calibration['used_rebate']}")
         
         self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"] *= self.computing_coefficient
-        print(f"Adoption Subsidy: {self.parameters_controller['parameters_policies']['Values']['Adoption_subsidy']}")
+        #print(f"Adoption Subsidy: {self.parameters_controller['parameters_policies']['Values']['Adoption_subsidy']}")
         
         self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"] *= self.computing_coefficient
-        print(f"Adoption Subsidy Used: {self.parameters_controller['parameters_policies']['Values']['Adoption_subsidy_used']}")
+        #print(f"Adoption Subsidy Used: {self.parameters_controller['parameters_policies']['Values']['Adoption_subsidy_used']}")
         
         self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"] *= self.computing_coefficient
-        print(f"Production Subsidy: {self.parameters_controller['parameters_policies']['Values']['Production_subsidy']}")
+        #print(f"Production Subsidy: {self.parameters_controller['parameters_policies']['Values']['Production_subsidy']}")
         
         self.parameters_controller["parameters_policies"]["Values"]["Research_subsidy"] *= self.computing_coefficient
-        print(f"Research Subsidy: {self.parameters_controller['parameters_policies']['Values']['Research_subsidy']}")
+        #print(f"Research Subsidy: {self.parameters_controller['parameters_policies']['Values']['Research_subsidy']}")
 
         self.parameters_calibration_data["Gas_price_2022"] *= self.computing_coefficient
-        print(f"Gas Price 2022: {self.parameters_calibration_data['Gas_price_2022']}")
+        #print(f"Gas Price 2022: {self.parameters_calibration_data['Gas_price_2022']}")
         
         self.parameters_calibration_data["Electricity_price_2022"] *= self.computing_coefficient
-        print(f"Electricity Price 2022: {self.parameters_calibration_data['Electricity_price_2022']}")
+        #print(f"Electricity Price 2022: {self.parameters_calibration_data['Electricity_price_2022']}")
         
         self.parameters_calibration_data["gas_price_california_vec"] *= self.computing_coefficient
-        print(f"Gas Price California Vec: {self.parameters_calibration_data['gas_price_california_vec'][0]}")
+        #print(f"Gas Price California Vec: {self.parameters_calibration_data['gas_price_california_vec'][0]}")
         
         self.parameters_calibration_data["electricity_price_vec"] *= self.computing_coefficient
-        print(f"Electricity Price Vec: {self.parameters_calibration_data['electricity_price_vec'][0]}")
+        #print(f"Electricity Price Vec: {self.parameters_calibration_data['electricity_price_vec'][0]}")
         
         self.parameters_second_hand["scrap_price"] *= self.computing_coefficient
-        print(f"Scrap Price: {self.parameters_second_hand['scrap_price']}")
+        #print(f"Scrap Price: {self.parameters_second_hand['scrap_price']}")
         
         self.parameters_ICE["mean_Price"] *= self.computing_coefficient
-        print(f"ICE Mean Price: {self.parameters_ICE['mean_Price']}")
+        #print(f"ICE Mean Price: {self.parameters_ICE['mean_Price']}")
         
         self.parameters_ICE["min_Cost"] *= self.computing_coefficient
-        print(f"ICE Min Cost: {self.parameters_ICE['min_Cost']}")
+        #print(f"ICE Min Cost: {self.parameters_ICE['min_Cost']}")
         
         self.parameters_ICE["max_Cost"] *= self.computing_coefficient
-        print(f"ICE Max Cost: {self.parameters_ICE['max_Cost']}")
+        #print(f"ICE Max Cost: {self.parameters_ICE['max_Cost']}")
         
         self.parameters_EV["min_Cost"] *= self.computing_coefficient
-        print(f"EV Min Cost: {self.parameters_EV['min_Cost']}")
+        #print(f"EV Min Cost: {self.parameters_EV['min_Cost']}")
         
         self.parameters_EV["max_Cost"] *= self.computing_coefficient
-        print(f"EV Max Cost: {self.parameters_EV['max_Cost']}")
+        #print(f"EV Max Cost: {self.parameters_EV['max_Cost']}")
         
         self.parameters_social_network["WTP_E_mean"] *= self.computing_coefficient
-        print(f"WTP E Mean: {self.parameters_social_network['WTP_E_mean']}")
+        #print(f"WTP E Mean: {self.parameters_social_network['WTP_E_mean']}")
         
         self.parameters_social_network["WTP_E_sd"] *= self.computing_coefficient
-        print(f"WTP E SD: {self.parameters_social_network['WTP_E_sd']}")
+        #print(f"WTP E SD: {self.parameters_social_network['WTP_E_sd']}")
         
         self.parameters_social_network["nu"] *= self.computing_coefficient
-        print(f"Nu: {self.parameters_social_network['nu']}")
+        #print(f"Nu: {self.parameters_social_network['nu']}")
         
         self.parameters_firm["min_profit"] *= self.computing_coefficient
-        print(f"Min Profit: {self.parameters_firm['min_profit']}")
+        #print(f"Min Profit: {self.parameters_firm['min_profit']}")
 
         # DIVIDE
         self.parameters_firm["lambda"] /= self.computing_coefficient
@@ -188,6 +187,23 @@ class Controller:
         self.parameters_vehicle_user["kappa"] /= self.computing_coefficient
         print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
 
+        #EMISSIONS
+        
+        #self.parameters_calibration_data["electricity_emissions_intensity_vec"] *= self.computing_coefficient
+        #print(f"Electricity Intensity Vec: {self.parameters_calibration_data['electricity_emissions_intensity_vec'][0]}")
+        
+        #self.parameters_calibration_data["Electricity_emissions_intensity_2022"] *= self.computing_coefficient
+        #print(f"Electricity emissions intensity 2022: {self.parameters_calibration_data['Electricity_emissions_intensity_2022']}")
+        
+        #self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"] *= self.computing_coefficient
+        #print("gasoline_Kgco2_per_Kilowatt_Hour: " , self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"])
+
+        #self.parameters_ICE["production_emissions"] *= self.computing_coefficient
+        #print("ICE production_emissions:", self.parameters_ICE["production_emissions"])
+
+        #self.parameters_EV["production_emissions"] *= self.computing_coefficient
+        #print("EV production_emissions:", self.parameters_EV["production_emissions"])
+        
         #quit()
 
     def set_seed(self):
@@ -452,7 +468,6 @@ class Controller:
     
     def manage_calibration(self):
 
-        self.parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
@@ -761,7 +776,7 @@ class Controller:
         parameters_ICE["median_gamma"] = self.gamma_median
         parameters_ICE["median_nu"] = self.nu_median
         parameters_ICE["fuel_cost_c"] = self.parameters_calibration_data["gas_price_california_vec"][0]
-        parameters_ICE["e_t"] = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+        parameters_ICE["e_t"] = self.gas_emissions_intensity
         parameters_ICE["d_mean"] = np.mean(self.d_vec)
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_ICE["zeta"] = self.parameters_vehicle_user["zeta"]

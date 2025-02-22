@@ -164,7 +164,7 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
+        "lambda": 1e-9,#proits are in 10s thousands so want that to be the correct order of magnitude
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -193,10 +193,10 @@ if __name__ == "__main__":
         "U_segments_init": 0,
         "W_calibration":1e20,
         "min_W": 1e-5,
-        "r": 0.0016515813,#0.00643403011, #
+        "r": 0.0016515813,
         "mu": 1,
         "alpha": 0.5,
-        "zeta":0.29697#0.8548903824
+        "zeta":0.29697
     }
 }
     
