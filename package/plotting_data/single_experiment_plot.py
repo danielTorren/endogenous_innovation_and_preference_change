@@ -80,8 +80,8 @@ def plot_carbon_price(base_params,controller, time_series, fileName, dpi=600):
 
 def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, firm_manager.history_total_profit[base_params["duration_burn_in"]:], marker='o')
-    format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit", legend=False)
+    ax.plot(time_series, np.asarray(firm_manager.history_total_profit[base_params["duration_burn_in"]:])/base_params["computing_coefficient"], marker='o')
+    format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit, $", legend=False)
     save_and_show(fig, fileName, "total_profit", dpi)
 
 def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, dpi=600):
@@ -299,11 +299,20 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     save_and_show(fig, fileName, "vehicle_prod_attribute_time_series_ICE_EV", dpi)
 
 def plot_preferences(social_network, fileName, dpi=600):
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.hist(social_network.beta_vec, bins=30, alpha=0.5, label='Beta Vec (Price)')
-    ax.hist(social_network.gamma_vec, bins=30, alpha=0.5, label='Gamma Vec (Environmental)')
-    ax.hist(social_network.chi_vec, bins=30, alpha=0.5, label='Chi Vec (EV Threshold)')
-    format_plot(ax, "Histogram of Beta, Gamma, and Chi Vectors", "Value", "Frequency")
+    fig, axes = plt.subplots(nrows=1,ncols=3,figsize=(10, 6))
+    axes[0].hist(social_network.beta_vec, bins=30, alpha=0.5, label=r'$\beta_i$ (Price sentivity)')
+    axes[1].hist(social_network.gamma_vec, bins=30, alpha=0.5, label=r'$\gamma_i$ (Environmental concern)')
+    axes[2].hist(social_network.chi_vec, bins=30, alpha=0.5, label=r'$\chi$ (EV Threshold)')
+    
+    axes[0].legend()
+    axes[1].legend()
+    axes[2].legend()
+
+    axes[0].set_ylabel("Frequency")
+    axes[0].set_xlabel("Value")
+    axes[1].set_xlabel("Value")
+    axes[2].set_xlabel("Value")
+
     save_and_show(fig, fileName, "preferences", dpi)
 
 def plot_history_research_type(firm_manager, time_series, fileName, dpi=600):
@@ -424,57 +433,14 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned", dpi)   
 
-def plot_total_utility_vs_total_profit(social_network, firm_manager, time_steps, file_name, dpi=600):
-    """
-    Plots a scatter plot of Total Utility vs Total Profit with time as a color bar.
-
-    Args:
-        social_network (object): Contains the history of total utility.
-        firm_manager (object): Contains the history of total profits.
-        time_steps (list): Time steps corresponding to the data points.
-        file_name (str): Directory or file name to save the plot.
-        dpi (int): Resolution for saving the plot.
-    """
-    # Extract data
-    total_utility = social_network.history_total_utility
-    total_profit = firm_manager.history_total_profit
-
-    # Normalize the time values for the color map
-    norm = Normalize(vmin=min(time_steps), vmax=max(time_steps))
-    cmap = cm.viridis
-
-    # Create scatter plot
-    fig, ax = plt.subplots(figsize=(10, 6))
-    scatter = ax.scatter(
-        total_profit,
-        total_utility,
-        c=time_steps,
-        cmap=cmap,
-        edgecolor='k',
-        alpha=0.7
-    )
-
-    # Add color bar
-    cbar = plt.colorbar(scatter, ax=ax)
-    cbar.set_label("Time Step", rotation=270, labelpad=15)
-
-    # Add labels and title
-    ax.set_title("Total Utility vs Total Profit Over Time")
-    ax.set_xlabel("Total Profit")
-    ax.set_ylabel("Total Utility")
-    ax.grid(True)
-
-    # Save and show the plot
-    save_path = f"{file_name}/total_utility_vs_total_profit.png"
-    fig.savefig(save_path, dpi=dpi, format="png")
 
 def plot_calibration_data(base_params, controller, time_series, fileName, dpi=600):
     fig, axes = plt.subplots(ncols = 3,figsize=(10, 6))
     #print(social_network.history_second_hand_bought)
     #quit()
 
-    axes[0].plot(controller.gas_price_california_vec[base_params["duration_burn_in"]:])
-    axes[1].plot(controller.electricity_price_vec[base_params["duration_burn_in"]:])
+    axes[0].plot((controller.gas_price_california_vec[base_params["duration_burn_in"]:])/base_params["computing_coefficient"])
+    axes[1].plot((controller.electricity_price_vec[base_params["duration_burn_in"]:])/base_params["computing_coefficient"])
     axes[2].plot(controller.electricity_emissions_intensity_vec[base_params["duration_burn_in"]:])
 
     axes[0].set_ylabel("Gas price california in 2020 Dollars")
@@ -527,7 +493,7 @@ def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=6
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
     
-    data = np.asarray(social_network.history_mean_price_ICE_EV)
+    data = np.asarray(social_network.history_mean_price_ICE_EV)/base_params["computing_coefficient"]
     data_ICE_first = data[:,0,0]
     data_EV_first = data[:,0,1]
     data_ICE_second = data[:,1,0]
@@ -539,7 +505,7 @@ def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=6
     ax.plot(data_EV_second[base_params["duration_burn_in"]:], label = "EV second hand", color = "green", linestyle= "dashed")
 
     ax.set_xlabel("Time")
-    ax.set_ylabel("Mean Price")
+    ax.set_ylabel("Mean Price, $")
 
     add_vertical_lines(ax, base_params)
     ax.legend()
@@ -550,7 +516,7 @@ def plot_history_median_price_by_type(base_params, social_network, fileName, dpi
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
     
-    data = np.asarray(social_network.history_median_price_ICE_EV)
+    data = np.asarray(social_network.history_median_price_ICE_EV)/base_params["computing_coefficient"]
     data_ICE_first = data[:,0,0]
     data_EV_first = data[:,0,1]
     data_ICE_second = data[:,1,0]
@@ -562,7 +528,7 @@ def plot_history_median_price_by_type(base_params, social_network, fileName, dpi
     ax.plot(data_EV_second[base_params["duration_burn_in"]:], label = "EV second hand", color = "green", linestyle= "dashed")
 
     ax.set_xlabel("Time")
-    ax.set_ylabel("Median Price")
+    ax.set_ylabel("Median Price, $")
 
     add_vertical_lines(ax, base_params)
     ax.legend()
@@ -718,7 +684,7 @@ def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName
     ax.scatter(time_points_new_EV, profit_margins_EV, marker='o', alpha=0.7, color = "green", label = "EV")
 
     ax.set_xlabel("Time")
-    ax.set_ylabel("Profit margin (P-C)")
+    ax.set_ylabel("Profit margin (P-C)/C")
     ax.grid(True)
 
     add_vertical_lines(ax, base_params)
@@ -897,10 +863,10 @@ def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600)
     
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(time_points, prices, marker='o', alpha=0.7)
+    ax.scatter(time_points, np.asarray(prices)/base_params["computing_coefficient"], marker='o', alpha=0.7)
     ax.set_title("Price History of Cars on Sale")
     ax.set_xlabel("Time")
-    ax.set_ylabel("Price")
+    ax.set_ylabel("Price, $")
     ax.grid(True)
     add_vertical_lines(ax, base_params)
     ax.legend()
@@ -973,7 +939,7 @@ def plot_distance_individuals_mean_median_type(base_params, social_network, time
     # Save and show the plot
     save_and_show(fig, fileName, "user_distance_mean_median_type", dpi)
 # Sample main function
-def main(fileName, dpi=600):
+def main(fileName, dpi=400):
     try:
         base_params = load_object(fileName + "/Data", "base_params")
         data_controller = load_object(fileName + "/Data", "controller")
@@ -989,7 +955,7 @@ def main(fileName, dpi=600):
 
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
-    plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi=600)
+    plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
@@ -1009,8 +975,9 @@ def main(fileName, dpi=600):
     plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
     plot_history_W(base_params, firm_manager,time_series,  fileName)
     plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
+    plot_calibration_data(base_params, data_controller, time_series, fileName, dpi)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_15_23_18__21_02_2025")
+    main("results/single_experiment_12_09_01__22_02_2025")

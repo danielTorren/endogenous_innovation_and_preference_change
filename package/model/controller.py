@@ -231,7 +231,6 @@ class Controller:
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        
         self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
 
         
@@ -311,7 +310,7 @@ class Controller:
         Calculate beta_s based on the given equation.
         """
 
-        print("units Dollars", 1/self.computing_coefficient)
+        #print("units Dollars", 1/self.computing_coefficient)
         # Extract parameters
         E = self.parameters_ICE["production_emissions"]
         delta = self.parameters_ICE["delta"]
@@ -322,7 +321,7 @@ class Controller:
         
         # Calculate average gasoline cost and emissions
         c = np.mean(self.calibration_gas_price_california_vec)
-        print("c", c)
+        #print("c", c)
         e = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]*self.computing_coefficient
         
         # Calculate mean efficiency
@@ -333,32 +332,33 @@ class Controller:
         # Set other parameters
         omega = omega_mean
         gamma = np.median(self.gamma_vec)
-        print("gamma", gamma)
+        #print("gamma", gamma)
         nu = np.median(self.nu_vec)
-        print("nu", nu)
+        #print("nu", nu)
         P = self.parameters_ICE["mean_Price"]
-        print("P", P)
+        #print("P", P)
         W = self.parameters_vehicle_user["W_calibration"]
-        print("W", W)
+        #print("W", W)
         D = np.median(self.d_vec)
 
         # Calculate Q_mt (assuming Q_mt is given or calculated elsewhere)
         Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
         B = self.parameters_ICE["fuel_tank"]
 
-        #print("Min val kappa", 1/(P-C))
+        print("Min val kappa, -1$", (1/(P-C_mean)) ,(1/(P-C_mean))*(self.computing_coefficient))
         # Calculate the components of the equation
 
-        log_term = np.log(W * (kappa * (P - C_mean) - 1))
-        term2 = (log_term * (1 / kappa)) + P + gamma * E
+
+        term1 = np.log(W * (kappa * (P - C_mean) - 1))* (1 / kappa)
+        term2 = P + gamma * E
         term3 = -(nu*(B*omega)**zeta)
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
-        
+        print("terms", term1, term2, term3, term4)
         # Combine all terms to calculate beta_s
         print("dollars term", (term2 + term3 + term4))
-        beta_s = (1/(Q_mt**alpha))*(term2 + term3 + term4)
+        beta_s = (1/(Q_mt**alpha))*(term1 + term2 + term3 + term4)
         print("beta_s", beta_s)
-        quit()
+        #quit()
         return beta_s
 
     #####################################################################################################################################

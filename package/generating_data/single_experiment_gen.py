@@ -92,7 +92,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.0016,
+        "delta": 0.001,#0.0016,
         "delta_P": 0.0116,
         "transportType": 2,
         "min_Efficiency": 0.79,
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 4,
         "rho":[1,0,0,0.5],
-        "delta": 0.0016,
+        "delta": 0.001,#0.0016,
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 0.0001,
+        "lambda": 0.001,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -187,9 +187,9 @@ if __name__ == "__main__":
         "proportion_zero_target": 0.0119,
         "income_mu":11.225,
         "income_sigma":0.927
-    },
+    }, 
     "parameters_vehicle_user":{
-        "kappa": 0.0001,
+        "kappa": 0.001,
         "U_segments_init": 0,
         "W_calibration":1e10,
         "min_W": 1e-5,
