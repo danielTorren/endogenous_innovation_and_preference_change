@@ -164,7 +164,7 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-8,
+        "lambda": 5e-9,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
