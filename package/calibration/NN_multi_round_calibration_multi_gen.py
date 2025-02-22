@@ -81,13 +81,17 @@ def main(
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=100
+        num_simulations=100,
+        num_rounds = 3
     ) -> str:
 
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
 
+    total_runs = num_rounds*num_simulations* base_params["seed_repetitions"]
+    print("TOTAL RUNS: ", total_runs)
+    
     # Load observed data
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
@@ -95,8 +99,6 @@ def main(
     root = "NN_calibration_multi"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
-
-    num_rounds = 3
 
     # Observed data
     x_o = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
@@ -164,26 +166,30 @@ def main(
     save_object(parameters_list, fileName + "/Data", "var_dict")
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(x_o, fileName + "/Data", "x_o")
-
+    
     samples = posterior.sample((1000000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
-
+    print("best_sample", best_sample)
     save_object(samples, fileName + "/Data", "samples")
     save_object(best_sample, fileName + "/Data", "best_sample")
+    save_object(inference, fileName + "/Data", "inference")
+
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.7, 3]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.7, 3]},
-        {"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.005, 0.05]},
-        #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1, 3]}
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1, 4]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [1, 4]},
+        {"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.001, 0.03]},
+        #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1, 2]},
+        #{"name": "alpha", "subdict": "parameters_vehicle_user", "bounds": [0.4, 0.6]},
     ]
     main(
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=32
+        num_simulations=128,
+        num_rounds= 3
     )
