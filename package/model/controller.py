@@ -112,6 +112,46 @@ class Controller:
 
         self.time_steps_max = parameters_controller["time_steps_max"]
 
+    def update_scale(self):
+        """SCALE DOLLARS"""
+
+        #MULTIPLY
+
+        self.computing_coefficient = self.parameters_controller["computing_coefficient"]
+
+        self.parameters_rebate_calibration["rebate"] = self.parameters_rebate_calibration["rebate"]*self.computing_coefficient
+        self.parameters_rebate_calibration["used_rebate"] = self.parameters_rebate_calibration["used_rebate"]*self.computing_coefficient
+        
+        self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]*self.computing_coefficient
+        self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"] = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]*self.computing_coefficient
+        self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"] = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]*self.computing_coefficient
+        
+        self.parameters_calibration_data["Gas_price_2022"] = self.parameters_calibration_data["Gas_price_2022"]*self.computing_coefficient
+        self.parameters_calibration_data["Electricity_price_2022"] = self.parameters_calibration_data["Electricity_price_2022"]*self.computing_coefficient
+
+        self.parameters_calibration_data["gas_price_california_vec"] = self.parameters_calibration_data["gas_price_california_vec"]*self.computing_coefficient
+        self.parameters_calibration_data["electricity_price_vec"] = self.parameters_calibration_data["electricity_price_vec"]*self.computing_coefficient
+
+        self.parameters_second_hand["scrap_price"] = self.parameters_second_hand["scrap_price"]*self.computing_coefficient
+
+        self.parameters_ICE["mean_Price"] = self.parameters_ICE["mean_Price"]*self.computing_coefficient
+        self.parameters_ICE["min_Cost"] = self.parameters_ICE["min_Cost"]*self.computing_coefficient
+        self.parameters_ICE["max_Cost"] = self.parameters_ICE["max_Cost"]*self.computing_coefficient
+
+        self.parameters_EV["min_Cost"] = self.parameters_EV["min_Cost"]*self.computing_coefficient
+        self.parameters_EV["max_Cost"] = self.parameters_EV["max_Cost"]*self.computing_coefficient
+
+        self.parameters_social_network["WTP_E_mean"] = self.parameters_social_network["WTP_E_mean"]*self.computing_coefficient
+        self.parameters_social_network["WTP_E_sd"] = self.parameters_social_network["WTP_E_sd"]*self.computing_coefficient
+        self.parameters_social_network["nu"] = self.parameters_social_network["nu"]*self.computing_coefficient
+
+        self.parameters_firm["min_profit"] = self.parameters_firm["min_profit"]*self.computing_coefficient
+
+        #DIVIDE
+        self.parameters_firm["lambda"] = self.parameters_firm["lambda"]/self.computing_coefficient
+        self.parameters_vehicle_user["kappa"] = self.parameters_vehicle_user["kappa"]/self.computing_coefficient
+
+
     def set_seed(self):
 
         self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
@@ -135,6 +175,25 @@ class Controller:
 
         #########################################
         #GENERATING DISTANCES
+        self.gen_distance()
+
+        ########################################################################
+        # CHI
+        self.gen_chi()
+
+        ####################################################################################################################################
+        #GAMMA
+        self.gen_gamma()
+
+        ####################################################################################################################################
+        #NU  
+        self.gen_nu()
+        
+        ####################################################################################################################################
+        #BETA
+        self.gen_beta()
+
+    def gen_distance(self):
         #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
         bin_centers = np.array([
             335.2791667,
@@ -157,8 +216,7 @@ class Controller:
         self.d_vec = poisson_samples * scale_factor + min_bin
         self.parameters_social_network["d_vec"] = self.d_vec
 
-        ########################################################################
-        # CHI
+    def gen_chi(self):
         self.a_chi = self.parameters_social_network["a_chi"]
         self.b_chi = self.parameters_social_network["b_chi"]
         self.chi_max = self.parameters_social_network["chi_max"]
@@ -178,42 +236,15 @@ class Controller:
 
         # Check the actual proportion of zeros
         self.proportion_zero_chi = np.mean(self.chi_vec == 0)
-
         self.parameters_social_network["chi_vec"] = self.chi_vec 
 
-
-        ####################################################################################################################################
-        #GAMMA
-        #self.gen_gamma_old()
-        self.gen_gamma_new()
-
-        ####################################################################################################################################
-        #NU  
+    def gen_nu(self):
         self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
         self.nu_median = np.median(self.nu_vec)
         self.parameters_social_network["nu_median"] = self.nu_median
         self.parameters_social_network["nu_vec"] = self.nu_vec 
-        
-        ####################################################################################################################################
-        #BETA
-        #self.gen_beta_old()
-        self.gen_beta_new()
 
-    def gen_gamma_old(self):
-        r = self.parameters_vehicle_user["r"]
-        delta = self.parameters_ICE["delta"]
-        if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
-            print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
-            raise Exception("r <= delta/(1-delta)), raise r or lower delta")
-        
-        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
-        self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
-        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
-        WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
-        self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        self.gamma_vec = self.WTP_E_vec*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
-    
-    def gen_gamma_new(self):
+    def gen_gamma(self):
         r = self.parameters_vehicle_user["r"]
         delta = self.parameters_ICE["delta"]
         if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
@@ -237,60 +268,7 @@ class Controller:
         percentiles_gamma = np.linspace(1 / (2 * self.num_gamma_segments), 1 - 1 / (2 * self.num_gamma_segments), self.num_gamma_segments)
         self.gamma_s = np.quantile(self.gamma_vec, percentiles_gamma)
 
-    def gen_beta_old(self):
-        #BETA
-        self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
-        median_beta = self.calc_beta_median()
-        self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"], median_beta)
-        #self.beta_vec = self.generate_beta_values_quintiles(self.num_individuals,  self.parameters_social_network["income"])
-        self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
-        error = 0.001#just to make sure you catch everything
-        # Calculate the bin edges using quantiles
-        self.beta_bins = np.linspace(min(self.beta_vec) - error, max(self.beta_vec) + error, self.num_beta_segments + 1)
-
-        ####################################################################################################################################
-        #social network data
-        self.beta_median = np.median(self.beta_vec)
-        self.parameters_social_network["beta_vec"] = self.beta_vec 
-        self.parameters_social_network["beta_median"] = self.beta_median
-
-        self.gamma_median = np.median(self.gamma_vec)
-        self.parameters_social_network["gamma_vec"] = self.gamma_vec 
-        self.parameters_social_network["gamma_median"] = self.gamma_median 
-        self.gamma_bins = np.linspace(min(self.gamma_vec) , max(self.gamma_vec), 2+1)#np.linspace(min(self.gamma_vec) - error, max(self.gamma_vec) + error, 2+1)
-        self.parameters_firm_manager["gamma_threshold"] = np.mean(self.gamma_vec)#np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
-        gamma_val_lower = (self.gamma_bins[1] + self.gamma_bins[0])/2
-        gamma_val_upper = (self.gamma_bins[2]  + self.gamma_bins[1])/2
-        self.parameters_firm_manager["gamma_val_empty_lower"] = gamma_val_lower
-        self.parameters_firm_manager["gamma_val_empty_upper"] = gamma_val_upper
-
-        #create the beta and gamma vectors:
-        beta_values = []
-        gamma_values = []
-
-        segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
-        self.num_segments = len(segment_codes) 
-        beta_segment_vals_set = set()
-        for code in segment_codes:
-            beta_idx, gamma_idx, _ = code  # Unpack the segment code
-
-            # Calculate the midpoint for the beta segment
-            beta_lower = self.beta_bins[beta_idx]
-            beta_upper = self.beta_bins[beta_idx + 1]
-            beta_midpoint = (beta_lower + beta_upper) / 2
-
-            beta_segment_vals_set.add(beta_midpoint)
-            
-            beta_values.append(beta_midpoint)
-
-            # Assign gamma value based on the binary index
-            gamma_value = gamma_val_upper if gamma_idx == 1 else gamma_val_lower
-            gamma_values.append(gamma_value)
-
-        self.beta_segment_vals = np.array(beta_values)
-        self.gamma_segment_vals = np.array(gamma_values)
-
-    def gen_beta_new(self):
+    def gen_beta(self):
         ####################################################################################################################################
         
         #BETA
