@@ -91,7 +91,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.0016,
+        "delta": 0.001,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 4,
         "rho":[1,0,0,0.5],
-        "delta": 0.0016,
+        "delta": 0.001,
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.5,
+        "a_chi": 1.3,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 1e-4,
         "U_segments_init": 0,
-        "W_calibration":1e20,
+        "W_calibration":1e10,
         "min_W": 1e-5,
         "r": 0.0016515813,
         "mu": 1,
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

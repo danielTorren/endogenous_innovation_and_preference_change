@@ -176,10 +176,10 @@ class Controller:
 
         # DIVIDE
         self.parameters_firm["lambda"] /= self.computing_coefficient
-        print(f"Lambda: {self.parameters_firm['lambda']}")
+        #print(f"Lambda: {self.parameters_firm['lambda']}")
         
         self.parameters_vehicle_user["kappa"] /= self.computing_coefficient
-        print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
+        #print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
 
         #EMISSIONS
         if change_emisisons_scale:
