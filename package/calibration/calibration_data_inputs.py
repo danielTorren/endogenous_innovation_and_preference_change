@@ -140,8 +140,8 @@ if __name__ == "__main__":
 
     calibration_data_output, gasoline_Kgco2_per_Kilowatt_Hour, Gas_price_2022 , electricity_price_2022, electricity_emissions_intensity_2022, income_df = load_in_calibration_data()
 
-    scale_dollars = 0.00001
-    scale_co2 = 0.00001
+    scale_dollars = 1e-4
+    scale_co2 = 1e-4
 
     calibration_data_input["gas_price_california_vec"] = calibration_data_output["Gas Real Dollars per Kilowatt-Hour"].to_numpy()*scale_dollars
     calibration_data_input["electricity_price_vec"] = calibration_data_output["Electricty Real Dollars per Kilowatt-Hour"].to_numpy()*scale_dollars

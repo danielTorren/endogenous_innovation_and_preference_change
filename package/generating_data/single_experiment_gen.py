@@ -91,7 +91,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
-        "nu":  0.011744,
+        "nu":  0.11744,
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
