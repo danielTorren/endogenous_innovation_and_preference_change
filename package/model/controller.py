@@ -114,7 +114,7 @@ class Controller:
 
         self.time_steps_max = parameters_controller["time_steps_max"]
 
-    def update_scale(self):
+    def update_scale(self, change_emisisons_scale = True):
 
         #DOLLARS
         self.computing_coefficient = self.parameters_controller["computing_coefficient"]
@@ -168,12 +168,6 @@ class Controller:
         self.parameters_EV["max_Cost"] *= self.computing_coefficient
         #print(f"EV Max Cost: {self.parameters_EV['max_Cost']}")
         
-        self.parameters_social_network["WTP_E_mean"] *= self.computing_coefficient
-        #print(f"WTP E Mean: {self.parameters_social_network['WTP_E_mean']}")
-        
-        self.parameters_social_network["WTP_E_sd"] *= self.computing_coefficient
-        #print(f"WTP E SD: {self.parameters_social_network['WTP_E_sd']}")
-        
         self.parameters_social_network["nu"] *= self.computing_coefficient
         #print(f"Nu: {self.parameters_social_network['nu']}")
         
@@ -188,22 +182,33 @@ class Controller:
         print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
 
         #EMISSIONS
-        
-        #self.parameters_calibration_data["electricity_emissions_intensity_vec"] *= self.computing_coefficient
-        #print(f"Electricity Intensity Vec: {self.parameters_calibration_data['electricity_emissions_intensity_vec'][0]}")
-        
-        #self.parameters_calibration_data["Electricity_emissions_intensity_2022"] *= self.computing_coefficient
-        #print(f"Electricity emissions intensity 2022: {self.parameters_calibration_data['Electricity_emissions_intensity_2022']}")
-        
-        #self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"] *= self.computing_coefficient
-        #print("gasoline_Kgco2_per_Kilowatt_Hour: " , self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"])
+        if change_emisisons_scale:
+            self.parameters_calibration_data["electricity_emissions_intensity_vec"] *= self.computing_coefficient
+            #print(f"Electricity Intensity Vec: {self.parameters_calibration_data['electricity_emissions_intensity_vec'][0]}")
+            
+            self.parameters_calibration_data["Electricity_emissions_intensity_2022"] *= self.computing_coefficient
+            #print(f"Electricity emissions intensity 2022: {self.parameters_calibration_data['Electricity_emissions_intensity_2022']}")
+            
+            self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"] *= self.computing_coefficient
+            #print("gasoline_Kgco2_per_Kilowatt_Hour: " , self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"])
 
-        #self.parameters_ICE["production_emissions"] *= self.computing_coefficient
-        #print("ICE production_emissions:", self.parameters_ICE["production_emissions"])
+            self.parameters_ICE["production_emissions"] *= self.computing_coefficient
+            #print("ICE production_emissions:", self.parameters_ICE["production_emissions"])
 
-        #self.parameters_EV["production_emissions"] *= self.computing_coefficient
-        #print("EV production_emissions:", self.parameters_EV["production_emissions"])
+            self.parameters_EV["production_emissions"] *= self.computing_coefficient
+            #print("EV production_emissions:", self.parameters_EV["production_emissions"])
         
+        else:
+            self.parameters_social_network["WTP_E_mean"] *= self.computing_coefficient
+            #print(f"WTP E Mean: {self.parameters_social_network['WTP_E_mean']}")
+            
+            self.parameters_social_network["WTP_E_sd"] *= self.computing_coefficient
+            #print(f"WTP E SD: {self.parameters_social_network['WTP_E_sd']}")
+
+            self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_init"] *= self.computing_coefficient
+            self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] *= self.computing_coefficient
+
+
         #quit()
 
     def set_seed(self):
