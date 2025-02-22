@@ -52,9 +52,9 @@ def generate_single_policy_scenarios_with_seeds(base_params, policy_list, repeti
             base_params_copy["parameters_policies"]["States"][policy] = "High"#TURN ON THE POLICY
             #SET THE POLICY INTENSITY
             if policy == "Carbon_price":
-                base_params_copy["parameters_policies"]["Values"][policy]["High"]["Carbon_price"] = intensity
+                base_params_copy["parameters_policies"]["Values"][policy]["Carbon_price"] = intensity
             else:
-                base_params_copy["parameters_policies"]["Values"][policy]["High"] = intensity
+                base_params_copy["parameters_policies"]["Values"][policy] = intensity
             
             seed_variations = params_list_with_seed(base_params_copy)
             scenarios.extend(seed_variations)
@@ -82,7 +82,7 @@ def grid_search_policy_with_seeds(grid_scenarios, controller_files):
     num_cores = multiprocessing.cpu_count()
 
     def run_scenario(scenario_params, controller_file):
-        print("controller_file", controller_file)
+        #print("controller_file", controller_file)
         controller = load(controller_file)  # Load a fresh copy
         return single_policy_simulation(scenario_params, controller)
 
@@ -110,10 +110,10 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
         dump(controller, f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl")  # Save
         return f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl"  # Return filename
 
-    controller_files = [run_and_save( params_dict[i], i) for i in range(len(params_dict))]
-    #controller_files = Parallel(n_jobs=num_cores, verbose=10)(
-    #    delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
-    #)
+    
+    controller_files = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
+    )
 
     print("done controlere!")
     return controller_files  # Return list of file paths
