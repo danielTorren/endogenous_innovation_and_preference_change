@@ -173,7 +173,7 @@ if __name__ == '__main__':
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
-        "min profit": 0.1
+        "min_profit": 0.1
     },
     "parameters_social_network":{
         "num_individuals": 10000,

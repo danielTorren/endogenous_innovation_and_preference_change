@@ -67,7 +67,7 @@ class Firm:
         self.r = self.parameters_firm["r"]
         #self.delta = self.parameters_firm["delta"]
 
-        self.min_profit = self.parameters_firm["min profit"]
+        self.min_profit = self.parameters_firm["min_profit"]
 
         self.U_segments_init = self.parameters_firm["U_segments_init"]
         
