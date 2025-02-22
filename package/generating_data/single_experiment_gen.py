@@ -90,7 +90,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -159,7 +159,8 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4
+        "num_beta_segments": 4,
+        "num_gamma_segments": 2
     },
     "parameters_firm":{
         "lambda": 1e-5,#proits are in 10s thousands so want that to be the correct order of magnitude
@@ -182,7 +183,9 @@ if __name__ == "__main__":
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.01
+        "proportion_zero_target": 0.01,
+        "income_mu":11.225,
+        "income_sigma":0.927
     },
     "parameters_vehicle_user":{
         "kappa": 1,

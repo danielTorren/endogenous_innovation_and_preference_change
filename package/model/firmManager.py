@@ -27,8 +27,9 @@ class Firm_Manager:
         self.time_steps_tracking_market_data = parameters_firm_manager["time_steps_tracking_market_data"]
         self.min_W = parameters_firm_manager["min_W"]
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
+        self.num_gamma_segments = parameters_firm_manager["num_gamma_segments"]
 
-        self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
+        self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(self.num_gamma_segments), range(2)))
         self.num_segments = len(self.all_segment_codes)
 
         #landscapes
@@ -38,10 +39,7 @@ class Firm_Manager:
         #car paramets
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV 
-        
-        self.gamma_threshold = parameters_firm_manager["gamma_threshold"]
-        self.gamma_val_empty_upper = parameters_firm_manager["gamma_val_empty_upper"]
-        self.gamma_val_empty_lower = parameters_firm_manager["gamma_val_empty_lower"]
+    
 
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 
@@ -132,7 +130,7 @@ class Firm_Manager:
     ############################################################################################################################################################
     #GENERATE MARKET DATA DYNAMIC
 
-    def input_social_network_data(self, beta_vec, environmental_awareness_vec, consider_ev_vec, beta_bins):
+    def input_social_network_data(self, beta_vec, gamma_vec, consider_ev_vec, beta_bins, gamma_bins):
         """
         Set up the individual-level vectors. 
         We'll convert:
@@ -141,20 +139,18 @@ class Firm_Manager:
           - consider_ev_vec is presumably 0..1
         """
         self.beta_vec = beta_vec
-        self.gamma_vec = environmental_awareness_vec
+        self.gamma_vec = gamma_vec
         self.consider_ev_vec = consider_ev_vec
 
-        # Convert beta into 5 segments
-        
-        # Suppose your beta values are roughly in [0, 1].  If not, pick different bin edges.
-        self.beta_bins = beta_bins#np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.01])  
-        # np.digitize returns an integer from 1..len(self.beta_bins)-1
-        # so we subtract 1 to get 0..4
-        self.beta_segment_idx = np.digitize(self.beta_vec, self.beta_bins) - 1  
-        # Now each entry in self.beta_segment_idx is in {0,1,2,3,4}.
 
+        self.beta_bins = beta_bins
+        self.gamma_bins = gamma_bins
+        self.beta_segment_idx = np.digitize(self.beta_vec, self.beta_bins) - 1  
+        self.gamma_segment_idx = np.digitize(self.gamma_vec, self.gamma_bins) - 1  
+
+        # Now each entry in self.beta_segment_idx is in {0,1,2,3,4}.
         # Convert gamma to 0 or 1 based on threshold
-        self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
+        #self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
 
     def calc_exp(self, U):
         exp_input = self.kappa*U
@@ -176,8 +172,6 @@ class Firm_Manager:
         for code in self.all_segment_codes:
             self.market_data[code] = {
                 "I_s_t": 0,
-                "beta_s_t": 0.0,
-                "gamma_s_t": 0.0,
                 "W": self.min_W,#0.0,
                 "history_I_s_t": [],
                 "history_W": [],
@@ -189,37 +183,21 @@ class Firm_Manager:
 
         for i in range(self.num_individuals):
             b_idx = self.beta_segment_idx[i]         # in [0..4]
-            g_idx = self.gamma_binary[i]             # in [0..1]
+            g_idx = self.gamma_segment_idx[i]            # in [0..1]
             e_idx = self.consider_ev_vec[i]          # in [0..1]
             seg_code = (b_idx, g_idx, e_idx)
 
             segment_counts[seg_code] += 1
 
         # 3) Compute midpoints for each segment
-        self.beta_s_values = np.zeros(self.num_segments)
-        self.gamma_s_values = np.zeros(self.num_segments)
         for i, code in enumerate(self.all_segment_codes):
-            count = segment_counts[code]
             b_idx, g_idx, _ = code
 
-            # Compute beta midpoint
-            beta_lower = self.beta_bins[b_idx]
-            beta_upper = self.beta_bins[b_idx + 1]
-            beta_midpoint = (beta_lower + beta_upper) / 2
-
-            # Compute gamma value based on binary index
-            gamma_value = self.gamma_val_empty_upper if g_idx == 1 else self.gamma_val_empty_lower
-
             # Assign values to the market data
-            self.market_data[code]["I_s_t"] = count
-            self.market_data[code]["beta_s_t"] = beta_midpoint
-            self.market_data[code]["gamma_s_t"] = gamma_value
-            self.beta_s_values[i] = beta_midpoint
-            self.gamma_s_values[i] = gamma_value
+            self.market_data[code]["I_s_t"] = segment_counts[code]
         
         #4) calc the utility of each car (already did base utility in the car but need the full value including price and emissiosn production)
         for firm in self.firms_list:
-            firm.input_beta_gamma_segments(self.beta_s_values, self.gamma_s_values)
             firm.calc_init_U_segments()
 
 
@@ -277,7 +255,7 @@ class Firm_Manager:
         segment_counts = defaultdict(int)
         for i in range(self.num_individuals):
             b_idx = self.beta_segment_idx[i]
-            g_idx = self.gamma_binary[i]
+            g_idx = self.gamma_segment_idx[i]
             e_idx = self.consider_ev_vec[i]
             code = (b_idx, g_idx, e_idx)
             segment_counts[code] += 1
@@ -454,7 +432,6 @@ class Firm_Manager:
                 self.efficiency_vals_EV.append(car.Eff_omega_a_t)
                 self.production_cost_vals_EV.append(car.ProdCost_t)
                 self.battery_EV.append(car.B)
-
 
         if self.quality_vals_EV:
             self.history_quality_EV.append(self.quality_vals_EV)

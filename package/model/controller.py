@@ -9,6 +9,7 @@ from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
+from scipy.stats import lognorm
 
 class Controller:
     def __init__(self, parameters_controller):
@@ -59,8 +60,9 @@ class Controller:
         self.second_hand_merchant.calc_median(self.social_network.beta_vec, self.social_network.gamma_vec)        
 
         #pass information across one time
-        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
-
+        #self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
+        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins, self.gamma_bins)
+       
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
 
@@ -129,7 +131,8 @@ class Controller:
     def gen_users_parameters(self):
 
         self.num_individuals = self.parameters_social_network["num_individuals"]
-        
+        self.ev_adoption_state_vec = np.zeros(self.num_individuals)
+
         #########################################
         #GENERATING DISTANCES
         #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
@@ -152,6 +155,7 @@ class Controller:
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
         self.d_vec = poisson_samples * scale_factor + min_bin
+        self.parameters_social_network["d_vec"] = self.d_vec
 
         ########################################################################
         # CHI
@@ -175,15 +179,32 @@ class Controller:
         # Check the actual proportion of zeros
         self.proportion_zero_chi = np.mean(self.chi_vec == 0)
 
+        self.parameters_social_network["chi_vec"] = self.chi_vec 
+
+
         ####################################################################################################################################
         #GAMMA
+        #self.gen_gamma_old()
+        self.gen_gamma_new()
+
+        ####################################################################################################################################
+        #NU  
+        self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
+        self.nu_median = np.median(self.nu_vec)
+        self.parameters_social_network["nu_median"] = self.nu_median
+        self.parameters_social_network["nu_vec"] = self.nu_vec 
+        
+        ####################################################################################################################################
+        #BETA
+        #self.gen_beta_old()
+        self.gen_beta_new()
+
+    def gen_gamma_old(self):
         r = self.parameters_vehicle_user["r"]
         delta = self.parameters_ICE["delta"]
         if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
             print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
-        
-        omega_mean = (self.parameters_ICE["min_Efficiency"] + self.parameters_ICE["max_Efficiency"])/2
         
         self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
@@ -191,14 +212,32 @@ class Controller:
         WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = self.WTP_E_vec*(r - delta - r*delta)/(self.d_vec*(1+r)*(1-delta))
-
-
-        ####################################################################################################################################
-        #NU  
-        self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
+    
+    def gen_gamma_new(self):
+        r = self.parameters_vehicle_user["r"]
+        delta = self.parameters_ICE["delta"]
+        if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
+            print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
+            raise Exception("r <= delta/(1-delta)), raise r or lower delta")
+        
+        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
+        self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
+        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
+        WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
+        self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
+        self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
 
         
-        ####################################################################################################################################
+        self.num_gamma_segments = self.parameters_firm_manager["num_gamma_segments"]
+        # Calculate the bin edges using quantiles
+        quants_gamma = np.linspace(0,1,self.num_gamma_segments + 1)
+        self.gamma_bins =  np.quantile(self.gamma_vec, quants_gamma)
+
+        # Step 1: Define the percentiles for the midpoints
+        percentiles_gamma = np.linspace(1 / (2 * self.num_gamma_segments), 1 - 1 / (2 * self.num_gamma_segments), self.num_gamma_segments)
+        self.gamma_s = np.quantile(self.gamma_vec, percentiles_gamma)
+
+    def gen_beta_old(self):
         #BETA
         self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
@@ -211,28 +250,15 @@ class Controller:
 
         ####################################################################################################################################
         #social network data
-        
-        self.ev_adoption_state_vec = np.zeros(self.num_individuals)
-
-        self.parameters_social_network["beta_vec"] = self.beta_vec 
-        self.parameters_social_network["gamma_vec"] = self.gamma_vec 
-        self.parameters_social_network["chi_vec"] = self.chi_vec 
-        self.parameters_social_network["nu_vec"] = self.nu_vec 
-        self.parameters_social_network["d_vec"] = self.d_vec
-
         self.beta_median = np.median(self.beta_vec)
-        self.gamma_median = np.median(self.gamma_vec)
-        self.nu_median = np.median(self.nu_vec)
-
+        self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["beta_median"] = self.beta_median
+
+        self.gamma_median = np.median(self.gamma_vec)
+        self.parameters_social_network["gamma_vec"] = self.gamma_vec 
         self.parameters_social_network["gamma_median"] = self.gamma_median 
-        self.parameters_social_network["nu_median"] = self.nu_median
-
-        #firm data
         self.gamma_bins = np.linspace(min(self.gamma_vec) , max(self.gamma_vec), 2+1)#np.linspace(min(self.gamma_vec) - error, max(self.gamma_vec) + error, 2+1)
-
         self.parameters_firm_manager["gamma_threshold"] = np.mean(self.gamma_vec)#np.percentile(self.gamma_vec, self.parameters_firm_manager["gamma_threshold_percentile"])
-        
         gamma_val_lower = (self.gamma_bins[1] + self.gamma_bins[0])/2
         gamma_val_upper = (self.gamma_bins[2]  + self.gamma_bins[1])/2
         self.parameters_firm_manager["gamma_val_empty_lower"] = gamma_val_lower
@@ -260,6 +286,56 @@ class Controller:
             # Assign gamma value based on the binary index
             gamma_value = gamma_val_upper if gamma_idx == 1 else gamma_val_lower
             gamma_values.append(gamma_value)
+
+        self.beta_segment_vals = np.array(beta_values)
+        self.gamma_segment_vals = np.array(gamma_values)
+
+    def gen_beta_new(self):
+        ####################################################################################################################################
+        
+        #BETA
+        self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
+        median_beta = self.calc_beta_median()
+        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
+        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_beta)
+        median_income = np.median(incomes)
+        self.beta_vec = median_beta*(median_income/incomes)
+        self.random_state_beta.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+
+        self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
+        # Calculate the bin edges using quantiles
+        quants = np.linspace(0,1,self.num_beta_segments + 1)
+        self.beta_bins =  np.quantile(self.beta_vec, quants)
+
+        # Step 1: Define the percentiles for the midpoints
+        percentiles = np.linspace(1 / (2 * self.num_beta_segments), 1 - 1 / (2 * self.num_beta_segments), self.num_beta_segments)
+        self.beta_s = np.quantile(self.beta_vec, percentiles)
+
+        self.parameters_social_network["beta_vec"] = self.beta_vec 
+        self.parameters_social_network["gamma_vec"] = self.gamma_vec 
+        self.parameters_social_network["chi_vec"] = self.chi_vec 
+        self.parameters_social_network["nu_vec"] = self.nu_vec 
+        self.parameters_social_network["d_vec"] = self.d_vec
+
+        self.beta_median = np.median(self.beta_vec)
+        self.gamma_median = np.median(self.gamma_vec)
+        self.nu_median = np.median(self.nu_vec)
+
+        self.parameters_social_network["beta_median"] = self.beta_median
+        self.parameters_social_network["gamma_median"] = self.gamma_median 
+        self.parameters_social_network["nu_median"] = self.nu_median
+
+        #create the beta and gamma vectors:
+        beta_values = []
+        gamma_values = []
+
+        segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
+        self.num_segments = len(segment_codes) 
+
+        for code in segment_codes:
+            beta_idx, gamma_idx, _ = code  # Unpack the segment code
+            beta_values.append(self.beta_s[beta_idx])
+            gamma_values.append(self.gamma_s[gamma_idx])
 
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
@@ -330,7 +406,6 @@ class Controller:
         gamma = np.median(self.gamma_vec)
         nu = np.median(self.nu_vec)
         P = self.parameters_ICE["mean_Price"]
-        C = C_mean
         W = self.parameters_vehicle_user["W_calibration"]
         D = np.median(self.d_vec)
         
@@ -340,15 +415,11 @@ class Controller:
 
         #print("Min val kappa", 1/(P-C))
         # Calculate the components of the equation
-
-        log_term = np.log(W * (kappa * (P - C) - 1))
-        term2 = (log_term * (1 / kappa)) + P + gamma * E
+        term1 = np.log(W * (kappa * (P - C_mean) - 1))* (1 / kappa)
+        term2 = P + gamma * E
         term3 = -(nu*(B*omega)**zeta)
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
-        
-        # Combine all terms to calculate beta_s
-        beta_s = (1/(Q_mt**alpha))*(term2 + term3 + term4)
-
+        beta_s = (1/(Q_mt**alpha))*(term1 + term2 + term3 + term4)
         
         return beta_s
 
@@ -586,7 +657,6 @@ class Controller:
         
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
-
     #############################################################################################################################
     def setup_id_gen(self):
         self.IDGenerator_firms = IDGenerator()# CREATE ID GENERATOR FOR FIRMS
@@ -624,6 +694,8 @@ class Controller:
         self.parameters_firm["nu"] = self.nu_median
         self.parameters_firm["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_firm["zeta"] = self.parameters_vehicle_user["zeta"]
+        self.parameters_firm["beta_segment_vals"] = self.beta_segment_vals 
+        self.parameters_firm["gamma_segment_vals"] = self.gamma_segment_vals 
 
         if self.t_controller == self.ev_research_start_time:
             self.parameters_firm["ev_research_bool"] = True
