@@ -48,6 +48,7 @@ def plot_combined_best_metrics(best_params_dict, data_array_ev_prop, real_data, 
 
     for idx, metric in enumerate(metrics):
         params = best_params_dict[metric]
+        print("best params", params)
         param_1_idx = np.where(vary_1["property_list"] == params[0])[0][0]
         param_2_idx = np.where(vary_2["property_list"] == params[1])[0][0]
         param_3_idx = np.where(vary_3["property_list"] == params[2])[0][0]
@@ -169,4 +170,4 @@ def main(fileName, dpi=600):
 
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_3D_19_17_36__19_02_2025")
+    main("results/MAPE_ev_3D_22_02_55__22_02_2025")

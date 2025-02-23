@@ -72,6 +72,7 @@ def main(
     params_list = produce_param_list(base_params, vary_1, vary_2)
     
     print("TOTAL RUNS: ", len(params_list))
+    
     data_flat_ev_prop = ev_prop_parallel_run(params_list) 
     print( data_flat_ev_prop.shape)
 

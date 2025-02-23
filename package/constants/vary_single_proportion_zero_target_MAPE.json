@@ -1,7 +1,7 @@
 {
     "property_varied":"proportion_zero_target",
     "subdict":"parameters_social_network",
-    "min": 0.0001,
+    "min": 0.01,
     "max": 0.03,
     "reps": 10
 }     
