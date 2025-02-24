@@ -132,9 +132,9 @@ class Firm:
         #print("self.kappa*U", self.kappa*U)
         #print("self.kappa*maxU", self.kappa*maxU)
         exp_input = self.kappa*U - self.kappa*maxU
-        #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         norm_exp_input = -self.kappa*maxU
-        #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
+        np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
         #print("size", norm_exp_input,W, exp_input)
         #quit()
@@ -200,31 +200,20 @@ class Firm:
         term3 =self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta# Matrix with shape: num cars x num segments
         term4 = - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis])) / (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
         
-        #if self.firm_id == 1 and self.t_firm > 400:
-            #print("car range", B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis],B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis]/1.6 )
-            #quit()
+        #if self.firm_id == 1 and self.t_firm > 490:
             #print("transport_types", transport_types)
             #print("Priceing, EM",- C_m_price[:, np.newaxis][-5:,-3:],- (self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis])[-5:,-3:])
             #print("Quality term",term2[-5:,-3:])
-            #print("rpices and emisison",term1)
-            #print("quality inside", self.beta_s_values[np.newaxis, :]*Quality_a_t[:, np.newaxis])
-            #print("otehr terms",self.zeta,  self.r, (1+self.r)/(1 + self.r - (1- delta[:, np.newaxis])**self.zeta), delta[:, np.newaxis] )
-            #quit()
             #print("Range term ",term3[-5:,-3:])
-            #print("((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta))", ((1+self.r)*(self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta)))
-            #print("(1 + self.r - (1- delta[:, np.newaxis])**self.zeta)", (1 + self.r - (1- delta[:, np.newaxis])**self.zeta))
-            #print("range term inside", self.nu*B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])
             #print("fuel costs and emissions term",term4[-5:,-3:])
-            #print("- self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis]))", - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis]))))
-            #print("(Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))", (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
-            #print("beta vlaues term",self.beta_s_values)
-            #quit()
             #print("U", term1[-5:,-3:] + term2[-5:,-3:] + term3[-5:,-3:] + term4[-5:,-3:])
         U = term1 + term2 + term3 + term4# Matrix with shape: num cars x num segments
         #print("U",U)
         #quit()
         exp_input = (self.kappa*U - 1) - np.log(self.W_vec[np.newaxis, :])
-        #print("self.kappa*U",self.kappa*U)
+        #if self.firm_id == 1 and self.t_firm > 490:
+        #    print("self.kappa*U",np.max(self.kappa*U), self.kappa, np.max(U))
+        #    print("exp_input", np.max(exp_input))
         #print("np.log(self.W_vec[np.newaxis, :])", np.log(self.W_vec[np.newaxis, :]))
         #quit()
         #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
@@ -393,8 +382,9 @@ class Firm:
         # Raw profit
         raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
+
         # Expected profit
-        expected_profit = np.where(
+        expected_profit_all = np.where(
             is_ev_mask[:, np.newaxis],
             raw_profit + self.research_subsidy,
             raw_profit * (1 - self.discriminatory_corporate_tax)
@@ -403,9 +393,21 @@ class Firm:
         # Apply research subsidy for segments that can't buy EVs
         expected_profit = np.where(
             include_vehicle_mask,
-            expected_profit,
+            expected_profit_all,
             self.research_subsidy
         )
+        
+        #if self.firm_id == 2 and self.t_firm > 200:
+        #    print("car_list",len(car_list))
+        #    print("prodfti tax", self.discriminatory_corporate_tax)
+            #print("raw_profit", raw_profit[:10][:2], raw_profit.shape)
+        #    print("is_ev_mask", is_ev_mask)
+            #print("expected_profit_all", expected_profit_all[:10][:2])
+            #print("include_vehicle_mask", include_vehicle_mask[:10][0])
+            #print("expected_profit", expected_profit[:10][:2])
+        
+        #if self.t_firm == 550:
+        #    quit()
 
         # Assign expected profits back to cars
         for i, car in enumerate(car_list):

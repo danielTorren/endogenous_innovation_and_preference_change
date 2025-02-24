@@ -42,7 +42,7 @@ if __name__ == "__main__":
     "duration_future": 154,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1e-4,
+    "computing_coefficient": 1e-5,
     "seeds":{
         "init_tech_seed": 96,
         "landscape_seed_ICE": 27,
@@ -92,9 +92,9 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Discriminatory_corporate_tax": 0,
+            "Discriminatory_corporate_tax": 1,
             "Electricity_subsidy": 0,
-            "Adoption_subsidy": 1,
+            "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
             "Research_subsidy": 0
@@ -105,9 +105,9 @@ if __name__ == "__main__":
                 "Carbon_price": 1,
                 "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":0.95,
-            "Electricity_subsidy":0.99,
-            "Adoption_subsidy":100000,
+            "Discriminatory_corporate_tax":0.5,
+            "Electricity_subsidy":0.5,
+            "Adoption_subsidy":10000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":20000,
             "Research_subsidy":200000
@@ -191,8 +191,8 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 1e-4,
         "U_segments_init": 0,
-        "W_calibration":1e10,
-        "min_W": 1e-5,
+        "W_calibration":1,
+        "min_W": 1e-10,
         "r": 0.0016515813,
         "mu": 1,
         "alpha": 0.5,

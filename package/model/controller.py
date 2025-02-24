@@ -114,7 +114,7 @@ class Controller:
 
         self.time_steps_max = parameters_controller["time_steps_max"]
 
-    def update_scale(self, change_emisisons_scale = True):
+    def update_scale(self, change_emisisons_scale = False):
 
         #DOLLARS
         self.computing_coefficient = self.parameters_controller["computing_coefficient"]
@@ -872,7 +872,8 @@ class Controller:
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
 
         self.electricity_price_subsidy = self.electricity_price_subsidy_time_series[self.t_controller]
-        self.electricity_price = self.electricity_price_vec[self.t_controller] -  self.electricity_price_subsidy#ADJUST THE PRICE HERE HERE!
+        #this NEEDS TO BE A PROPOERTION 
+        self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy)#ADJUST THE PRICE HERE HERE!
 
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
@@ -916,7 +917,7 @@ class Controller:
     def next_step(self,):
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
-        #print("TIME STEP", self.t_controller)
+        print("TIME STEP", self.t_controller)
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()
