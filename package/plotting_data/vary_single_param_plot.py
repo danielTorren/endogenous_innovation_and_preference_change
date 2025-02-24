@@ -80,7 +80,7 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
     #plt.show()
 
 
-def plot_ev_prop(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+def plot_ev_prop(base_params,data_array, property_values_list, fileName, name_property, property_save, dpi=600):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -102,7 +102,7 @@ def plot_ev_prop(data_array, property_values_list, fileName, name_property, prop
         # For each seed, plot individual data
         for seed in range(num_seeds):
             data = data_array[i, seed, :]  # shape (time_steps,)
-            ax_individual.plot(time_series, data, label=f"Seed {seed+1}", alpha=0.7)
+            ax_individual.plot(time_series[base_params["duration_burn_in"]:], data[base_params["duration_burn_in"]:], label=f"Seed {seed+1}", alpha=0.7)
 
         # Calculate mean and 85% confidence interval across seeds
         mean_data = np.mean(data_array[i, :, :], axis=0)
@@ -110,8 +110,8 @@ def plot_ev_prop(data_array, property_values_list, fileName, name_property, prop
         ci_range = sem_data * stats.t.ppf((1 + 0.85) / 2., num_seeds - 1)
 
         # Plot mean and confidence interval
-        ax_mean.plot(time_series, mean_data, color='black', label='Mean', linewidth=2)
-        ax_mean.fill_between(time_series, mean_data - ci_range, mean_data + ci_range, color='gray', alpha=0.3, label='85% CI')
+        ax_mean.plot(time_series[base_params["duration_burn_in"]:], mean_data[base_params["duration_burn_in"]:], color='black', label='Mean', linewidth=2)
+        ax_mean.fill_between(time_series[base_params["duration_burn_in"]:], mean_data[base_params["duration_burn_in"]:] - ci_range[base_params["duration_burn_in"]:], mean_data[base_params["duration_burn_in"]:] + ci_range[base_params["duration_burn_in"]:], color='gray', alpha=0.3, label='85% CI')
 
         # Format individual seed plots
         ax_individual.set_title(f"{delta}")
@@ -386,7 +386,7 @@ def main(fileName, dpi=600):
     property_save = vary_single["property_varied"]
 
     #plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
-    #plot_ev_prop(data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
+    plot_ev_prop(base_params,data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
     #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
     plot_price(base_params,data_array_price , property_values_list, fileName, name_property, property_save, 600)
     #plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
@@ -395,4 +395,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_10_58_24__24_02_2025")
+    main("results/single_param_vary_11_22_22__24_02_2025")
