@@ -55,8 +55,8 @@
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Discriminatory_corporate_tax": 0,
-            "Electricity_subsidy": 1,
+            "Discriminatory_corporate_tax": 1,
+            "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
@@ -68,7 +68,7 @@
                 "Carbon_price": 1,
                 "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":0.95,
+            "Discriminatory_corporate_tax":0.5,
             "Electricity_subsidy":0.95,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
