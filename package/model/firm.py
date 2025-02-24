@@ -397,7 +397,7 @@ class Firm:
             self.research_subsidy
         )
         
-        print("max profit, in $ and lambda", np.max(expected_profit),np.max(expected_profit)/1e-5, self.lambda_exp )
+        #print("max profit, in $ and lambda", np.max(expected_profit),np.max(expected_profit)/1e-5, self.lambda_exp )
         #if self.firm_id == 2 and self.t_firm > 200:
         #    print("car_list",len(car_list))
         #    print("prodfti tax", self.discriminatory_corporate_tax)
