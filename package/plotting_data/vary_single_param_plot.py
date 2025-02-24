@@ -129,7 +129,7 @@ def plot_ev_prop(data_array, property_values_list, fileName, name_property, prop
     plt.tight_layout()
 
     # Save the figure
-    fig.savefig(f"{fileName}/user_ev_prop_multi_{property_save}.png", dpi=dpi)
+    fig.savefig(f"{fileName}/Plots/user_ev_prop_multi_{property_save}.png", dpi=dpi)
 
 
 
@@ -250,8 +250,7 @@ def plot_emissions(data_array, property_values_list, fileName, name_property, pr
     # Save and show
     fig.savefig(f"{fileName}/emissions_{property_save}.png", dpi=dpi)
 
-def plot_price(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
-
+def plot_price(base_params, data_array, property_values_list, fileName, name_property, property_save, dpi=600):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -260,11 +259,14 @@ def plot_price(data_array, property_values_list, fileName, name_property, proper
     time_series = np.arange(time_steps)
 
     # Create subplots with 2 rows per delta
-    fig, axes = plt.subplots(nrows=2, ncols=num_deltas, figsize=(5 * num_deltas, 10), sharex=True, sharey=False)
+    fig, axes = plt.subplots(nrows=2, ncols=num_deltas, figsize=(20, 10), sharex=True, sharey="row")
 
     # If there's only one delta, axes might not be an array, ensure it's consistent
     if num_deltas == 1:
         axes = np.array(axes).reshape(2, 1)
+
+    # Store line objects for the legend
+    line_handles = {}
 
     for i, delta in enumerate(property_values_list):
         ax_new = axes[0, i]  # Upper row for new prices
@@ -272,42 +274,55 @@ def plot_price(data_array, property_values_list, fileName, name_property, proper
 
         # For each seed, compute the mean over individuals and plot
         for seed in range(num_seeds):
-            # data for this delta and seed: shape (time_steps, num_individuals)
-            data = data_array[i, seed, :, :, :] 
+            # Data for this delta and seed: shape (time_steps, num_individuals)
+            data = data_array[i, seed, :, :, :]
             
-            data_new_ICE = data[:, 0, 0]
-            data_second_hand_ICE = data[:, 1, 0]
-            data_new_EV = data[:, 0, 1]
-            data_second_hand_EV = data[:, 1, 1]
+            data_new_ICE = data[:, 0, 0] / base_params["computing_coefficient"]
+            data_second_hand_ICE = data[:, 1, 0] / base_params["computing_coefficient"]
+            data_new_EV = data[:, 0, 1] / base_params["computing_coefficient"]
+            data_second_hand_EV = data[:, 1, 1] / base_params["computing_coefficient"]
 
             # Plot new prices on the upper row
-            ax_new.plot(time_series, data_new_ICE, label=f"ICE", alpha=0.7)
-            ax_new.plot(time_series, data_new_EV, label=f"EV", alpha=0.7, linestyle = "--")
-
+            line_ICE, = ax_new.plot(time_series[base_params["duration_burn_in"]:], 
+                                    data_new_ICE[base_params["duration_burn_in"]:], 
+                                    alpha=0.7, color="blue")
+            
+            line_EV, = ax_new.plot(time_series[base_params["duration_burn_in"]:], 
+                                   data_new_EV[base_params["duration_burn_in"]:], 
+                                   alpha=0.7, linestyle="--", color="green")
+            
             # Plot second-hand prices on the lower row
-            ax_second_hand.plot(time_series, data_second_hand_ICE, label=f"ICE", alpha=0.7)
-            ax_second_hand.plot(time_series, data_second_hand_EV, label=f"EV", alpha=0.7, linestyle = "--")
+            ax_second_hand.plot(time_series[base_params["duration_burn_in"]:], 
+                                data_second_hand_ICE[base_params["duration_burn_in"]:], 
+                                alpha=0.7, color="blue")
+            
+            ax_second_hand.plot(time_series[base_params["duration_burn_in"]:], 
+                                data_second_hand_EV[base_params["duration_burn_in"]:], 
+                                alpha=0.7, linestyle="--", color="green")
+
+            # Store one instance of each line for the legend
+            if "ICE" not in line_handles:
+                line_handles["ICE"] = line_ICE
+            if "EV" not in line_handles:
+                line_handles["EV"] = line_EV
 
         # Format each subplot
-        ax_new.set_title(f"{name_property} = {delta} (New)")
-        ax_second_hand.set_title(f"{name_property} = {delta} (Second-hand)")
+        ax_new.set_title(f"{name_property} = {delta}")
 
         if i == 0:
-            ax_new.set_ylabel("Price (New)")
-            ax_second_hand.set_ylabel("Price (Second-hand)")
+            ax_new.set_ylabel("Price (New), $")
+            ax_second_hand.set_ylabel("Price (Second-hand), $")
 
-        #ax_second_hand.set_xlabel("Time Step")
+    # Add a single legend for the entire figure
+    fig.legend(line_handles.values(), line_handles.keys(), loc="lower center", ncol=2, fontsize=12)
 
-        # Add a legend if desired (or only in one subplot)
-        #ax_new.legend()
-        #ax_second_hand.legend()
+    # Set global x-axis label
     fig.supxlabel("Time Step")
 
-    # Adjust layout
-    ##plt.tight_layout()
-
     # Save and show
-    fig.savefig(f"{fileName}/price_{property_save}.png", dpi=dpi)
+    fig.savefig(f"{fileName}/Plots/price_{property_save}.png", dpi=dpi)
+
+
 ################################################################################################
 
 def plot_efficiency(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
@@ -371,13 +386,13 @@ def main(fileName, dpi=600):
     property_save = vary_single["property_varied"]
 
     #plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
-    plot_ev_prop(data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
+    #plot_ev_prop(data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
     #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
-    plot_price(data_array_price , property_values_list, fileName, name_property, property_save, 600)
+    plot_price(base_params,data_array_price , property_values_list, fileName, name_property, property_save, 600)
     #plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
     #plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_21_16_43__22_02_2025")
+    main("results/single_param_vary_10_58_24__24_02_2025")

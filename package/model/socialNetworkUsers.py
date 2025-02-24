@@ -719,6 +719,8 @@ class Social_Network:
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
         price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis])  # Apply rebate
 
+        #print("diff", np.maximum(0, price_difference_raw) )
+        
         price_difference = np.maximum(0, price_difference_raw) - second_hand_merchant_offer_price
 
         price_difference_T = price_difference.T

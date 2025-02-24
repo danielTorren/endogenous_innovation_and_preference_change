@@ -440,10 +440,6 @@ def plot_history_car_age_multiple_seeds(
     # Save and show the plot
     save_and_show(fig, fileName, "car_age_multiple_seeds", dpi)
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import sem, t
-
 def plot_history_mean_price_multiple_seeds(
     base_params, 
     history_mean_price_ICE_EV, 
@@ -647,4 +643,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_10_17_59__24_02_2025")
+    main("results/multi_seed_single_10_24_49__24_02_2025")
