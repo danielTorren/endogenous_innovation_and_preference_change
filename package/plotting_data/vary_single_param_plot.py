@@ -395,4 +395,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_21_41_48__24_02_2025")
+    main("results/single_param_vary_21_50_46__24_02_2025")
