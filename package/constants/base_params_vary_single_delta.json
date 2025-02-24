@@ -56,7 +56,7 @@
         "States":{
             "Carbon_price": 0,
             "Discriminatory_corporate_tax": 0,
-            "Electricity_subsidy": 0,
+            "Electricity_subsidy": 1,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
