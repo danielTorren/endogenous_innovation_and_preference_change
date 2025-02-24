@@ -91,7 +91,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.3,
+        "a_chi": 1.4,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,

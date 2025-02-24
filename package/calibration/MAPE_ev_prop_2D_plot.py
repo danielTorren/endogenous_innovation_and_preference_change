@@ -2,9 +2,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 from scipy.stats import sem, t
-from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
+#from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
 from package.resources.utility import load_object
 from package.plotting_data.single_experiment_plot import save_and_show
+
+
+def convert_data_short(data_to_fit, base_params):
+
+    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
+    # Define the starting and ending indices for the years 2010 to 2022
+    start_year = 2015
+    end_year = 2022
+
+    # Calculate the average of the last three months of each year
+    averages = []
+
+    #print("filtered_data", filtered_data)
+    for year in range(start_year, end_year + 1):
+        year_start_index = (year - 2001) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
+        start_idx = year_start_index + 9  # October index
+        end_idx = year_start_index + 12  # December index (exclusive)
+        # Ensure the indices are within bounds
+        last_three_months = data_to_fit[start_idx:end_idx]
+        
+        averages.append(np.mean(last_three_months))
+
+    averages_array = np.array(averages)
+
+    return averages_array
 
 # Vectorized MAPE calculation
 def calc_mape_vectorized(actual, predicted):
@@ -43,7 +68,7 @@ def plot_metric_heatmap(metric_function, metric_name, base_params, real_data, da
     for i, param_1 in enumerate(vary_1["property_list"]):
         for j, param_2 in enumerate(vary_2["property_list"]):
             predictions = data_array_ev_prop[i, j]  # Shape: (seeds, time steps)
-            sim_data_array = np.array([convert_data(pred, base_params) for pred in predictions])
+            sim_data_array = np.array([convert_data_short(pred, base_params) for pred in predictions])
             metric_data = metric_function(real_data, sim_data_array)
             metric_values[i, j] = np.mean(metric_data)
 
@@ -100,7 +125,7 @@ def plot_best_parameters_all_metrics(base_params, real_data, data_array_ev_prop,
         i = np.where(vary_1["property_list"] == param_1)[0][0]
         j = np.where(vary_2["property_list"] == param_2)[0][0]
         predictions = data_array_ev_prop[i, j]  # Shape: (seeds, time steps)
-        sim_data_array = np.array([convert_data(pred, base_params) for pred in predictions])
+        sim_data_array = np.array([convert_data_short(pred, base_params) for pred in predictions])
 
         # Plot all seed traces
         for seed_data in sim_data_array:
@@ -131,13 +156,12 @@ def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, v
     x_values = np.arange(len(real_data))  # Assuming time series index
 
     for i, param_1 in enumerate(vary_1["property_list"]):
-        print("",i)
         for j, param_2 in enumerate(vary_2["property_list"]):
             ax = axes[i, j]
 
             # Extract predictions for current parameter pair
             predictions = data_array_ev_prop[i, j, :, :]  # Shape: (seeds, time steps)
-            processed_data_seeds = [convert_data(data, base_params) for data in predictions]
+            processed_data_seeds = [convert_data_short(data, base_params) for data in predictions]
             # Convert to numpy array and ensure consistent dimensions
             processed_data_array = np.array(processed_data_seeds)
 
@@ -190,19 +214,20 @@ def main(fileName, dpi=600):
 
     # Extract actual EV stock proportions (2010-2022)
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-
+    EV_stock_prop_2015_22 = np.asarray(EV_stock_prop_2010_22)[5:]  
+    #print("EV_stock_prop_2015_22",len(EV_stock_prop_2015_22))
     # Plot heatmaps for different metrics
-    #plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    #plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    #plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    #plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
     # Plot best parameters from all metrics
-    #plot_best_parameters_all_metrics(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_best_parameters_all_metrics(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     
-    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, fileName)
+    #plot_ev_stock_all_combinations(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_20_14_43__10_02_2025")
+    main("results/MAPE_ev_2D_11_08_14__23_02_2025")

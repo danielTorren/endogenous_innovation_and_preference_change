@@ -68,15 +68,15 @@ def main(fileName):
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
-    samples = load_object(fileName + "/Data", "samples")
-    best_sample = load_object(fileName + "/Data", "best_sample")
+    #samples = load_object(fileName + "/Data", "samples")
+    #best_sample = load_object(fileName + "/Data", "best_sample")
 
     # Extract parameter bounds and names dynamically
     param_bounds = [p["bounds"] for p in var_dict]
     param_names = [p["name"] for p in var_dict]
 
     # Test posterior samples and plot results
-    #samples = posterior.sample((10000000,), x=x_o)
+    samples = posterior.sample((10000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     #print("Log probabilities:", log_probability_samples)
 
@@ -93,5 +93,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_00_30_15__13_02_2025",
+        fileName="results/NN_calibration_multi_00_40_03__23_02_2025",
     )

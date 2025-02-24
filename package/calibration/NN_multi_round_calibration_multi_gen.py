@@ -22,7 +22,7 @@ def convert_data(data_to_fit, base_params):
 
     # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
     # Define the starting and ending indices for the years 2010 to 2022
-    start_year = 2010
+    start_year = 2016
     end_year = 2022
 
     # Calculate the average of the last three months of each year
@@ -95,13 +95,14 @@ def main(
     # Load observed data
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2016_22 = EV_stock_prop_2010_22[6:]
 
     root = "NN_calibration_multi"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
     # Observed data
-    x_o = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
+    x_o = torch.tensor(EV_stock_prop_2016_22, dtype=torch.float32)
 
     # Define the prior
     low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -159,7 +160,7 @@ def main(
     createFolder(fileName)
 
     # Save results
-    match_data = {"EV_stock_prop_2010_22": EV_stock_prop_2010_22}
+    match_data = {"EV_stock_prop_2016_22": EV_stock_prop_2016_22}
     save_object(match_data, fileName + "/Data", "match_data")
     save_object(posterior, fileName + "/Data", "posterior")
     save_object(prior, fileName + "/Data", "prior")
@@ -181,8 +182,8 @@ if __name__ == "__main__":
     parameters_list = [
         {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1, 3]},
         {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [1, 3]},
-        {"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.01, 0.05]},
-        #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1, 2]},
+        #{"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.001, 0.05]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 5e-4]},
         #{"name": "alpha", "subdict": "parameters_vehicle_user", "bounds": [0.4, 0.6]},
     ]
     main(
