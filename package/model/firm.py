@@ -134,9 +134,9 @@ class Firm:
         #print("self.kappa*U", self.kappa*U)
         #print("self.kappa*maxU", self.kappa*maxU)
         exp_input = self.kappa*U - self.kappa*maxU
-        np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+        #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         norm_exp_input = -self.kappa*maxU
-        np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
+        #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
         #print("size", norm_exp_input,W, exp_input)
         #quit()
