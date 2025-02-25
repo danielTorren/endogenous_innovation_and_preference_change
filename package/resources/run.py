@@ -323,6 +323,6 @@ def parallel_run_multi_seed(params_list):
         history_production_cost_EV, 
         history_distance_individual_ICE, 
         history_distance_individual_EV,
-        np.asarray(history_profit_margins_ICE),
-        np.asarray(history_profit_margins_EV)
+        history_profit_margins_ICE,
+        history_profit_margins_EV
     )
