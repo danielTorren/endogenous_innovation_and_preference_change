@@ -178,8 +178,9 @@ class Controller:
         self.parameters_firm["lambda"] /= self.computing_coefficient
         #print(f"Lambda: {self.parameters_firm['lambda']}")
         
+        print(f"BEFORE Kappa: {self.parameters_vehicle_user['kappa']}")
         self.parameters_vehicle_user["kappa"] /= self.computing_coefficient
-        #print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
+        print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
 
         #EMISSIONS
         if change_emisisons_scale:
@@ -449,7 +450,7 @@ class Controller:
         # Calculate Q_mt (assuming Q_mt is given or calculated elsewhere)
         Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
         B = self.parameters_ICE["fuel_tank"]
-
+        print("min kappa", 1/(P-C_mean),kappa)
         print("inside", W * (kappa * (P - C_mean) - 1), kappa * (P - C_mean) - 1, kappa*(P - C_mean), kappa, P - C_mean)
         # Calculate the components of the equation
         term1 = np.log(W * (kappa * (P - C_mean) - 1))* (1 / kappa)
