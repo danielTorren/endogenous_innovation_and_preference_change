@@ -225,9 +225,9 @@ def main(fileName, dpi=600):
     # Plot best parameters from all metrics
     plot_best_parameters_all_metrics(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     
-    #plot_ev_stock_all_combinations(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName)
+    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_11_08_14__23_02_2025")
+    main("results/MAPE_ev_2D_13_11_00__25_02_2025")
