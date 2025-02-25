@@ -1,11 +1,11 @@
 {
-    "seed_repetitions": 60,
+    "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
     "duration_future": 154,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1e-4,
+    "computing_coefficient": 1e-5,
     "seeds":{
         "init_tech_seed": 96,
         "landscape_seed_ICE": 27,
@@ -57,7 +57,7 @@
             "Carbon_price": 0,
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
-            "Adoption_subsidy": 1,
+            "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
             "Research_subsidy": 0
@@ -65,15 +65,15 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 1,
+                "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":0.95,
-            "Electricity_subsidy":0.95,
+            "Discriminatory_corporate_tax":0.5,
+            "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":20000,
-            "Research_subsidy":200000
+            "Production_subsidy":58150,
+            "Research_subsidy":1000000
         }
     },
     "parameters_second_hand":{
@@ -132,12 +132,13 @@
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
-        "min_profit": 1000
+        "min_profit": 1000,
+        "max_cars_prod": 5
     },
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.35,
+        "a_chi": 1.4,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -154,8 +155,8 @@
     "parameters_vehicle_user":{
         "kappa": 1e-4,
         "U_segments_init": 0,
-        "W_calibration":1e20,
-        "min_W": 1e-5,
+        "W_calibration":1,
+        "min_W": 1e-10,
         "r": 0.0016515813,
         "mu": 1,
         "alpha": 0.5,

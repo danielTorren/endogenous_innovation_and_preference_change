@@ -95,7 +95,7 @@ if __name__ == "__main__":
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
-            "Adoption_subsidy_used": 1,
+            "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
             "Research_subsidy": 0
         },
