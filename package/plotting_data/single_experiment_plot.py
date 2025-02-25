@@ -110,6 +110,23 @@ def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600):
     # Save and show the plot
     save_and_show(fig, fileName, "plot_prop_EV_on_sale", dpi)
 
+def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Plot stacked area (continuous stacked bar equivalent)
+    ax.plot(firm_manager.history_prop_EV_research[base_params["duration_burn_in"]:], color = "Green")
+    #ax.plot(firm_manager.history_prop_ICE_research[base_params["duration_burn_in"]:], color = "Blue", label = "ICE")
+
+    add_vertical_lines(ax, base_params)
+    # Set plot labels and limits
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Yearly average all firms: Proportion of Reserach EV")
+    ax.set_ylim(0, 1)  # Proportion range
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_history_prop_EV_research", dpi)
+
+
 
 def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -970,6 +987,7 @@ def main(fileName, dpi=400):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
+    plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
     plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)

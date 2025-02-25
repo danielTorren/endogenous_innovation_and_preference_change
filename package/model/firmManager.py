@@ -29,6 +29,8 @@ class Firm_Manager:
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
         self.num_gamma_segments = parameters_firm_manager["num_gamma_segments"]
 
+        self.production_subsidy = 0 #NEEDED FOR TIEM STEP 0
+
         self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(self.num_gamma_segments), range(2)))
         self.num_segments = len(self.all_segment_codes)
 
@@ -287,14 +289,17 @@ class Firm_Manager:
     
     ######################################################################################################################
 
-    def calc_total_profits(self, past_new_bought_vehicles):
+    def calc_total_profits(self, past_new_bought_vehicles, prod_subsidy):
 
         total_profit_all_firms = 0         
         for car in self.cars_on_sale_all_firms:#LOOP OVER ALL CARS ON SALE TO DO IT IN ONE GO I GUESS
             num_vehicle_sold = past_new_bought_vehicles.count(car)
             
             if num_vehicle_sold > 0:#ONLY COUNT WHEN A CAR HAS ACTUALLY BEEN SOLD
-                profit = (car.price - car.ProdCost_t)
+                if car.transportType == 3:
+                    profit = car.price - np.maximum(0,car.ProdCost_t - prod_subsidy)
+                else:
+                    profit = car.price - car.ProdCost_t
                 total_profit = num_vehicle_sold*profit
                 car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
                 total_profit_all_firms += total_profit
@@ -346,13 +351,22 @@ class Firm_Manager:
         profit_margin_EV = []
 
         for car in past_new_bought_vehicles:
-            profit_margin = (car.price - car.ProdCost_t)/car.ProdCost_t
             if car.transportType == 3:
+                prod_cost = np.maximum(0, car.ProdCost_t - self.production_subsidy)
+                if prod_cost == 0:
+                    profit_margin = np.inf
+                else:
+                    profit_margin = (car.price - prod_cost)/prod_cost
+                
                 profit_margin_EV.append(profit_margin)
             else:
+                prod_cost = car.ProdCost_t
+                if prod_cost == 0:
+                    profit_margin = np.inf
+                else:
+                    profit_margin = (car.price - prod_cost)/prod_cost
                 profit_margin_ICE.append(profit_margin)
-        #if not profit_margin_EV:
-        #    profit_margin_EV.append(np.nan)#if no evs then just add nan
+
         return profit_margin_ICE, profit_margin_EV
     
     #####################################################################################################################
@@ -386,15 +400,37 @@ class Firm_Manager:
         self.history_prop_EV = []
 
         self.history_prop_EV_research = []
+        self.history_prop_ICE_research = []
 
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
-        
 
-        #reserach_type = np.asarray([firm.history_research_type[-13:] for firm in self.firms_list])
-        #self.history_research_type
+        # Extract research type history for each firm (last 12 years, or fewer if not available)
+        research_history = [firm.history_research_type[-12:] for firm in self.firms_list]
+
+        # Convert to numpy array for easier calculations
+        research_history = np.array(research_history, dtype=float)  # Convert to float to handle NaNs
+
+        # Count valid (non-NaN) research occurrences
+        valid_counts = np.sum(~np.isnan(research_history), axis=1)  # Count non-NaN entries per firm
+
+        # Count occurrences of EV (1) and ICE (0) research
+        ev_counts = np.nansum(research_history == 1, axis=1)  # Count EV research (ignoring NaNs)
+        ice_counts = np.nansum(research_history == 0, axis=1)  # Count ICE research (ignoring NaNs)
+
+        # Compute proportions (avoid division by zero)
+        ev_proportion = np.where(valid_counts > 0, ev_counts / valid_counts, np.nan)
+        ice_proportion = np.where(valid_counts > 0, ice_counts / valid_counts, np.nan)
+
+        # Compute average proportion across all firms
+        avg_ev_proportion = np.nanmean(ev_proportion)  # Ignore NaNs in mean calculation
+        avg_ice_proportion = np.nanmean(ice_proportion)
+
+        self.history_prop_EV_research.append(avg_ev_proportion)
+        self.history_prop_ICE_research.append(avg_ice_proportion)
+
 
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.cars_on_sale_all_firms)
         self.history_prop_EV.append(self.EV_users_count/len(self.cars_on_sale_all_firms))
@@ -493,7 +529,7 @@ class Firm_Manager:
         
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
-        self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
+        self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles, self.production_subsidy)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
         
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.carbon_price = carbon_price

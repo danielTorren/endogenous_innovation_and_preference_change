@@ -102,15 +102,15 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.5,
             "Electricity_subsidy":0.5,
-            "Adoption_subsidy":10000,
+            "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":40000,
-            "Research_subsidy":200000
+            "Production_subsidy":58150,
+            "Research_subsidy":1000000
         }
     },
     "parameters_second_hand":{
@@ -170,12 +170,12 @@ if __name__ == "__main__":
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
         "min_profit": 1000,
-        "max_cars_prod": 2
+        "max_cars_prod": 5
     },
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.35,
+        "a_chi": 1.5,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
