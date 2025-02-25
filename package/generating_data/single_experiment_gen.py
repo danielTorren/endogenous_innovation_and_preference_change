@@ -42,7 +42,7 @@ if __name__ == "__main__":
     "duration_future": 154,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1e-5,
+    "computing_coefficient": 1,
     "seeds":{
         "init_tech_seed": 96,
         "landscape_seed_ICE": 27,
