@@ -310,7 +310,7 @@ class Firm_Manager:
 
                 #OPTIMIZATION OF PRODUCTION SUBSIDY
                 if car.transportType == 3:
-                    self.policy_distortion += num_vehicle_sold*self.production_subsidy
+                    self.policy_distortion += num_vehicle_sold * np.minimum(car.ProdCost_t, self.production_subsidy)
 
         return total_profit_all_firms
 

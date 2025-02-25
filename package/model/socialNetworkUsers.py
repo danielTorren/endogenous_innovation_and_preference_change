@@ -473,7 +473,7 @@ class Social_Network:
             if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
                 #USED ADOPTION SUBSIDY OPTIMIZATION
                 if vehicle_chosen.transportType == 3:
-                    self.policy_distortion += self.used_rebate           
+                    self.policy_distortion += np.minimum(vehicle_chosen.price, self.used_rebate)           
 
                 ###########################################################################
                 #DO NOT DELETE
@@ -495,7 +495,7 @@ class Social_Network:
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
                 #ADOPTION SUBSIDY OPTIMIZATION
                 if vehicle_chosen.transportType == 3:
-                    self.policy_distortion += self.rebate    
+                    self.policy_distortion += np.minimum(vehicle_chosen.price, self.rebate)         
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
