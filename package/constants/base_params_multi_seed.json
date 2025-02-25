@@ -139,7 +139,7 @@
         "num_individuals":3000,
         "chi_max": 0.9,
         "a_chi": 1.2,
-        "b_chi": 32.83,
+        "b_chi": 2.83,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
