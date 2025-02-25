@@ -562,6 +562,8 @@ def main(fileName, dpi=600):
     print(base_params)
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
 
+    history_driving_emissions_arr = load_object(fileName + "/Data", "history_driving_emissions_arr")
+    history_production_emissions_arr = load_object(fileName + "/Data", "history_production_emissions_arr")
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
     history_prop_EV_arr= load_object(fileName + "/Data", "history_prop_EV_arr")
     #history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
@@ -585,12 +587,24 @@ def main(fileName, dpi=600):
 
     # Plot each dataset
     #"""
-    plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_total_emissions_arr, 
-                    "Total Emissions Over Time", 
+    plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
+                    "Total Driving Emissions Over Time", 
                     "Time Step, months", 
                     "Total Emissions, kgCO2", 
-                    "history_total_emissions_and_index")
+                    "history_total_driving_emissions_and_index")
 
+    plot_data_across_seeds(base_params, fileName,history_driving_emissions_arr, 
+                        "Total Driving Emissions Over Time", 
+                        "Time Step, months", 
+                        "Total Emissions, kgCO2", 
+                        "history_total_driving_emissions")
+    
+    plot_data_across_seeds(base_params, fileName,history_production_emissions_arr, 
+                        "Total Production Emissions Over Time", 
+                        "Time Step, months", 
+                        "Total Emissions, kgCO2", 
+                        "history_total_production_emissions")
+    
     plot_data_across_seeds(base_params, fileName,history_total_emissions_arr, 
                         "Total Emissions Over Time", 
                         "Time Step, months", 
@@ -643,4 +657,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_10_24_49__24_02_2025")
+    main("results/multi_seed_single_12_17_53__21_02_2025")

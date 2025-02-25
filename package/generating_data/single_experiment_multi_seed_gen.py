@@ -53,7 +53,9 @@ def main(
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
     (
-        history_total_emissions_arr,#Emmissions flow
+        history_driving_emissions_arr,#Emmissions flow
+        history_production_emissions_arr,
+        history_total_emissions_arr,
         history_prop_EV_arr, 
         history_car_age_arr, 
         history_mean_price_ICE_EV_arr,
@@ -66,29 +68,33 @@ def main(
         history_efficiency_ICE, 
         history_efficiency_EV, 
         history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_distance_individual_ICE, 
-        history_distance_individual_EV
+        history_production_cost_EV,
+        history_profit_margins_ICE,
+        history_profit_margins_EV
     ) = parallel_run_multi_seed(
         params_list
     )
 
     createFolder(fileName)
     
+    save_object(history_driving_emissions_arr, fileName + "/Data", "history_driving_emissions_arr")
+    save_object(history_production_emissions_arr, fileName + "/Data", "history_production_emissions_arr")
     save_object(history_total_emissions_arr, fileName + "/Data", "history_total_emissions_arr")
     save_object(history_prop_EV_arr, fileName + "/Data", "history_prop_EV_arr")
-    #save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")
+    save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")
     save_object(history_mean_price_ICE_EV_arr, fileName + "/Data", "history_mean_price_ICE_EV_arr")
     save_object(history_median_price_ICE_EV_arr, fileName + "/Data", "history_median_price_ICE_EV_arr")
     save_object(history_total_utility_arr, fileName + "/Data", "history_total_utility_arr")
     save_object(history_market_concentration_arr, fileName + "/Data", "history_market_concentration_arr")
     save_object(history_total_profit_arr, fileName + "/Data", "history_total_profit_arr")
-    #save_object(history_quality_ICE, fileName + "/Data", "history_quality_ICE")
-    #save_object(history_quality_EV, fileName + "/Data", "history_quality_EV")
-    #save_object(history_efficiency_ICE, fileName + "/Data", "history_efficiency_ICE")
-    #save_object(history_efficiency_EV, fileName + "/Data", "history_efficiency_EV")
-    #save_object(history_production_cost_ICE, fileName + "/Data", "history_production_cost_ICE")
-    #save_object(history_production_cost_EV, fileName + "/Data", "history_production_cost_EV")
+    save_object(history_quality_ICE, fileName + "/Data", "history_quality_ICE")
+    save_object(history_quality_EV, fileName + "/Data", "history_quality_EV")
+    save_object(history_efficiency_ICE, fileName + "/Data", "history_efficiency_ICE")
+    save_object(history_efficiency_EV, fileName + "/Data", "history_efficiency_EV")
+    save_object(history_production_cost_ICE, fileName + "/Data", "history_production_cost_ICE")
+    save_object(history_production_cost_EV, fileName + "/Data", "history_production_cost_EV")
+    save_object(history_profit_margins_ICE, fileName + "/Data", "history_profit_margins_ICE")
+    save_object(history_profit_margins_EV, fileName + "/Data", "history_profit_margins_EV")
     #save_object(history_distance_individual_ICE, fileName + "/Data", "history_distance_individual_ICE")
     #save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
     save_object(base_params, fileName + "/Data", "base_params")

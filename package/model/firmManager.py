@@ -432,8 +432,6 @@ class Firm_Manager:
         # Compute the **overall average proportion** across all firms (ignoring empty cases)
         avg_ev_proportion = np.mean(ev_proportion)  # No need for nanmean since we ensured no NaNs
         avg_ice_proportion = np.mean(ice_proportion)
-
-
         self.history_prop_EV_research.append(avg_ev_proportion)
         self.history_prop_ICE_research.append(avg_ice_proportion)
 

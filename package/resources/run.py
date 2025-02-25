@@ -271,7 +271,9 @@ def generate_multi_seed(params: dict):
         data.social_network.history_distance_individual_ICE, 
         data.social_network.history_distance_individual_EV,
         data.firm_manager.history_market_concentration,
-        data.firm_manager.history_total_profit
+        data.firm_manager.history_total_profit,
+        data.firm_manager.history_profit_margins_ICE,
+        data.firm_manager.history_profit_margins_EV
     )
 
 def parallel_run_multi_seed(params_list):
@@ -298,7 +300,9 @@ def parallel_run_multi_seed(params_list):
         history_distance_individual_ICE, 
         history_distance_individual_EV,
         history_market_concentration,
-        history_total_profit
+        history_total_profit, 
+        history_profit_margins_ICE,
+        history_profit_margins_EV
     ) = zip(*res)
     
     # Return results as arrays where applicable
@@ -319,4 +323,6 @@ def parallel_run_multi_seed(params_list):
         history_production_cost_EV, 
         history_distance_individual_ICE, 
         history_distance_individual_EV,
+        np.asarray(history_profit_margins_ICE),
+        np.asarray(history_profit_margins_EV)
     )
