@@ -416,9 +416,6 @@ class Social_Network:
         row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
         # Step 5: Compute safe exponentiation input and clip to prevent overflow
-        if self.t_social_network == 300:
-            print("vals", masked_utilities[valid_rows][0])
-            quit()
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
         #np.clip(exp_input, -700, 700, out=exp_input)
 
