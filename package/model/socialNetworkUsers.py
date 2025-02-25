@@ -416,6 +416,9 @@ class Social_Network:
         row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
         # Step 5: Compute safe exponentiation input and clip to prevent overflow
+        if self.t_social_network == 300:
+            print("vals", masked_utilities[valid_rows][0])
+            quit()
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
         #np.clip(exp_input, -700, 700, out=exp_input)
 
@@ -450,7 +453,7 @@ class Social_Network:
 
             choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)
-
+        #print("U chosen:", individual_specific_util_kappa[choice_index]/self.kappa, np.max(individual_specific_util_kappa)/self.kappa)
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
 

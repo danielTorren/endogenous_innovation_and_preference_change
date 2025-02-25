@@ -567,11 +567,11 @@ def main(fileName, dpi=600):
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
     history_prop_EV_arr= load_object(fileName + "/Data", "history_prop_EV_arr")
     #history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
-    history_mean_price_ICE_EV_arr= load_object( fileName + "/Data", "history_mean_price_ICE_EV_arr")
+    history_mean_price_ICE_EV_arr = load_object( fileName + "/Data", "history_mean_price_ICE_EV_arr")
     history_median_price_ICE_EV_arr= load_object( fileName + "/Data", "history_median_price_ICE_EV_arr")
     history_total_utility_arr= load_object(fileName + "/Data", "history_total_utility_arr")
     history_market_concentration_arr= load_object( fileName + "/Data", "history_market_concentration_arr")
-    history_total_profit_arr= load_object( fileName + "/Data", "history_total_profit_arr")
+    history_total_profit_arr = load_object( fileName + "/Data", "history_total_profit_arr")
     #history_quality_ICE= load_object( fileName + "/Data", "history_quality_ICE")
     #history_quality_EV= load_object( fileName + "/Data", "history_quality_EV")
     #history_efficiency_ICE= load_object( fileName + "/Data", "history_efficiency_ICE")
@@ -606,17 +606,16 @@ def main(fileName, dpi=600):
                         "history_total_production_emissions")
     
     plot_data_across_seeds(base_params, fileName,history_total_emissions_arr, 
-                        "Total Emissions Over Time", 
+                       "Total Emissions Over Time", 
                         "Time Step, months", 
                         "Total Emissions, kgCO2", 
                         "history_total_emissions")
 
-    plot_ev_uptake_dual(EV_stock_prop_2010_22, base_params, fileName,history_prop_EV_arr, 
+    plot_ev_uptake_dual(EV_stock_prop_2010_22, base_params, fileName, history_prop_EV_arr, 
                         "Proportion of EVs Over Time", 
                         "Time Step, months", 
                         "Proportion of EVs", 
                         "history_prop_EV")
-
 
     plot_data_across_seeds(base_params, fileName,history_total_utility_arr, 
                         "Total Utility Over Time", 
@@ -657,4 +656,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_12_17_53__21_02_2025")
+    main("results/multi_seed_single_00_08_36__26_02_2025")

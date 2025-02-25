@@ -988,8 +988,6 @@ def main(fileName, dpi=400):
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
     plot_preferences(social_network, fileName, dpi)
-    plt.show()
-
     plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)

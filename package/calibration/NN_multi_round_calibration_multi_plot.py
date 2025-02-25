@@ -47,44 +47,44 @@ def main(fileName):
 
 
     # Extract observed statistics
-    EV_stock_prop_2010_22 = match_data["EV_stock_prop_2010_22"]
+    EV_stock_prop_2016_22 = match_data["EV_stock_prop_2016_22"]
     #median_distance_traveled = match_data["median_distance_traveled"]
     #median_age = match_data["median_age"]
     #median_price = match_data["median_price"]
 
     # Convert data to tensors
-    EV_stock_prop_2010_22_tensor = torch.tensor(EV_stock_prop_2010_22, dtype=torch.float32)
+    EV_stock_prop_2016_22_tensor = torch.tensor(EV_stock_prop_2016_22, dtype=torch.float32)
     #median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
     #median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
     #median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
 
     # Reconstruct x_o by concatenating the tensors
-    #x_o = torch.cat((EV_stock_prop_2010_22_tensor, 
+    #x_o = torch.cat((EV_stock_prop_2016_22_tensor, 
     #                 median_distance_traveled_tensor, 
     #                 median_age_tensor, 
     #                 median_price_tensor), dim=0)
-    x_o = EV_stock_prop_2010_22_tensor
+    x_o = EV_stock_prop_2016_22_tensor
 
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
-    #samples = load_object(fileName + "/Data", "samples")
-    #best_sample = load_object(fileName + "/Data", "best_sample")
+    samples = load_object(fileName + "/Data", "samples")
+    best_sample = load_object(fileName + "/Data", "best_sample")
 
     # Extract parameter bounds and names dynamically
     param_bounds = [p["bounds"] for p in var_dict]
     param_names = [p["name"] for p in var_dict]
 
     # Test posterior samples and plot results
-    samples = posterior.sample((10000,), x=x_o)
-    log_probability_samples = posterior.log_prob(samples, x=x_o)
+    #samples = posterior.sample((10000,), x=x_o)
+    #log_probability_samples = posterior.log_prob(samples, x=x_o)
     #print("Log probabilities:", log_probability_samples)
 
     # Find sample with greatest log probability
-    max_log_prob_index = log_probability_samples.argmax()
-    best_sample = samples[max_log_prob_index]
+    #max_log_prob_index = log_probability_samples.argmax()
+    #best_sample = samples[max_log_prob_index]
     print("Sample with the greatest log probability:", best_sample)
-    print("Greatest log probability:", log_probability_samples[max_log_prob_index])
+    #print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
     save_object(best_sample, fileName + "/Data", "best_sample")
     
@@ -93,5 +93,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_00_40_03__23_02_2025",
+        fileName="results/NN_calibration_multi_17_10_08__25_02_2025",
     )
