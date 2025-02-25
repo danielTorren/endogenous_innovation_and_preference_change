@@ -178,7 +178,7 @@ class Controller:
         self.parameters_firm["lambda"] /= self.computing_coefficient
         #print(f"Lambda: {self.parameters_firm['lambda']}")
         
-        print(f"BEFORE Kappa: {self.parameters_vehicle_user['kappa']}")
+        print(f"BEFORE Kappa: {self.parameters_vehicle_user['kappa']}", self.computing_coefficient, 1/self.computing_coefficient)
         self.parameters_vehicle_user["kappa"] /= self.computing_coefficient
         print(f"Kappa: {self.parameters_vehicle_user['kappa']}")
 
