@@ -175,8 +175,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.4,
-        "b_chi": 3,
+        "a_chi": 4,
+        "b_chi": 4,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.01,
+        "proportion_zero_target": 0.005,
         "income_mu":11.225,
         "income_sigma":0.927
     },

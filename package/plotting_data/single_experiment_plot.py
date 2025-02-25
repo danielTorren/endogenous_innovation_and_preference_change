@@ -333,7 +333,7 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     save_and_show(fig, fileName, "vehicle_prod_attribute_time_series_ICE_EV", dpi)
 
 def plot_preferences(social_network, fileName, dpi=600):
-    fig, axes = plt.subplots(nrows=1,ncols=3,figsize=(10, 6))
+    fig, axes = plt.subplots(nrows=1,ncols=3,figsize=(12, 6))
     axes[0].hist(social_network.beta_vec, bins=30, alpha=0.5, label=r'$\beta_i$ (Price sentivity)')
     axes[1].hist(social_network.gamma_vec, bins=30, alpha=0.5, label=r'$\gamma_i$ (Environmental concern)')
     axes[2].hist(social_network.chi_vec, bins=30, alpha=0.5, label=r'$\chi$ (EV Threshold)')
@@ -987,6 +987,9 @@ def main(fileName, dpi=400):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
+    plot_preferences(social_network, fileName, dpi)
+    plt.show()
+
     plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
@@ -1001,7 +1004,7 @@ def main(fileName, dpi=400):
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
     plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, dpi)
-    plot_preferences(social_network, fileName, dpi)
+    
     plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_segment_count_grid(base_params,firm_manager, time_series, fileName)
@@ -1016,4 +1019,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_20_07_03__22_02_2025")
+    main("results/single_experiment_12_51_06__25_02_2025")
