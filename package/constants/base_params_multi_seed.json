@@ -127,7 +127,7 @@
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 5e-9,
+        "lambda": 1e-3,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,

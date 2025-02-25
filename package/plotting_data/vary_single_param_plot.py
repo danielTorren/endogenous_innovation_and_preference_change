@@ -373,6 +373,7 @@ def plot_efficiency(data_array, property_values_list, fileName, name_property, p
 def main(fileName, dpi=600):
 
     base_params = load_object(fileName + "/Data", "base_params")
+    print("base_params", base_params)
     #data_array_distance = load_object(fileName + "/Data", "data_array_distance")
     data_array_EV_prop = load_object(fileName + "/Data", "data_array_EV_prop")
     #data_array_age =  load_object(fileName + "/Data", "data_array_age")

@@ -35,6 +35,8 @@ class Firm:
         self.zeta = parameters_firm["zeta"]
         self.alpha = parameters_firm["alpha"]
 
+        self.max_cars_prod = parameters_firm["max_cars_prod"] 
+
         self.firm_id = firm_id
         #ICE
         self.init_tech_ICE = init_tech_ICE
@@ -334,7 +336,6 @@ class Firm:
         # adjust memory bank
         self.update_memory_len()
 
-
     def calc_predicted_profit_segments_research(self, car_list, car_data):
         """
         THIS INCLUDES THE FLAT SUBSIDY FOR EV RESEARCH!
@@ -574,6 +575,7 @@ class Firm:
                 
     ########################################################################################################################################
     #PRODUCTION
+
     def calc_predicted_profit_segments_production(self, car_list, car_data):
         """
         Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars,
@@ -619,7 +621,7 @@ class Firm:
         # Raw profit
         raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
-        # Expected profit
+        # Expected profit, if ice car then apply the discriminatory tax
         expected_profit = np.where(
             is_ev_mask[:, np.newaxis],
             raw_profit,
@@ -654,6 +656,7 @@ class Firm:
         valid_segments = (selected_vehicle.transportType == 2) | ((e_indices == 1) & (selected_vehicle.transportType == 3))
 
         price_s_values = np.array([selected_vehicle.optimal_price_segments[code] for code in segment_codes_reduc])
+        
         price_adjust_values = np.where(
             selected_vehicle.transportType == 3,
             np.maximum(0, price_s_values - (self.rebate + self.rebate_calibration)),
@@ -711,7 +714,7 @@ class Firm:
         - list (tuple): List of tuples containing selected vehicles and their associated chosen segments.
         """
         # Step 0: Build the profit matrix (segments x technologies)
-       
+
         technologies = car_list
         profit_matrix = np.zeros((self.num_segments, len(technologies)))
 
@@ -722,7 +725,44 @@ class Firm:
         for i, segment_code in enumerate(self.segment_codes):
             for j, car in enumerate(technologies):
                 profit_matrix[i, j] = car.expected_profit_segments[segment_code]
-        
+
+        # Extract ICE and EV profits separately
+        ice_profits = []
+        ev_profits = []
+
+        for j, car in enumerate(technologies):
+            if car.transportType == 2:  # ICE Vehicles
+                ice_profits.append(profit_matrix[:, j])  # Extract column for ICE
+            elif car.transportType == 3:  # EV Vehicles
+                ev_profits.append(profit_matrix[:, j])  # Extract column for EVs
+
+        # Convert lists to NumPy arrays for easier calculations
+        ice_profits = np.array(ice_profits)
+        ev_profits = np.array(ev_profits)
+
+        # Compute average expected profit across all segments
+
+        #if self.t_firm == 400:
+        #    print("self.firm id", self.firm_id)
+        #    avg_ice_profit = np.mean(ice_profits)
+        #    avg_ev_profit = np.mean(ev_profits) 
+        #    print(f"Before Policy - Avg ICE Profit: {avg_ice_profit}")
+        #    print(f"Before Policy - Avg EV Profit: {avg_ev_profit:}")
+            #print("ICE profits", ice_profits)
+            #print("EV profits", ev_profits)
+
+
+
+        #if self.t_firm == 550:
+        #    print("self.firm id", self.firm_id)
+        #    avg_ice_profit = np.mean(ice_profits)
+        #    avg_ev_profit = np.mean(ev_profits) 
+        #    print(f"After Policy - Avg ICE Profit: {avg_ice_profit}")
+        #    print(f"After Policy - Avg EV Profit: {avg_ev_profit}")
+            #print("ICE profits", ice_profits)
+            #print("EV profits", ev_profits)
+            #quit()
+
         if not np.any(profit_matrix): #PROFIT IS ALL 0, pick up to 
             self.zero_profit_options_prod = 1
             
@@ -783,21 +823,23 @@ class Firm:
                 vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True
             )
 
-            vehicles_selected_with_segment = [
-                (x[0], x[1]["segment"]) for x in sorted_vehicles
-            ]
-            vehicles_selected = [
-                x[0] for x in sorted_vehicles
-            ]
+        vehicle_to_max_profit = {}
+        for vehicle, profit, segment in vehicles_selected_profits:
+            if vehicle not in vehicle_to_max_profit or profit > vehicle_to_max_profit[vehicle]["profit"]:
+                vehicle_to_max_profit[vehicle] = {"profit": profit, "segment": segment}
+        
+        sorted_vehicles = sorted(vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True)
+        vehicles_selected_with_segment = [(x[0], x[1]["segment"]) for x in sorted_vehicles[:self.max_cars_prod]]
+        vehicles_selected = [x[0] for x in sorted_vehicles[:self.max_cars_prod]]
 
-            if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
-                # Count segments of selected vehicles
-                self.selected_vehicle_segment_counts = {}
+        if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
+            # Count segments of selected vehicles
+            self.selected_vehicle_segment_counts = {}
 
-                for vehicle, segment_code in vehicles_selected_with_segment:
-                    if segment_code not in self.selected_vehicle_segment_counts:
-                        self.selected_vehicle_segment_counts[segment_code] = 0
-                    self.selected_vehicle_segment_counts[segment_code] += 1
+            for vehicle, segment_code in vehicles_selected_with_segment:
+                if segment_code not in self.selected_vehicle_segment_counts:
+                    self.selected_vehicle_segment_counts[segment_code] = 0
+                self.selected_vehicle_segment_counts[segment_code] += 1
 
         return vehicles_selected
 

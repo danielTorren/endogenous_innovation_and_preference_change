@@ -385,11 +385,17 @@ class Firm_Manager:
         self.history_battery_EV = []
         self.history_prop_EV = []
 
+        self.history_prop_EV_research = []
+
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
         
+
+        #reserach_type = np.asarray([firm.history_research_type[-13:] for firm in self.firms_list])
+        #self.history_research_type
+
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.cars_on_sale_all_firms)
         self.history_prop_EV.append(self.EV_users_count/len(self.cars_on_sale_all_firms))
     

@@ -92,7 +92,7 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Discriminatory_corporate_tax": 1,
+            "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -102,14 +102,14 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 1,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.5,
             "Electricity_subsidy":0.5,
             "Adoption_subsidy":10000,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":20000,
+            "Production_subsidy":40000,
             "Research_subsidy":200000
         }
     },
@@ -164,12 +164,13 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 5e-9,
+        "lambda": 1e-3,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
-        "min_profit": 1000
+        "min_profit": 1000,
+        "max_cars_prod": 2
     },
     "parameters_social_network":{
         "num_individuals":3000,
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
