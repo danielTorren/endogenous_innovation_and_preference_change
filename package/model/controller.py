@@ -288,8 +288,6 @@ class Controller:
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
-        print("num zeros", num_zeros, self.num_individuals)
-        quit()
         zero_indices = self.random_state_chi.choice(self.num_individuals, size=num_zeros, replace=False)
         innovativeness_vec_continuous[zero_indices] = 0
 
