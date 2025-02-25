@@ -383,11 +383,16 @@ class Firm_Manager:
         self.history_efficiency_EV = []
         self.history_production_cost_EV = []
         self.history_battery_EV = []
+        self.history_prop_EV = []
 
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
+        
+        self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.cars_on_sale_all_firms)
+        self.history_prop_EV.append(self.EV_users_count/len(self.cars_on_sale_all_firms))
+    
         self.HHI = self. calculate_market_concentration(self.past_new_bought_vehicles)
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
 

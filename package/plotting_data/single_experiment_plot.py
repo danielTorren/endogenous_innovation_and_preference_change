@@ -3,9 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
 from package.resources.utility import load_object
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
 
 # Ensure directory existence
@@ -92,6 +90,25 @@ def plot_ev_consider_adoption_rate(base_params,social_network, time_series, file
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
     save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
+
+
+
+
+def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Plot stacked area (continuous stacked bar equivalent)
+    ax.plot(firm_manager.history_prop_EV[base_params["duration_burn_in"]:])
+
+    add_vertical_lines(ax, base_params)
+    # Set plot labels and limits
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Proportion of Cars on Sale EV")
+    ax.set_ylim(0, 1)  # Proportion range
+    ax.legend(loc="upper left")
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "plot_prop_EV_on_sale", dpi)
 
 
 def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=600):
@@ -976,6 +993,7 @@ def main(fileName, dpi=400):
     plot_history_W(base_params, firm_manager,time_series,  fileName)
     plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     plot_calibration_data(base_params, data_controller, time_series, fileName, dpi)
+    plot_prop_EV_on_sale(base_params,firm_manager, fileName)
 
     plt.show()
 
