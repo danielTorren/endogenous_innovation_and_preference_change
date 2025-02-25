@@ -95,7 +95,7 @@ if __name__ == "__main__":
             "Discriminatory_corporate_tax": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
-            "Adoption_subsidy_used": 0,
+            "Adoption_subsidy_used": 1,
             "Production_subsidy": 0,
             "Research_subsidy": 0
         },
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.5,
+        "a_chi": 1.4,
         "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,

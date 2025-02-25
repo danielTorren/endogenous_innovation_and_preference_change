@@ -410,23 +410,29 @@ class Firm_Manager:
         # Extract research type history for each firm (last 12 years, or fewer if not available)
         research_history = [firm.history_research_type[-12:] for firm in self.firms_list]
 
-        # Convert to numpy array for easier calculations
+        # Convert to numpy array, ensuring a consistent dtype for handling NaNs
         research_history = np.array(research_history, dtype=float)  # Convert to float to handle NaNs
 
-        # Count valid (non-NaN) research occurrences
+        # Count valid (non-NaN) research occurrences per firm
         valid_counts = np.sum(~np.isnan(research_history), axis=1)  # Count non-NaN entries per firm
 
         # Count occurrences of EV (1) and ICE (0) research
         ev_counts = np.nansum(research_history == 1, axis=1)  # Count EV research (ignoring NaNs)
         ice_counts = np.nansum(research_history == 0, axis=1)  # Count ICE research (ignoring NaNs)
 
-        # Compute proportions (avoid division by zero)
-        ev_proportion = np.where(valid_counts > 0, ev_counts / valid_counts, np.nan)
-        ice_proportion = np.where(valid_counts > 0, ice_counts / valid_counts, np.nan)
+        # **Handle cases where valid_counts == 0**
+        ev_proportion = np.zeros_like(valid_counts, dtype=float)  # Default to 0
+        ice_proportion = np.zeros_like(valid_counts, dtype=float)  # Default to 0
 
-        # Compute average proportion across all firms
-        avg_ev_proportion = np.nanmean(ev_proportion)  # Ignore NaNs in mean calculation
-        avg_ice_proportion = np.nanmean(ice_proportion)
+        # Compute proportions only where valid_counts > 0
+        nonzero_mask = valid_counts > 0
+        ev_proportion[nonzero_mask] = ev_counts[nonzero_mask] / valid_counts[nonzero_mask]
+        ice_proportion[nonzero_mask] = ice_counts[nonzero_mask] / valid_counts[nonzero_mask]
+
+        # Compute the **overall average proportion** across all firms (ignoring empty cases)
+        avg_ev_proportion = np.mean(ev_proportion)  # No need for nanmean since we ensured no NaNs
+        avg_ice_proportion = np.mean(ice_proportion)
+
 
         self.history_prop_EV_research.append(avg_ev_proportion)
         self.history_prop_ICE_research.append(avg_ice_proportion)
