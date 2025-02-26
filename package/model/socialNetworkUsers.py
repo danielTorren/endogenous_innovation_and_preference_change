@@ -992,7 +992,7 @@ class Social_Network:
                 lower_price_second_hand_ICE = np.nan
                 upper_price_second_hand_ICE = np.nan
             
-            if prices_EV:
+            if prices_second_hand_EV:
                 mean_price_second_hand_EV = np.mean(prices_second_hand_EV)
                 median_price_second_hand_EV = np.median(prices_second_hand_EV)
                 lower_price_second_hand_EV = np.percentile(prices_second_hand_EV,25)
