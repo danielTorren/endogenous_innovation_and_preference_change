@@ -42,12 +42,12 @@ def main(
     params_list = produce_param_list(base_params, property_values_list, subdict, property_varied)
     
     print("TOTAL RUNS: ", len(params_list))
-    data_flat_distance, data_flat_ev_prop, data_flat_age, data_flat_price , data_flat_emissions, efficiency_list= distance_ev_prop_age_price_emissions_parallel_run(params_list) 
+    data_flat_ev_prop, data_flat_price , data_flat_emissions=ev_prop_price_emissions_parallel_run(params_list) 
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
    
     data_array_ev_prop = data_flat_ev_prop.reshape(len(property_values_list),seed_repetitions, len(data_flat_ev_prop[0]))
-    data_array_age = data_flat_age.reshape(len(property_values_list),seed_repetitions, len(data_flat_age[0]), base_params["parameters_social_network"]["num_individuals"])
+    #data_array_age = data_flat_age.reshape(len(property_values_list),seed_repetitions, len(data_flat_age[0]), base_params["parameters_social_network"]["num_individuals"])
     data_array_price = data_flat_price.reshape(len(property_values_list),seed_repetitions, len(data_flat_price[0]), 2, 2)
     data_array_emissions = data_flat_emissions.reshape(len(property_values_list),seed_repetitions, len(data_flat_emissions[0]))
     
