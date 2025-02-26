@@ -263,7 +263,7 @@ def parallel_run_sa_ev(params_dict: list[dict]):
     Runs the sensitivity analysis in parallel using the given parameter dictionary.
     """
     num_cores = multiprocessing.cpu_count()
-    #res = [generate_sensitivity_output_flat(i) for i in params_dict]
+    #ev_prop_list= [generate_sensitivity_output_ev(i) for i in params_dict]
     ev_prop_list = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_sensitivity_output_ev)(params) for params in params_dict
     )

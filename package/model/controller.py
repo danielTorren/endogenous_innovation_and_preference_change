@@ -213,8 +213,8 @@ class Controller:
         #quit()
 
     def set_seed(self):
-
-        self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
+        #MOVE IT TO THE CORRECT PLACE
+        
         self.parameters_controller["parameters_ICE"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_ICE"]
         self.parameters_controller["parameters_EV"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_EV"]
         self.parameters_controller["parameters_social_network"]["social_network_seed"] = self.parameters_controller["seeds"]["social_network_seed"]
@@ -223,9 +223,10 @@ class Controller:
         self.parameters_controller["parameters_social_network"]["init_vals_innovative_seed"] = self.parameters_controller["seeds"]["init_vals_innovative_seed"] 
         self.parameters_controller["parameters_social_network"]["init_vals_price_seed"] = self.parameters_controller["seeds"]["init_vals_price_seed"]
 
-        self.parameters_controller["parameters_firm"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
-        self.parameters_controller["parameters_firm"]["production_seed"] = self.parameters_controller["seeds"]["production_seed"]
-        self.parameters_controller["parameters_firm"]["firm_tech_choose_seed"] = self.parameters_controller["seeds"]["firm_tech_choose_seed"]
+        self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
+        self.parameters_controller["parameters_firm_manager"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
+        self.parameters_controller["parameters_firm_manager"]["production_seed"] = self.parameters_controller["seeds"]["production_seed"]
+        self.parameters_controller["parameters_firm_manager"]["firm_tech_choose_seed"] = self.parameters_controller["seeds"]["firm_tech_choose_seed"]
 
         self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
         self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
