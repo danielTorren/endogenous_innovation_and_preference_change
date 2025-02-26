@@ -71,12 +71,12 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
     
-    Y_results = parallel_run_sa_ev(params_list_sa)
+    Y_ev = parallel_run_sa_ev(params_list_sa)
     
     createFolder(fileName)
     
     # Save results
-    save_object(Y_results, fileName + "/Data", "Y_results")
+    save_object(Y_ev, fileName + "/Data", "Y_ev")
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(problem, fileName + "/Data", "problem")
     save_object(N_samples, fileName + "/Data", "N_samples")
@@ -88,5 +88,5 @@ if __name__ == '__main__':
     fileName_Figure = main(
         N_samples=16,  # Adjust as needed
         BASE_PARAMS_LOAD="package/constants/base_params_SA_seeds.json",
-        calc_second_order=True
+        calc_second_order=False
     )
