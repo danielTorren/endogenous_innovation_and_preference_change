@@ -663,8 +663,8 @@ def main(fileName, dpi=600):
     #history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
     #history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
 
-    history_mean_profit_margins_ICE = load_object( fileName + "/Data", "history_mean_profit_margins_ICE")
-    history_mean_profit_margins_EV = load_object( fileName + "/Data", "history_mean_profit_margins_EV")
+    #history_mean_profit_margins_ICE = load_object( fileName + "/Data", "history_mean_profit_margins_ICE")
+    #history_mean_profit_margins_EV = load_object( fileName + "/Data", "history_mean_profit_margins_EV")
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
@@ -754,4 +754,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_16_50_17__26_02_2025")
+    main("results/multi_seed_single_19_57_22__26_02_2025")
