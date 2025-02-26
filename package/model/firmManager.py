@@ -20,7 +20,6 @@ class Firm_Manager:
 
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
-
         self.carbon_price = parameters_firm_manager["carbon_price"]
         self.id_generator = parameters_firm_manager["IDGenerator_firms"]
         self.kappa = parameters_firm_manager["kappa"]
