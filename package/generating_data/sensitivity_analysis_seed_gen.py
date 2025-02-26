@@ -86,7 +86,7 @@ def main(
 
 if __name__ == '__main__':
     fileName_Figure = main(
-        N_samples=16,  # Adjust as needed
+        N_samples=64,  # Adjust as needed
         BASE_PARAMS_LOAD="package/constants/base_params_SA_seeds.json",
         calc_second_order=False
     )

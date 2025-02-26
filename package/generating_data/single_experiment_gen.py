@@ -51,12 +51,14 @@ if __name__ == "__main__":
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99,
         "init_vals_price_seed": 8,
-        "innovation_seed": 75,
         "landscape_seed_EV": 11, 
         "choice_seed": 9,
         "remove_seed": 48,
         "init_vals_poisson_seed": 95,
-        "init_vals_range_seed": 77
+        "init_vals_range_seed": 77,
+        "innovation_seed": 75,
+        "production_seed":31,
+        "firm_tech_choose_seed": 72
     },
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
@@ -175,8 +177,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 3.6287,#1.8,
-        "b_chi": 4.8810,#4,
+        "a_chi": 1.8,
+        "b_chi": 4,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -185,7 +187,7 @@ if __name__ == "__main__":
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.0381,#7.0994e-03,
+        "proportion_zero_target": 7.0994e-03,
         "income_mu":11.225,
         "income_sigma":0.927
     },
