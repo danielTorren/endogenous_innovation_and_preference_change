@@ -222,7 +222,11 @@ class Controller:
         self.parameters_controller["parameters_social_network"]["init_vals_environmental_seed"] = self.parameters_controller["seeds"]["init_vals_environmental_seed"]
         self.parameters_controller["parameters_social_network"]["init_vals_innovative_seed"] = self.parameters_controller["seeds"]["init_vals_innovative_seed"] 
         self.parameters_controller["parameters_social_network"]["init_vals_price_seed"] = self.parameters_controller["seeds"]["init_vals_price_seed"]
+
         self.parameters_controller["parameters_firm"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
+        self.parameters_controller["parameters_firm"]["production_seed"] = self.parameters_controller["seeds"]["production_seed"]
+        self.parameters_controller["parameters_firm"]["firm_tech_choose_seed"] = self.parameters_controller["seeds"]["firm_tech_choose_seed"]
+
         self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
         self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
         self.parameters_controller["parameters_social_network"]["init_vals_poisson_seed"]  = self.parameters_controller["seeds"]["init_vals_poisson_seed"]
