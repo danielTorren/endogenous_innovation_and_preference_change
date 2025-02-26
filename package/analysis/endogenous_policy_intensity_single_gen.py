@@ -2,6 +2,7 @@ import json
 import numpy as np
 from joblib import Parallel, delayed, dump, load
 import multiprocessing
+from scipy.optimize import minimize_scalar
 from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import (
     createFolder, save_object, produce_name_datetime, params_list_with_seed
@@ -61,81 +62,52 @@ def compute_confidence_interval(data, confidence=0.95):
 
 def objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake):
     """
-    Objective function for optimization.
+    Objective function for optimization. Returns the absolute error between
+    the mean EV uptake and the target.
     """
     params = update_policy_intensity(params, policy_name, intensity_level)
 
     EV_uptake_arr, total_cost_arr = single_policy_with_seeds(params, controller_files)
 
-    mean_error = np.mean(target_ev_uptake - EV_uptake_arr)
-    mean_EV_uptake = np.mean(EV_uptake_arr)
+    mean_ev_uptake = np.mean(EV_uptake_arr)
     mean_total_cost = np.mean(total_cost_arr)
     conf_int = compute_confidence_interval(EV_uptake_arr)
 
-    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_EV_uptake}, Error: {mean_error}, CI: {conf_int}")
+    error = abs(target_ev_uptake - mean_ev_uptake)
 
-    return mean_error, mean_EV_uptake, mean_total_cost, conf_int
+    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}, CI: {conf_int}")
+
+    return error  # The optimizer will minimize this error
 
 
-def manual_optimization(bounds, params, controller_files, policy_name, intensity_init, target_ev_uptake,
-                        step_size=0.01, max_iter=100, adaptive_factor=0.5, min_step_size=1e-4, max_step_size=1.0):
+def optimize_policy_intensity(params, controller_files, policy_name, intensity_init, target_ev_uptake, bounds):
     """
-    Adaptive step-size optimization to adjust policy intensity.
+    Optimizes the intensity of a policy to reach the target EV uptake using SciPy's `minimize_scalar`.
     """
-    intensity = intensity_init
-    prev_error = None
-    data = []
+    print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
-    for iteration in range(max_iter):
-        print(f"Iteration {iteration + 1}, Intensity: {intensity}, Step Size: {step_size}")
-
-        error, ev_uptake, total_cost, conf_int = objective_function(
-            intensity, params, controller_files, policy_name, target_ev_uptake
-        )
-
-        data.append([error, ev_uptake, total_cost, conf_int, intensity, step_size])
-
-        if conf_int[0] <= target_ev_uptake <= conf_int[1]:
-            print("Converged successfully.")
-            break
-
-        if prev_error is not None:
-            if abs(error) < abs(prev_error):
-                step_size = min(step_size * (1 + adaptive_factor), max_step_size)
-            else:
-                step_size = max(step_size * adaptive_factor, min_step_size)
-
-        next_intensity = intensity + step_size * np.sign(error)
-
-        if next_intensity > bounds[1]:
-            intensity = bounds[1]
-            break
-        elif next_intensity < bounds[0]:
-            intensity = bounds[0]
-            break
-        else:
-            intensity = next_intensity
-
-        prev_error = error
-
-    return intensity, error, ev_uptake, total_cost, data
-
-
-def optimize_policy_intensity(params, controller_files, policy_name, intensity_init, target_ev_uptake,
-                              bounds, step_size=0.1, adaptive_factor=0.5, step_size_bounds=(0.1, 100), max_iterations=30):
-    """
-    Optimizes the intensity of a policy to reach the target EV uptake.
-    """
-    min_step_size, max_step_size = step_size_bounds
-
-    optimized_intensity, error, mean_ev_uptake, mean_total_cost, data = manual_optimization(
-        bounds, params, controller_files, policy_name, intensity_init, target_ev_uptake,
-        step_size=step_size, max_iter=max_iterations, adaptive_factor=adaptive_factor,
-        min_step_size=min_step_size, max_step_size=max_step_size
+    # Run optimization
+    result = minimize_scalar(
+        objective_function,
+        bounds=bounds,
+        args=(params, controller_files, policy_name, target_ev_uptake),
+        method="bounded",
+        options={"xatol": 1e-3}  # Tolerance for convergence
     )
 
-    print(f"Optimized {policy_name}: Intensity = {optimized_intensity}, EV uptake = {mean_ev_uptake}, Cost = {mean_total_cost}")
-    return optimized_intensity, mean_ev_uptake, mean_total_cost, data
+    # Get best intensity level
+    best_intensity = result.x
+
+    # Run simulation with optimized intensity to get final values
+    params = update_policy_intensity(params, policy_name, best_intensity)
+    EV_uptake_arr, total_cost_arr = single_policy_with_seeds(params, controller_files)
+    mean_ev_uptake = np.mean(EV_uptake_arr)
+    mean_total_cost = np.mean(total_cost_arr)
+
+    print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, Cost = {mean_total_cost}")
+
+    return best_intensity, mean_ev_uptake, mean_total_cost
+
 
 ####################################################
 
@@ -144,7 +116,6 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     Runs calibration for multiple seeds in parallel and saves them.
     """
     num_cores = multiprocessing.cpu_count()
-    #createFolder(save_path)  # Ensure directory exists
 
     def run_and_save(param, idx):
         controller = generate_data(param)  # Run calibration
@@ -156,15 +127,14 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
         delayed(run_and_save)(params_dict[i], i) for i in range(len(params_dict))
     )
 
-    print("done controlere!")
+    print("Calibration complete!")
     return controller_files  # Return list of file paths
 
-def main(
-        BASE_PARAMS_LOAD="package/constants/base_params.json",
+
+def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
          BOUNDS_LOAD="package/analysis/policy_bounds.json",
          policy_list=None, 
-         target_ev_uptake=0.5
-         ):
+         target_ev_uptake=0.5):
     """
     Main function for optimizing policy intensities.
     """
@@ -175,7 +145,6 @@ def main(
         policy_params_dict = json.load(f)
 
     bounds_dict = policy_params_dict["bounds_dict"]
-    step_size_dict = policy_params_dict["step_size_dict"]
     init_values = policy_params_dict["init_val_dict"]
 
     base_params_list = params_list_with_seed(base_params)
@@ -186,31 +155,30 @@ def main(
 
     save_object(base_params, file_name + "/Data", "base_params")
 
-    policy_outcomes, runs_data = {}, {}
+    policy_outcomes = {}
 
     for policy_name in policy_list:
-        initial_step_size = init_values[policy_name] * 0.1
-
-        intensity_level, mean_ev_uptake, mean_total_cost, policy_data = optimize_policy_intensity(
+        best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity(
             base_params, controller_files, policy_name,
             intensity_init=init_values[policy_name], target_ev_uptake=target_ev_uptake,
-            bounds=bounds_dict[policy_name], step_size=initial_step_size,
-            adaptive_factor=0.5, step_size_bounds=step_size_dict[policy_name]
+            bounds=bounds_dict[policy_name]
         )
 
-        runs_data[policy_name] = policy_data
-        policy_outcomes[policy_name] = [mean_ev_uptake, mean_total_cost, intensity_level]
+        policy_outcomes[policy_name] = {
+            "optimized_intensity": best_intensity,
+            "mean_EV_uptake": mean_ev_uptake,
+            "mean_total_cost": mean_total_cost
+        }
 
     save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
-    save_object(runs_data, file_name + "/Data", "runs_data")
 
     shutil.rmtree(Path(file_name) / "Calibration_runs", ignore_errors=True)
 
 
 if __name__ == "__main__":
     main(
-        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single_gen.json",
-        BOUNDS_LOAD = "package/analysis/policy_bounds_vary_single_policy_gen.json", 
-        policy_list=["Carbon_price"], 
-        target_ev_uptake=0.6
-        )
+        BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
+        BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
+        policy_list=["Carbon_price"],
+        target_ev_uptake=0.8
+    )
