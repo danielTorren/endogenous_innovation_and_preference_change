@@ -571,15 +571,15 @@ def plot_history_mean_price_multiple_seeds(
     #PLOT QUATILES
     #25th
     ax1.plot(time_steps, lower_new_ICE, label="25th Percentile New Car ICE", color="blue")
-    ax1.plot(time_steps, lower_second_hand_ICE, label=" 25th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dashed")
+    ax1.plot(time_steps, lower_second_hand_ICE, label=" 25th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dotted")
     ax1.plot(time_steps, lower_new_EV, label="25th Percentile New Car Price EV", color="green")
-    ax1.plot(time_steps, lower_second_hand_EV, label="25th Percentile Second-hand Car Price EV", color="green", linestyle = "dashed")
+    ax1.plot(time_steps, lower_second_hand_EV, label="25th Percentile Second-hand Car Price EV", color="green", linestyle = "dotted")
 
     #75th
     ax1.plot(time_steps, upper_new_ICE, label="75th Percentile New Car ICE", color="blue")
-    ax1.plot(time_steps, upper_second_hand_ICE, label=" 75th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dashed")
+    ax1.plot(time_steps, upper_second_hand_ICE, label=" 75th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dotted")
     ax1.plot(time_steps, upper_new_EV, label="75th Percentile New Car Price EV", color="green")
-    ax1.plot(time_steps, upper_second_hand_EV, label="75th Percentile Second-hand Car Price EV", color="green", linestyle = "dashed")
+    ax1.plot(time_steps, upper_second_hand_EV, label="75th Percentile Second-hand Car Price EV", color="green", linestyle = "dotted")
 
     # Plot individual traces (faded lines) for new and second-hand car prices
     for seed_new, seed_second_hand in zip(mean_new_ICE, mean_second_hand_ICE):
@@ -755,8 +755,8 @@ def main(fileName, dpi=600):
     #history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
     #history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
 
-    history_mean_profit_margins_ICE = load_object( fileName + "/Data", "history_mean_profit_margins_ICE")
-    history_mean_profit_margins_EV = load_object( fileName + "/Data", "history_mean_profit_margins_EV")
+    #history_mean_profit_margins_ICE = load_object( fileName + "/Data", "history_mean_profit_margins_ICE")
+    #history_mean_profit_margins_EV = load_object( fileName + "/Data", "history_mean_profit_margins_EV")
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
@@ -848,4 +848,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_22_17_24__26_02_2025")
+    main("results/multi_seed_single_22_28_50__26_02_2025")
