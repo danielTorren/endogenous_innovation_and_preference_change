@@ -13,12 +13,14 @@
         "init_vals_environmental_seed": 66,
         "init_vals_innovative_seed":99,
         "init_vals_price_seed": 8,
-        "innovation_seed": 75,
         "landscape_seed_EV": 11, 
         "choice_seed": 9,
         "remove_seed": 48,
         "init_vals_poisson_seed": 95,
-        "init_vals_range_seed": 77
+        "init_vals_range_seed": 77,
+        "innovation_seed": 75,
+        "production_seed":31,
+        "firm_tech_choose_seed": 72
     },
     "ev_research_start_time":60,
     "ev_production_start_time": 60,

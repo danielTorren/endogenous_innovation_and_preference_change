@@ -45,7 +45,13 @@ class Firm_Manager:
 
         self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
 
-        self.innovation_seed_list = self.random_state.randint(0,1000, self.J)
+        self.innovation_seed = parameters_firm_manager["innovation_seed"]
+        self.production_seed = parameters_firm_manager["production_seed"]
+        self.firm_tech_choose_seed = parameters_firm_manager["firm_tech_choose_seed"]
+
+        self.innovation_state = np.random.RandomState(self.innovation_seed)
+        self.production_state = np.random.RandomState(self.production_seed)
+        self.firm_tech_choose_state = np.random.RandomState(self.firm_tech_choose_seed)
 
         self.init_firms()
         
@@ -109,7 +115,7 @@ class Firm_Manager:
         self.parameters_firm["segment_codes"] = self.all_segment_codes
 
         #Create the firms, these store the data but dont do anything otherwise
-        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.innovation_seed_list[j]) for j in range(self.J)]
+        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.innovation_state, self.production_state, self.firm_tech_choose_state) for j in range(self.J)]
 
     def invert_bits_one_at_a_time(self, decimal_value, length):
         """THIS IS ONLY USED ONCE TO GENERATE HETEROGENOUS INITIAL TECHS"""

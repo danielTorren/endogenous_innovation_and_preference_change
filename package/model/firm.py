@@ -3,12 +3,16 @@ from scipy.special import lambertw
 from package.model.carModel import CarModel
 
 class Firm:
-    def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV, innovation_seed):
+    def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV, innovation_state, production_state, firm_tech_choose_state):
         
 
         self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
         self.rebate_calibration = parameters_firm["rebate_calibration"]
         
+        self.innovation_state =  innovation_state
+        self.production_state =  production_state
+        self.firm_tech_choose_state = firm_tech_choose_state
+
 
         self.t_firm = 0
         self.production_change_bool = 0
@@ -102,8 +106,7 @@ class Firm:
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
 
-        self.random_state = np.random.RandomState(innovation_seed)  # Local random state
-    
+        
     def set_car_init_price_and_base_U(self):
         for car in self.cars_on_sale:
             car.price = car.ProdCost_t*self.init_price_multiplier
@@ -448,7 +451,7 @@ class Firm:
 
         if np.sum(profits) == 0:#ALL TECHH HAS 0 UTILITY DUE TO BEIGN VERY BAD, exp caps out
             self.zero_profit_options_research = 1
-            selected_index = self.random_state.choice(len_vehicles)
+            selected_index = self.firm_tech_choose_state.choice(len_vehicles)
         else:
             profits[profits == 0] = -np.inf#if pofit is zero you cant choose it
 
@@ -465,7 +468,7 @@ class Firm:
 
             self.zero_profit_options_research = 0
             probabilities = lambda_profits/sum_profit
-            selected_index = self.random_state.choice(len_vehicles, p=probabilities)
+            selected_index = self.firm_tech_choose_state.choice(len_vehicles, p=probabilities)
 
         selected_vehicle = car_list[selected_index]
 
@@ -937,14 +940,14 @@ class Firm:
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
         #update cars to sell   
-        if self.random_state.rand() < self.prob_change_production:
+        if self.production_state.rand() < self.prob_change_production:
             self.cars_on_sale = self.choose_cars_segments()
             self.production_change_bool = 1
             self.prod_counter += 1
 
         self.update_memory_timer()
 
-        if self.random_state.rand() < self.prob_innovate:
+        if self.innovation_state.rand() < self.prob_innovate:
             self.innovate()
             self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DAT
             self.research_counter += 1
