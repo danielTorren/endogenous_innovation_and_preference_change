@@ -1,3 +1,4 @@
+from email import policy
 import json
 import numpy as np
 import itertools
@@ -54,12 +55,13 @@ def optimize_second_policy_with_first_fixed(
     # We make a copy of params so as not to overwrite the original
     params_copy = deepcopy(params)
     
+    
     # 1) Fix policy1 in params_copy
     if policy1_name == "Carbon_price":
-        # Carbon_price has a nested dict, e.g. params["Values"]["Carbon_price"]["High"]["Carbon_price"]
-        params_copy["parameters_policies"]["Values"][policy1_name]["High"]["Carbon_price"] = policy1_intensity
+        # Carbon_price has a nested dict, e.g. params["Values"]["Carbon_price"]["Carbon_price"]
+        params_copy["parameters_policies"]["Values"][policy1_name]["Carbon_price"] = policy1_intensity
     else:
-        params_copy["parameters_policies"]["Values"][policy1_name]["High"] = policy1_intensity
+        params_copy["parameters_policies"]["Values"][policy1_name] = policy1_intensity
 
     # 2) Now optimize policy2 using your existing optimize_policy_intensity_minimize
     optimized_intensity2, mean_ev_uptake2, mean_total_cost2, policy_data2 = optimize_policy_intensity_minimize(
