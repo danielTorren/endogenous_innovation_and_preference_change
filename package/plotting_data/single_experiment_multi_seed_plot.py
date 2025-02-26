@@ -675,13 +675,14 @@ def main(fileName, dpi=600):
     # Plot each dataset
     #"""
 
-    
+    """
     plot_history_mean_profit_margin_multiple_seeds(
         base_params, 
         history_mean_profit_margins_ICE, 
         history_mean_profit_margins_EV, 
         fileName
     )
+    """
 
     plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
                     "Total Driving Emissions Over Time", 
@@ -753,4 +754,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_15_49_44__26_02_2025")
+    main("results/multi_seed_single_16_31_49__26_02_2025")

@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.1,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.5,
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-3,
+        "lambda": 1e-4,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -162,8 +162,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.65,
-        "b_chi": 4,
+        "a_chi": 1.4,
+        "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

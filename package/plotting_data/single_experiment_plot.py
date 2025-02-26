@@ -997,7 +997,7 @@ def main(fileName, dpi=400):
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
     emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
-    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
+    #plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
@@ -1017,4 +1017,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_51_06__25_02_2025")
+    main("results/single_experiment_16_20_03__26_02_2025")
