@@ -389,11 +389,11 @@ def main(fileName, dpi=600):
     #plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
     plot_ev_prop(base_params,data_array_EV_prop, property_values_list, fileName, name_property, property_save, 600)
     #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
-    plot_price(base_params,data_array_price , property_values_list, fileName, name_property, property_save, 600)
+    #plot_price(base_params,data_array_price , property_values_list, fileName, name_property, property_save, 600)
     #plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
     #plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_22_19_52__24_02_2025")
+    main("results/single_param_vary_00_57_49__26_02_2025")
