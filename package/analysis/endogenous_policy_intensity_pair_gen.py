@@ -25,7 +25,7 @@ def generate_unique_policy_pairs(policy_list_all, policy_list_works):
     pairs = []
     for policy1 in policy_list_all:
         for policy2 in policy_list_works:
-            if policy1 != policy2 and policy1 < policy2:  # Enforce consistent ordering
+            if policy1 != policy2:  # Enforce consistent ordering
                 pairs.append((policy1, policy2))
 
     print("num pairs", len(pairs))
@@ -183,9 +183,12 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-        # 4) Now do *pairwise* sweeps
+    # 4) Now do *pairwise* sweeps
     policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
+    print("policy_list_all", policy_list_all)
+    print(" policy_list_works",  policy_list_works)
     print("All unique pairs:", policy_pairs)
+
 
     # Run the burn-in with seeds
     base_params_list = params_list_with_seed(base_params)
@@ -197,10 +200,6 @@ def main(
     # Restore future duration
     print("Future_time_steps", future_time_steps)
     base_params["duration_future"] = future_time_steps
-
-    # 4) Now do *pairwise* sweeps
-    policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
-    print("All unique pairs:", policy_pairs)
 
     pairwise_outcomes = {}
 

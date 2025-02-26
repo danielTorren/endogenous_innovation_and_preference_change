@@ -1,67 +1,65 @@
-from copy import deepcopy
 import json
 import numpy as np
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, dump, load
 import multiprocessing
-from package.resources.run import load_in_controller, parallel_run_multi_run
-from scipy.stats import norm
+from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime, 
-    params_list_with_seed
+    createFolder, save_object, produce_name_datetime, params_list_with_seed
 )
+import shutil  # For cleanup
+from pathlib import Path  # For path handling
+from scipy.stats import norm
 
 def generate_policy_scenarios(base_params, policy_list):
     """
-    Generate a list of scenarios where policies are set to "High" for each pair of policies
-    and for each individual policy.
-    FOR NOW ITS 1D
+    Generate scenarios where policies are set to "High" individually.
     """
-
-    # Generate parameter sets
-    base_params_list = []
-    for policy in policy_list:
-        base_params_copy = deepcopy(base_params)
-
-        base_params_copy["parameters_policies"]["States"][policy] = "High"
-        base_params_list.append(base_params_copy)
-
-    output = [(policy_list[i],base_params_list[i]) for i in range(len(base_params_list))]
-
-    return output
+    return [
+        (policy, {**base_params, "parameters_policies": {"States": {policy: "High"}}})
+        for policy in policy_list
+    ]
 
 def single_policy_simulation(params, controller_load):
-    data = load_in_controller(controller_load, params)#FIRST RUN
-
-    EV_uptake = data.calc_EV_prop()
-    policy_distortion = data.calc_total_policy_distortion()
-    return EV_uptake, policy_distortion
-
-
-def single_policy_with_seeds(params, controller_list):
     """
-    Perform parallel execution of all policy scenarios and seeds.
+    Run a single simulation and return key metrics.
+    """
+    data = load_in_controller(controller_load, params)
+    return data.calc_EV_prop(), data.calc_total_policy_distortion()
+
+def single_policy_with_seeds(params, controller_files):
+    """
+    Run policy scenarios using pre-saved controllers for consistency.
     """
     num_cores = multiprocessing.cpu_count()
+    
+    def run_scenario(scenario_params, controller_file):
+        controller = load(controller_file)  # Load saved controller
+        return single_policy_simulation(scenario_params, controller)
 
-    def run_scenario(scenario_params, controller):
-        controller_copy = deepcopy(controller)  # Ensure a clean state for this run
-        EV_uptake, total_cost = single_policy_simulation(scenario_params, controller_copy)
-        return EV_uptake, total_cost
-
-
-    res = Parallel(n_jobs=num_cores, verbose=10)(
-        delayed(run_scenario)(params, controller_list[i])  # No deepcopy here
-        for i in range(len(controller_list))
+    results = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(run_scenario)(params, controller_files[i % len(controller_files)])
+        for i in range(len(controller_files))
     )
+    
+    return np.asarray(results)
 
-    EV_uptake_list, total_cost_list = zip(
-        *res
+def parallel_multi_run(params_list, save_path="calibrated_controllers"):
+    """
+    Runs initial calibration in parallel and saves controller states.
+    """
+    num_cores = multiprocessing.cpu_count()
+    
+    def run_and_save(param, idx):
+        controller = generate_data(param)
+        file_path = f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl"
+        dump(controller, file_path)
+        return file_path
+    
+    controller_files = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(run_and_save)(params_list[i], i) for i in range(len(params_list))
     )
-    print("EV_uptake_list, total_cost_list", EV_uptake_list, total_cost_list)
-    return np.asarray(EV_uptake_list), np.asarray(total_cost_list)
-###########################################################################################################################
+    
+    return controller_files
 
 def compute_confidence_interval(data, confidence=0.95):
     """
@@ -263,10 +261,12 @@ def main(
     ##################################################################################################
     #RUN BURN IN + CALIBRATION PERIOD FIRST:
     base_params_list = params_list_with_seed(base_params)
-    controller_list = parallel_run_multi_run(base_params_list)
 
+    # Ensure directory exists
     createFolder(fileName)
-    #save_object(controller, fileName + "/Data", "controller")
+    # Save initial controller states
+    controller_files = parallel_multi_run(base_params_list, save_path=fileName)
+
     save_object(base_params, fileName + "/Data", "base_params")
 
     ##################################################################################################
@@ -276,6 +276,7 @@ def main(
 
     # Generate all pairs of policies
     policy_combinations = generate_policy_scenarios(base_params, policy_list)
+    
     print("TOTAL SCENARIOS: ", len(policy_combinations))
 
     policy_outcomes = {}
@@ -308,16 +309,54 @@ def main(
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(target_ev_uptake, fileName + "/Data", "target_ev_uptake")
     
+##########################################################################################
+  
+def main(
+    BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
+    BOUNDS_LOAD="package/analysis/policy_bounds.json",
+    policy_list=None,
+    target_ev_uptake=0.5
+):
+    with open(BASE_PARAMS_LOAD) as f:
+        base_params = json.load(f)
+    
+    with open(BOUNDS_LOAD) as f:
+        policy_params_dict = json.load(f)
+    
+    base_params_list = params_list_with_seed(base_params)
+    file_name = produce_name_datetime("endogenous_policy_intensity_single")
+    createFolder(file_name)
+    
+    # Save initial controller states
+    controller_files = parallel_multi_run(base_params_list, save_path=file_name)
+    save_object(base_params, file_name + "/Data", "base_params")
+    
+    # Run policy optimization
+    policy_combinations = generate_policy_scenarios(base_params, policy_list)
+    policy_outcomes, runs_data = {}, {}
+    
+    for policy_name, params in policy_combinations:
+        EV_uptake_arr, total_cost_arr = single_policy_with_seeds(params, controller_files)
+        policy_outcomes[policy_name] = [np.mean(EV_uptake_arr), np.mean(total_cost_arr)]
+        runs_data[policy_name] = (EV_uptake_arr, total_cost_arr)
+    
+    save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
+    save_object(runs_data, file_name + "/Data", "runs_data")
+    
+    # Cleanup
+    calibration_folder = Path(file_name) / "Calibration_runs"
+    if calibration_folder.exists():
+        shutil.rmtree(calibration_folder)
 
 if __name__ == "__main__":
-    results = main(
-        BASE_PARAMS_LOAD = "package/constants/base_params_endogenous_policy_single_gen.json",
-        policy_list = [
+    main(
+        BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
+        BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
+        policy_list=[
             "Discriminatory_corporate_tax",
             "Electricity_subsidy",
             "Adoption_subsidy",
             "Carbon_price",
-            ],
-        BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
-        target_ev_uptake = 0.9
-        )
+        ],
+        target_ev_uptake=0.9
+    )
