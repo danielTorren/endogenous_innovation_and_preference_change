@@ -161,7 +161,7 @@ if __name__ == '__main__':
         "prop_explore": 0.1
     },
     "parameters_firm_manager": {
-        "J": 20,
+        "J": 16,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,

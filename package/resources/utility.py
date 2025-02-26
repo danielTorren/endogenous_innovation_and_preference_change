@@ -201,12 +201,10 @@ def params_list_with_seed(base_params):
     """
     base_params_list = []
     seed_repetitions = base_params["seed_repetitions"]
-    seed_keys = list(base_params["seeds"].keys())
 
     for seed in range(1, seed_repetitions + 1):
         base_params_copy = deepcopy(base_params)
-        for i, seed_key in enumerate(seed_keys):
-            base_params_copy["seeds"][seed_key] = seed + i*seed_repetitions       
+        base_params_copy["seed"] = seed
         base_params_list.append( base_params_copy)
 
     return base_params_list

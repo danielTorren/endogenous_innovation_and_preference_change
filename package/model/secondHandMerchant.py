@@ -13,7 +13,8 @@ class SecondHandMerchant:
         self.r = parameters_second_hand["r"]
         self.max_num_cars = parameters_second_hand["max_num_cars"]
         self.burn_in_second_hand_market = parameters_second_hand["burn_in_second_hand_market"]
-        self.random_state_second_hand = np.random.RandomState(parameters_second_hand["remove_seed"])
+
+        self.random_state = parameters_second_hand["random_state"]
 
         #self.delta = parameters_second_hand["delta"]
 
@@ -154,7 +155,7 @@ class SecondHandMerchant:
             # Calculate how many cars to remove
             num_cars_to_remove = len(self.cars_on_sale) - self.max_num_cars
             # Randomly select cars to remove
-            cars_to_remove = self.random_state_second_hand.choice(
+            cars_to_remove = self.random_state.choice(
                 self.cars_on_sale, num_cars_to_remove, replace=False
             )
             # Add ages of removed cars

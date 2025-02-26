@@ -15,6 +15,9 @@ class Controller:
     def __init__(self, parameters_controller):
 
         self.unpack_controller_parameters(parameters_controller)
+
+        self.handle_seed()
+
         self.update_scale()#change scale to avoid overflows
 
         self.gen_time_series_calibration_scenarios_policies()
@@ -77,7 +80,6 @@ class Controller:
         
         #CONTROLLER PARAMETERS:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
-        self.set_seed()#PUT SEEEDS IN CORECT PLACE
 
         self.parameters_social_network = parameters_controller["parameters_social_network"]
         self.parameters_vehicle_user = parameters_controller["parameters_vehicle_user"]
@@ -113,6 +115,18 @@ class Controller:
             raise ValueError("EV Production before research")
 
         self.time_steps_max = parameters_controller["time_steps_max"]
+
+    def handle_seed(self):
+        self.random_state = np.random.RandomState(self.parameters_controller["seed"])
+        self.parameters_social_network["random_state"] = self.random_state
+        self.parameters_firm_manager["random_state"] = self.random_state
+        self.parameters_firm["random_state"] = self.random_state
+        self.parameters_second_hand["random_state"] = self.random_state
+        self.parameters_ICE["random_state"] = self.random_state
+        self.parameters_EV["random_state"] = self.random_state
+
+        self.parameters_social_network["seed"] = self.parameters_controller["seed"]
+
 
     def update_scale(self, change_emisisons_scale = False):
 
@@ -209,30 +223,6 @@ class Controller:
             self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_init"] *= self.computing_coefficient
             self.parameters_controller["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] *= self.computing_coefficient
 
-
-        #quit()
-
-    def set_seed(self):
-        #MOVE IT TO THE CORRECT PLACE
-        
-        self.parameters_controller["parameters_ICE"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_ICE"]
-        self.parameters_controller["parameters_EV"]["landscape_seed"] = self.parameters_controller["seeds"]["landscape_seed_EV"]
-        self.parameters_controller["parameters_social_network"]["social_network_seed"] = self.parameters_controller["seeds"]["social_network_seed"]
-        self.parameters_controller["parameters_social_network"]["network_structure_seed"] =self.parameters_controller["seeds"]["network_structure_seed"]
-        self.parameters_controller["parameters_social_network"]["init_vals_environmental_seed"] = self.parameters_controller["seeds"]["init_vals_environmental_seed"]
-        self.parameters_controller["parameters_social_network"]["init_vals_innovative_seed"] = self.parameters_controller["seeds"]["init_vals_innovative_seed"] 
-        self.parameters_controller["parameters_social_network"]["init_vals_price_seed"] = self.parameters_controller["seeds"]["init_vals_price_seed"]
-
-        self.parameters_controller["parameters_firm_manager"]["init_tech_seed"] = self.parameters_controller["seeds"]["init_tech_seed"]
-        self.parameters_controller["parameters_firm_manager"]["innovation_seed"] = self.parameters_controller["seeds"]["innovation_seed"]
-        self.parameters_controller["parameters_firm_manager"]["production_seed"] = self.parameters_controller["seeds"]["production_seed"]
-        self.parameters_controller["parameters_firm_manager"]["firm_tech_choose_seed"] = self.parameters_controller["seeds"]["firm_tech_choose_seed"]
-
-        self.parameters_controller["choice_seed"] = self.parameters_controller["seeds"]["choice_seed"]
-        self.parameters_controller["parameters_second_hand"]["remove_seed"] = self.parameters_controller["seeds"]["remove_seed"]
-        self.parameters_controller["parameters_social_network"]["init_vals_poisson_seed"]  = self.parameters_controller["seeds"]["init_vals_poisson_seed"]
-        self.parameters_controller["parameters_social_network"]["init_vals_range_seed"] = self.parameters_controller["seeds"]["init_vals_range_seed"]
-
     def gen_users_parameters(self):
 
         self.num_individuals = self.parameters_social_network["num_individuals"]
@@ -273,8 +263,7 @@ class Controller:
         #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
         # Step 4: Generate N random distances using the fitted Poisson parameter
         N = self.num_individuals # Number of individuals
-        self.random_state_poisson = np.random.RandomState(self.parameters_social_network["init_vals_poisson_seed"])
-        poisson_samples = self.random_state_poisson.poisson(lam=fitted_lambda, size=N)
+        poisson_samples = self.random_state.poisson(lam=fitted_lambda, size=N)
         # Step 5: Map the Poisson samples back to the distance range of the original data
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
@@ -286,14 +275,13 @@ class Controller:
         self.b_chi = self.parameters_social_network["b_chi"]
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
-        self.random_state_chi = np.random.RandomState(self.parameters_social_network["init_vals_innovative_seed"])
 
         # Step 1: Generate continuous Beta distribution
-        innovativeness_vec_continuous = self.random_state_chi.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+        innovativeness_vec_continuous = self.random_state.beta(self.a_chi, self.b_chi, size=self.num_individuals)
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
-        zero_indices = self.random_state_chi.choice(self.num_individuals, size=num_zeros, replace=False)
+        zero_indices = self.random_state.choice(self.num_individuals, size=num_zeros, replace=False)
         innovativeness_vec_continuous[zero_indices] = 0
 
         # Step 3: Scale to chi_max without rounding
@@ -316,10 +304,10 @@ class Controller:
             print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
-        self.random_state_gamma = np.random.RandomState(self.parameters_social_network["init_vals_environmental_seed"])
+
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
-        WTP_E_vec_unclipped = self.random_state_gamma.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
+        WTP_E_vec_unclipped = self.random_state.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
 
@@ -337,13 +325,12 @@ class Controller:
         ####################################################################################################################################
         
         #BETA
-        self.random_state_beta = np.random.RandomState(self.parameters_social_network["init_vals_price_seed"])
         median_beta = self.calc_beta_median()
         #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
-        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_beta)
+        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state)
         median_income = np.median(incomes)
         self.beta_vec = median_beta*(median_income/incomes)
-        self.random_state_beta.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+        self.random_state.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
 
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         # Calculate the bin edges using quantiles
@@ -420,7 +407,7 @@ class Controller:
             beta_list.extend([beta] * count)
         
         # Shuffle to randomize the order of agents
-        self.random_state_beta.shuffle(beta_list)
+        self.random_state.shuffle(beta_list)
         
         return np.asarray(beta_list)
 

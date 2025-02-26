@@ -654,7 +654,7 @@ def main(fileName, dpi=600):
     history_mean_price_ICE_EV_arr = load_object( fileName + "/Data", "history_mean_price_ICE_EV_arr")
     history_median_price_ICE_EV_arr= load_object( fileName + "/Data", "history_median_price_ICE_EV_arr")
     history_total_utility_arr= load_object(fileName + "/Data", "history_total_utility_arr")
-    history_market_concentration_arr= load_object( fileName + "/Data", "history_market_concentration_arr")
+    history_market_concentration_arr = load_object( fileName + "/Data", "history_market_concentration_arr")
     history_total_profit_arr = load_object( fileName + "/Data", "history_total_profit_arr")
     #history_quality_ICE= load_object( fileName + "/Data", "history_quality_ICE")
     #history_quality_EV= load_object( fileName + "/Data", "history_quality_EV")
@@ -753,4 +753,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_13_05_35__26_02_2025")
+    main("results/multi_seed_single_15_49_44__26_02_2025")

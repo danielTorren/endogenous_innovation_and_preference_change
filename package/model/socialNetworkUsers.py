@@ -58,7 +58,8 @@ class Social_Network:
 
         self.init_network_settings(parameters_social_network)
 
-        self.random_state_social_network = np.random.RandomState(parameters_social_network["social_network_seed"])
+        self.random_state = parameters_social_network["random_state"]
+        self.seed = parameters_social_network["seed"]
 
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
@@ -98,7 +99,6 @@ class Social_Network:
 
 
     def init_network_settings(self, parameters_social_network):
-        self.network_structure_seed = int(round(parameters_social_network["network_structure_seed"]))
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_network_density_input = parameters_social_network["SW_network_density"]
         self.SW_prob_rewire = parameters_social_network["SW_prob_rewire"]
@@ -158,7 +158,7 @@ class Social_Network:
             a networkx watts strogatz small world graph
         """
 
-        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.network_structure_seed)#FIX THE NETWORK STRUCTURE
+        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.seed)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
@@ -204,7 +204,7 @@ class Social_Network:
         #########################################################
         #LIMIT CALCULATION FOR THOSE THAT DONT NEED TO SWTICH
         # 1) Determine which users can switch
-        switch_draws = (self.random_state_social_network.rand(self.num_individuals) < self.prob_switch_car)
+        switch_draws = (self.random_state.rand(self.num_individuals) < self.prob_switch_car)
         switcher_indices = np.where(switch_draws)[0]  # e.g., [2, 5, 7, ...]
         num_switchers = len(switcher_indices)
         non_switcher_indices = np.where(~switch_draws)[0]  # e.g., [0, 1, 3, 4, 6, ...]
@@ -267,7 +267,7 @@ class Social_Network:
         #SWITCHERS
 
         # 2) Shuffle only that subset of user indices
-        shuffle_indices = self.random_state_social_network.permutation(switcher_indices)
+        shuffle_indices = self.random_state.permutation(switcher_indices)
 
         self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
 
@@ -448,7 +448,7 @@ class Social_Network:
 
             probability_choose = individual_specific_util_kappa / sum_U_kappa
 
-            choice_index = self.random_state_social_network.choice(len(available_and_current_vehicles_list), p=probability_choose)
+            choice_index = self.random_state.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)
         #print("U chosen:", individual_specific_util_kappa[choice_index]/self.kappa, np.max(individual_specific_util_kappa)/self.kappa)
         # Record the chosen vehicle

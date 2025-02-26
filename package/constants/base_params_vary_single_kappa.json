@@ -5,19 +5,7 @@
     "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "seeds":{
-        "init_tech_seed": 96,
-        "landscape_seed_ICE": 27,
-        "social_network_seed": 66,
-        "network_structure_seed": 8,
-        "init_vals_environmental_seed": 66,
-        "init_vals_innovative_seed":99,
-        "init_vals_price_seed": 8,
-        "innovation_seed": 75,
-        "landscape_seed_EV": 11, 
-        "choice_seed": 9,
-        "remove_seed": 48
-    },
+    "seed":5,
     "ev_research_start_time":60,
     "ev_production_start_time": 96,
     "EV_rebate_state": 1,
@@ -142,7 +130,7 @@
         "max_Efficiency": 9.73
     },
     "parameters_firm_manager": {
-        "J": 20,
+        "J": 16,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,

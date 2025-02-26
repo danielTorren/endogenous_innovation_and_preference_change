@@ -43,23 +43,7 @@ if __name__ == "__main__":
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "computing_coefficient": 1,
-    "seeds":{
-        "init_tech_seed": 96,
-        "landscape_seed_ICE": 27,
-        "social_network_seed": 66,
-        "network_structure_seed": 8,
-        "init_vals_environmental_seed": 66,
-        "init_vals_innovative_seed":99,
-        "init_vals_price_seed": 8,
-        "landscape_seed_EV": 11, 
-        "choice_seed": 9,
-        "remove_seed": 48,
-        "init_vals_poisson_seed": 95,
-        "init_vals_range_seed": 77,
-        "innovation_seed": 75,
-        "production_seed":31,
-        "firm_tech_choose_seed": 72
-    },
+    "seed": 5,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
     "EV_rebate_state": 1,
@@ -158,7 +142,7 @@ if __name__ == "__main__":
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
-        "J": 20,
+        "J": 16,
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
@@ -172,12 +156,12 @@ if __name__ == "__main__":
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
         "min_profit": 1000,
-        "max_cars_prod": 5
+        "max_cars_prod": 10
     },
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.8,
+        "a_chi": 1.65,
         "b_chi": 4,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -209,7 +193,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

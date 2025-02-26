@@ -11,11 +11,13 @@ class Firm_Manager:
         self.t_firm_manager = 0
         self.parameters_firm = parameters_firm
 
+        
+
         self.policy_distortion = 0
+        self.random_state = parameters_firm_manager["random_state"]
 
         self.zero_profit_options_prod_sum = 0
 
-        self.init_tech_seed = parameters_firm_manager["init_tech_seed"]
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
 
@@ -41,17 +43,6 @@ class Firm_Manager:
         #car paramets
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV 
-    
-
-        self.random_state = np.random.RandomState(self.init_tech_seed)  # Local random state
-
-        self.innovation_seed = parameters_firm_manager["innovation_seed"]
-        self.production_seed = parameters_firm_manager["production_seed"]
-        self.firm_tech_choose_seed = parameters_firm_manager["firm_tech_choose_seed"]
-
-        self.innovation_state = np.random.RandomState(self.innovation_seed)
-        self.production_state = np.random.RandomState(self.production_seed)
-        self.firm_tech_choose_state = np.random.RandomState(self.firm_tech_choose_seed)
 
         self.init_firms()
         
@@ -115,7 +106,7 @@ class Firm_Manager:
         self.parameters_firm["segment_codes"] = self.all_segment_codes
 
         #Create the firms, these store the data but dont do anything otherwise
-        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV, self.innovation_state, self.production_state, self.firm_tech_choose_state) for j in range(self.J)]
+        self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV) for j in range(self.J)]
 
     def invert_bits_one_at_a_time(self, decimal_value, length):
         """THIS IS ONLY USED ONCE TO GENERATE HETEROGENOUS INITIAL TECHS"""
@@ -456,8 +447,6 @@ class Firm_Manager:
             self.history_mean_profit_margins_ICE.append(np.nanmean(profit_margin_ICE))
         else:
             self.history_mean_profit_margins_ICE.append(np.nan)
-
-        self.history_mean_profit_margins_ICE.append(np.nanmean(profit_margin_ICE))
 
         self.calc_vehicles_chosen_list(self.past_new_bought_vehicles)
         self.history_cars_on_sale_price.append([car.price for car in self.cars_on_sale_all_firms])

@@ -50,4 +50,4 @@ class PersonalCar:
 
 
     def update_timer_L_a_t(self):
-        self.L_a_t += 1#0.5 + np.random.uniform()#THE ADDED AGE RANGES FROM 0.5 to 1.5 to avoid cyclic behaviour of agents
+        self.L_a_t += 1
