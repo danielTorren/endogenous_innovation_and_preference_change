@@ -535,17 +535,16 @@ def plot_history_mean_price_multiple_seeds(
     mean_second_hand_EV = history_mean_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
 
     #25th
-    lower_new_ICE = history_lower_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
-    lower_second_hand_ICE = history_lower_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
-    lower_new_EV = history_lower_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
-    lower_second_hand_EV = history_lower_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
-
+    lower_new_ICE = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 0,0], axis=0)  # Mean prices for new cars
+    lower_second_hand_ICE = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 1,0], axis=0)  # Mean prices for second-hand cars
+    lower_new_EV = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 0,1], axis=0)  # Mean prices for new cars
+    lower_second_hand_EV = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 1, 1], axis=0)  # Mean prices for second-hand cars
 
     #75th
-    upper_new_ICE = history_upper_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
-    upper_second_hand_ICE = history_upper_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
-    upper_new_EV = history_upper_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
-    upper_second_hand_EV = history_upper_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
+    upper_new_ICE = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 0,0], axis=0)  # Mean prices for new cars
+    upper_second_hand_ICE = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 1,0], axis=0)  # Mean prices for second-hand cars
+    upper_new_EV = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 0,1], axis=0)  # Mean prices for new cars
+    upper_second_hand_EV = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 1, 1], axis=0)  # Mean prices for second-hand cars
 
 
     # Time steps after burn-in
@@ -849,4 +848,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_22_12_24__26_02_2025")
+    main("results/multi_seed_single_22_17_24__26_02_2025")
