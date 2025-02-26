@@ -671,8 +671,7 @@ def plot_history_mean_profit_margin_multiple_seeds(
     burn_in_step = base_params["duration_burn_in"]
 
     # Extract new and second-hand prices, excluding burn-in period
-    print(history_mean_profit_margins_ICE.shape)
-    quit()
+
     mean_new_ICE = history_mean_profit_margins_ICE[:, burn_in_step:]  # Mean prices for new cars
     mean_new_EV = history_mean_profit_margins_EV[:, burn_in_step:]  # Mean prices for new cars
 
@@ -850,4 +849,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_19_57_22__26_02_2025")
+    main("results/multi_seed_single_22_12_24__26_02_2025")

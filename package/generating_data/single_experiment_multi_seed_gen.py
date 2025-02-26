@@ -57,7 +57,7 @@ def main(
     save_object(history_total_emissions_arr, fileName + "/Data", "history_total_emissions_arr")
     save_object(history_prop_EV_arr, fileName + "/Data", "history_prop_EV_arr")
     #save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")
-    save_object(history_upper_percentile_price_ICE_EV_arr, fileName + "/Data", "history_upper_percentile_price_ICE_EV_arr")
+    save_object(history_lower_percentile_price_ICE_EV_arr, fileName + "/Data", "history_lower_percentile_price_ICE_EV_arr")
     save_object(history_upper_percentile_price_ICE_EV_arr, fileName + "/Data", "history_upper_percentile_price_ICE_EV_arr")
     save_object(history_mean_price_ICE_EV_arr, fileName + "/Data", "history_mean_price_ICE_EV_arr")
     save_object(history_median_price_ICE_EV_arr, fileName + "/Data", "history_median_price_ICE_EV_arr")
