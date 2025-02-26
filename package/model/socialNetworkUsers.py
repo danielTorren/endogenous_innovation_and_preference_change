@@ -920,6 +920,9 @@ class Social_Network:
         self.history_mean_price_ICE_EV = []
         self.history_median_price_ICE_EV = []
 
+        self.history_lower_percentile_price_ICE_EV = []
+        self.history_upper_percentile_price_ICE_EV = []
+
         self.history_car_prices_sold_new = []
         self.history_car_prices_sold_second_hand = []
 
@@ -955,16 +958,24 @@ class Social_Network:
         if prices_ICE:
             mean_price_new_ICE = np.mean(prices_ICE)
             median_price_new_ICE = np.median(prices_ICE)
+            lower_price_new_ICE = np.percentile(prices_ICE,25)
+            upper_price_new_ICE = np.percentile(prices_ICE,75)
         else:
             mean_price_new_ICE = np.nan
             median_price_new_ICE = np.nan
+            lower_price_new_ICE = np.nan
+            upper_price_new_ICE = np.nan
         
         if prices_EV:
             mean_price_new_EV = np.mean(prices_EV)
             median_price_new_EV = np.median(prices_EV)
+            lower_price_new_EV = np.percentile(prices_EV,25)
+            upper_price_new_EV = np.percentile(prices_EV,75)
         else:
             mean_price_new_EV = np.nan
             median_price_new_EV = np.nan
+            lower_price_new_EV = np.nan
+            upper_price_new_EV = np.nan
 
         if self.second_hand_cars:
             prices_second_hand_ICE = [vehicle.price for vehicle in self.second_hand_cars if vehicle.transportType == 2]
@@ -973,22 +984,36 @@ class Social_Network:
             if prices_second_hand_ICE:
                 mean_price_second_hand_ICE = np.mean(prices_second_hand_ICE)
                 median_price_second_hand_ICE = np.median(prices_second_hand_ICE)
+                lower_price_second_hand_ICE = np.percentile(prices_second_hand_ICE,25)
+                upper_price_second_hand_ICE = np.percentile(prices_second_hand_ICE,75)
             else:
                 mean_price_second_hand_ICE = np.nan
                 median_price_second_hand_ICE = np.nan
+                lower_price_second_hand_ICE = np.nan
+                upper_price_second_hand_ICE = np.nan
             
             if prices_EV:
                 mean_price_second_hand_EV = np.mean(prices_second_hand_EV)
                 median_price_second_hand_EV = np.median(prices_second_hand_EV)
+                lower_price_second_hand_EV = np.percentile(prices_second_hand_EV,25)
+                upper_price_second_hand_EV = np.percentile(prices_second_hand_EV,75)
             else:
                 mean_price_second_hand_EV = np.nan
                 median_price_second_hand_EV = np.nan
+                lower_price_second_hand_EV = np.nan
+                upper_price_second_hand_EV = np.nan
 
         else:
             mean_price_second_hand_ICE = np.nan
             median_price_second_hand_ICE = np.nan
             mean_price_second_hand_EV = np.nan
             median_price_second_hand_EV = np.nan
+
+            lower_price_second_hand_ICE = np.nan
+            lower_price_second_hand_EV = np.nan
+            upper_price_second_hand_ICE = np.nan
+            upper_price_second_hand_EV = np.nan
+            
 
         if self.second_hand_cars:
             mean_price_second_hand = np.mean([vehicle.price for vehicle in self.second_hand_cars])
@@ -997,11 +1022,15 @@ class Social_Network:
             mean_price_second_hand = np.nan#NO SECOND HAND CARS
             median_price_second_hand = np.nan#NO SECOND HAND CARS
 
+
         self.history_mean_price.append([mean_price_new, mean_price_second_hand])
         self.history_median_price.append([median_price_new, median_price_second_hand])
 
         self.history_mean_price_ICE_EV.append([(mean_price_new_ICE, mean_price_new_EV), (mean_price_second_hand_ICE,mean_price_second_hand_EV)])
         self.history_median_price_ICE_EV.append([(median_price_new_ICE, median_price_new_EV), (median_price_second_hand_ICE,median_price_second_hand_EV)])
+
+        self.history_lower_percentile_price_ICE_EV.append([(lower_price_new_ICE, lower_price_new_EV), (lower_price_second_hand_ICE,lower_price_second_hand_EV)])
+        self.history_upper_percentile_price_ICE_EV.append([(upper_price_new_ICE, upper_price_new_EV), (upper_price_second_hand_ICE,upper_price_second_hand_EV)])
 
         self.history_driving_emissions_individual.append(self.users_driving_emissions_vec)
         

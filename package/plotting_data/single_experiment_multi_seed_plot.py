@@ -206,6 +206,68 @@ def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, 
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
 
+def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600):
+    """
+    Plot data across multiple seeds with mean, confidence intervals, and individual traces,
+    starting from the end of the burn-in period.
+
+    Args:
+        real_data: Real-world data to compare against.
+        base_params: Dictionary containing simulation parameters (e.g., duration_burn_in).
+        fileName: Name of the file for saving the plot.
+        data: 2D array where rows are the time series for each seed (shape: [num_seeds, num_time_steps]).
+        title: Title of the plot.
+        x_label: Label for the x-axis.
+        y_label: Label for the y-axis.
+        save_name: Name of the file to save the plot.
+        dpi: Dots per inch for saving the plot.
+    """
+    # Determine the start of the data after the burn-in period
+    burn_in_step = base_params["duration_burn_in"]
+    data_after_burn_in = data[:, burn_in_step:]
+    time_steps = np.arange(burn_in_step, data.shape[1])
+
+    # Adjust the real data's time steps
+    init_index = base_params["duration_burn_in"] + 120
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+
+    # Calculate mean and 95% confidence interval for data after burn-in
+    mean_values = np.mean(data_after_burn_in, axis=0)
+    median_values = np.median(data_after_burn_in, axis=0)
+
+
+    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
+
+    # Create subplots
+    fig, ax1 = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+
+    # First subplot: Mean and 95% CI with real data
+    ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="dotted")
+    ax1.plot(time_steps, mean_values, label='Mean', color='blue')
+    ax1.plot(time_steps, median_values, label="Median", color='red', linestyle="dashed")
+    median_values
+    ax1.fill_between(
+        time_steps,
+        mean_values - ci_range,
+        mean_values + ci_range,
+        color='blue',
+        alpha=0.3,
+        label='95% Confidence Interval'
+    )
+
+    # Second subplot: Individual traces with real data
+    for seed_data in data_after_burn_in:
+        ax1.plot(time_steps, seed_data, color='gray', alpha=0.3, linewidth=0.8)
+
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(y_label)
+    add_vertical_lines(ax1, base_params)
+    ax1.legend()
+
+    # Adjust layout and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, save_name, dpi)
+
 
 def plot_vehicle_attribute_time_series_by_type_split(
     base_params, 
@@ -447,6 +509,8 @@ def plot_history_mean_price_multiple_seeds(
     base_params, 
     history_mean_price_ICE_EV, 
     history_median_price_ICE_EV, 
+    history_lower_price_ICE_EV,
+    history_upper_price_ICE_EV,
     fileName, 
     dpi=600
 ):
@@ -467,9 +531,22 @@ def plot_history_mean_price_multiple_seeds(
     # Extract new and second-hand prices, excluding burn-in period
     mean_new_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
     mean_second_hand_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
-
     mean_new_EV = history_mean_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
     mean_second_hand_EV = history_mean_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
+
+    #25th
+    lower_new_ICE = history_lower_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
+    lower_second_hand_ICE = history_lower_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
+    lower_new_EV = history_lower_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
+    lower_second_hand_EV = history_lower_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
+
+
+    #75th
+    upper_new_ICE = history_upper_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
+    upper_second_hand_ICE = history_upper_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
+    upper_new_EV = history_upper_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
+    upper_second_hand_EV = history_upper_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
+
 
     # Time steps after burn-in
     time_steps = np.arange(burn_in_step, burn_in_step + mean_new_ICE.shape[1])
@@ -492,14 +569,27 @@ def plot_history_mean_price_multiple_seeds(
     # Create the figure
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
 
+    #PLOT QUATILES
+    #25th
+    ax1.plot(time_steps, lower_new_ICE, label="25th Percentile New Car ICE", color="blue")
+    ax1.plot(time_steps, lower_second_hand_ICE, label=" 25th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dashed")
+    ax1.plot(time_steps, lower_new_EV, label="25th Percentile New Car Price EV", color="green")
+    ax1.plot(time_steps, lower_second_hand_EV, label="25th Percentile Second-hand Car Price EV", color="green", linestyle = "dashed")
+
+    #75th
+    ax1.plot(time_steps, upper_new_ICE, label="75th Percentile New Car ICE", color="blue")
+    ax1.plot(time_steps, upper_second_hand_ICE, label=" 75th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dashed")
+    ax1.plot(time_steps, upper_new_EV, label="75th Percentile New Car Price EV", color="green")
+    ax1.plot(time_steps, upper_second_hand_EV, label="75th Percentile Second-hand Car Price EV", color="green", linestyle = "dashed")
+
     # Plot individual traces (faded lines) for new and second-hand car prices
     for seed_new, seed_second_hand in zip(mean_new_ICE, mean_second_hand_ICE):
-        ax1.plot(time_steps, seed_new, color='blue', alpha=0.3, linewidth=0.8)
-        ax1.plot(time_steps, seed_second_hand, color='blue', alpha=0.3, linewidth=0.8, linestyle = "dashed")
+        ax1.plot(time_steps, seed_new, color='gray', alpha=0.3, linewidth=0.8)
+        ax1.plot(time_steps, seed_second_hand, color='gray', alpha=0.3, linewidth=0.8, linestyle = "dashed")
 
     for seed_new, seed_second_hand in zip(mean_new_EV, mean_second_hand_EV):
-        ax1.plot(time_steps, seed_new, color='green', alpha=0.3, linewidth=0.8)
-        ax1.plot(time_steps, seed_second_hand, color='green', alpha=0.3, linewidth=0.8,  linestyle = "dashed")
+        ax1.plot(time_steps, seed_new, color='gray', alpha=0.3, linewidth=0.8)
+        ax1.plot(time_steps, seed_second_hand, color='gray', alpha=0.3, linewidth=0.8,  linestyle = "dashed")
 
     #ICE
     # Plot Mean and 95% CI for New Car Prices
@@ -550,8 +640,10 @@ def plot_history_mean_price_multiple_seeds(
     # Format the plot
     ax1.set_xlabel("Time Step, months")
     ax1.set_ylabel("Price, $")
+    fig.legend()
+
     add_vertical_lines(ax1, base_params)
-    ax1.legend()
+    
 
     # Adjust layout and save the plot
     plt.tight_layout()
@@ -651,6 +743,8 @@ def main(fileName, dpi=600):
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
     history_prop_EV_arr= load_object(fileName + "/Data", "history_prop_EV_arr")
     #history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
+    history_lower_percentile_price_ICE_EV_arr = load_object( fileName + "/Data", "history_lower_percentile_price_ICE_EV_arr")
+    history_upper_percentile_price_ICE_EV_arr = load_object( fileName + "/Data", "history_upper_percentile_price_ICE_EV_arr")
     history_mean_price_ICE_EV_arr = load_object( fileName + "/Data", "history_mean_price_ICE_EV_arr")
     history_median_price_ICE_EV_arr= load_object( fileName + "/Data", "history_median_price_ICE_EV_arr")
     history_total_utility_arr= load_object(fileName + "/Data", "history_total_utility_arr")
@@ -708,7 +802,7 @@ def main(fileName, dpi=600):
                         "Total Emissions, kgCO2", 
                         "history_total_emissions")
 
-    plot_ev_uptake_dual(EV_stock_prop_2010_22, base_params, fileName, history_prop_EV_arr, 
+    plot_ev_uptake_single(EV_stock_prop_2010_22, base_params, fileName, history_prop_EV_arr, 
                         "Proportion of EVs Over Time", 
                         "Time Step, months", 
                         "Proportion of EVs", 
@@ -746,6 +840,8 @@ def main(fileName, dpi=600):
     base_params, 
     history_mean_price_ICE_EV_arr, 
     history_median_price_ICE_EV_arr, 
+    history_lower_percentile_price_ICE_EV_arr,
+    history_upper_percentile_price_ICE_EV_arr,
     fileName
     )
 

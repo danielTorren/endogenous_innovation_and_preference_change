@@ -155,7 +155,7 @@ def main(
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(x_o, fileName + "/Data", "x_o")
     
-    samples = posterior.sample((10000000,), x=x_o)
+    samples = posterior.sample((100000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
@@ -178,6 +178,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=64,
+        num_simulations=128,
         num_rounds= 3
     )

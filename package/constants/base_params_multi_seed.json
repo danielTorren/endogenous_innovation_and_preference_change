@@ -1,8 +1,8 @@
 {
-    "seed_repetitions": 16,
+    "seed_repetitions": 10,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "computing_coefficient": 1,

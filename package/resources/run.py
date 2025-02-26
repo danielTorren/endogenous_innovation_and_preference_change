@@ -288,6 +288,8 @@ def generate_multi_seed(params: dict):
         data.social_network.history_total_emissions,#Emmissions flow
         data.social_network.history_prop_EV, 
         data.social_network.history_car_age, 
+        data.social_network.history_lower_percentile_price_ICE_EV,
+        data.social_network.history_upper_percentile_price_ICE_EV,
         data.social_network.history_mean_price_ICE_EV,
         data.social_network.history_median_price_ICE_EV, 
         data.social_network.history_total_utility,
@@ -317,6 +319,8 @@ def parallel_run_multi_seed(params_list):
         history_total_emissions,#Emmissions flow
         history_prop_EV, 
         history_car_age, 
+        history_lower_percentile_price_ICE_EV,
+        history_upper_percentile_price_ICE_EV,
         history_mean_price_ICE_EV,
         history_median_price_ICE_EV, 
         history_total_utility, 
@@ -339,6 +343,8 @@ def parallel_run_multi_seed(params_list):
         np.asarray(history_total_emissions),#Emmissions flow
         np.asarray(history_prop_EV), 
         np.asarray(history_car_age), 
+        np.asarray(history_lower_percentile_price_ICE_EV),
+        np.asarray(history_upper_percentile_price_ICE_EV),
         np.asarray(history_mean_price_ICE_EV),
         np.asarray(history_median_price_ICE_EV), 
         np.asarray(history_total_utility), 

@@ -230,4 +230,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_13_11_00__25_02_2025")
+    main("results/MAPE_ev_2D_13_11_00__lower_02_2025")
