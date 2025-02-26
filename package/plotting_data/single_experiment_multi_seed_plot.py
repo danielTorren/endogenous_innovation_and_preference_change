@@ -639,7 +639,7 @@ def plot_history_mean_price_multiple_seeds(
     # Format the plot
     ax1.set_xlabel("Time Step, months")
     ax1.set_ylabel("Price, $")
-    fig.legend()
+    #fig.legend()
 
     add_vertical_lines(ax1, base_params)
     
@@ -848,4 +848,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_22_28_50__26_02_2025")
+    main("results/test")
