@@ -21,7 +21,7 @@ def plot_policy_intensity_effects(data_array, policy_list, file_name, policy_inf
     num_measures = len(measures)
     
     # Create a figure with rows for measures and columns for policies
-    fig, axes = plt.subplots(num_measures, num_policies, figsize=(15, 6))
+    fig, axes = plt.subplots(num_measures, num_policies, figsize=(15, 6), )
     
     # Ensure axes is a 2D array
     if num_measures == 1:
@@ -99,4 +99,4 @@ def main(file_name):
     plot_policy_intensity_effects(data_array, policy_list, file_name, policy_info_dict)
 
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_14_59_28__26_02_2025")
+    main(file_name="results/vary_single_policy_gen_16_54_24__26_02_2025")
