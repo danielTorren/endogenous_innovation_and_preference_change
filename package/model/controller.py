@@ -117,6 +117,11 @@ class Controller:
         self.time_steps_max = parameters_controller["time_steps_max"]
 
     def handle_seed(self):
+        #Seed for inputs
+        self.random_state_inputs = np.random.RandomState(self.parameters_controller["seed_inputs"])
+        self.parameters_social_network["seed_inputs"] = self.parameters_controller["seed_inputs"]
+        
+        #Variable stuff
         self.random_state = np.random.RandomState(self.parameters_controller["seed"])
         self.parameters_social_network["random_state"] = self.random_state
         self.parameters_firm_manager["random_state"] = self.random_state
@@ -125,7 +130,7 @@ class Controller:
         self.parameters_ICE["random_state"] = self.random_state
         self.parameters_EV["random_state"] = self.random_state
 
-        self.parameters_social_network["seed"] = self.parameters_controller["seed"]
+        
 
 
     def update_scale(self, change_emisisons_scale = False):
@@ -263,7 +268,7 @@ class Controller:
         #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
         # Step 4: Generate N random distances using the fitted Poisson parameter
         N = self.num_individuals # Number of individuals
-        poisson_samples = self.random_state.poisson(lam=fitted_lambda, size=N)
+        poisson_samples = self.random_state_inputs.poisson(lam=fitted_lambda, size=N)
         # Step 5: Map the Poisson samples back to the distance range of the original data
         min_bin, max_bin = bin_centers[0], bin_centers[-1]
         scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
@@ -277,11 +282,11 @@ class Controller:
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
 
         # Step 1: Generate continuous Beta distribution
-        innovativeness_vec_continuous = self.random_state.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
-        zero_indices = self.random_state.choice(self.num_individuals, size=num_zeros, replace=False)
+        zero_indices = self.random_state_inputs.choice(self.num_individuals, size=num_zeros, replace=False)
         innovativeness_vec_continuous[zero_indices] = 0
 
         # Step 3: Scale to chi_max without rounding
@@ -307,7 +312,7 @@ class Controller:
 
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
-        WTP_E_vec_unclipped = self.random_state.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
+        WTP_E_vec_unclipped = self.random_state_inputs.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
         self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
         self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
 
@@ -327,10 +332,10 @@ class Controller:
         #BETA
         median_beta = self.calc_beta_median()
         #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
-        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state)
+        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
         median_income = np.median(incomes)
         self.beta_vec = median_beta*(median_income/incomes)
-        self.random_state.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+        self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
 
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         # Calculate the bin edges using quantiles
@@ -407,7 +412,7 @@ class Controller:
             beta_list.extend([beta] * count)
         
         # Shuffle to randomize the order of agents
-        self.random_state.shuffle(beta_list)
+        self.random_state_inputs.shuffle(beta_list)
         
         return np.asarray(beta_list)
 

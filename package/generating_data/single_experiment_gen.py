@@ -44,6 +44,7 @@ if __name__ == "__main__":
     "compression_factor_state": 1,
     "computing_coefficient": 1,
     "seed": 5,
+    "seed_inputs": 22,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
     "EV_rebate_state": 1,

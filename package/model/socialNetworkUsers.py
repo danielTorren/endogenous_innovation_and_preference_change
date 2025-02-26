@@ -59,7 +59,7 @@ class Social_Network:
         self.init_network_settings(parameters_social_network)
 
         self.random_state = parameters_social_network["random_state"]
-        self.seed = parameters_social_network["seed"]
+        self.seed_inputs = parameters_social_network["seed_inputs"]
 
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
@@ -158,7 +158,7 @@ class Social_Network:
             a networkx watts strogatz small world graph
         """
 
-        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.seed)#FIX THE NETWORK STRUCTURE
+        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.seed_inputs)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
