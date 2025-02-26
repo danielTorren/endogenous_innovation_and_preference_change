@@ -243,10 +243,8 @@ if __name__ == "__main__":
                 "Research_subsidy"
             ],
         policy_list_works = [
-                "Carbon_price",
-                "Discriminatory_corporate_tax",
-                "Electricity_subsidy"
+                "Carbon_price"
             ],
-        target_ev_uptake   = 0.9,
+        target_ev_uptake   = 0.6,
         n_steps_for_sweep  = 10
     )

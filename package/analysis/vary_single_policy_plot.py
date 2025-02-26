@@ -37,7 +37,7 @@ def plot_policy_intensity_effects(data_array, policy_list, file_name, policy_inf
         
         # Calculate mean and standard deviation across seeds
         ev_uptake = policy_data[:, :, 0]
-        print(ev_uptake)
+        #print(ev_uptake)
         
         mean_ev_uptake = np.mean(policy_data[:, :, 0], axis=1)
         std_ev_uptake = policy_data[:, :, 0].std(axis=1)
@@ -91,4 +91,4 @@ def main(file_name):
     plot_policy_intensity_effects(data_array, policy_list, file_name, policy_info_dict)
 
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_00_54_50__26_02_2025")
+    main(file_name="results/vary_single_policy_gen_01_04_35__26_02_2025")

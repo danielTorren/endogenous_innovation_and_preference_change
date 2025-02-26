@@ -247,6 +247,33 @@ def parallel_run_sa(params_dict: list[dict]):
         np.asarray(age_list)
     )
 
+##################################################################################
+
+def generate_sensitivity_output_ev(params: dict):
+    """
+    Generates sensitivity output from input parameters.
+    Assumes `generate_data` is a defined function that returns
+    an object with the required attributes.
+    """
+    data = generate_data(params)
+    return data.calc_EV_prop()
+
+def parallel_run_sa_ev(params_dict: list[dict]):
+    """
+    Runs the sensitivity analysis in parallel using the given parameter dictionary.
+    """
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_sensitivity_output_flat(i) for i in params_dict]
+    ev_prop_list = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(generate_sensitivity_output_ev)(params) for params in params_dict
+    )
+    
+    # Return results as arrays where applicable
+    return np.asarray(ev_prop_list)
+
+
+
+#########################################################################################
 
 def generate_multi_seed(params: dict):
     """
