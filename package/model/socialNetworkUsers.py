@@ -43,6 +43,8 @@ class Social_Network:
 
         self.history_prop_EV = []
         
+        #self.max_utility_list = []
+
         self.beta_median = np.median(self.beta_vec )
         self.gamma_median = np.median(self.gamma_vec )
 
@@ -415,6 +417,13 @@ class Social_Network:
         # Step 4: Compute row-wise max only for valid rows for numerical stability
         row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
+        # Further mask to remove -np.inf values
+
+        filtered_values = masked_utilities[valid_rows]  # Subset based on valid_rows mask
+        filtered_values = filtered_values[np.isfinite(filtered_values)]  # Keeps only finite values
+
+        #self.max_utility_list.append(np.median(filtered_values))
+
         # Step 5: Compute safe exponentiation input and clip to prevent overflow
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
         #np.clip(exp_input, -700, 700, out=exp_input)
@@ -450,6 +459,8 @@ class Social_Network:
 
             choice_index = self.random_state.choice(len(available_and_current_vehicles_list), p=probability_choose)
             #choice_index = np.argmax(probability_choose)
+            #if user.user_id == 1:
+            #    self.max_utility_list.append(individual_specific_util_kappa[choice_index]/self.kappa)
         #print("U chosen:", individual_specific_util_kappa[choice_index]/self.kappa, np.max(individual_specific_util_kappa)/self.kappa)
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
@@ -1142,4 +1153,6 @@ class Social_Network:
 
         self.update_EV_stock()
 
+        #print("median profit", np.median(self.max_utility_list), np.mean(self.max_utility_list))
+        
         return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

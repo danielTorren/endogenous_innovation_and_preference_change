@@ -42,19 +42,6 @@ def convert_data(data_to_fit, base_params):
 
     return averages_array
 
-def update_base_params_with_seed(base_params, seed):
-    seed_repetitions = base_params["seed_repetitions"]
-    base_params["seeds"] = {
-        key: seed + i * seed_repetitions for i, key in enumerate([
-            "init_tech_seed", "landscape_seed_ICE", "social_network_seed",
-            "network_structure_seed", "init_vals_environmental_seed",
-            "init_vals_innovative_seed", "init_vals_price_seed",
-            "innovation_seed", "landscape_seed_EV", "choice_seed",
-            "remove_seed", "init_vals_poisson_seed","init_vals_range_seed"
-        ])
-    }
-    return base_params
-
 def run_single_simulation(theta, base_params, param_list):
     """
     Runs a single simulation for the given parameters theta and base_params.
@@ -130,10 +117,10 @@ def main(
         for seed in seeds:
 
             # Update base params for this seed
-            seeded_params = update_base_params_with_seed(base_params, seed)
+            base_params["seed"] = seed
 
             # Create a simulator partial with these seeded params
-            seeded_simulator = partial(run_single_simulation, base_params=seeded_params, param_list=parameters_list)
+            seeded_simulator = partial(run_single_simulation, base_params=base_params, param_list=parameters_list)
 
             # Process the simulator once per seed
             sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=prior_returns_numpy)
@@ -180,10 +167,10 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1, 5]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [1, 5]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.5, 5]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.5, 5]},
         #{"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.001, 0.05]},
-        #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 1e-3]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 5e-4]},
         #{"name": "alpha", "subdict": "parameters_vehicle_user", "bounds": [0.4, 0.6]},
     ]
     main(
@@ -191,6 +178,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=32,
+        num_simulations=64,
         num_rounds= 3
     )

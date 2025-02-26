@@ -130,10 +130,6 @@ class Controller:
         self.parameters_firm["random_state"] = self.random_state
         self.parameters_second_hand["random_state"] = self.random_state
 
-
-        
-
-
     def update_scale(self, change_emisisons_scale = False):
 
         #DOLLARS

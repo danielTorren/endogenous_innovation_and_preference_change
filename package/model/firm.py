@@ -98,7 +98,7 @@ class Firm:
             self.cars_on_sale = [self.init_tech_ICE] 
 
         self.set_car_init_price_and_base_U()
-        
+
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
@@ -459,7 +459,6 @@ class Firm:
 
             exp_input = self.lambda_exp*(profits[valid_profits_mask]  - np.max(profits[valid_profits_mask]))
             #exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
-
             lambda_profits[valid_profits_mask] = np.exp(exp_input)
             sum_profit = np.sum(lambda_profits)
 

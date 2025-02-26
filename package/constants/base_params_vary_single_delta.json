@@ -114,7 +114,7 @@
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-3,
+        "lambda": 1e-4,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -135,7 +135,7 @@
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 7.0994e-03,
+        "proportion_zero_target": 0.005,
         "income_mu":11.225,
         "income_sigma":0.927
     },
