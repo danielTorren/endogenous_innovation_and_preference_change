@@ -160,7 +160,7 @@
     "parameters_vehicle_user":{
         "kappa":3,
         "B_segments_init": 1,
-        "W_calibration":1e8,
+        "W_calibration":1e5,
         "min_W": 1e-5,
         "r": 0.0016,
         "mu": 1,

@@ -179,7 +179,7 @@ if __name__ == "__main__":
     "parameters_vehicle_user":{
         "kappa": 1e-3,
         "U_segments_init": 0,
-        "W_calibration":1e10,
+        "W_calibration":1e5,
         "min_W": 1e-10,
         "r": 0.0016515813,
         "mu": 1,
