@@ -1,5 +1,5 @@
 import json
-from package.resources.run import distance_ev_prop_age_price_emissions_parallel_run
+from package.resources.run import ev_prop_price_emissions_parallel_run
 from package.resources.utility import (
     createFolder, 
     save_object, 
@@ -42,7 +42,7 @@ def main(
     params_list = produce_param_list(base_params, property_values_list, subdict, property_varied)
     
     print("TOTAL RUNS: ", len(params_list))
-    data_flat_ev_prop, data_flat_price , data_flat_emissions=ev_prop_price_emissions_parallel_run(params_list) 
+    data_flat_ev_prop, data_flat_price , data_flat_emissions= ev_prop_price_emissions_parallel_run(params_list) 
 
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
    
