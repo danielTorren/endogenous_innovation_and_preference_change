@@ -140,7 +140,7 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.8,
+        "a_chi": 1.65,
         "b_chi": 4,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
@@ -155,7 +155,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 7.0918e-04,
+        "kappa": 1e-4,
         "U_segments_init": 0,
         "W_calibration":1,
         "min_W": 1e-10,

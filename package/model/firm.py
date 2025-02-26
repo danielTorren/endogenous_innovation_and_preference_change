@@ -941,6 +941,7 @@ class Firm:
 
         #update cars to sell   
         if self.production_state.rand() < self.prob_change_production:
+            #print("production", self.firm_id)
             self.cars_on_sale = self.choose_cars_segments()
             self.production_change_bool = 1
             self.prod_counter += 1
@@ -948,6 +949,7 @@ class Firm:
         self.update_memory_timer()
 
         if self.innovation_state.rand() < self.prob_innovate:
+            #print("innovate", self.firm_id)
             self.innovate()
             self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DAT
             self.research_counter += 1

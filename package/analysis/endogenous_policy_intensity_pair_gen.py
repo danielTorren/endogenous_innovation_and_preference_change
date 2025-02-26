@@ -4,13 +4,14 @@ import itertools
 from copy import deepcopy
 from joblib import Parallel, delayed
 import multiprocessing
-from package.analysis.endogenous_policy_intensity_single_gen import params_list_with_seed, optimize_policy_intensity_minimize
+from package.analysis.endogenous_policy_intensity_single_gen import optimize_policy_intensity_minimize
 from package.resources.run import load_in_controller, parallel_run_multi_run
 
 from package.resources.utility import (
     createFolder, 
     save_object, 
-    produce_name_datetime
+    produce_name_datetime,
+    params_list_with_seed
 )
 
 def generate_unique_policy_pairs(policy_list_all, policy_list_works):

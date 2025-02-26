@@ -290,19 +290,17 @@ def generate_multi_seed(params: dict):
         data.social_network.history_car_age, 
         data.social_network.history_mean_price_ICE_EV,
         data.social_network.history_median_price_ICE_EV, 
-        data.social_network.history_total_utility, 
+        data.social_network.history_total_utility,
+        data.firm_manager.history_market_concentration,
+        data.firm_manager.history_total_profit, 
         data.social_network.history_quality_ICE, 
         data.social_network.history_quality_EV, 
         data.social_network.history_efficiency_ICE, 
         data.social_network.history_efficiency_EV, 
         data.social_network.history_production_cost_ICE, 
         data.social_network.history_production_cost_EV, 
-        data.social_network.history_distance_individual_ICE, 
-        data.social_network.history_distance_individual_EV,
-        data.firm_manager.history_market_concentration,
-        data.firm_manager.history_total_profit,
-        data.firm_manager.history_profit_margins_ICE,
-        data.firm_manager.history_profit_margins_EV
+        data.firm_manager.history_mean_profit_margins_ICE,
+        data.firm_manager.history_mean_profit_margins_EV
     )
 
 def parallel_run_multi_seed(params_list):
@@ -322,18 +320,16 @@ def parallel_run_multi_seed(params_list):
         history_mean_price_ICE_EV,
         history_median_price_ICE_EV, 
         history_total_utility, 
+        history_market_concentration,
+        history_total_profit, 
         history_quality_ICE, 
         history_quality_EV, 
         history_efficiency_ICE, 
         history_efficiency_EV, 
         history_production_cost_ICE, 
         history_production_cost_EV, 
-        history_distance_individual_ICE, 
-        history_distance_individual_EV,
-        history_market_concentration,
-        history_total_profit, 
-        history_profit_margins_ICE,
-        history_profit_margins_EV
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV
     ) = zip(*res)
     
     # Return results as arrays where applicable
@@ -354,8 +350,6 @@ def parallel_run_multi_seed(params_list):
         history_efficiency_EV, 
         history_production_cost_ICE, 
         history_production_cost_EV, 
-        history_distance_individual_ICE, 
-        history_distance_individual_EV,
-        history_profit_margins_ICE,
-        history_profit_margins_EV
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV
     )

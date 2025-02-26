@@ -100,7 +100,7 @@ def plot_sensitivity_results(fileName, data_sa_dict_total, plot_outputs):
     """
     Generate and save sensitivity plots.
     """
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     data_dict = data_sa_dict_total[plot_outputs[0]]
     ax.errorbar(
         data_dict["data"]["ST"].tolist(),
@@ -116,4 +116,4 @@ def plot_sensitivity_results(fileName, data_sa_dict_total, plot_outputs):
     plt.show()
 
 if __name__ == '__main__':
-    main(fileName="results/sensitivity_analysis_seeds_12_18_02__26_02_2025")
+    main(fileName="results/sensitivity_analysis_seeds_12_29_46__26_02_2025")

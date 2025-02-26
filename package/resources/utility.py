@@ -5,6 +5,7 @@ Created: 10/10/2022
 """
 
 # imports
+from copy import deepcopy
 import pickle
 import os
 import numpy as np
@@ -193,3 +194,19 @@ def calc_bounds(data, confidence_level):
     upper_bound = ys_mean + margin_of_error
 
     return ys_mean,lower_bound, upper_bound
+
+def params_list_with_seed(base_params):
+    """
+    Expand the list of scenarios by varying the seed parameters.
+    """
+    base_params_list = []
+    seed_repetitions = base_params["seed_repetitions"]
+    seed_keys = list(base_params["seeds"].keys())
+
+    for seed in range(1, seed_repetitions + 1):
+        base_params_copy = deepcopy(base_params)
+        for i, seed_key in enumerate(seed_keys):
+            base_params_copy["seeds"][seed_key] = seed + i*seed_repetitions       
+        base_params_list.append( base_params_copy)
+
+    return base_params_list

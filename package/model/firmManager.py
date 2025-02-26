@@ -391,8 +391,8 @@ class Firm_Manager:
         self.history_zero_profit_options_research_sum = []
 
 
-        self.history_profit_margins_EV = []
-        self.history_profit_margins_ICE = []
+        self.history_mean_profit_margins_EV = []
+        self.history_mean_profit_margins_ICE = []
         self.history_W = []
 
         self.history_quality_ICE = []
@@ -441,15 +441,23 @@ class Firm_Manager:
         self.history_prop_EV_research.append(avg_ev_proportion)
         self.history_prop_ICE_research.append(avg_ice_proportion)
 
-
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.cars_on_sale_all_firms)
         self.history_prop_EV.append(self.EV_users_count/len(self.cars_on_sale_all_firms))
     
-        self.HHI = self. calculate_market_concentration(self.past_new_bought_vehicles)
+        self.HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
 
-        self.history_profit_margins_EV.append(profit_margin_EV)
-        self.history_profit_margins_ICE.append(profit_margin_ICE)
+        if profit_margin_EV:
+            self.history_mean_profit_margins_EV.append(np.nanmean(profit_margin_EV))
+        else:
+            self.history_mean_profit_margins_EV.append(np.nan)
+
+        if profit_margin_ICE:
+            self.history_mean_profit_margins_ICE.append(np.nanmean(profit_margin_ICE))
+        else:
+            self.history_mean_profit_margins_ICE.append(np.nan)
+
+        self.history_mean_profit_margins_ICE.append(np.nanmean(profit_margin_ICE))
 
         self.calc_vehicles_chosen_list(self.past_new_bought_vehicles)
         self.history_cars_on_sale_price.append([car.price for car in self.cars_on_sale_all_firms])

@@ -8,7 +8,8 @@ from scipy.stats import norm
 from package.resources.utility import (
     createFolder, 
     save_object, 
-    produce_name_datetime
+    produce_name_datetime, 
+    params_list_with_seed
 )
 
 def generate_policy_scenarios(base_params, policy_list):
@@ -29,34 +30,6 @@ def generate_policy_scenarios(base_params, policy_list):
     output = [(policy_list[i],base_params_list[i]) for i in range(len(base_params_list))]
 
     return output
-
-def params_list_with_seed(base_params):
-    """
-    Expand the list of scenarios by varying the seed parameters.
-    """
-    base_params_list = []
-    seed_repetitions = base_params["seed_repetitions"]
-
-    for seed in range(1, seed_repetitions + 1):
-        base_params_copy = deepcopy(base_params)
-        # VARY ALL THE SEEDS
-        base_params_copy["seeds"]["init_tech_seed"] = seed + seed_repetitions
-        base_params_copy["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
-        base_params_copy["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
-        base_params_copy["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
-        base_params_copy["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-        base_params_copy["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-        base_params_copy["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
-        base_params_copy["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
-        base_params_copy["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
-        base_params_copy["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
-        base_params_copy["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
-        base_params_copy["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
-        base_params_copy["seeds"]["init_vals_range_seed"] = seed + 13 * seed_repetitions
-       
-        base_params_list.append( base_params_copy)
-    
-    return base_params_list
 
 def single_policy_simulation(params, controller_load):
     data = load_in_controller(controller_load, params)#FIRST RUN

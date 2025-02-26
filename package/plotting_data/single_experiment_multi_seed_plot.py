@@ -40,10 +40,6 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
         ax.axvline(policy_start_time, color="red", linestyle='--', label="Policy start")
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import sem, t
-
 def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label, save_name, dpi=600): 
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces, 
@@ -66,6 +62,7 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
 
     # Calculate mean and 95% confidence interval
     mean_values = np.mean(data_after_burn_in, axis=0)
+    median_values = np.median(data_after_burn_in, axis=0)
     ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
@@ -77,6 +74,7 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
 
     # Plot mean and 95% CI
     ax1.plot(time_steps, mean_values, label='Mean', color='blue')
+    ax1.plot(time_steps,median_values, label='Median', color='red', linestyle = "--")
     ax1.fill_between(
         time_steps, 
         mean_values - ci_range, 
@@ -170,14 +168,19 @@ def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, 
 
     # Calculate mean and 95% confidence interval for data after burn-in
     mean_values = np.mean(data_after_burn_in, axis=0)
+    median_values = np.median(data_after_burn_in, axis=0)
+
+
     ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12), sharex=True)
 
     # First subplot: Mean and 95% CI with real data
-    ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="--")
+    ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="dotted")
     ax1.plot(time_steps, mean_values, label='Mean', color='blue')
+    ax1.plot(time_steps, median_values, label="Median", color='red', linestyle="dashed")
+    median_values
     ax1.fill_between(
         time_steps,
         mean_values - ci_range,
@@ -554,7 +557,88 @@ def plot_history_mean_price_multiple_seeds(
     plt.tight_layout()
     save_and_show(fig, fileName, "history_mean_price_with_traces_by_type", dpi)
 
+def plot_history_mean_profit_margin_multiple_seeds(
+    base_params, 
+    history_mean_profit_margins_ICE,
+    history_mean_profit_margins_EV, 
+    fileName, 
+    dpi=600
+):
+    """
+    Plots the mean and 95% confidence interval for prices (new and second-hand cars) in the first subplot,
+    starting from the end of the burn-in period.
 
+    Args:
+        base_params: Parameters of the simulation for adding vertical lines.
+        history_mean_price: 3D array [num_seeds, num_time_steps, 2] for mean prices.
+        history_median_price: 3D array [num_seeds, num_time_steps, 2] for median prices.
+        fileName: Directory or file name to save the plot.
+        dpi: Resolution for the saved plot.
+    """
+    # Extract burn-in step
+    burn_in_step = base_params["duration_burn_in"]
+
+    # Extract new and second-hand prices, excluding burn-in period
+    print(history_mean_profit_margins_ICE.shape)
+    quit()
+    mean_new_ICE = history_mean_profit_margins_ICE[:, burn_in_step:]  # Mean prices for new cars
+    mean_new_EV = history_mean_profit_margins_EV[:, burn_in_step:]  # Mean prices for new cars
+
+    # Time steps after burn-in
+    time_steps = np.arange(burn_in_step, burn_in_step + mean_new_ICE.shape[1])
+
+    # Compute mean and 95% CI across seeds
+    #ICE
+    overall_mean_new_ICE = np.nanmean(mean_new_ICE, axis=0)
+    ci_new_ICE = t.ppf(0.975, df=mean_new_ICE.shape[0] - 1) * sem(mean_new_ICE, axis=0)
+    #EV
+    overall_mean_new_EV = np.nanmean(mean_new_EV, axis=0)
+    ci_new_EV = t.ppf(0.975, df=mean_new_EV.shape[0] - 1) * sem(mean_new_EV, axis=0)
+
+    # Create the figure
+    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
+
+    # Plot individual traces (faded lines) for new and second-hand car prices
+    for seed_new in mean_new_ICE:
+        ax1.plot(time_steps, seed_new, color='blue', alpha=0.3, linewidth=0.8)
+
+    for seed_new in mean_new_EV:
+        ax1.plot(time_steps, seed_new, color='green', alpha=0.3, linewidth=0.8)
+
+    #ICE
+    # Plot Mean and 95% CI for New Car Prices
+    ax1.plot(time_steps, overall_mean_new_ICE, label="Mean profit margin ICE", color="blue")
+    ax1.fill_between(
+        time_steps,
+        overall_mean_new_ICE - ci_new_ICE,
+        overall_mean_new_ICE + ci_new_ICE,
+        color="blue",
+        alpha=0.2,
+        label="New Car 95% Confidence Interval ICE"
+    )
+
+    #EV
+    # Plot Mean and 95% CI for New Car Prices
+    ax1.plot(time_steps, overall_mean_new_EV, label="Mean profit margin EV", color="green")
+    ax1.fill_between(
+        time_steps,
+        overall_mean_new_EV - ci_new_EV,
+        overall_mean_new_EV + ci_new_EV,
+        color="green",
+        alpha=0.2,
+        label="New Car 95% Confidence Interval EV"
+    )
+
+    # Format the plot
+    ax1.set_xlabel("Time Step, months")
+    ax1.set_ylabel("Mean Profit margin")
+    add_vertical_lines(ax1, base_params)
+    ax1.legend()
+
+    # Adjust layout and save the plot
+    plt.tight_layout()
+    save_and_show(fig, fileName, "history_mean_profit_margin_with_traces_by_type", dpi)
+    
 # Sample main function
 def main(fileName, dpi=600):
 
@@ -579,6 +663,9 @@ def main(fileName, dpi=600):
     #history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
     #history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
 
+    history_mean_profit_margins_ICE = load_object( fileName + "/Data", "history_mean_profit_margins_ICE")
+    history_mean_profit_margins_EV = load_object( fileName + "/Data", "history_mean_profit_margins_EV")
+
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
 
@@ -587,6 +674,15 @@ def main(fileName, dpi=600):
 
     # Plot each dataset
     #"""
+
+    
+    plot_history_mean_profit_margin_multiple_seeds(
+        base_params, 
+        history_mean_profit_margins_ICE, 
+        history_mean_profit_margins_EV, 
+        fileName
+    )
+
     plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
                     "Total Driving Emissions Over Time", 
                     "Time Step, months", 
@@ -652,8 +748,9 @@ def main(fileName, dpi=600):
     fileName
     )
 
+
     
     plt.show()
 
 if __name__ == "__main__":
-    main("results/sensitivity_analysis_seeds_12_18_02__26_02_2025")
+    main("results/multi_seed_single_13_05_35__26_02_2025")
