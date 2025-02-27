@@ -540,6 +540,8 @@ class Controller:
             self.future_carbon_price_state = 0
             self.future_carbon_price_init = 0
             self.future_carbon_price_policy = 0
+
+        print("carbon price: stae, values", self.Carbon_price_state, self.future_carbon_price_policy)
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
 
