@@ -642,8 +642,8 @@ def plot_history_mean_price_multiple_seeds(
 
     # Adjust legend placement below the x-axis without overlapping labels
     fig.legend(
-        loc="lower center",
-        bbox_to_anchor=(0.5, 0),  # Move the legend further down
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.10),  # Move the legend further down
         ncol=4,  # Arrange legend entries in two rows
         fontsize="small",
         frameon=False  # Optional: Remove legend frame for a cleaner look
@@ -863,8 +863,6 @@ def main(fileName, dpi=600):
         history_upper_percentile_price_ICE_EV_arr,
         fileName
     )
-    plt.show()
-
 
     plot_margins(base_params, fileName,history_mean_profit_margins_ICE, history_mean_profit_margins_EV, 
                         "Profit margin Over Time", 
@@ -922,9 +920,6 @@ def main(fileName, dpi=600):
                         "history_total_profit"
     )
 
-
-
-
     """
     plot_vehicle_attribute_time_series_by_type_split(
         base_params, 
@@ -935,10 +930,7 @@ def main(fileName, dpi=600):
     )
     """
 
-
-
-    
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_22_44_10__26_02_2025")
+    main("results/multi_seed_single_01_17_58__27_02_2025")
