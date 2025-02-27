@@ -29,8 +29,8 @@ def single_policy_simulation(params, controller_file):
     """
     Run a single simulation and return EV uptake and policy distortion.
     """
-    if params["seed"] == 3:
-        print(params["parameters_policies"]["States"], params["parameters_policies"]["Values"]["Carbon_price"])
+    #if params["seed"] == 3:
+    #    print(params["parameters_policies"]["States"], params["parameters_policies"]["Values"]["Carbon_price"])
     controller = load(controller_file)  # Load fresh controller
     data = load_in_controller(controller, params)
     return data.calc_EV_prop(), data.calc_total_policy_distortion()
@@ -121,7 +121,6 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
 
     def run_and_save(param, idx):
         controller = generate_data(param)  # Run calibration
-        print("uptake", controller.calc_EV_prop())
         dump(controller, f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl")  # Save
         return f"{save_path}/Calibration_runs/controller_seed_{idx}.pkl"  # Return filename
 
