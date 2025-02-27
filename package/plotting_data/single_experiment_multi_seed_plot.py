@@ -566,7 +566,7 @@ def plot_history_mean_price_multiple_seeds(
     ci_second_hand_EV = t.ppf(0.975, df=mean_second_hand_EV.shape[0] - 1) * sem(mean_second_hand_EV, axis=0)
 
     # Create the figure
-    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
+    fig, ax1 = plt.subplots(1, 1, figsize=(15, 8))
 
     #PLOT QUATILES
     #25th
@@ -643,7 +643,6 @@ def plot_history_mean_price_multiple_seeds(
     # Adjust legend placement below the x-axis without overlapping labels
     fig.legend(
         loc="upper center",
-        bbox_to_anchor=(0.5, -0.10),  # Move the legend further down
         ncol=4,  # Arrange legend entries in two rows
         fontsize="small",
         frameon=False  # Optional: Remove legend frame for a cleaner look
@@ -654,7 +653,7 @@ def plot_history_mean_price_multiple_seeds(
     # Adjust layout to prevent overlapping
     #plt.tight_layout(rect=[0, 0.05, 1, 1])  # Increase bottom margin to accommodate the legend
     save_and_show(fig, fileName, "history_mean_price_with_traces_by_type", dpi)
-
+    plt.show()
 def plot_history_mean_profit_margin_multiple_seeds(
     base_params, 
     history_mean_profit_margins_ICE,
@@ -817,7 +816,7 @@ def plot_margins(base_params, fileName, data_ICE, data_EV, title, x_label, y_lab
 
 
 # Sample main function
-def main(fileName, dpi=600):
+def main(fileName, dpi=300):
 
     base_params = load_object(fileName + "/Data", "base_params")
     print(base_params)
@@ -871,11 +870,11 @@ def main(fileName, dpi=600):
                         "history_profit_margin"
     )
 
-    plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
-                    "Total Driving Emissions Over Time", 
-                    "Time Step, months", 
-                    "Total Emissions, kgCO2", 
-                    "history_total_driving_emissions_and_index")
+    #plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
+    #                "Total Driving Emissions Over Time", 
+    #                "Time Step, months", 
+    #                "Total Emissions, kgCO2", 
+    #                "history_total_driving_emissions_and_index")
 
     plot_data_across_seeds(base_params, fileName,history_driving_emissions_arr, 
                         "Total Driving Emissions Over Time", 
@@ -933,4 +932,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_10_11_20__27_02_2025")
+    main("results/multi_seed_single_10_21_12__27_02_2025")
