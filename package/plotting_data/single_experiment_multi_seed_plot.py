@@ -570,16 +570,16 @@ def plot_history_mean_price_multiple_seeds(
 
     #PLOT QUATILES
     #25th
-    ax1.plot(time_steps, lower_new_ICE, label="25th Percentile New Car ICE", color="blue")
-    ax1.plot(time_steps, lower_second_hand_ICE, label=" 25th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dotted")
-    ax1.plot(time_steps, lower_new_EV, label="25th Percentile New Car Price EV", color="green")
-    ax1.plot(time_steps, lower_second_hand_EV, label="25th Percentile Second-hand Car Price EV", color="green", linestyle = "dotted")
+    ax1.plot(time_steps, lower_new_ICE, color="blue", linestyle = "dotted")
+    ax1.plot(time_steps, lower_second_hand_ICE, color="blue", linestyle = "dotted")
+    ax1.plot(time_steps, lower_new_EV, color="green", linestyle = "dotted")
+    ax1.plot(time_steps, lower_second_hand_EV, color="green", linestyle = "dotted")
 
     #75th
-    ax1.plot(time_steps, upper_new_ICE, label="75th Percentile New Car ICE", color="blue")
-    ax1.plot(time_steps, upper_second_hand_ICE, label=" 75th Percentile Second-hand Car Price ICE", color="blue", linestyle = "dotted")
-    ax1.plot(time_steps, upper_new_EV, label="75th Percentile New Car Price EV", color="green")
-    ax1.plot(time_steps, upper_second_hand_EV, label="75th Percentile Second-hand Car Price EV", color="green", linestyle = "dotted")
+    ax1.plot(time_steps, upper_new_ICE, color="blue", linestyle = "dotted")
+    ax1.plot(time_steps, upper_second_hand_ICE, color="blue", linestyle = "dotted")
+    ax1.plot(time_steps, upper_new_EV, color="green", linestyle = "dotted")
+    ax1.plot(time_steps, upper_second_hand_EV, color="green", linestyle = "dotted")
 
     # Plot individual traces (faded lines) for new and second-hand car prices
     for seed_new, seed_second_hand in zip(mean_new_ICE, mean_second_hand_ICE):
@@ -642,9 +642,9 @@ def plot_history_mean_price_multiple_seeds(
 
     # Adjust legend placement below the x-axis without overlapping labels
     fig.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, -0.2),  # Move the legend further down
-        ncol=2,  # Arrange legend entries in two rows
+        loc="lower center",
+        bbox_to_anchor=(0.5, 0),  # Move the legend further down
+        ncol=4,  # Arrange legend entries in two rows
         fontsize="small",
         frameon=False  # Optional: Remove legend frame for a cleaner look
     )
@@ -652,7 +652,7 @@ def plot_history_mean_price_multiple_seeds(
     add_vertical_lines(ax1, base_params)
 
     # Adjust layout to prevent overlapping
-    plt.tight_layout(rect=[0, 0.05, 1, 1])  # Increase bottom margin to accommodate the legend
+    #plt.tight_layout(rect=[0, 0.05, 1, 1])  # Increase bottom margin to accommodate the legend
     save_and_show(fig, fileName, "history_mean_price_with_traces_by_type", dpi)
 
 def plot_history_mean_profit_margin_multiple_seeds(
@@ -863,7 +863,7 @@ def main(fileName, dpi=600):
         history_upper_percentile_price_ICE_EV_arr,
         fileName
     )
-    quit()
+    plt.show()
 
 
     plot_margins(base_params, fileName,history_mean_profit_margins_ICE, history_mean_profit_margins_EV, 
