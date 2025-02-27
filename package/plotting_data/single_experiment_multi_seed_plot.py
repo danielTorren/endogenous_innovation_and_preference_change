@@ -653,7 +653,7 @@ def plot_history_mean_price_multiple_seeds(
     # Adjust layout to prevent overlapping
     #plt.tight_layout(rect=[0, 0.05, 1, 1])  # Increase bottom margin to accommodate the legend
     save_and_show(fig, fileName, "history_mean_price_with_traces_by_type", dpi)
-    plt.show()
+
 def plot_history_mean_profit_margin_multiple_seeds(
     base_params, 
     history_mean_profit_margins_ICE,
@@ -770,7 +770,7 @@ def plot_margins(base_params, fileName, data_ICE, data_EV, title, x_label, y_lab
     # Create subplots
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
 
-    ax1.ylim(0,1)
+    ax1.set_ylim(0,1)
     # Plot individual traces (faded lines)
     for seed_data in data_after_burn_in_ICE:
         ax1.plot(time_steps, seed_data, color='gray', alpha=0.3, linewidth=0.8)
