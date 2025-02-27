@@ -94,6 +94,8 @@ def main(file_name):
     data_array = load_object(file_name + "/Data", "data_array")
     policy_list = load_object(file_name + "/Data", "policy_list")
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
+    base_params = load_object(file_name + "/Data", "base_params")
+    print(base_params)
     
     # Plot the effects of policy intensities
     plot_policy_intensity_effects(data_array, policy_list, file_name, policy_info_dict)
