@@ -372,6 +372,52 @@ def plot_efficiency(data_array, property_values_list, fileName, name_property, p
     fig.savefig(f"{fileName}/eff_{property_save}.png", dpi=dpi)
 
 
+
+def plot_ev_prop_combined(base_params, data_array, property_values_list, fileName, name_property, property_save, real_data, dpi=600):
+    num_deltas = data_array.shape[0]
+    num_seeds = data_array.shape[1]
+    time_steps = data_array.shape[2]
+
+    # Create time series array
+    time_series = np.arange(time_steps)
+    
+    # Define a color map
+    colors = plt.cm.viridis(np.linspace(0, 1, num_deltas))
+    
+    # Create a single figure
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    # Plot real data (assume it starts after burn-in + offset)
+    burn_in_step = base_params["duration_burn_in"]
+    init_index = burn_in_step + 120
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+    ax.plot(time_steps_real, real_data, label="Real Data", color='orange', linestyle="dotted")
+    
+    # Loop over different parameter values
+    for i, (delta, color) in enumerate(zip(property_values_list, colors)):
+        # Get data after burn-in
+        data_after_burn_in = data_array[i, :, burn_in_step:]
+
+        # Calculate mean and 95% confidence interval
+        mean_data = np.mean(data_after_burn_in, axis=0)
+        sem_data = stats.sem(data_after_burn_in, axis=0)
+        ci_range = sem_data * stats.t.ppf(0.975, num_seeds - 1)  # 95% CI
+
+        # Plot mean and confidence interval
+        ax.plot(time_series[burn_in_step:], mean_data, color=color, label=f'{name_property} = {delta}', linewidth=2)
+        ax.fill_between(time_series[burn_in_step:], mean_data - ci_range, mean_data + ci_range, color=color, alpha=0.3)
+
+    ax.grid()
+    ax.legend()
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("EV prop")
+    ax.set_title("EV Propagation Over Time for Different Parameter Values")
+    
+    # Adjust layout and save the figure
+    plt.tight_layout()
+    fig.savefig(f"{fileName}/Plots/user_ev_prop_combined_{property_save}.png", dpi=dpi)
+
+
 # Sample main function
 def main(fileName, dpi=600):
 
@@ -393,6 +439,7 @@ def main(fileName, dpi=600):
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
     #plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
+    plot_ev_prop_combined(base_params, data_array_EV_prop, property_values_list, fileName, name_property, property_save, EV_stock_prop_2010_22, dpi=600)
     plot_ev_prop(base_params,data_array_EV_prop, property_values_list, fileName, name_property, property_save,EV_stock_prop_2010_22,  600)
     #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
     plot_price(base_params,data_array_price , property_values_list, fileName, name_property, property_save, 600)
