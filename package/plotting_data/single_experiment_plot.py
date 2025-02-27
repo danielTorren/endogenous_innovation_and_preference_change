@@ -82,15 +82,18 @@ def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600)
     format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit, $", legend=False)
     save_and_show(fig, fileName, "total_profit", dpi)
 
-def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, dpi=600):
+def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_22, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], marker='o', label = "Consider")
-    ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], marker='o', label = "Adopt")
+    EV_stock_prop_2010_22
+
+    time_yearly = np.arange(12 + 108, 12 + 264, 12)
+    ax.plot(time_yearly,EV_stock_prop_2010_22, label = "California data", linestyle= "dashed", color = "orange")
+    ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
+    ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
     add_vertical_lines(ax, base_params)
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
     save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
-
 
 
 
@@ -112,6 +115,7 @@ def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600):
 
 def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
+
 
     # Plot stacked area (continuous stacked bar equivalent)
     ax.plot(firm_manager.history_prop_EV_research[base_params["duration_burn_in"]:], color = "Green")
@@ -988,10 +992,11 @@ def main(fileName, dpi=400):
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
     plot_preferences(social_network, fileName, dpi)
-    plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi)
+    #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
+    plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    plot_history_prop_EV_research(base_params,firm_manager, fileName)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
-    plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
@@ -1001,7 +1006,7 @@ def main(fileName, dpi=400):
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
-    plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, dpi)
+
     
     plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
@@ -1017,4 +1022,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_16_20_03__26_02_2025")
+    main("results/single_experiment_09_54_13__27_02_2025")

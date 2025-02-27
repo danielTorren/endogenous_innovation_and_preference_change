@@ -39,7 +39,7 @@ if __name__ == "__main__":
     "seed_repetitions": 1,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
-    "duration_future": 154,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "computing_coefficient": 1,
@@ -162,8 +162,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 2,
-        "b_chi": 3,
+        "a_chi": 1.23,
+        "b_chi": 2, 
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1e-3,
+        "kappa": 1e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
