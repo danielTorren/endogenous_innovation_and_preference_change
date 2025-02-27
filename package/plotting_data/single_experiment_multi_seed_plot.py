@@ -639,13 +639,20 @@ def plot_history_mean_price_multiple_seeds(
     # Format the plot
     ax1.set_xlabel("Time Step, months")
     ax1.set_ylabel("Price, $")
-    #fig.legend()
+
+    # Adjust legend placement below the x-axis
+    fig.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15),  # Move the legend below the x-axis
+        ncol=2,  # Arrange legend entries in two columns
+        fontsize="small",
+        frameon=False  # Optional: Remove legend frame for a cleaner look
+    )
 
     add_vertical_lines(ax1, base_params)
-    
 
     # Adjust layout and save the plot
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.9])  # Ensure tight layout while accommodating legend
     save_and_show(fig, fileName, "history_mean_price_with_traces_by_type", dpi)
 
 def plot_history_mean_profit_margin_multiple_seeds(
@@ -728,7 +735,87 @@ def plot_history_mean_profit_margin_multiple_seeds(
     # Adjust layout and save the plot
     plt.tight_layout()
     save_and_show(fig, fileName, "history_mean_profit_margin_with_traces_by_type", dpi)
-    
+
+def plot_margins(base_params, fileName, data_ICE, data_EV, title, x_label, y_label, save_name, dpi=600): 
+    """
+    Plot data across multiple seeds with mean, confidence intervals, and individual traces, 
+    starting from the end of the burn-in period.
+
+    Args:
+        base_params: Dictionary containing simulation parameters (e.g., duration_burn_in).
+        fileName: Name of the file for saving the plot.
+        data: 2D array where rows are the time series for each seed (shape: [num_seeds, num_time_steps]).
+        title: Title of the plot.
+        x_label: Label for the x-axis.
+        y_label: Label for the y-axis.
+        save_name: Name of the file to save the plot.
+        dpi: Dots per inch for saving the plot.
+    """
+    # Determine the start of the data after the burn-in period
+
+
+    burn_in_step = base_params["duration_burn_in"]
+    data_after_burn_in_ICE = data_ICE[:, burn_in_step:]
+    data_after_burn_in_EV = data_EV[:, burn_in_step:]
+    time_steps = np.arange(burn_in_step, data_ICE.shape[1])
+
+    # Calculate mean and 95% confidence interval
+    mean_values_ICE = np.mean(data_after_burn_in_ICE, axis=0)
+    median_values_ICE = np.median(data_after_burn_in_ICE, axis=0)
+    ci_range_ICE = sem(data_after_burn_in_ICE, axis=0) * t.ppf(0.975, df=data_after_burn_in_ICE.shape[0] - 1)  # 95% CI
+
+    mean_values_EV = np.mean(data_after_burn_in_EV, axis=0)
+    median_values_EV = np.median(data_after_burn_in_EV, axis=0)
+    ci_range_EV = sem(data_after_burn_in_EV, axis=0) * t.ppf(0.975, df=data_after_burn_in_EV.shape[0] - 1)  # 95% CI
+
+    # Create subplots
+    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
+
+    # Plot individual traces (faded lines)
+    for seed_data in data_after_burn_in_ICE:
+        ax1.plot(time_steps, seed_data, color='gray', alpha=0.3, linewidth=0.8)
+
+    # Plot mean and 95% CI
+    ax1.plot(time_steps, mean_values_ICE, label='Mean', color='blue')
+    ax1.plot(time_steps,median_values_ICE, label='Median', color='blue', linestyle = "--")
+    ax1.fill_between(
+        time_steps, 
+        mean_values_ICE - ci_range_ICE, 
+        mean_values_ICE + ci_range_ICE, 
+        color='blue', 
+        alpha=0.3, 
+        label='95% Confidence Interval'
+    )
+
+    #EV
+    # Plot individual traces (faded lines)
+    for seed_data in data_after_burn_in_EV:
+        ax1.plot(time_steps, seed_data, color='gray', alpha=0.3, linewidth=0.8)
+
+    # Plot mean and 95% CI
+    ax1.plot(time_steps, mean_values_EV, label='Mean', color='green')
+    ax1.plot(time_steps,median_values_EV, label='Median', color='green', linestyle = "--")
+    ax1.fill_between(
+        time_steps, 
+        mean_values_EV - ci_range_EV, 
+        mean_values_EV + ci_range_EV, 
+        color='green', 
+        alpha=0.3, 
+        label='95% Confidence Interval'
+    )
+
+    # Add labels, vertical lines, and legend
+    ax1.set_xlabel(x_label)
+    ax1.set_ylabel(y_label)
+    ax1.set_title(title)
+    add_vertical_lines(ax1, base_params)
+    ax1.legend()
+
+    # Adjust layout and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, save_name, dpi)
+
+
 # Sample main function
 def main(fileName, dpi=600):
 
@@ -755,8 +842,9 @@ def main(fileName, dpi=600):
     #history_production_cost_ICE= load_object( fileName + "/Data", "history_production_cost_ICE")
     #history_production_cost_EV= load_object( fileName + "/Data", "history_production_cost_EV")
 
-    #history_mean_profit_margins_ICE = load_object( fileName + "/Data", "history_mean_profit_margins_ICE")
-    #history_mean_profit_margins_EV = load_object( fileName + "/Data", "history_mean_profit_margins_EV")
+    history_mean_profit_margins_ICE = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_ICE"))
+    history_mean_profit_margins_EV = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_EV"))
+
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
@@ -767,14 +855,13 @@ def main(fileName, dpi=600):
     # Plot each dataset
     #"""
 
-    """
-    plot_history_mean_profit_margin_multiple_seeds(
-        base_params, 
-        history_mean_profit_margins_ICE, 
-        history_mean_profit_margins_EV, 
-        fileName
+
+    plot_margins(base_params, fileName,history_mean_profit_margins_ICE, history_mean_profit_margins_EV, 
+                        "Profit margin Over Time", 
+                        "Time Step, months", 
+                        "Profit margin", 
+                        "history_profit_margin"
     )
-    """
 
     plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
                     "Total Driving Emissions Over Time", 
@@ -822,7 +909,11 @@ def main(fileName, dpi=600):
                         "Total Profit Over Time", 
                         "Time Step, months", 
                         "Total Profit, $", 
-                        "history_total_profit")
+                        "history_total_profit"
+    )
+
+
+
 
     """
     plot_vehicle_attribute_time_series_by_type_split(
