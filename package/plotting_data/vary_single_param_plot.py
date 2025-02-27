@@ -391,7 +391,7 @@ def plot_ev_prop_combined(base_params, data_array, property_values_list, fileNam
     burn_in_step = base_params["duration_burn_in"]
     init_index = burn_in_step + 120
     time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
-    ax.plot(time_steps_real, real_data, label="Real Data", color='orange', linestyle="dotted")
+    ax.plot(time_steps_real, real_data, label="California Data 2010-22", color='orange', linestyle="dotted")
     
     # Loop over different parameter values
     for i, (delta, color) in enumerate(zip(property_values_list, colors)):
@@ -410,8 +410,7 @@ def plot_ev_prop_combined(base_params, data_array, property_values_list, fileNam
     ax.grid()
     ax.legend()
     ax.set_xlabel("Time Step")
-    ax.set_ylabel("EV prop")
-    ax.set_title("EV Propagation Over Time for Different Parameter Values")
+    ax.set_ylabel("EV uptake proportion")
     
     # Adjust layout and save the figure
     plt.tight_layout()
@@ -449,4 +448,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_00_06_55__27_02_2025")
+    main("results/single_param_vary_10_40_16__27_02_2025")
