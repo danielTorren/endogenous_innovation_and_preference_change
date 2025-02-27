@@ -418,7 +418,7 @@ def plot_ev_prop_combined(base_params, data_array, property_values_list, fileNam
 
 
 # Sample main function
-def main(fileName, dpi=600):
+def main(fileName, dpi=300):
 
     base_params = load_object(fileName + "/Data", "base_params")
     print("base_params", base_params)
@@ -448,4 +448,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_10_40_16__27_02_2025")
+    main("results/single_param_vary_10_45_02__27_02_2025")

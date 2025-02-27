@@ -770,9 +770,11 @@ def plot_margins(base_params, fileName, data_ICE, data_EV, title, x_label, y_lab
     # Create subplots
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
 
+    ax1.ylim(0,1)
     # Plot individual traces (faded lines)
     for seed_data in data_after_burn_in_ICE:
         ax1.plot(time_steps, seed_data, color='gray', alpha=0.3, linewidth=0.8)
+
 
     # Plot mean and 95% CI
     ax1.plot(time_steps, mean_values_ICE, label='Mean', color='blue')
@@ -932,4 +934,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_10_21_12__27_02_2025")
+    main("results/multi_seed_single_10_53_41__27_02_2025")
