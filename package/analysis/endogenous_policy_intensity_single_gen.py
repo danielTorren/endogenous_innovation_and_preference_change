@@ -2,7 +2,7 @@ import json
 import numpy as np
 from joblib import Parallel, delayed, dump, load
 import multiprocessing
-from scipy.optimize import minimize_scalar
+
 from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import (
     createFolder, save_object, produce_name_datetime, params_list_with_seed
@@ -10,6 +10,7 @@ from package.resources.utility import (
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from scipy.stats import norm
+from scipy.optimize import minimize_scalar, differential_evolution
 
 
 def update_policy_intensity(params, policy_name, intensity_level):
@@ -89,13 +90,16 @@ def optimize_policy_intensity(params, controller_files, policy_name, intensity_i
     print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
     # Run optimization
-    result = minimize_scalar(
+
+
+    result = differential_evolution(
         objective_function,
-        bounds=bounds,
+        bounds=[bounds],  # Note the double brackets for 1D case
         args=(params, controller_files, policy_name, target_ev_uptake),
-        method="bounded",
-        options={"xatol": 1e-3}  # Tolerance for convergence
+        strategy='best1bin',  # Default works well, but you can experiment
+        tol=1e-3
     )
+
 
     # Get best intensity level
     best_intensity = result.x
