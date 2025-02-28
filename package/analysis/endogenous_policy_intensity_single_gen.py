@@ -92,13 +92,20 @@ def optimize_policy_intensity(params, controller_files, policy_name, intensity_i
     # Run optimization
 
 
+    def objective_wrapper(intensity, params, controller_files, policy_name, target_ev_uptake):
+        return objective_function(
+            intensity[0], params, controller_files, policy_name, target_ev_uptake
+        )
+
     result = differential_evolution(
-        objective_function,
-        bounds=[bounds],  # Note the double brackets for 1D case
+        objective_wrapper,
+        bounds=[bounds],
         args=(params, controller_files, policy_name, target_ev_uptake),
-        strategy='best1bin',  # Default works well, but you can experiment
-        tol=1e-3
+        strategy='best1bin',
+        tol=1e-3,
+        workers=-1  # Use all CPU cores
     )
+
 
 
     # Get best intensity level
