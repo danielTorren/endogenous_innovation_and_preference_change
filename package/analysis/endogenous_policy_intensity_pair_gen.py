@@ -132,7 +132,7 @@ if __name__ == "__main__":
         ],
         policy_list_works=["Carbon_price"],
         target_ev_uptake=0.8,
-        n_steps_for_sweep=5,
-        n_calls=30,
+        n_steps_for_sweep=3,
+        n_calls=10,
         noise=0.08
     )
