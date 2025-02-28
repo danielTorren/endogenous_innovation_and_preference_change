@@ -12,6 +12,7 @@ from pathlib import Path  # Path handling
 from scipy.stats import norm
 from scipy.optimize import minimize_scalar, differential_evolution
 from skopt import gp_minimize
+from skopt.space import Real
 import csv
 import time
 
@@ -110,9 +111,11 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, intensit
     """
     print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
+    search_space = [Real(bounds[0], bounds[1])]
+
     result = gp_minimize(
         lambda x: logged_objective(x, params, controller_files, policy_name, target_ev_uptake),
-        [(bounds[0], bounds[1])],
+         search_space,
         n_calls=40,
         noise=0.05,
         acq_func="EI"
