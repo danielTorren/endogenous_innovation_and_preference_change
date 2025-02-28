@@ -156,14 +156,21 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
     file_name = produce_name_datetime("endogenous_policy_intensity")
     
     createFolder(file_name)
+
+    ########################################################################################################################
+    #RUN CALIBRATION RUNS
     controller_files = parallel_multi_run(base_params_list, file_name)
 
     save_object(base_params, file_name + "/Data", "base_params")
 
     print("Finished Calibration Runs")
 
+    ########################################################################################################################
+    #RUN POLICY OUTCOMES
+
     policy_outcomes = {}
 
+    #UPDATE BASE PARAMS CORRECT NOW
     base_params["duration_future"] = future_time_steps
 
     for policy_name in policy_list:
