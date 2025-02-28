@@ -64,7 +64,7 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
     EV_uptake_arr, _ , _ , _, _ = single_policy_with_seeds(params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
-    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}")
+    #print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}")
 
     return error  # The optimizer will minimize this error
 
