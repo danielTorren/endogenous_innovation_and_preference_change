@@ -87,7 +87,7 @@ def main(
     ###################################################################################################################
         
     policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
-    
+    print("policy pairs", policy_pairs)
     #RUN POLICY OUTCOMES
     print("TOTAL RUNS BO: ", len(policy_pairs)*n_steps_for_sweep*n_calls*base_params["seed_repetitions"])
 
@@ -124,15 +124,15 @@ if __name__ == "__main__":
         policy_list_all=[
             "Carbon_price",
             "Discriminatory_corporate_tax",
-            #"Electricity_subsidy",
+            "Electricity_subsidy",
             "Adoption_subsidy",
-            #"Adoption_subsidy_used",
+            "Adoption_subsidy_used",
             #"Production_subsidy",
             #"Research_subsidy"
         ],
         policy_list_works=["Carbon_price"],
         target_ev_uptake=0.8,
-        n_steps_for_sweep=3,
-        n_calls=10,
+        n_steps_for_sweep=10,
+        n_calls=20,
         noise=0.08
     )
