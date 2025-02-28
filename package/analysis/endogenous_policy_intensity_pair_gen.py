@@ -122,7 +122,7 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
-            #"Carbon_price",
+            "Carbon_price",
             #"Discriminatory_corporate_tax",
             #"Electricity_subsidy",
             #"Adoption_subsidy",
