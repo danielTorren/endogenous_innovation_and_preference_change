@@ -119,18 +119,13 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, target_e
         noise=noise, 
         acq_func="EI"
     )
-
     print("DONE BO")
-
     # Get best intensity level
     best_intensity = result.x[0]
 
-    print("BEST INTSNITY")
-
     # Run simulation with optimized intensity to get final values
-    print("params before", params)
     params = update_policy_intensity(params, policy_name, best_intensity)
-    print("params after", params)
+
     EV_uptake_arr, total_cost_arr = single_policy_with_seeds(params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     mean_total_cost = np.mean(total_cost_arr)
@@ -264,6 +259,6 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
         policy_list=["Carbon_price"],
         target_ev_uptake=0.8,
-        n_calls=10,
+        n_calls=30,
         noise=0.08
     )
