@@ -69,7 +69,7 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
 
     error = abs(target_ev_uptake - mean_ev_uptake)
 
-    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error})
+    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}")
 
     return error  # The optimizer will minimize this error
 
