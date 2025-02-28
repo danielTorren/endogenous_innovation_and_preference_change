@@ -193,6 +193,55 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     return controller_files  # Return list of file paths
 
 
+def set_up_calibration_runs(base_params):
+
+    future_time_steps = base_params["duration_future"]
+    base_params["duration_future"] = 0
+
+    base_params_list = params_list_with_seed(base_params)
+    file_name = produce_name_datetime("endogenous_policy_intensity")
+
+    createFolder(file_name)
+
+    ########################################################################################################################
+    #RUN CALIBRATION RUNS
+    controller_files = parallel_multi_run(base_params_list, file_name)
+
+    #UPDATE BASE PARAMS CORRECT NOW
+    base_params["duration_future"] = future_time_steps
+
+    save_object(base_params, file_name + "/Data", "base_params")
+
+    print("Finished Calibration Runs")
+
+    return controller_files, base_params, file_name
+
+def simulate_future_policies(file_name, controller_files, policy_list, policy_params_dict, n_calls, base_params, target_ev_uptake, noise):
+
+    ########################################################################################################################
+    #RUN POLICY OUTCOMES
+
+    bounds_dict = policy_params_dict["bounds_dict"]
+
+    print("TOTAL RUNS BO: ", len(policy_list)*n_calls*base_params["seed_repetitions"])
+    policy_outcomes = {}
+
+    for policy_name in policy_list:
+        best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity_BO(
+            base_params, controller_files, policy_name, target_ev_uptake=target_ev_uptake,
+            bounds=bounds_dict[policy_name], n_calls=n_calls, noise = noise
+        )
+
+        policy_outcomes[policy_name] = {
+            "optimized_intensity": best_intensity,
+            "mean_EV_uptake": mean_ev_uptake,
+            "mean_total_cost": mean_total_cost
+        }
+
+    save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
+
+    return policy_outcomes 
+
 def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
          BOUNDS_LOAD="package/analysis/policy_bounds.json",
          policy_list=None, 
@@ -209,46 +258,9 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
     with open(BOUNDS_LOAD) as f:
         policy_params_dict = json.load(f)
 
-    future_time_steps = base_params["duration_future"]
-    base_params["duration_future"] = 0
+    controller_files, base_params, file_name = set_up_calibration_runs(base_params)
 
-    bounds_dict = policy_params_dict["bounds_dict"]
-    init_values = policy_params_dict["init_val_dict"]
-
-    base_params_list = params_list_with_seed(base_params)
-    file_name = produce_name_datetime("endogenous_policy_intensity")
-    
-    createFolder(file_name)
-
-    ########################################################################################################################
-    #RUN CALIBRATION RUNS
-    controller_files = parallel_multi_run(base_params_list, file_name)
-
-    save_object(base_params, file_name + "/Data", "base_params")
-
-    print("Finished Calibration Runs")
-
-    ########################################################################################################################
-    #RUN POLICY OUTCOMES
-    print("TOTAL RUNS BO: ", len(policy_list)*n_calls*base_params["seed_repetitions"])
-    policy_outcomes = {}
-
-    #UPDATE BASE PARAMS CORRECT NOW
-    base_params["duration_future"] = future_time_steps
-
-    for policy_name in policy_list:
-        best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity_BO(
-            base_params, controller_files, policy_name, target_ev_uptake=target_ev_uptake,
-            bounds=bounds_dict[policy_name], n_calls=n_calls, noise = noise
-        )
-
-        policy_outcomes[policy_name] = {
-            "optimized_intensity": best_intensity,
-            "mean_EV_uptake": mean_ev_uptake,
-            "mean_total_cost": mean_total_cost
-        }
-
-    save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
+    simulate_future_policies(file_name, controller_files, policy_list, policy_params_dict, n_calls, base_params, target_ev_uptake, noise)
 
     shutil.rmtree(Path(file_name) / "Calibration_runs", ignore_errors=True)
 
