@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
             "Discriminatory_corporate_tax":0.5,
@@ -163,7 +163,7 @@ if __name__ == "__main__":
         "num_individuals":3000,
         "chi_max": 0.9,
         "a_chi": 1.22,
-        "b_chi": 2, 
+        "b_chi": 2,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -187,7 +187,6 @@ if __name__ == "__main__":
         "zeta":0.29697
     }
 }
-    
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
 

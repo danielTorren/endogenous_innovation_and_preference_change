@@ -55,6 +55,8 @@ class Social_Network:
 
         self.emissions_cumulative = 0
         self.emissions_flow = 0
+        self.utility_cumulative = 0
+
         if self.save_timeseries_data_state:
             self.emissions_flow_history = []
 
@@ -326,8 +328,10 @@ class Social_Network:
                 #NEEDED FOR OPTIMISATION, add the carbon price paid 
                 self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
             
+            utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
+            self.utility_cumulative += utility
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-                utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
+                
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):

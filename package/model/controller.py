@@ -862,7 +862,7 @@ class Controller:
         if self.t_controller == self.ev_production_start_time:
             for firm in self.firm_manager.firms_list:
                 firm.ev_production_bool = True
-                
+
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
         #update_prices_and_emmisions
@@ -871,7 +871,6 @@ class Controller:
         self.electricity_price_subsidy_prop = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy_prop)#ADJUST THE PRICE HERE HERE!
         self.electricity_price_subsidy_dollars = self.electricity_price_vec[self.t_controller]*self.electricity_price_subsidy_prop
-
 
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
@@ -934,6 +933,11 @@ class Controller:
 
         self.duration_future = self.parameters_controller["duration_future"]
         self.time_steps_max = self.parameters_controller["time_steps_max"]
+
+        #RESET COUNTERS FOR POLICY
+        self.social_network.emissions_cumulative = 0
+        self.social_network.utility_cumulative = 0
+        self.firm_manager.profit_cumulative = 0
 
         self.manage_calibration()
         self.manage_scenario()

@@ -14,6 +14,7 @@ class Firm_Manager:
         
 
         self.policy_distortion = 0
+        self.profit_cumulative = 0
         self.random_state = parameters_firm_manager["random_state"]
 
         self.zero_profit_options_prod_sum = 0
@@ -536,7 +537,8 @@ class Firm_Manager:
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
         self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles, self.production_subsidy)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
-        
+        self.profit_cumulative += self.total_profit
+
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.carbon_price = carbon_price
         
