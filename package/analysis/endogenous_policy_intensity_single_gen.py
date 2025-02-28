@@ -10,7 +10,7 @@ from package.resources.utility import (
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from scipy.stats import norm
-from scipy.optimize import minimize_scalar, differential_evolution
+from scipy.optimize import differential_evolution
 from skopt import gp_minimize
 from skopt.space import Real
 import csv
@@ -33,8 +33,6 @@ def single_policy_simulation(params, controller_file):
     """
     Run a single simulation and return EV uptake and policy distortion.
     """
-    #if params["seed"] == 3:
-    #    print(params["parameters_policies"]["States"], params["parameters_policies"]["Values"]["Carbon_price"])
     controller = load(controller_file)  # Load fresh controller
     data = load_in_controller(controller, params)
     return data.calc_EV_prop(), data.calc_total_policy_distortion()
@@ -46,7 +44,7 @@ def single_policy_with_seeds(params, controller_files):
     """
     num_cores = multiprocessing.cpu_count()
 
-    res = Parallel(n_jobs=num_cores, verbose=10)(
+    res = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
     )
@@ -76,18 +74,19 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
     EV_uptake_arr, total_cost_arr = single_policy_with_seeds(params, controller_files)
 
     mean_ev_uptake = np.mean(EV_uptake_arr)
-    mean_total_cost = np.mean(total_cost_arr)
-    conf_int = compute_confidence_interval(EV_uptake_arr)
+    #mean_total_cost = np.mean(total_cost_arr)
+    #conf_int = compute_confidence_interval(EV_uptake_arr)
 
     error = abs(target_ev_uptake - mean_ev_uptake)
 
-    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}, CI: {conf_int}")
+    #print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}, CI: {conf_int}")
 
     return error  # The optimizer will minimize this error
 
 
 ##########################################################################################################################################################################
 #Baysian optimization
+
 def logged_objective(intensity, params, controller_files, policy_name, target_ev_uptake, log_file="bo_progress_log.csv"):
     """
     Wrapper for objective_function that logs each call to a file.
@@ -105,19 +104,19 @@ def logged_objective(intensity, params, controller_files, policy_name, target_ev
 
     return error
 
-def optimize_policy_intensity_BO(params, controller_files, policy_name, intensity_init, target_ev_uptake, bounds):
+def optimize_policy_intensity_BO(params, controller_files, policy_name, target_ev_uptake, bounds, n_calls, noise):
     """
     Optimizes the intensity of a policy to reach the target EV uptake using SciPy's `minimize_scalar`.
     """
-    print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
+    #print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
     search_space = [Real(bounds[0], bounds[1])]
 
     result = gp_minimize(
         lambda x: logged_objective(x, params, controller_files, policy_name, target_ev_uptake),
          search_space,
-        n_calls=40,
-        noise=0.05,
+        n_calls=n_calls,
+        noise=noise, 
         acq_func="EI"
     )
 
@@ -145,7 +144,7 @@ def optimize_policy_intensity_DE(params, controller_files, policy_name, intensit
     """
     Optimizes the intensity of a policy to reach the target EV uptake using SciPy's `minimize_scalar`.
     """
-    print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
+    #print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
     # Run optimization
     result = differential_evolution(
@@ -196,7 +195,10 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
 def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
          BOUNDS_LOAD="package/analysis/policy_bounds.json",
          policy_list=None, 
-         target_ev_uptake=0.5):
+         target_ev_uptake=0.5,
+         n_calls=40, 
+         noise = 0.01
+         ):
     """
     Main function for optimizing policy intensities.
     """
@@ -227,7 +229,7 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
 
     ########################################################################################################################
     #RUN POLICY OUTCOMES
-
+    print("TOTAL RUNS BO: ", len(policy_list)*n_calls*base_params["seed_repetitions"])
     policy_outcomes = {}
 
     #UPDATE BASE PARAMS CORRECT NOW
@@ -235,9 +237,8 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
 
     for policy_name in policy_list:
         best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity_BO(
-            base_params, controller_files, policy_name,
-            intensity_init=init_values[policy_name], target_ev_uptake=target_ev_uptake,
-            bounds=bounds_dict[policy_name]
+            base_params, controller_files, policy_name, target_ev_uptake=target_ev_uptake,
+            bounds=bounds_dict[policy_name], n_calls=n_calls, noise = noise
         )
 
         policy_outcomes[policy_name] = {
@@ -256,5 +257,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
         policy_list=["Carbon_price"],
-        target_ev_uptake=0.8
+        target_ev_uptake=0.8,
+        n_calls=20 
     )
