@@ -112,7 +112,7 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, intensit
 
     result = gp_minimize(
         lambda x: logged_objective(x, params, controller_files, policy_name, target_ev_uptake),
-        [bounds],
+        [(bounds[0], bounds[1])],
         n_calls=40,
         noise=0.05,
         acq_func="EI"
@@ -131,8 +131,8 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, intensit
 
     return best_intensity, mean_ev_uptake, mean_total_cost
 
+##########################################################################################################################################################################
 #Differnetial evolution
-
 def objective_wrapper(intensity, params, controller_files, policy_name, target_ev_uptake):
     return objective_function(
         intensity[0], params, controller_files, policy_name, target_ev_uptake
