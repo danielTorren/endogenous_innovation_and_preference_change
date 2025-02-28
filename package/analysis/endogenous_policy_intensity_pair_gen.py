@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from package.analysis.endogenous_policy_intensity_single_gen import optimize_policy_intensity_BO, set_up_calibration_runs
+from package.analysis.endogenous_policy_intensity_single_gen import optimize_policy_intensity_BO, set_up_calibration_runs, update_policy_intensity
 from package.resources.utility import (
     save_object, 
 )
@@ -34,6 +34,10 @@ def policy_pair_sweep(
     policy_data_list = []
     
     for p1_val in p1_values:
+        print("Policy1, Val: ", policy1_name, p1_val)
+        #UPDATE THE BASE PARAMS
+        base_params = update_policy_intensity(base_params, policy1_name, p1_val)
+
         best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity_BO(
             base_params, controller_files, policy2_name, target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy2_name], n_calls=n_calls, noise = noise
