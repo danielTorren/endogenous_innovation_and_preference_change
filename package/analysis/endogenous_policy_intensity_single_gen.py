@@ -103,7 +103,7 @@ def optimize_policy_intensity(params, controller_files, policy_name, intensity_i
         args=(params, controller_files, policy_name, target_ev_uptake),
         strategy='best1bin',
         tol=1e-3,
-        workers=-1  # Use all CPU cores
+        workers=1  # Use 1 worker(Use all CPU cores (-1))
     )
 
 
