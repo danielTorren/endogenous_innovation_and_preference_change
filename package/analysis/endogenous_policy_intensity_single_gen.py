@@ -54,16 +54,6 @@ def single_policy_with_seeds(params, controller_files):
     return np.asarray(EV_uptake_arr), np.asarray(total_cost_arr)
 
 
-def compute_confidence_interval(data, confidence=0.95):
-    """
-    Compute confidence interval for a dataset.
-    """
-    mean = np.mean(data)
-    sem = np.std(data, ddof=1) / np.sqrt(len(data))
-    margin = sem * norm.ppf((1 + confidence) / 2)
-    return mean - margin, mean + margin
-
-
 def objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake):
     """
     Objective function for optimization. Returns the absolute error between
@@ -79,7 +69,7 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
 
     error = abs(target_ev_uptake - mean_ev_uptake)
 
-    #print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}, CI: {conf_int}")
+    print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}, CI: {conf_int}")
 
     return error  # The optimizer will minimize this error
 
