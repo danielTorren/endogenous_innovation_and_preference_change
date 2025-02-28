@@ -11,7 +11,9 @@ import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from scipy.stats import norm
 from scipy.optimize import minimize_scalar, differential_evolution
-
+from skopt import gp_minimize
+import csv
+import time
 
 def update_policy_intensity(params, policy_name, intensity_level):
     """
@@ -82,12 +84,61 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
 
     return error  # The optimizer will minimize this error
 
+
+##########################################################################################################################################################################
+#Baysian optimization
+def logged_objective(intensity, params, controller_files, policy_name, target_ev_uptake, log_file="bo_progress_log.csv"):
+    """
+    Wrapper for objective_function that logs each call to a file.
+    """
+    intensity_level = intensity[0]  # Unpack scalar from 1D array
+    start_time = time.time()
+
+    error = objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake)
+
+    elapsed = time.time() - start_time
+
+    with open(log_file, 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([intensity_level, error, elapsed])
+
+    return error
+
+def optimize_policy_intensity_BO(params, controller_files, policy_name, intensity_init, target_ev_uptake, bounds):
+    """
+    Optimizes the intensity of a policy to reach the target EV uptake using SciPy's `minimize_scalar`.
+    """
+    print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
+
+    result = gp_minimize(
+        lambda x: logged_objective(x, params, controller_files, policy_name, target_ev_uptake),
+        [bounds],
+        n_calls=40,
+        noise=0.05,
+        acq_func="EI"
+    )
+
+    # Get best intensity level
+    best_intensity = result.x
+
+    # Run simulation with optimized intensity to get final values
+    params = update_policy_intensity(params, policy_name, best_intensity)
+    EV_uptake_arr, total_cost_arr = single_policy_with_seeds(params, controller_files)
+    mean_ev_uptake = np.mean(EV_uptake_arr)
+    mean_total_cost = np.mean(total_cost_arr)
+
+    print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, Cost = {mean_total_cost}")
+
+    return best_intensity, mean_ev_uptake, mean_total_cost
+
+#Differnetial evolution
+
 def objective_wrapper(intensity, params, controller_files, policy_name, target_ev_uptake):
     return objective_function(
         intensity[0], params, controller_files, policy_name, target_ev_uptake
     )
 
-def optimize_policy_intensity(params, controller_files, policy_name, intensity_init, target_ev_uptake, bounds):
+def optimize_policy_intensity_DE(params, controller_files, policy_name, intensity_init, target_ev_uptake, bounds):
     """
     Optimizes the intensity of a policy to reach the target EV uptake using SciPy's `minimize_scalar`.
     """
@@ -180,7 +231,7 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
     base_params["duration_future"] = future_time_steps
 
     for policy_name in policy_list:
-        best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity(
+        best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity_BO(
             base_params, controller_files, policy_name,
             intensity_init=init_values[policy_name], target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy_name]
