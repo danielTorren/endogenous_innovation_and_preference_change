@@ -146,6 +146,9 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
     with open(BOUNDS_LOAD) as f:
         policy_params_dict = json.load(f)
 
+    future_time_steps = base_params["duration_future"]
+    base_params["duration_future"] = 0
+
     bounds_dict = policy_params_dict["bounds_dict"]
     init_values = policy_params_dict["init_val_dict"]
 
@@ -157,7 +160,11 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
 
     save_object(base_params, file_name + "/Data", "base_params")
 
+    print("Finished Calibration Runs")
+
     policy_outcomes = {}
+
+    base_params["duration_future"] = future_time_steps
 
     for policy_name in policy_list:
         best_intensity, mean_ev_uptake, mean_total_cost = optimize_policy_intensity(

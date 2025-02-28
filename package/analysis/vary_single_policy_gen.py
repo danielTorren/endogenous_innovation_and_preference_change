@@ -135,7 +135,7 @@ def main(
 
     # Restore duration
     for params in grid_scenarios:
-         params["duration_future"] = future_time_steps
+        params["duration_future"] = future_time_steps
 
     # Run policy scenarios starting from saved calibration controllers
     results = grid_search_policy_with_seeds(grid_scenarios, controller_files)

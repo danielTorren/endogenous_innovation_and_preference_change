@@ -926,8 +926,9 @@ class Controller:
     #################################################################################################
 
     def setup_continued_run_future(self, updated_parameters):
-        """Allows future runs to be made using a single loadable controller for a given seed. Used for policy analysis"""
-
+        """Allows future runs to be made using a single loadable controller for a given seed. Used for policy analysis
+            SEED INDEPENDENT
+        """
         self.parameters_controller = updated_parameters
 
         self.duration_future = self.parameters_controller["duration_future"]
@@ -936,7 +937,6 @@ class Controller:
         self.manage_calibration()
         self.manage_scenario()
         self.manage_policies() 
-
    
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
