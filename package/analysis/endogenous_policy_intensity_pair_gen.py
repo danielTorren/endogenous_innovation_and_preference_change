@@ -123,10 +123,10 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
             "Carbon_price",
-            "Discriminatory_corporate_tax",
-            #"Electricity_subsidy",
-            #"Adoption_subsidy",
-            #"Adoption_subsidy_used",
+            #"Discriminatory_corporate_tax",
+            "Electricity_subsidy",
+            "Adoption_subsidy",
+            "Adoption_subsidy_used",
             #"Production_subsidy",
             #"Research_subsidy"
         ],
