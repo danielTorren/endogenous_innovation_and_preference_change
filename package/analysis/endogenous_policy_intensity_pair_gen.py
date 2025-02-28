@@ -139,9 +139,9 @@ if __name__ == "__main__":
             #"Discriminatory_corporate_tax",
             #"Electricity_subsidy",
             #"Adoption_subsidy",
-            #"Adoption_subsidy_used",
-            "Production_subsidy",
-            "Research_subsidy"
+            "Adoption_subsidy_used",
+            #"Production_subsidy",
+            #"Research_subsidy"
         ],
         policy_list_works=["Carbon_price"],
         target_ev_uptake=0.8,
