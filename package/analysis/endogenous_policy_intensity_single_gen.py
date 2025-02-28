@@ -82,6 +82,10 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
 
     return error  # The optimizer will minimize this error
 
+def objective_wrapper(intensity, params, controller_files, policy_name, target_ev_uptake):
+    return objective_function(
+        intensity[0], params, controller_files, policy_name, target_ev_uptake
+    )
 
 def optimize_policy_intensity(params, controller_files, policy_name, intensity_init, target_ev_uptake, bounds):
     """
@@ -90,13 +94,6 @@ def optimize_policy_intensity(params, controller_files, policy_name, intensity_i
     print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
     # Run optimization
-
-
-    def objective_wrapper(intensity, params, controller_files, policy_name, target_ev_uptake):
-        return objective_function(
-            intensity[0], params, controller_files, policy_name, target_ev_uptake
-        )
-
     result = differential_evolution(
         objective_wrapper,
         bounds=[bounds],
@@ -105,8 +102,6 @@ def optimize_policy_intensity(params, controller_files, policy_name, intensity_i
         tol=1e-3,
         workers=1  # Use 1 worker(Use all CPU cores (-1))
     )
-
-
 
     # Get best intensity level
     best_intensity = result.x
