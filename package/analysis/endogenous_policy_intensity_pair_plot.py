@@ -60,10 +60,10 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
     - dpi: Resolution for saved plots.
     """
     num_pairs = len(pairwise_outcomes)
-    num_cols = 3  # You can adjust this for different layouts
+    num_cols =   num_pairs # You can adjust this for different layouts
     num_rows = (num_pairs + num_cols - 1) // num_cols  # Rows needed to fit all pairs
 
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(num_cols * 5, num_rows * 5))
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(20,5), sharey=True)
     axes = np.atleast_2d(axes)  # Ensure axes is always 2D (works for 1-row cases)
 
     for ax, ((policy1, policy2), data) in zip(axes.flat, pairwise_outcomes.items()):
@@ -73,14 +73,16 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
 
         scatter = ax.scatter(p1_values, p2_values, c=mean_costs, s=80, edgecolor='k', cmap='viridis')
-        ax.set_title(f'{policy1} vs {policy2}', fontsize=10)
-        ax.set_xlabel(f'{policy1} Intensity', fontsize=8)
-        ax.set_ylabel(f'Optimized {policy2} Intensity', fontsize=8)
+        #ax.set_title(f'{policy1} vs {policy2}', fontsize=10)
+        ax.set_xlabel(f'{policy1} Intensity', fontsize=4)
+        
         ax.grid(True)
 
         # Optionally annotate with EV uptake
         for (x, y, uptake) in zip(p1_values, p2_values, mean_uptake):
             ax.annotate(f'{uptake:.2f}', (x, y), fontsize=7, ha='right')
+
+    axes[0][0].set_ylabel(f'Optimized Carbon Price Intensity', fontsize=8)
 
     # Remove empty subplots (if num_pairs doesn't fit perfectly into grid)
     for idx in range(num_pairs, num_rows * num_cols):
@@ -90,7 +92,7 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
     cbar = fig.colorbar(scatter, ax=axes, orientation='vertical', shrink=0.9, aspect=25)
     cbar.set_label('Mean Total Cost')
 
-    plt.suptitle('Policy Pair Intensity Sweeps', fontsize=14)
+    #plt.suptitle('Policy Pair Intensity Sweeps', fontsize=14)
     #plt.tight_layout(rect=[0, 0, 1, 0.96])
 
     # Save the combined figure
@@ -98,15 +100,17 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
     plt.show()
 
 
-def main(fileName):
+def main(fileNames):
     # Load observed data
+    pairwise_outcomes_complied = {}
+    for fileName in fileNames:
+        base_params = load_object(fileName + "/Data", "base_params")
+        pairwise_outcomes = load_object(fileName + "/Data", "pairwise_outcomes")
+        pairwise_outcomes_complied.update(pairwise_outcomes)
 
-    base_params = load_object(fileName + "/Data", "base_params")
-    pairwise_outcomes = load_object(fileName + "/Data", "pairwise_outcomes")
 
-    #print("pairwise_outcomes", pairwise_outcomes)
     #quit()
-    plot_all_policy_pairs(pairwise_outcomes, fileName)
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName)
 
     #plot_policy_pair_intensities(pairwise_outcomes, "Carbon_price", "Electricity_subsidy", file_name="results/vary_policy_pairs")
 
@@ -115,5 +119,10 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/endogenous_policy_intensity_13_09_41__28_02_2025",
+        fileNames=[
+            "results/endogenous_policy_intensity_22_02_22__28_02_2025",
+            "results/endogenous_policy_intensity_17_21_20__28_02_2025",
+            "results/endogenous_policy_intensity_17_23_17__28_02_2025"
+            ]
+
     )

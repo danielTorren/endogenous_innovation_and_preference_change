@@ -828,9 +828,9 @@ def main(fileName, dpi=300):
     history_production_emissions_arr = load_object(fileName + "/Data", "history_production_emissions_arr")
     history_total_emissions_arr = load_object(fileName + "/Data", "history_total_emissions_arr")
     history_prop_EV_arr= load_object(fileName + "/Data", "history_prop_EV_arr")
-    print("ev", history_prop_EV_arr.shape)
-    print(np.std(history_prop_EV_arr[:,-1]))
-    quit()
+    #print("ev", history_prop_EV_arr.shape)
+    #print(np.std(history_prop_EV_arr[:,-1]))
+    #quit()
     
     #history_car_age_arr= load_object( fileName + "/Data", "history_car_age_arr")
     history_lower_percentile_price_ICE_EV_arr = load_object( fileName + "/Data", "history_lower_percentile_price_ICE_EV_arr")
@@ -938,4 +938,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_10_22_06__28_02_2025")
+    main("results/multi_seed_single_12_10_52__01_03_2025")
