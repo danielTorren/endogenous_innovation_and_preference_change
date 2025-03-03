@@ -127,8 +127,9 @@ def main(
     # Load base parameters
 
     base_params = load_object(fileName + "/Data", "base_params")
-    print("base_params", base_params)
+    #print("base_params", base_params)
     pairwise_outcomes_complied = load_object(fileName + "/Data", "pairwise_outcomes_complied")
+    del pairwise_outcomes_complied[('Discriminatory_corporate_tax', 'Carbon_price')]
 
     # Set up calibration runs
     controller_files, base_params, file_name = set_up_calibration_runs(base_params)
