@@ -316,7 +316,7 @@ class Firm:
             self.last_researched_car_EV = self.vehicle_model_research
 
             #OPTIMIZATION OF RESEARCH SUBSIDY
-            print("self.vehicle_model_research.range_over_cost/self.target_range_over_cost", self.vehicle_model_research.range_over_cost/self.target_range_over_cost, self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost))
+            #print("self.vehicle_model_research.range_over_cost/self.target_range_over_cost", self.vehicle_model_research.range_over_cost/self.target_range_over_cost, self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost))
             self.policy_distortion += self.research_subsidy + self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost)
         else:
             self.last_researched_car_ICE = self.vehicle_model_research
