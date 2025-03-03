@@ -59,6 +59,8 @@ class CarModel:
         else:
             self.B = self.attributes_fitness[3]#BATTERY kWhr
 
+        self.range_over_cost = self.B*self.Eff_omega_a_t/self.ProdCost_t
+
     def update_timer(self):
         if not self.choosen_tech_bool:
             self.timer+=1

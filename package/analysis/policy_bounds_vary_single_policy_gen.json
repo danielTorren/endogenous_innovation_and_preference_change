@@ -1,7 +1,7 @@
 {
     "bounds_dict":{
         "Carbon_price": [0, 1],
-        "Discriminatory_corporate_tax": [0, 1],
+        "Targeted_research_subsidy": [0, 1],
         "Electricity_subsidy": [0, 1],
         "Adoption_subsidy": [0, 30000],
         "Adoption_subsidy_used": [0, 30000],
@@ -10,7 +10,7 @@
     },
     "step_size_dict":{
             "Carbon_price": [0.01, 1],
-            "Discriminatory_corporate_tax": [0.01, 0.1],
+            "Targeted_research_subsidy": [0.01, 0.1],
             "Electricity_subsidy": [0.01, 0.1],
             "Adoption_subsidy": [1000, 10000],
             "Adoption_subsidy_used": [1000, 10000],
@@ -19,7 +19,7 @@
     },
     "init_val_dict":{            
     "Carbon_price": 0.2,
-    "Discriminatory_corporate_tax": 0.2,
+    "Targeted_research_subsidy": 0.2,
     "Electricity_subsidy": 0.1,
     "Adoption_subsidy": 5000,
     "Adoption_subsidy_used": 5000,

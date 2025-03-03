@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from package.plotting_data.single_experiment_plot import save_and_show
 import matplotlib.pyplot as plt
 import numpy as np
-from package.resources.utility import createFolder
+from package.resources.utility import createFolder, save_object
 
 def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, file_name, dpi=600):
     """
@@ -107,7 +107,10 @@ def main(fileNames):
         base_params = load_object(fileName + "/Data", "base_params")
         pairwise_outcomes = load_object(fileName + "/Data", "pairwise_outcomes")
         pairwise_outcomes_complied.update(pairwise_outcomes)
-
+        save_object(pairwise_outcomes_complied, fileName + "/Data", "pairwise_outcomes_complied")
+    
+    #print(pairwise_outcomes_complied)
+    quit()
 
     #quit()
     plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_total_cost")

@@ -52,7 +52,7 @@
     "parameters_policies":{
         "States":{
             "Carbon_price": "Zero",
-            "Discriminatory_corporate_tax": "Zero",
+            "Targeted_research_subsidy": "Zero",
             "Electricity_subsidy": "Zero",
             "Adoption_subsidy": "Zero",
             "Adoption_subsidy_used": "Zero",
@@ -77,7 +77,7 @@
                     "Carbon_price_state": "flat"
                 }
             },
-            "Discriminatory_corporate_tax":{
+            "Targeted_research_subsidy":{
                 "Zero": 0,
                 "Low":0.05,
                 "High":0.99

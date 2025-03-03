@@ -163,7 +163,7 @@ if __name__ == "__main__":
         repetitions=10,
         policy_list = [
             "Carbon_price",
-            "Discriminatory_corporate_tax",
+            "Targeted_research_subsidy",
             "Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",

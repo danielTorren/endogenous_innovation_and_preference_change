@@ -79,7 +79,7 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Discriminatory_corporate_tax": 0,
+            "Targeted_research_subsidy": 1,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":0.5,
+            "Targeted_research_subsidy":1000000,
             "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
@@ -153,11 +153,12 @@ if __name__ == "__main__":
     "parameters_firm":{
         "lambda": 1e-4,
         "memory_cap": 30,
-        "prob_innovate": 0.083,
+        "prob_innovate": 1,#0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
         "min_profit": 1000,
-        "max_cars_prod": 10
+        "max_cars_prod": 10,
+        "target_range_over_cost_init": 1000/10000#GOAL OF Dollars km per dollar
     },
     "parameters_social_network":{
         "num_individuals":3000,

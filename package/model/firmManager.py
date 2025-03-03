@@ -296,14 +296,14 @@ class Firm_Manager:
                 if car.transportType == 3:
                     profit = car.price - np.maximum(0,car.ProdCost_t - prod_subsidy)
                 else:
-                    profit = (car.price - car.ProdCost_t)*self.discriminatory_corporate_tax
+                    profit = (car.price - car.ProdCost_t)
                 total_profit = num_vehicle_sold*profit
                 car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
                 total_profit_all_firms += total_profit
                 
                 #OPTIMIZATION OF DISCRIMINATORY CORPORATE TAX
                 if car.transportType == 2 and total_profit > 0:#ICE CARS THAT MAKE ACTUAL PROFITS
-                    self.policy_distortion += total_profit*self.discriminatory_corporate_tax
+                    self.policy_distortion += total_profit
 
                 #OPTIMIZATION OF PRODUCTION SUBSIDY
                 if car.transportType == 3:
@@ -513,7 +513,7 @@ class Firm_Manager:
 
 
 #####################################################################################################################################################
-    def update_firms(self, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def update_firms(self, gas_price, electricity_price, electricity_emissions_intensity, rebate, targeted_research_subsidy, production_subsidy, research_subsidy, rebate_calibration):
         cars_on_sale_all_firms = []
         
         self.zero_profit_options_prod_sum = 0
@@ -524,15 +524,24 @@ class Firm_Manager:
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
-            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)
+            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, targeted_research_subsidy, production_subsidy, research_subsidy, rebate_calibration)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
 
         return cars_on_sale_all_firms
 
+
+    def calc_target_target_range_over_cost(self):
+        ice_cars_list = [car for car in self.cars_on_sale_all_firms if car.transportType == 2]
+        target_range_over_cost_list = np.asarray([car.range_over_cost for car in ice_cars_list])
+        best_target_range_over_cost = np.max(target_range_over_cost_list )
+
+        return best_target_range_over_cost
+
+
 #####################################################################################################################
 
-    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  targeted_research_subsidy, production_subsidy, research_subsidy, rebate_calibration):
         
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
@@ -541,14 +550,15 @@ class Firm_Manager:
 
         self.consider_ev_vec = consider_ev_vec#UPDATE THIS TO NEW CONSIDERATION
         self.carbon_price = carbon_price
-        
-        self.discriminatory_corporate_tax = discriminatory_corporate_tax
+        self.targeted_research_subsidy = targeted_research_subsidy
         self.production_subsidy = production_subsidy
         
-        self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, targeted_research_subsidy, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment, self.maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
 
         #print("W im:",np.min(list(self.W_segment.values())),np.max(list(self.W_segment.values())))
         self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
+
+        
 
         return self.cars_on_sale_all_firms

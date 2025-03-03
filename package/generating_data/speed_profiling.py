@@ -56,7 +56,7 @@ if __name__ == '__main__':
     "parameters_policies":{
         "States":{
             "Carbon_price": 0.5,
-            "Discriminatory_corporate_tax": 0,
+            "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
-            "Discriminatory_corporate_tax":0.5,
+            "Targeted_research_subsidy":1000000,
             "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,

@@ -63,7 +63,7 @@ def main(
     BOUNDS_LOAD="package/analysis/policy_bounds.json", 
     policy_list_all=[
         "Carbon_price",
-        "Discriminatory_corporate_tax",
+        "Targeted_research_subsidy",
         "Electricity_subsidy",
         "Adoption_subsidy",
         "Adoption_subsidy_used",
@@ -72,7 +72,7 @@ def main(
     ],
     policy_list_works=[
         "Carbon_price",
-        "Discriminatory_corporate_tax",
+        "Targeted_research_subsidy",
         "Electricity_subsidy"
     ],
     target_ev_uptake=0.9,
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
             #"Carbon_price",
-            "Discriminatory_corporate_tax",
+            "Targeted_research_subsidy",
             "Electricity_subsidy",
             "Adoption_subsidy",
             #"Adoption_subsidy_used",

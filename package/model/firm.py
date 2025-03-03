@@ -31,6 +31,8 @@ class Firm:
         self.beta_s_values = parameters_firm["beta_segment_vals"] 
         self.gamma_s_values = parameters_firm["gamma_segment_vals"] 
 
+        self.target_range_over_cost = parameters_firm["target_range_over_cost_init"]
+
         self.d_mean = parameters_firm["d_mean"]
         self.nu = parameters_firm["nu"]  
         self.zeta = parameters_firm["zeta"]
@@ -314,7 +316,8 @@ class Firm:
             self.last_researched_car_EV = self.vehicle_model_research
 
             #OPTIMIZATION OF RESEARCH SUBSIDY
-            self.policy_distortion += self.research_subsidy
+            print("self.vehicle_model_research.range_over_cost/self.target_range_over_cost", self.vehicle_model_research.range_over_cost/self.target_range_over_cost, self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost))
+            self.policy_distortion += self.research_subsidy + self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost)
         else:
             self.last_researched_car_ICE = self.vehicle_model_research
 
@@ -340,7 +343,7 @@ class Firm:
             [car.optimal_price_segments.get(segment_code, 0) for segment_code in self.segment_codes] 
             for car in car_list
         ])
-
+        range_over_cost = np.array([car.range_over_cost for car in car_list])
         utilities = np.array([#THES ARE ADJUST FOR ICE CARS AND THE ABOLUTY TO ChOOSE EVS, the -np.inf is incase the utility doesnt exist
             [car.car_utility_segments_U.get(segment_code, -np.inf) for segment_code in self.segment_codes] 
             for car in car_list
@@ -374,15 +377,15 @@ class Firm:
         # Expected profit
         expected_profit_all = np.where(
             is_ev_mask[:, np.newaxis],#IS EV CAR
-            raw_profit + self.research_subsidy,# RAW PROFIT + reseracg subsidy
-            raw_profit * (1 - self.discriminatory_corporate_tax)#no subsidiy to resarch just tax
+            raw_profit + self.research_subsidy + self.targeted_research_subsidy*(range_over_cost[:, np.newaxis]/self.target_range_over_cost),# RAW PROFIT + reseracg subsidy
+            raw_profit
         )
 
         # Apply research subsidy for segments that can't buy EVs, you get the resarch subsidy if you choose an EV regardless of whether or not the segemnt can buy it
         expected_profit = np.where(#THIS SHOULD REALLY DO ANYTHING AS rare that you research subsidy is larger than profitability of ICE cars in that segment
             include_vehicle_mask,
             expected_profit_all,
-            self.research_subsidy
+            self.research_subsidy + self.targeted_research_subsidy*(range_over_cost[:, np.newaxis]/self.target_range_over_cost)    
         )
         
         # Assign expected profits back to cars
@@ -597,7 +600,7 @@ class Firm:
         expected_profit = np.where(
             is_ev_mask[:, np.newaxis],
             raw_profit,
-            raw_profit * (1 - self.discriminatory_corporate_tax)
+            raw_profit
         )
 
         # Apply zero profit for segments that can't buy EVs
@@ -669,7 +672,7 @@ class Firm:
         updated_profits = np.where(
             selected_vehicle.transportType == 3,
             raw_profits,
-            raw_profits * (1 - self.discriminatory_corporate_tax)
+            raw_profits
         )
 
         return updated_profits
@@ -869,7 +872,7 @@ class Firm:
                 car.e_t = self.electricity_emissions_intensity
         return car_list
 
-    def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, discriminatory_corporate_tax, production_subsidy, research_subsidy, rebate_calibration):
+    def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, targeted_research_subsidy, production_subsidy, research_subsidy, rebate_calibration):
         self.t_firm += 1
 
         self.I_s_t_vec = I_s_t_vec
@@ -881,7 +884,7 @@ class Firm:
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.rebate = rebate
         self.rebate_calibration = rebate_calibration
-        self.discriminatory_corporate_tax =  discriminatory_corporate_tax
+        self.targeted_research_subsidy =  targeted_research_subsidy
         self.production_subsidy = production_subsidy
         self.research_subsidy = research_subsidy
 
