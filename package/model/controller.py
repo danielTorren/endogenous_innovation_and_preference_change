@@ -529,7 +529,7 @@ class Controller:
     def manage_policies(self):
         
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
-        self.Targeted_research_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Targeted_research_subsidy"]
+        self.Targeted_research_subsidy_state =  0#self.parameters_controller["parameters_policies"]["States"]["Targeted_research_subsidy"]
         self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
         self.Adoption_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy"]
         self.Adoption_subsidy_used_state =  self.parameters_controller["parameters_policies"]["States"]["Adoption_subsidy_used"]
