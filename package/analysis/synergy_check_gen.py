@@ -69,7 +69,7 @@ def run_individual_policies(base_params, controller_files, policy_values):
     for policy_name, values in policy_values.items():
         print(f"Running simulations for {policy_name}...")
         policy_results = []
-
+        print("num simulatiosn in policy",len(values))
         for value in values:
             params = update_policy_intensity(base_params.copy(), policy_name, value)
             EV_uptake_arr, total_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
