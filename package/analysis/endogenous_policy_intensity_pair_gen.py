@@ -39,7 +39,7 @@ def policy_pair_sweep(
         #UPDATE THE BASE PARAMS
         base_params = update_policy_intensity(base_params, policy1_name, p1_val)
 
-        best_intensity, mean_ev_uptake, mean_total_cost, mean_emissions_cumulative, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
+        best_intensity, mean_ev_uptake, sd_ev_uptake, mean_total_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
             base_params, controller_files, policy2_name, target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy2_name], n_calls=n_calls, noise = noise
         )
@@ -47,8 +47,11 @@ def policy_pair_sweep(
             "policy1_value": p1_val,
             "policy2_value": best_intensity,
             "mean_ev_uptake": mean_ev_uptake,
+            "sd_ev_uptake": sd_ev_uptake,
             "mean_total_cost": mean_total_cost,
             "mean_emissions_cumulative": mean_emissions_cumulative, 
+            "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
+            "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
             "mean_utility_cumulative": mean_utility_cumulative, 
             "mean_profit_cumulative": mean_profit_cumulative
         })
@@ -146,6 +149,6 @@ if __name__ == "__main__":
         policy_list_works=["Carbon_price"],
         target_ev_uptake=0.8,
         n_steps_for_sweep=50,
-        n_calls=30,
+        n_calls=40,
         noise=0.08
     )

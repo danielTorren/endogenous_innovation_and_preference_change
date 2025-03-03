@@ -50,7 +50,7 @@ def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, 
     plt.show()
 
 
-def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
+def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
     """
     Plots all policy pair sweeps as subfigures in one figure.
     
@@ -69,7 +69,7 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
     for ax, ((policy1, policy2), data) in zip(axes.flat, pairwise_outcomes.items()):
         p1_values = np.array([entry["policy1_value"] for entry in data])
         p2_values = np.array([entry["policy2_value"] for entry in data])
-        mean_costs = np.array([entry["mean_total_cost"] for entry in data])
+        mean_costs = np.array([entry[measure] for entry in data])
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
 
         scatter = ax.scatter(p1_values, p2_values, c=mean_costs, s=80, edgecolor='k', cmap='viridis')
@@ -90,14 +90,14 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name, dpi=600):
 
     # Add colorbar across all subplots
     cbar = fig.colorbar(scatter, ax=axes, orientation='vertical', shrink=0.9, aspect=25)
-    cbar.set_label('Mean Total Cost')
+    cbar.set_label(measure)
 
     #plt.suptitle('Policy Pair Intensity Sweeps', fontsize=14)
     #plt.tight_layout(rect=[0, 0, 1, 0.96])
 
     # Save the combined figure
-    plt.savefig(f'{file_name}/Plots/policy_pair_intensity_sweep.png', dpi=dpi)
-    plt.show()
+    plt.savefig(f'{file_name}/Plots/policy_pair_intensity_sweep_{measure}.png', dpi=dpi)
+
 
 
 def main(fileNames):
@@ -110,10 +110,10 @@ def main(fileNames):
 
 
     #quit()
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName)
-
-    #plot_policy_pair_intensities(pairwise_outcomes, "Carbon_price", "Electricity_subsidy", file_name="results/vary_policy_pairs")
-
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_total_cost")
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative")
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_utility_cumulative")
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_profit_cumulative")
 
     plt.show()
 
@@ -121,8 +121,8 @@ if __name__ == "__main__":
     main(
         fileNames=[
             "results/endogenous_policy_intensity_22_02_22__28_02_2025",
+            "results/endogenous_policy_intensity_17_23_17__28_02_2025",
             "results/endogenous_policy_intensity_17_21_20__28_02_2025",
-            "results/endogenous_policy_intensity_17_23_17__28_02_2025"
             ]
 
     )

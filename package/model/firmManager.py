@@ -296,7 +296,7 @@ class Firm_Manager:
                 if car.transportType == 3:
                     profit = car.price - np.maximum(0,car.ProdCost_t - prod_subsidy)
                 else:
-                    profit = car.price - car.ProdCost_t
+                    profit = (car.price - car.ProdCost_t)*self.discriminatory_corporate_tax
                 total_profit = num_vehicle_sold*profit
                 car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
                 total_profit_all_firms += total_profit

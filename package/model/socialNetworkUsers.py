@@ -54,6 +54,9 @@ class Social_Network:
         self.init_initial_state(parameters_social_network)
 
         self.emissions_cumulative = 0
+        self.emissions_cumulative_production = 0
+        self.emissions_cumulative_driving = 0
+
         self.emissions_flow = 0
         self.utility_cumulative = 0
 
@@ -1127,10 +1130,12 @@ class Social_Network:
         
         emissions_flow = (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_t
         self.emissions_cumulative += emissions_flow
+        self.emissions_cumulative_driving += emissions_flow
         self.emissions_flow += emissions_flow
 
         if vehicle_chosen.scenario == "new_car":  #if its a new car add emisisons
             self.emissions_cumulative += vehicle_chosen.emissions
+            self.emissions_cumulative_production += vehicle_chosen.emissions
             self.emissions_flow += vehicle_chosen.emissions
 
     def update_EV_stock(self):

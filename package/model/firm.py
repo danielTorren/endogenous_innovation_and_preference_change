@@ -202,23 +202,10 @@ class Firm:
         term3 =self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta# Matrix with shape: num cars x num segments
         term4 = - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis])) / (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
         
-        #if self.firm_id == 1 and self.t_firm > 490:
-            #print("transport_types", transport_types)
-            #print("Priceing, EM",- C_m_price[:, np.newaxis][-5:,-3:],- (self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis])[-5:,-3:])
-            #print("Quality term",term2[-5:,-3:])
-            #print("Range term ",term3[-5:,-3:])
-            #print("fuel costs and emissions term",term4[-5:,-3:])
-            #print("U", term1[-5:,-3:] + term2[-5:,-3:] + term3[-5:,-3:] + term4[-5:,-3:])
         U = term1 + term2 + term3 + term4# Matrix with shape: num cars x num segments
-        #print("U",U)
-        #quit()
+
         exp_input = (self.kappa*U - 1) - np.log(self.W_vec[np.newaxis, :])
-        #if self.firm_id == 1 and self.t_firm > 490:
-        #    print("self.kappa*U",np.max(self.kappa*U), self.kappa, np.max(U))
-        #    print("exp_input", np.max(exp_input))
-        #print("np.log(self.W_vec[np.newaxis, :])", np.log(self.W_vec[np.newaxis, :]))
-        #quit()
-        #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
+
         Arg = np.exp(exp_input)
         LW = lambertw(Arg, 0).real
 
@@ -227,7 +214,8 @@ class Firm:
         # Store results in the original car objects (CRITICAL CHANGE)
         for i, car in enumerate(car_list):
                 for j, segment_code in enumerate(self.segment_codes):  # Use enumerate directly on the dictionary
-                    car.optimal_price_segments[segment_code] = P[i, j]
+                    car.optimal_price_segments[segment_code] = P[i, j]#CALC PRICE REGARDLESS OF WHETHER OR NOT THE CAR CAN BE USED BY THAT SEGMENT
+
         return car_list  # Return a dictionary of optimal prices by segment.
 
     def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta, B):
@@ -262,12 +250,12 @@ class Firm:
         # Populate valid_mask and P_adjust_values
         for i, car in enumerate(car_list):
             for j, segment_code in enumerate(self.segment_codes):
-                if (car.transportType == 2) or (segment_code[2] == 1 and car.transportType == 3):
+                if (car.transportType == 2) or (segment_code[2] == 1):
                     valid_mask[i, j] = True
                     P_adjust_values[i, j] = car.optimal_price_segments.get(segment_code, 0)
 
         # Apply rebates for EVs
-        ev_mask = (transport_types == 3) & valid_mask
+        ev_mask = (transport_types == 3)#JUST APPLY REBATE TO EV CARS
         P_adjust_values[ev_mask] = np.maximum(0, P_adjust_values[ev_mask] - (self.rebate + self.rebate_calibration))
 
         # Calculate utilities only for valid entries
@@ -352,25 +340,25 @@ class Firm:
             [car.optimal_price_segments.get(segment_code, 0) for segment_code in self.segment_codes] 
             for car in car_list
         ])
-        utilities = np.array([
+
+        utilities = np.array([#THES ARE ADJUST FOR ICE CARS AND THE ABOLUTY TO ChOOSE EVS, the -np.inf is incase the utility doesnt exist
             [car.car_utility_segments_U.get(segment_code, -np.inf) for segment_code in self.segment_codes] 
             for car in car_list
         ])
 
         # Extract market data
+        #DOES THE SEGMENT ALLOW FOR EVS?
         consider_ev_mask = np.array([segment_code[2] == 1 for segment_code in self.segment_codes])  # Shape (num_segments,)
-
-        # Create masks
-        is_ev_mask = transport_types == 3  # Shape (num_cars,)
+        is_ev_mask = transport_types == 3  # Shape (num_cars,)#CAR IS AN EV not ICEV
         consider_ev_broadcast = np.tile(consider_ev_mask, (num_cars, 1))
-        include_vehicle_mask = (~is_ev_mask[:, np.newaxis]) | consider_ev_broadcast
+        include_vehicle_mask = (~is_ev_mask[:, np.newaxis]) | consider_ev_broadcast#IS ICE OR CONSIDERS EV 
 
         # Profit per sale
         prod_subsidy_adjustment = np.maximum(0, prod_costs[:, np.newaxis] - self.production_subsidy)
         profit_per_sale = np.where(
             is_ev_mask[:, np.newaxis],
-            optimal_prices - prod_subsidy_adjustment,
-            optimal_prices - prod_costs[:, np.newaxis]
+            optimal_prices - prod_subsidy_adjustment,#if car is EV then the poduction subsidy increases the profit
+            optimal_prices - prod_costs[:, np.newaxis]#if ICE CAR then profit it prices minus production cost
         )
 
         # Utility proportion
@@ -383,34 +371,20 @@ class Firm:
         # Raw profit
         raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
-
         # Expected profit
         expected_profit_all = np.where(
-            is_ev_mask[:, np.newaxis],
-            raw_profit + self.research_subsidy,
-            raw_profit * (1 - self.discriminatory_corporate_tax)
+            is_ev_mask[:, np.newaxis],#IS EV CAR
+            raw_profit + self.research_subsidy,# RAW PROFIT + reseracg subsidy
+            raw_profit * (1 - self.discriminatory_corporate_tax)#no subsidiy to resarch just tax
         )
 
-        # Apply research subsidy for segments that can't buy EVs
-        expected_profit = np.where(
+        # Apply research subsidy for segments that can't buy EVs, you get the resarch subsidy if you choose an EV regardless of whether or not the segemnt can buy it
+        expected_profit = np.where(#THIS SHOULD REALLY DO ANYTHING AS rare that you research subsidy is larger than profitability of ICE cars in that segment
             include_vehicle_mask,
             expected_profit_all,
             self.research_subsidy
         )
         
-        #print("max profit, in $ and lambda", np.max(expected_profit),np.max(expected_profit)/1e-5, self.lambda_exp )
-        #if self.firm_id == 2 and self.t_firm > 200:
-        #    print("car_list",len(car_list))
-        #    print("prodfti tax", self.discriminatory_corporate_tax)
-            #print("raw_profit", raw_profit[:10][:2], raw_profit.shape)
-        #    print("is_ev_mask", is_ev_mask)
-            #print("expected_profit_all", expected_profit_all[:10][:2])
-            #print("include_vehicle_mask", include_vehicle_mask[:10][0])
-            #print("expected_profit", expected_profit[:10][:2])
-        
-        #if self.t_firm == 550:
-        #    quit()
-
         # Assign expected profits back to cars
         for i, car in enumerate(car_list):
             for j, segment_code in enumerate(self.segment_codes):
@@ -455,7 +429,6 @@ class Firm:
             # Compute the softmax probabilities
             lambda_profits = np.zeros_like(profits)
             valid_profits_mask = profits != -np.inf
-
 
             exp_input = self.lambda_exp*(profits[valid_profits_mask]  - np.max(profits[valid_profits_mask]))
             #exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
@@ -740,27 +713,6 @@ class Firm:
         ev_profits = np.array(ev_profits)
 
         # Compute average expected profit across all segments
-
-        #if self.t_firm == 400:
-        #    print("self.firm id", self.firm_id)
-        #    avg_ice_profit = np.mean(ice_profits)
-        #    avg_ev_profit = np.mean(ev_profits) 
-        #    print(f"Before Policy - Avg ICE Profit: {avg_ice_profit}")
-        #    print(f"Before Policy - Avg EV Profit: {avg_ev_profit:}")
-            #print("ICE profits", ice_profits)
-            #print("EV profits", ev_profits)
-
-
-
-        #if self.t_firm == 550:
-        #    print("self.firm id", self.firm_id)
-        #    avg_ice_profit = np.mean(ice_profits)
-        #    avg_ev_profit = np.mean(ev_profits) 
-        #    print(f"After Policy - Avg ICE Profit: {avg_ice_profit}")
-        #    print(f"After Policy - Avg EV Profit: {avg_ev_profit}")
-            #print("ICE profits", ice_profits)
-            #print("EV profits", ev_profits)
-            #quit()
 
         if not np.any(profit_matrix): #PROFIT IS ALL 0, pick up to 
             self.zero_profit_options_prod = 1
