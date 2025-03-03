@@ -117,8 +117,10 @@ def extract_policy_values(data):
 
     # Remove duplicates (if any) and sort the values
     for policy_name in policy_values:
-        policy_values[policy_name] = sorted(list(set(policy_values[policy_name])))
+        print("runs: ",len(sorted(list(set(policy_values[policy_name])))))
 
+        policy_values[policy_name] = sorted(list(set(policy_values[policy_name])))
+    quit()
     return policy_values
 
 def main(
