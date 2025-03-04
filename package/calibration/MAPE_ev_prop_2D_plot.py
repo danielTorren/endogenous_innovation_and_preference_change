@@ -259,7 +259,7 @@ def plot_ev_uptake_contour(base_params, real_data, data_array_ev_prop, vary_1, v
 # Main function
 def main(fileName, dpi=600):
     try:
-        serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
+        #serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
         base_params = load_object(fileName + "/Data", "base_params")
         data_array_ev_prop = load_object(fileName + "/Data", "data_array_ev_prop")
         vary_1 = load_object(fileName + "/Data", "vary_1")
@@ -296,4 +296,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_20_14_43__10_02_2025")
+    main("results/MAPE_ev_2D_16_17_38__04_03_2025")
