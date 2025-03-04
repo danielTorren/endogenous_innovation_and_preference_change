@@ -597,9 +597,6 @@ class Controller:
     def calculate_carbon_price_time_series(self):
         time_series = np.arange(self.time_steps_max + 1)
         carbon_price_series = []
-        
-        #print("carbon rpices stiu", self.future_carbon_price_policy,self.future_carbon_price_state)
-        
 
         for t in time_series:
             carbon_price = self.calculate_price_at_time(t)

@@ -272,7 +272,7 @@ if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_carbon_tax_type.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_carbon_tax_type.json",
-        policy_list=["flat", "linear", "quadratic", "exponential"],
+        policy_list=["flat", "linear"],#, "quadratic", "exponential"],
         target_ev_uptake=0.8,
         n_calls=40,
         noise=0.08
