@@ -11,7 +11,7 @@ def convert_data_short(data_to_fit, base_params):
 
     # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
     # Define the starting and ending indices for the years 2010 to 2022
-    start_year = 2015
+    start_year = 2016
     end_year = 2022
 
     # Calculate the average of the last three months of each year
@@ -198,6 +198,64 @@ def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, v
     save_and_show(fig, fileName, "plot_ev_stock_combinations", dpi)
 
 
+
+def plot_ev_uptake_heatmap(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+    num_vary_1 = len(vary_1["property_list"])
+    num_vary_2 = len(vary_2["property_list"])
+    ev_uptake_values = np.zeros((num_vary_1, num_vary_2))
+
+    for i, param_1 in enumerate(vary_1["property_list"]):
+        for j, param_2 in enumerate(vary_2["property_list"]):
+            predictions = data_array_ev_prop[i, j]  # Shape: (seeds, time steps)
+            sim_data_array = np.array([convert_data_short(pred, base_params) for pred in predictions])
+            ev_uptake_values[i, j] = np.mean(sim_data_array[:, -1])  # Take the last year's average EV uptake
+
+    # Plot static heatmap
+    fig, ax = plt.subplots(figsize=(8, 6))
+    cax = ax.imshow(ev_uptake_values, cmap='viridis', origin='lower', aspect='auto')
+    fig.colorbar(cax, ax=ax, label="EV Uptake (%)")
+
+    ax.set_xticks(range(num_vary_2))
+    ax.set_xticklabels([f"{val:.3g}" for val in vary_2["property_list"]], rotation=45)
+    ax.set_yticks(range(num_vary_1))
+    ax.set_yticklabels([f"{val:.3g}" for val in vary_1["property_list"]])
+    ax.set_xlabel(f"{vary_2['property_varied']}")
+    ax.set_ylabel(f"{vary_1['property_varied']}")
+    ax.set_title("EV Uptake Heatmap")
+
+    save_and_show(fig, fileName, "ev_uptake_heatmap", dpi)
+
+def plot_ev_uptake_contour(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+    num_vary_1 = len(vary_1["property_list"])
+    num_vary_2 = len(vary_2["property_list"])
+    ev_uptake_values = np.zeros((num_vary_1, num_vary_2))
+
+    # Calculate EV uptake for each parameter combination
+    for i, param_1 in enumerate(vary_1["property_list"]):
+        for j, param_2 in enumerate(vary_2["property_list"]):
+            predictions = data_array_ev_prop[i, j]  # Shape: (seeds, time steps)
+            sim_data_array = np.array([convert_data_short(pred, base_params) for pred in predictions])
+            ev_uptake_values[i, j] = np.mean(sim_data_array[:, -1])  # Take the last year's average EV uptake
+
+    # Create meshgrid for contour plot
+    X, Y = np.meshgrid(vary_1["property_list"], vary_2["property_list"])
+
+    # Plot contour plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    contour = ax.contourf(X, Y, ev_uptake_values, levels=20, cmap='viridis')  # Filled contours
+    ax.contour(X, Y, ev_uptake_values, levels=20, colors='black', linewidths=0.5)  # Contour lines
+
+    # Add colorbar
+    cbar = fig.colorbar(contour, ax=ax, label="EV Uptake (%)")
+
+    # Add labels and title
+    ax.set_xlabel(f"{vary_1['property_varied']}")
+    ax.set_ylabel(f"{vary_2['property_varied']}")
+    ax.set_title("EV Uptake Contour Plot")
+
+    # Save and show the plot
+    save_and_show(fig, fileName, "ev_uptake_contour", dpi)
+
 # Main function
 def main(fileName, dpi=600):
     try:
@@ -214,20 +272,28 @@ def main(fileName, dpi=600):
 
     # Extract actual EV stock proportions (2010-2022)
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    EV_stock_prop_2015_22 = np.asarray(EV_stock_prop_2010_22)[5:]  
-    #print("EV_stock_prop_2015_22",len(EV_stock_prop_2015_22))
+    EV_stock_prop_2016_22 = np.asarray(EV_stock_prop_2010_22)[6:]  
+    #print("EV_stock_prop_2016_22",len(EV_stock_prop_2016_22))
     # Plot heatmaps for different metrics
-    plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+
+    # Plot EV uptake heatmap
+    plot_ev_uptake_heatmap(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    # Plot EV uptake contour plot
+    plot_ev_uptake_contour(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+
+    plt.show()
+
+    plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
     # Plot best parameters from all metrics
-    plot_best_parameters_all_metrics(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    plot_best_parameters_all_metrics(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     
-    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2015_22, data_array_ev_prop, vary_1, vary_2, fileName)
+    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_13_11_00__lower_02_2025")
+    main("results/MAPE_ev_2D_20_14_43__10_02_2025")
