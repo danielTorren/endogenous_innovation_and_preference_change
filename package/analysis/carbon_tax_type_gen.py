@@ -22,11 +22,8 @@ def update_policy_intensity(params, policy_name, intensity_level):
     """
     params["parameters_policies"]["States"]["Carbon_price"] = 1
     params["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_state"] = policy_name
+    params["parameters_policies"]["Values"][policy_name]["Carbon_price"] = intensity_level
 
-    if policy_name == "Carbon_price":
-        params["parameters_policies"]["Values"][policy_name]["Carbon_price"] = intensity_level
-    else:
-        params["parameters_policies"]["Values"][policy_name] = intensity_level
     return params
 
 

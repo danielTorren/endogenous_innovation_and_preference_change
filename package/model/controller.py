@@ -598,6 +598,8 @@ class Controller:
         time_series = np.arange(self.time_steps_max + 1)
         carbon_price_series = []
         
+        print("carbon rpices stiu", self.future_carbon_price_policy,self.future_carbon_price_state)
+    
         for t in time_series:
             carbon_price = self.calculate_price_at_time(t)
             carbon_price_series.append(carbon_price)
@@ -622,6 +624,7 @@ class Controller:
             return 0
 
     def calculate_growth(self, t, total_duration, start_price, end_price, growth_type):
+
         if growth_type == "flat":
             return end_price
             
