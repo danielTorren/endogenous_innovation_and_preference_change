@@ -171,7 +171,7 @@ if __name__ == "__main__":
         {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [1, 4]},
         #{"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.001, 0.05]},
         #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [9.9e-5, 5e-4]},
-        {"name": "lambda", "subdict": "parameters_vehicle_user", "bounds": [1e-5, 1]},
+        {"name": "lambda", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 1e-2]},
         #{"name": "alpha", "subdict": "parameters_vehicle_user", "bounds": [0.4, 0.6]},
     ]
     main(
@@ -179,6 +179,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=256,
+        num_simulations=64,
         num_rounds= 3
     )
