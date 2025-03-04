@@ -77,7 +77,13 @@ def main(fileName):
 
     # Test posterior samples and plot results
     samples = posterior.sample((16,), x=x_o)
+
+    save_object(samples, fileName + "/Data", "samples")
+
+
     log_probability_samples = posterior.log_prob(samples, x=x_o)
+    save_object(log_probability_samples, fileName + "/Data", "log_probability_samples")
+    
     print("Log probabilities:", log_probability_samples)
 
     # Find sample with greatest log probability
@@ -89,7 +95,7 @@ def main(fileName):
     save_object(best_sample, fileName + "/Data", "best_sample")
     
     # Plot results
-    plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
+    #plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
