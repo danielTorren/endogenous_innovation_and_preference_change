@@ -235,7 +235,6 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     mean_values = np.mean(data_after_burn_in, axis=0)
     median_values = np.median(data_after_burn_in, axis=0)
 
-
     ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
@@ -938,4 +937,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_13_11_44__04_03_2025")
+    main("results/multi_seed_single_16_22_44__04_03_2025")

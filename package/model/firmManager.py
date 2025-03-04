@@ -15,7 +15,7 @@ class Firm_Manager:
 
         self.policy_distortion = 0
         self.profit_cumulative = 0
-        self.random_state = parameters_firm_manager["random_state"]
+        self.random_state_input = parameters_firm_manager["random_state_input"]
 
         self.zero_profit_options_prod_sum = 0
 
@@ -59,13 +59,13 @@ class Firm_Manager:
         Using random assortment of cars intially pick some random cars and set a random age distribution
         """
 
-        model_choices = self.random_state.choice(self.cars_on_sale_all_firms, self.num_individuals)
+        model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
         # Define mean and standard deviation for normal distribution
         mu = 120#self.age_max / 2  # Mean age at half of max age
         sigma = 60#self.age_max / 4  # Standard deviation (adjustable)
 
         # Generate normally distributed ages, ensuring values are within range
-        age_list = np.clip(self.random_state.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
+        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
 
         car_list = []
         for i, car in enumerate(model_choices):
@@ -91,8 +91,8 @@ class Firm_Manager:
         init_tech_component_string_list_N_ICE = self.invert_bits_one_at_a_time(decimal_value_ICE, len(self.init_tech_component_string_ICE))
         init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
 
-        init_tech_component_string_list_ICE = self.random_state.choice(init_tech_component_string_list_N_ICE, self.J)
-        init_tech_component_string_list_EV = self.random_state.choice(init_tech_component_string_list_N_EV, self.J)
+        init_tech_component_string_list_ICE = self.random_state_input.choice(init_tech_component_string_list_N_ICE, self.J)
+        init_tech_component_string_list_EV = self.random_state_input.choice(init_tech_component_string_list_N_EV, self.J)
 
         self.init_tech_list_ICE = [CarModel(init_tech_component_string_list_ICE[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
         self.init_tech_list_EV = [CarModel(init_tech_component_string_list_EV[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]

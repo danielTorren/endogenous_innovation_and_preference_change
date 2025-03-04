@@ -122,11 +122,11 @@ class Controller:
         self.parameters_social_network["seed_inputs"] = self.parameters_controller["seed_inputs"]
         self.parameters_ICE["random_state_inputs"] = self.random_state_inputs
         self.parameters_EV["random_state_inputs"] = self.random_state_inputs
+        self.parameters_firm_manager["random_state_input"] = self.random_state_inputs
 
         #Variable stuff
         self.random_state = np.random.RandomState(self.parameters_controller["seed"])
         self.parameters_social_network["random_state"] = self.random_state
-        self.parameters_firm_manager["random_state"] = self.random_state
         self.parameters_firm["random_state"] = self.random_state
         self.parameters_second_hand["random_state"] = self.random_state
 
