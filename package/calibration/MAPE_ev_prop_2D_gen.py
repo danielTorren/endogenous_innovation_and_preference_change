@@ -89,8 +89,6 @@ def main(
     
     save_object(data_array_ev_prop  , fileName + "/Data", "data_array_ev_prop")
     #save_object(params_list, fileName + "/Data", "params_list_flat")
-    
-
 
     return params_list
 
