@@ -159,7 +159,7 @@ def set_up_calibration_runs(base_params):
     base_params["duration_future"] = 0
 
     base_params_list = params_list_with_seed(base_params)
-    file_name = produce_name_datetime("endogenous_policy_intensity")
+    file_name = produce_name_datetime("carbon_tax_type")
 
     createFolder(file_name)
 
