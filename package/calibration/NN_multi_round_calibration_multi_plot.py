@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from package.resources.utility import load_object, save_object
 from package.plotting_data.single_experiment_plot import save_and_show
 import torch
+from torch import multiprocessing
 
 def plot_results(fileName, posterior_samples, x_o, posterior, param_bounds, param_names):
     """
@@ -76,6 +77,17 @@ def main(fileName):
     param_names = [p["name"] for p in var_dict]
 
     # Test posterior samples and plot results
+
+    # Set the number of threads for CPU parallelism
+    torch.set_num_threads(multiprocessing.cpu_count())
+    # Move the posterior and data to the GPU if available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    posterior = posterior.to(device)
+    x_o = x_o.to(device)
+
+    # Sample in parallel (PyTorch handles parallelism internally)
+    #samples = posterior.sample((10000,), x=x_o)
+
     samples = posterior.sample((16,), x=x_o)
 
     save_object(samples, fileName + "/Data", "samples")
