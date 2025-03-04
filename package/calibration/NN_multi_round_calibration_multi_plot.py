@@ -6,7 +6,7 @@ from package.plotting_data.single_experiment_plot import save_and_show
 import torch
 from torch import multiprocessing
 
-def plot_results(fileName, posterior_samples, x_o, posterior, param_bounds, param_names):
+def plot_results(fileName, posterior_samples, param_bounds, param_names):
     """
     Plots results for posterior samples, dynamically handling multiple parameters.
     
@@ -69,7 +69,7 @@ def main(fileName):
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
     var_dict = load_object(fileName + "/Data", "var_dict")
-    #samples = load_object(fileName + "/Data", "samples")
+    samples = load_object(fileName + "/Data", "samples")
     #best_sample = load_object(fileName + "/Data", "best_sample")
 
     # Extract parameter bounds and names dynamically
@@ -79,22 +79,22 @@ def main(fileName):
     # Test posterior samples and plot results
 
     # Set the number of threads for CPU parallelism
-    torch.set_num_threads(multiprocessing.cpu_count())
+    #torch.set_num_threads(multiprocessing.cpu_count())
     # Move the posterior and data to the GPU if available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    posterior = posterior.to(device)
-    x_o = x_o.to(device)
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #posterior = posterior.to(device)
+    #x_o = x_o.to(device)
 
     # Sample in parallel (PyTorch handles parallelism internally)
-    #samples = posterior.sample((10000,), x=x_o)
+    samples = posterior.sample((1000000,), x=x_o)
 
-    samples = posterior.sample((16,), x=x_o)
+    #samples = posterior.sample((16,), x=x_o)
 
-    save_object(samples, fileName + "/Data", "samples")
+    #save_object(samples, fileName + "/Data", "samples")
 
 
     log_probability_samples = posterior.log_prob(samples, x=x_o)
-    save_object(log_probability_samples, fileName + "/Data", "log_probability_samples")
+    #save_object(log_probability_samples, fileName + "/Data", "log_probability_samples")
     
     print("Log probabilities:", log_probability_samples)
 
@@ -104,12 +104,12 @@ def main(fileName):
     print("Sample with the greatest log probability:", best_sample)
     print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
-    save_object(best_sample, fileName + "/Data", "best_sample")
+    #save_object(best_sample, fileName + "/Data", "best_sample")
     
     # Plot results
-    #plot_results(fileName, samples, x_o, posterior, param_bounds, param_names)
+    plot_results(fileName, samples, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_19_02_42__02_03_2025",
+        fileName="results/NN_calibration_multi_11_03_20__04_03_2025",
     )
