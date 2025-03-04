@@ -80,7 +80,6 @@ def main(
     createFolder(fileName)
     
     save_object(base_params, fileName + "/Data", "base_params")
-    save_object(data_flat_ev_prop  , fileName + "/Data", "data_flat_ev_prop")
     save_object(vary_1 , fileName + "/Data", "vary_1")
     save_object(vary_2 , fileName + "/Data", "vary_2")
     
