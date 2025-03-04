@@ -4,29 +4,11 @@ from package.resources.run import ev_prop_parallel_run
 from package.resources.utility import (
     createFolder, 
     save_object, 
-    produce_name_datetime
+    produce_name_datetime,
+    params_list_with_seed
 )
 import numpy as np
 
-def update_base_params_with_seed(base_params, seed):
-    """
-    Expand the list of scenarios by varying the seed parameters.
-    """
-    seed_repetitions = base_params["seed_repetitions"]
-    # VARY ALL THE SEEDS
-    base_params["seeds"]["init_tech_seed"] = seed + seed_repetitions
-    base_params["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
-    base_params["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
-    base_params["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
-    base_params["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-    base_params["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-    base_params["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
-    base_params["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
-    base_params["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
-    base_params["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
-    base_params["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
-    base_params["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
-    return base_params
 
 def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[dict]:
     params_list = []
@@ -37,13 +19,9 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
             params_updated[property_dict_1["subdict"]][property_dict_1["property_varied"]] = i
             params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = j
 
-            for seed in np.arange(1, params_updated["seed_repetitions"] + 1):
 
-                params_updated = update_base_params_with_seed(params_updated, seed)
-
-                params_list.append(
-                    deepcopy(params_updated)
-                )  # have to make a copy so that it actually appends a new dict and not just the location of the params dict
+            parames_list_pairs = params_list_with_seed(params_updated)
+            params_list.extend(parames_list_pairs)
 
     return params_list
 
