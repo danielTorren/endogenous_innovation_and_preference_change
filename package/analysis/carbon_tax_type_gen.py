@@ -231,6 +231,8 @@ def no_policy(params, controller_files):
         "mean_profit_cumulative": mean_profit_cumulative
     }
 
+    print("No policy done, ev uptake:",mean_ev_uptake )
+
     return no_policy_outcomes
 
 def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
