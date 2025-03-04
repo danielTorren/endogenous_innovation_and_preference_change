@@ -20,6 +20,7 @@ def update_policy_intensity(params, policy_name, intensity_level):
     """
     Update the policy intensity in the parameter dictionary.
     """
+    params["parameters_policies"]["States"][policy_name] = 1
     params["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_state"] = policy_name
 
     if policy_name == "Carbon_price":
@@ -62,6 +63,8 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
     params = update_policy_intensity(params, policy_name, intensity_level)
 
     EV_uptake_arr, _ , _ , _, _, _ , _ = single_policy_with_seeds(params, controller_files)
+
+    print("intensity_level, EV_uptake",intensity_level, np.mean(EV_uptake_arr))
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
     #print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}")
