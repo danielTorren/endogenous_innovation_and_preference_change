@@ -20,7 +20,7 @@ def update_policy_intensity(params, policy_name, intensity_level):
     """
     Update the policy intensity in the parameter dictionary.
     """
-    params["parameters_policies"]["States"][policy_name] = 1
+    params["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_state"] = policy_name
 
     if policy_name == "Carbon_price":
         params["parameters_policies"]["Values"][policy_name]["Carbon_price"] = intensity_level
@@ -240,9 +240,9 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
 
 if __name__ == "__main__":
     main(
-        BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
-        BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
-        policy_list=["Carbon_price"],
+        BASE_PARAMS_LOAD="package/constants/base_params_carbon_tax_type.json",
+        BOUNDS_LOAD="package/analysis/policy_bounds_vary_carbon_tax_type.json",
+        policy_list=["flat", "linear", "quadratic", "exponential"],
         target_ev_uptake=0.8,
         n_calls=40,
         noise=0.08
