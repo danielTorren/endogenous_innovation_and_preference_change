@@ -208,6 +208,31 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
 
     return policy_outcomes 
 
+def no_policy(params, controller_files):
+    
+    EV_uptake_arr, total_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
+    mean_ev_uptake = np.mean(EV_uptake_arr)
+    sd_ev_uptake = np.std(EV_uptake_arr)
+    mean_total_cost = np.mean(total_cost_arr)
+    mean_emissions_cumulative = np.mean(emissions_cumulative_arr)
+    mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)   
+    mean_emissions_cumulative_production = np.mean(emissions_cumulative_production_arr)
+    mean_utility_cumulative = np.mean(utility_cumulative_arr)
+    mean_profit_cumulative = np.mean(profit_cumulative_arr)
+
+    no_policy_outcomes = {
+        "mean_EV_uptake": mean_ev_uptake,
+        "sd_ev_uptake": sd_ev_uptake,
+        "mean_total_cost": mean_total_cost,
+        "mean_emissions_cumulative": mean_emissions_cumulative, 
+        "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
+        "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
+        "mean_utility_cumulative": mean_utility_cumulative, 
+        "mean_profit_cumulative": mean_profit_cumulative
+    }
+
+    return no_policy_outcomes
+
 def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
          BOUNDS_LOAD="package/analysis/policy_bounds.json",
          policy_list=None, 
@@ -225,6 +250,10 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
         policy_params_dict = json.load(f)
 
     controller_files, base_params, file_name = set_up_calibration_runs(base_params)
+
+    res_no_policy = no_policy(base_params, controller_files)
+
+    save_object(res_no_policy, file_name + "/Data", "res_no_policy")
 
     simulate_future_policies(file_name, controller_files, policy_list, policy_params_dict, n_calls, base_params, target_ev_uptake, noise)
 
