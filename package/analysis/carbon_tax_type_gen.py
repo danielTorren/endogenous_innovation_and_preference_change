@@ -20,7 +20,7 @@ def update_policy_intensity(params, policy_name, intensity_level):
     """
     Update the policy intensity in the parameter dictionary.
     """
-    params["parameters_policies"]["States"][policy_name] = 1
+    params["parameters_policies"]["States"]["Carbon_price"] = 1
     params["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price_state"] = policy_name
 
     if policy_name == "Carbon_price":
