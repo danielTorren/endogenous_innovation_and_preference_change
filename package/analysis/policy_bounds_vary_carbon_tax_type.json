@@ -1,8 +1,8 @@
 {
     "bounds_dict":{
         "flat": [0.45, 0.55],
-        "linear": [0.5, 3],
-        "quadratic": [0.5, 5],
-        "exponetial": [0.5, 5]
+        "linear": [2.6, 3],
+        "quadratic": [3, 5],
+        "exponetial": [3, 6]
     }
 }
