@@ -90,7 +90,7 @@ def main(fileName):
 
     #samples = posterior.sample((16,), x=x_o)
 
-    #save_object(samples, fileName + "/Data", "samples")
+    save_object(samples, fileName + "/Data", "samples")
 
 
     log_probability_samples = posterior.log_prob(samples, x=x_o)
