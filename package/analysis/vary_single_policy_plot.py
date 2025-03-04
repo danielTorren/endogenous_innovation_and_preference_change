@@ -53,7 +53,7 @@ def plot_policy_intensity_effects(data_array, policy_list, file_name, policy_inf
         # Define plotting function
         def plot_with_median(ax, intensities, mean_values, median_values, std_values, label):
             ax.plot(intensities, mean_values, label=f'Mean {label}')
-            ax.fill_between(intensities, mean_values - std_values, mean_values + std_values, alpha=0.2)
+            ax.fill_between(intensities, mean_values - std_values, mean_values + std_values, alpha=0.2, label="std")
             ax.plot(intensities, median_values, linestyle='dashed', label=f'Median {label}', color='red')
             for intensity_idx, intensity in enumerate(intensities):
                 ax.scatter([intensity] * policy_data.shape[1], policy_data[intensity_idx, :, measures.index(label)], 

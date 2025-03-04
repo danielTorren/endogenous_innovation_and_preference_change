@@ -11,8 +11,6 @@ class Firm_Manager:
         self.t_firm_manager = 0
         self.parameters_firm = parameters_firm
 
-        
-
         self.policy_distortion = 0
         self.profit_cumulative = 0
         self.random_state_input = parameters_firm_manager["random_state_input"]
