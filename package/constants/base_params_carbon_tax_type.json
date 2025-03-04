@@ -51,7 +51,9 @@
         },
         "Values":{
             "Carbon_price":{
-                "Carbon_price_init": 0
+                "Carbon_price_init": 0,
+                "Carbon_price": 0,
+                "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
             "Electricity_subsidy":0.5,
