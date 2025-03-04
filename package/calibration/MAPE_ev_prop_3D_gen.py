@@ -4,26 +4,10 @@ from package.resources.run import ev_prop_parallel_run
 from package.resources.utility import (
     createFolder, 
     save_object, 
-    produce_name_datetime
+    produce_name_datetime,
+    params_list_with_seed
 )
 import numpy as np
-
-def update_base_params_with_seed(base_params, seed):
-    seed_repetitions = base_params["seed_repetitions"]
-    base_params["seeds"]["init_tech_seed"] = seed + seed_repetitions
-    base_params["seeds"]["landscape_seed_ICE"] = seed + 2 * seed_repetitions
-    base_params["seeds"]["social_network_seed"] = seed + 3 * seed_repetitions
-    base_params["seeds"]["network_structure_seed"] = seed + 4 * seed_repetitions
-    base_params["seeds"]["init_vals_environmental_seed"] = seed + 5 * seed_repetitions
-    base_params["seeds"]["init_vals_innovative_seed"] = seed + 6 * seed_repetitions
-    base_params["seeds"]["init_vals_price_seed"] = seed + 7 * seed_repetitions
-    base_params["seeds"]["innovation_seed"] = seed + 8 * seed_repetitions
-    base_params["seeds"]["landscape_seed_EV"] = seed + 9 * seed_repetitions
-    base_params["seeds"]["choice_seed"] = seed + 10 * seed_repetitions
-    base_params["seeds"]["remove_seed"] = seed + 11 * seed_repetitions
-    base_params["seeds"]["init_vals_poisson_seed"] = seed + 12 * seed_repetitions
-    base_params["seeds"]["init_vals_range_seed"] = seed + 13 * seed_repetitions
-    return base_params
 
 def produce_param_list(params: dict, property_dict_1, property_dict_2, property_dict_3) -> list[dict]:
     params_list = []
@@ -36,10 +20,8 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2, property_
                 params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = j
                 params_updated[property_dict_3["subdict"]][property_dict_3["property_varied"]] = k
 
-                for seed in np.arange(1, params_updated["seed_repetitions"] + 1):
-                    params_seeded = update_base_params_with_seed(deepcopy(params_updated), seed)
-                    params_list.append(params_seeded)
-
+                params_list_seed = params_list_with_seed(params_updated)
+                params_list.extend(params_list_seed)
     return params_list
 
 def main(
