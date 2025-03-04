@@ -1,5 +1,8 @@
 {
     "bounds_dict":{
-        "Carbon_price": [0, 3]
+        "flat": [0, 3],
+        "linear": [0, 3],
+        "quadratic": [0, 3],
+        "exponetial": [0, 3]
     }
 }
