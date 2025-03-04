@@ -86,7 +86,7 @@ def main(fileName):
     #x_o = x_o.to(device)
 
     # Sample in parallel (PyTorch handles parallelism internally)
-    samples = posterior.sample((1000000,), x=x_o)
+    samples = posterior.sample((100000,), x=x_o)
 
     #samples = posterior.sample((16,), x=x_o)
 
