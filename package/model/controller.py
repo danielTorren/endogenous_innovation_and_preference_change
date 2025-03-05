@@ -886,7 +886,6 @@ class Controller:
 
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
-        print("self.rebate_calibration", self.rebate_calibration)
 
         self.rebate = self.rebate_time_series[self.t_controller]
 
@@ -914,7 +913,6 @@ class Controller:
 
     def update_target_range_over_cost(self):
         target_range_over_cost = self.firm_manager.calc_target_target_range_over_cost()
-        print("Aim:", target_range_over_cost)
         for firm in self.firm_manager.firms_list:
             firm.target_range_over_cost = target_range_over_cost
 
