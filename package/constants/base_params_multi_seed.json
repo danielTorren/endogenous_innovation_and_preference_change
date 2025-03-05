@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 128,
+    "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
     "duration_future": 156,
@@ -10,7 +10,7 @@
     "seed_inputs": 22,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
-    "EV_rebate_state": 0,
+    "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -20,7 +20,7 @@
         "States":{
             "Gas_price": "Current",
             "Electricity_price": "Current",
-            "Grid_emissions_intensity": "Weaker"
+            "Grid_emissions_intensity": "Decarbonised"
         },
         "Values":{
             "Gas_price":{
