@@ -216,7 +216,6 @@ def plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, file
     ax.set_ylabel(f"{vary_1['property_varied']}")
 
     save_and_show(fig, fileName, "price_range_heatmap", dpi)
-    plt.show()
 
 def plot_ev_uptake_heatmap(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
     num_vary_1 = len(vary_1["property_list"])
@@ -296,12 +295,14 @@ def main(fileName, dpi=600):
     #print("EV_stock_prop_2016_22",len(EV_stock_prop_2016_22))
     # Plot heatmaps for different metrics
 
+    plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi)
+
+    plt.show()
     # Plot EV uptake heatmap
     plot_ev_uptake_heatmap(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     # Plot EV uptake contour plot
     plot_ev_uptake_contour(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
-    plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi)
 
     plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
@@ -316,4 +317,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_14_28_34__05_03_2025")
+    main("results/MAPE_ev_2D_14_57_35__05_03_2025")
