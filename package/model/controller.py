@@ -916,6 +916,12 @@ class Controller:
         for firm in self.firm_manager.firms_list:
             firm.target_range_over_cost = target_range_over_cost
 
+    def calc_price_range_ice(self):
+        prices = [car.price for car in self.cars_on_sale_all_firms if car.transportType == 2]
+        min_price = np.min(prices)
+        max_price = np.max(prices)
+        return max_price - min_price
+
     ################################################################################################
     #POLICY OUTPUTS
     def calc_total_policy_distortion(self):

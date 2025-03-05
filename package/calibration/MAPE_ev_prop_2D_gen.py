@@ -40,8 +40,13 @@ def main(
     with open(VARY_LOAD_2) as f:
         vary_2 = json.load(f)
 
-    vary_1["property_list"] = np.linspace( vary_1["min"],  vary_1["max"], vary_1["reps"])
-    vary_2["property_list"] = np.linspace( vary_2["min"],  vary_2["max"], vary_2["reps"])
+    # Check if 'property_list' exists in vary_1, if not, create it
+    if "property_list" not in vary_1:
+        vary_1["property_list"] = np.linspace(vary_1["min"], vary_1["max"], vary_1["reps"])
+
+    # Check if 'property_list' exists in vary_2, if not, create it
+    if "property_list" not in vary_2:
+        vary_2["property_list"] = np.linspace(vary_2["min"], vary_2["max"], vary_2["reps"])
 
     root = "MAPE_ev_2D"
     fileName = produce_name_datetime(root)
@@ -51,7 +56,7 @@ def main(
     
     print("TOTAL RUNS: ", len(params_list))
     
-    data_flat_ev_prop = ev_prop_parallel_run(params_list) 
+    data_flat_ev_prop, data_price_range = ev_prop_parallel_run(params_list) 
     print( data_flat_ev_prop.shape)
 
 
@@ -63,8 +68,11 @@ def main(
     
     # Reshape data into 2D structure: rows for scenarios, columns for seed values
     data_array_ev_prop = data_flat_ev_prop.reshape(len(vary_1["property_list"]),len(vary_2["property_list"]),base_params["seed_repetitions"], len(data_flat_ev_prop[0]))
-    
     save_object(data_array_ev_prop  , fileName + "/Data", "data_array_ev_prop")
+    
+    data_price_range_arr = data_price_range.reshape(len(vary_1["property_list"]),len(vary_2["property_list"]),base_params["seed_repetitions"])
+
+    save_object(data_price_range_arr  , fileName + "/Data", "data_price_range_arr")
     #save_object(params_list, fileName + "/Data", "params_list_flat")
 
     return params_list
@@ -72,6 +80,6 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_MAPE_2D.json",
-        VARY_LOAD_1 ="package/constants/vary_single_beta_a_innov_MAPE.json", 
-        VARY_LOAD_2 ="package/constants/vary_single_beta_b_innov_MAPE.json",
+        VARY_LOAD_1 ="package/constants/vary_single_beta_segments_innov_MAPE.json", 
+        VARY_LOAD_2 ="package/constants/vary_single_gamma_segments_MAPE.json",
         )

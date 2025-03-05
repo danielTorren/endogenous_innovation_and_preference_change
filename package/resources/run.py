@@ -97,15 +97,18 @@ def emissions_parallel_run(
 ########################################################################################
 def generate_ev_prop(params):
     data = generate_data(params)
-    return data.social_network.history_prop_EV
+    return data.social_network.history_prop_EV, data.calc_price_range_ice()
 
 def ev_prop_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
     num_cores = multiprocessing.cpu_count()
-    ev_prop_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_ev_prop)(i) for i in params_dict)
+    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_ev_prop)(i) for i in params_dict)
+    ev_prop_list, price_range_ice_list = zip(
+        *res
+    )
 
-    return np.asarray(ev_prop_list)
+    return np.asarray(ev_prop_list), np.asarray(price_range_ice_list)
 
 ########################################################################################
 def generate_distance(params):
