@@ -27,27 +27,9 @@
         "used_rebate": 1000
     },
     "parameters_scenarios":{
-        "States":{
-            "Gas_price": "Current",
-            "Electricity_price": "Current",
-            "Grid_emissions_intensity": "Weaker"
-        },
-        "Values":{
-            "Gas_price":{
-                "Low": 0.5, 
-                "Current": 1,
-                "High": 1.5
-            },
-            "Electricity_price":{
-                "Low": 0.5, 
-                "Current": 1,
-                "High": 1.5
-            },
-            "Grid_emissions_intensity":{
-                "Weaker": 0.5, 
-                "Decarbonised": 0
-            }
-        }
+            "Gas_price": 1,
+            "Electricity_price": 1,
+            "Grid_emissions_intensity": 0.5
     },
     "parameters_policies":{
         "States":{

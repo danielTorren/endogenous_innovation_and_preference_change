@@ -491,39 +491,16 @@ class Controller:
 
     def manage_scenario(self):
 
-        self.Gas_price_state = self.parameters_controller["parameters_scenarios"]["States"]["Gas_price"]
-        self.Electricity_price_state =  self.parameters_controller["parameters_scenarios"]["States"]["Electricity_price"]
-        self.Grid_emissions_intensity_state =  self.parameters_controller["parameters_scenarios"]["States"]["Grid_emissions_intensity"]
-        
         self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
-        if self.Gas_price_state == "Low":
-            self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["Low"]
-        elif self.Gas_price_state == "Current":
-            self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]["Current"]
-        elif self.Gas_price_state == "High":
-            self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Gas_price"]
-        else:
-            raise ValueError("Invalid gas price state")
+        self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Gas_price"]
         self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
 
         self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]
-        if self.Electricity_price_state == "Low":
-            self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]["Low"]
-        elif self.Electricity_price_state == "Current":
-            self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]["Current"]
-        elif self.Electricity_price_state == "High":
-            self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Electricity_price"]
-        else:
-            raise ValueError("Invalid electricity price state")
+        self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Electricity_price"]
         self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
         
         self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]
-        if self.Grid_emissions_intensity_state == "Weaker":
-            self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Grid_emissions_intensity"]["Weaker"]
-        elif self.Grid_emissions_intensity_state == "Decarbonised":
-            self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Values"]["Grid_emissions_intensity"]["Decarbonised"]
-        else:
-            raise ValueError("Invalid Grid emissions intensity state")
+        self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Grid_emissions_intensity"]
         self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.duration_future)
         
     #############################################################################################################################

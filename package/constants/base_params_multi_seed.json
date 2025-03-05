@@ -18,8 +18,8 @@
     },
     "parameters_scenarios":{
         "States":{
-            "Gas_price": "Current",
-            "Electricity_price": "Current",
+            "Gas_price": 1,
+            "Electricity_price": 1,
             "Grid_emissions_intensity": "Decarbonised"
         },
         "Values":{
