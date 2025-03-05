@@ -477,9 +477,12 @@ class Controller:
         self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
         
-        if self.parameters_controller["EV_rebate_state"]:#IF TRUE IMPLEMENTED
+        if self.parameters_controller["EV_rebate_state"]:#CONTROLLS WHETHER OR NOT THE REBATE POLICY APPLIED DURING FUTURE
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
+        else:
+            self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_no_carbon_price] = self.parameters_rebate_calibration["rebate"]
+            self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_no_carbon_price] = self.parameters_rebate_calibration["used_rebate"]
 
         self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
 
