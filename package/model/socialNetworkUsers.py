@@ -16,6 +16,7 @@ class Social_Network:
         self.t_social_network = 0
 
         self.policy_distortion = 0#NEED FOR OPTIMISATION, measures the distortion from policies
+        self.net_policy_distortion = 0
         
         self.rebate = parameters_social_network["rebate"]
         self.used_rebate = parameters_social_network["used_rebate"]
@@ -259,10 +260,14 @@ class Social_Network:
 
             #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
             if user.vehicle.transportType == 3:
-                self.policy_distortion += (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
+                elec_sub = (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
+                self.policy_distortion += elec_sub 
+                self.net_policy_distortion -= elec_sub 
             else:
                 #NEEDED FOR OPTIMISATION, add the carbon price paid 
-                self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
+                carbon_price_paid = (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
+                self.policy_distortion += carbon_price_paid
+                self.net_policy_distortion += carbon_price_paid
 
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.keep_car += 1
@@ -326,10 +331,14 @@ class Social_Network:
             #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#NEEDED FOR OPTIMISATION of carbon tax
             #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
             if user.vehicle.transportType == 3:
-                self.policy_distortion += (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
+                elec_sub = (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
+                self.policy_distortion += elec_sub
+                self.net_policy_distortion -= elec_sub
             else:
                 #NEEDED FOR OPTIMISATION, add the carbon price paid 
-                self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#
+                carbon_price_paid = (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
+                self.policy_distortion += carbon_price_paid
+                self.net_policy_distortion += carbon_price_paid
             
             utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
             self.utility_cumulative += utility
@@ -491,7 +500,9 @@ class Social_Network:
             if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
                 #USED ADOPTION SUBSIDY OPTIMIZATION
                 if vehicle_chosen.transportType == 3:
-                    self.policy_distortion += np.minimum(vehicle_chosen.price, self.used_rebate)           
+                    adopt_sub = np.minimum(vehicle_chosen.price, self.used_rebate)  
+                    self.policy_distortion += adopt_sub
+                    self.net_policy_distortion -= adopt_sub    
 
                 ###########################################################################
                 #DO NOT DELETE
@@ -513,7 +524,9 @@ class Social_Network:
             elif isinstance(vehicle_chosen, CarModel):  # Brand new car
                 #ADOPTION SUBSIDY OPTIMIZATION
                 if vehicle_chosen.transportType == 3:
-                    self.policy_distortion += np.minimum(vehicle_chosen.price, self.rebate)         
+                    adopt_sub = np.minimum(vehicle_chosen.price, self.rebate)    
+                    self.policy_distortion +=  adopt_sub
+                    self.net_policy_distortion -= adopt_sub    
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()

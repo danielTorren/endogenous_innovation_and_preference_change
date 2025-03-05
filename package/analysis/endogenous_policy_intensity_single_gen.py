@@ -35,7 +35,7 @@ def single_policy_simulation(params, controller_file):
     """
     controller = load(controller_file)  # Load fresh controller
     data = load_in_controller(controller, params)
-    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative
+    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative
 
 
 def single_policy_with_seeds(params, controller_files):
@@ -49,9 +49,9 @@ def single_policy_with_seeds(params, controller_files):
         for i in range(len(controller_files))
     )
 
-    EV_uptake_arr, total_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = zip(*res)
+    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = zip(*res)
     
-    return np.asarray(EV_uptake_arr), np.asarray(total_cost_arr), np.asarray(emissions_cumulative_arr), np.asarray(emissions_cumulative_driving_arr), np.asarray(emissions_cumulative_production_arr), np.asarray(utility_cumulative_arr), np.asarray(profit_cumulative_arr)
+    return np.asarray(EV_uptake_arr), np.asarray(total_cost_arr), np.asarray(net_cost_arr), np.asarray(emissions_cumulative_arr), np.asarray(emissions_cumulative_driving_arr), np.asarray(emissions_cumulative_production_arr), np.asarray(utility_cumulative_arr), np.asarray(profit_cumulative_arr)
 
 
 def objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake):
