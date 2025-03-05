@@ -47,7 +47,7 @@ if __name__ == "__main__":
     "seed_inputs": 22,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Targeted_research_subsidy": 1,
+            "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.1,
+                "Carbon_price": 0,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
@@ -151,20 +151,19 @@ if __name__ == "__main__":
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-4,
+        "lambda": 1e-3,
         "memory_cap": 30,
-        "prob_innovate": 1,#0.083,
+        "prob_innovate": 0.083,
         "prob_change_production": 0.083,
         "init_price_multiplier": 1.1,
         "min_profit": 1000,
-        "max_cars_prod": 10,
-        "target_range_over_cost_init": 1000/10000#GOAL OF Dollars km per dollar
+        "max_cars_prod": 10
     },
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.22,
-        "b_chi": 2,
+        "a_chi": 1.221, 
+        "b_chi": 2.2873,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -188,6 +187,7 @@ if __name__ == "__main__":
         "zeta":0.29697
     }
 }
+    
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
 

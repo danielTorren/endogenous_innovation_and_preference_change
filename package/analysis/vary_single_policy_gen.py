@@ -160,10 +160,10 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=10,
+        repetitions=5,
         policy_list = [
             "Carbon_price",
-            "Targeted_research_subsidy",
+            #"Targeted_research_subsidy",
             "Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",

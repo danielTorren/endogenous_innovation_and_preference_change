@@ -886,6 +886,8 @@ class Controller:
 
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
+        print("self.rebate_calibration", self.rebate_calibration)
+
         self.rebate = self.rebate_time_series[self.t_controller]
 
         self.used_rebate_calibration = self.used_rebate_calibration_time_series[self.t_controller]
