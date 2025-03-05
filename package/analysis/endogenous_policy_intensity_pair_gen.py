@@ -150,20 +150,20 @@ if __name__ == "__main__":
         policy_list_all=[
             "Carbon_price",
             #"Targeted_research_subsidy",
-            "Electricity_subsidy",
+            #"Electricity_subsidy",
             "Adoption_subsidy",
-            "Adoption_subsidy_used",
-            "Production_subsidy",
-            "Research_subsidy"
+            #"Adoption_subsidy_used",
+            #"Production_subsidy",
+            #"Research_subsidy"
         ],
         policy_list_works=[
-            "Carbon_price",
+            #"Carbon_price",
             "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Production_subsidy"
+            #"Adoption_subsidy",
+            #"Production_subsidy"
             ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=2,#10,
+        n_steps_for_sweep=10,#10,
         n_calls=2,#30,
         noise=0.05
     )
