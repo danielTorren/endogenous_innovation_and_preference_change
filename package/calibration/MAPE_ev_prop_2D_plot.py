@@ -197,7 +197,26 @@ def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, v
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_ev_stock_combinations", dpi)
 
+def plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi=600):
+    num_vary_1 = len(vary_1["property_list"])
+    num_vary_2 = len(vary_2["property_list"])
+    print(data_array_price_range.shape)
+    data_array_price_range_mean = np.mean(data_array_price_range, axis = 2)
+    print(data_array_price_range_mean.shape)
+    # Plot static heatmap
+    fig, ax = plt.subplots(figsize=(8, 6))
+    cax = ax.imshow(data_array_price_range_mean, cmap='viridis', origin='lower', aspect='auto')
+    fig.colorbar(cax, ax=ax, label="Price Range ICE, $")
 
+    ax.set_xticks(range(num_vary_2))
+    ax.set_xticklabels([f"{val:.3g}" for val in vary_2["property_list"]], rotation=45)
+    ax.set_yticks(range(num_vary_1))
+    ax.set_yticklabels([f"{val:.3g}" for val in vary_1["property_list"]])
+    ax.set_xlabel(f"{vary_2['property_varied']}")
+    ax.set_ylabel(f"{vary_1['property_varied']}")
+
+    save_and_show(fig, fileName, "price_range_heatmap", dpi)
+    plt.show()
 
 def plot_ev_uptake_heatmap(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
     num_vary_1 = len(vary_1["property_list"])
@@ -262,6 +281,7 @@ def main(fileName, dpi=600):
         #serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
         base_params = load_object(fileName + "/Data", "base_params")
         data_array_ev_prop = load_object(fileName + "/Data", "data_array_ev_prop")
+        data_array_price_range = load_object(fileName + "/Data", "data_price_range_arr")
         vary_1 = load_object(fileName + "/Data", "vary_1")
         vary_2 = load_object(fileName + "/Data", "vary_2")
     except FileNotFoundError:
@@ -281,7 +301,7 @@ def main(fileName, dpi=600):
     # Plot EV uptake contour plot
     plot_ev_uptake_contour(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
-    plt.show()
+    plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi)
 
     plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
@@ -290,10 +310,10 @@ def main(fileName, dpi=600):
 
     # Plot best parameters from all metrics
     plot_best_parameters_all_metrics(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    
+
     plot_ev_stock_all_combinations(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_16_17_38__04_03_2025")
+    main("results/MAPE_ev_2D_14_28_34__05_03_2025")
