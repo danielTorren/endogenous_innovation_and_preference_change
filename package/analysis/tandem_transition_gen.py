@@ -76,6 +76,29 @@ def grid_search_policy_with_seeds(param_list, controller_files):
     return np.asarray(results)
 
 
+def set_up_calibration_runs(base_params):
+
+    future_time_steps = base_params["duration_future"]
+    base_params["duration_future"] = 0
+
+    base_params_list = params_list_with_seed(base_params)
+    file_name = produce_name_datetime("vary_decarb_elec")
+
+    createFolder(file_name)
+
+    ########################################################################################################################
+    #RUN CALIBRATION RUNS
+    controller_files = parallel_multi_run(base_params_list, file_name)
+
+    #UPDATE BASE PARAMS CORRECT NOW
+    base_params["duration_future"] = future_time_steps
+
+    save_object(base_params, file_name + "/Data", "base_params")
+
+    print("Finished Calibration Runs")
+
+    return controller_files, base_params, file_name
+
 def main(
         BASE_PARAMS_LOAD="package/constants/base_params.json",
         VARY_LOAD = "package/constants/vary_single.json",
@@ -89,20 +112,9 @@ def main(
     with open(VARY_LOAD) as f:
         vary_single = json.load(f)
 
-    root = "vary_decarb_elec"
-    fileName = produce_name_datetime(root)
-    print("fileName:", fileName)
-    # Ensure directory exists
-    createFolder(fileName)
-
-    ######################################################################################################
-    #CALIBRATION
-
-    base_params_list = params_list_with_seed(base_params)
-    # Generate policy scenarios with different seeds
     
     # Run initial seed calibrations and save controllers
-    controller_files = parallel_multi_run(base_params_list, save_path=fileName)
+    controller_files, base_params, fileName = set_up_calibration_runs(base_params)
     print("Finished Calibration Runs")
     # Save base params
     save_object(base_params, fileName + "/Data", "base_params")
