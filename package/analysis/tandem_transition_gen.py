@@ -148,6 +148,6 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_decarbonize.json",
+        VARY_LOAD ="package/analysis/vary_single_decarbonize.json",
         carbon_price = 0.1
         )
