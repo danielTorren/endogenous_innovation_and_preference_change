@@ -103,6 +103,7 @@ def ev_prop_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
     num_cores = multiprocessing.cpu_count()
+    #res = [generate_ev_prop(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_ev_prop)(i) for i in params_dict)
     ev_prop_list, price_range_ice_list = zip(
         *res

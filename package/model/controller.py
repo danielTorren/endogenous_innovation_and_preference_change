@@ -366,7 +366,7 @@ class Controller:
         beta_values = []
         gamma_values = []
 
-        segment_codes = list(itertools.product(range(self.num_beta_segments), range(2), range(2)))
+        segment_codes = list(itertools.product(range(self.num_beta_segments), range(self.num_gamma_segments), range(2)))
         self.num_segments = len(segment_codes) 
 
         for code in segment_codes:
