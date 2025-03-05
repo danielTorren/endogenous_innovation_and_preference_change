@@ -82,6 +82,7 @@ def set_up_calibration_runs(base_params):
     base_params["duration_future"] = 0
 
     base_params_list = params_list_with_seed(base_params)
+    print("NUM calibraion",  len(base_params_list))
     file_name = produce_name_datetime("vary_decarb_elec")
 
     createFolder(file_name)
