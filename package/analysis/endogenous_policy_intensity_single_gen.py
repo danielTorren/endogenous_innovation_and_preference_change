@@ -61,7 +61,7 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
     """
     params = update_policy_intensity(params, policy_name, intensity_level)
 
-    EV_uptake_arr, _ , _ , _, _, _ , _ = single_policy_with_seeds(params, controller_files)
+    EV_uptake_arr, _ ,_ , _ , _, _, _ , _ = single_policy_with_seeds(params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
     #print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}")
@@ -114,21 +114,22 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, target_e
     # Run simulation with optimized intensity to get final values
     params = update_policy_intensity(params, policy_name, best_intensity)
 
-    EV_uptake_arr, total_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
+    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
     mean_total_cost = np.mean(total_cost_arr)
+    mean_net_cost = np.mean(net_cost_arr)
     mean_emissions_cumulative = np.mean(emissions_cumulative_arr)
     mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)   
     mean_emissions_cumulative_production = np.mean(emissions_cumulative_production_arr)
     mean_utility_cumulative = np.mean(utility_cumulative_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
-    print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, STD EV uptake {sd_ev_uptake},  Cost = {mean_total_cost}, E = {mean_emissions_cumulative}, E_D = {mean_emissions_cumulative_driving}, E_P = {mean_emissions_cumulative_production},U = {mean_utility_cumulative}, Profit = {mean_profit_cumulative}")
+    print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, STD EV uptake {sd_ev_uptake},  Cost = {mean_total_cost}, Net cost = {mean_net_cost}, E = {mean_emissions_cumulative}, E_D = {mean_emissions_cumulative_driving}, E_P = {mean_emissions_cumulative_production},U = {mean_utility_cumulative}, Profit = {mean_profit_cumulative}")
 
     ###########################################################################################################################################
 
-    return best_intensity, mean_ev_uptake, sd_ev_uptake ,mean_total_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative
+    return best_intensity, mean_ev_uptake, sd_ev_uptake ,mean_total_cost, mean_net_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative
 
 
 ####################################################
@@ -187,7 +188,7 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
     policy_outcomes = {}
 
     for policy_name in policy_list:
-        best_intensity, mean_ev_uptake, sd_ev_uptake , mean_total_cost, mean_emissions_cumulative,  mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
+        best_intensity, mean_ev_uptake, sd_ev_uptake , mean_total_cost, mean_net_cost, mean_emissions_cumulative,  mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
             base_params, controller_files, policy_name, target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy_name], n_calls=n_calls, noise = noise
         )
@@ -197,6 +198,7 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             "mean_EV_uptake": mean_ev_uptake,
             "sd_ev_uptake": sd_ev_uptake,
             "mean_total_cost": mean_total_cost,
+            "mean_net_cost": mean_net_cost, 
             "mean_emissions_cumulative": mean_emissions_cumulative, 
             "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
             "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 

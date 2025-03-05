@@ -9,11 +9,19 @@ from pathlib import Path  # Path handling
 
 def generate_unique_policy_pairs(policy_list_all, policy_list_works):
     """
-    Generate unique policy pairs (p1, p2) where p1 can be any policy,
-    and p2 is restricted to a subset of policies that work well.
+    Generate pairs of policies where:
+    - The first policy can be any policy from policy_list_all.
+    - The second policy is only from policy_list_works.
+    - Policies are not paired with themselves.
+    - Pairs are unique and not reversed (e.g., (A, B) but not (B, A)).
     """
-    pairs = [(p1, p2) for p1 in policy_list_all for p2 in policy_list_works if p1 != p2]
-    print("Total unique pairs:", len(pairs))
+    pairs = []
+    for policy1 in policy_list_all:
+        for policy2 in policy_list_works:
+            if policy1 != policy2 and policy1 < policy2:  # Enforce consistent ordering
+                pairs.append((policy1, policy2))
+
+    print("num pairs", len(pairs))
     return pairs
 
 def policy_pair_sweep(
@@ -39,7 +47,7 @@ def policy_pair_sweep(
         #UPDATE THE BASE PARAMS
         base_params = update_policy_intensity(base_params, policy1_name, p1_val)
 
-        best_intensity, mean_ev_uptake, sd_ev_uptake, mean_total_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
+        best_intensity, mean_ev_uptake, sd_ev_uptake, mean_total_cost, mean_net_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
             base_params, controller_files, policy2_name, target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy2_name], n_calls=n_calls, noise = noise
         )
@@ -49,6 +57,7 @@ def policy_pair_sweep(
             "mean_ev_uptake": mean_ev_uptake,
             "sd_ev_uptake": sd_ev_uptake,
             "mean_total_cost": mean_total_cost,
+            "mean_net_cost": mean_net_cost, 
             "mean_emissions_cumulative": mean_emissions_cumulative, 
             "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
             "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
@@ -89,12 +98,13 @@ def main(
     with open(BOUNDS_LOAD) as f:
         bounds_dict = json.load(f)
 
+    policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
+
     controller_files, base_params, file_name = set_up_calibration_runs(base_params)
 
     ###################################################################################################################
         
-    policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
-    print("policy pairs", policy_pairs)
+
     #RUN POLICY OUTCOMES
     print("TOTAL RUNS BO: ", len(policy_pairs)*n_steps_for_sweep*n_calls*base_params["seed_repetitions"])
 
@@ -138,17 +148,22 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
-            #"Carbon_price",
-            "Targeted_research_subsidy",
+            "Carbon_price",
+            #"Targeted_research_subsidy",
             "Electricity_subsidy",
             "Adoption_subsidy",
-            #"Adoption_subsidy_used",
-            #"Production_subsidy",
-            #"Research_subsidy"
+            "Adoption_subsidy_used",
+            "Production_subsidy",
+            "Research_subsidy"
         ],
-        policy_list_works=["Carbon_price"],
-        target_ev_uptake=0.8,
-        n_steps_for_sweep=50,
-        n_calls=40,
-        noise=0.08
+        policy_list_works=[
+            "Carbon_price",
+            "Electricity_subsidy",
+            "Adoption_subsidy",
+            "Production_subsidy"
+            ],
+        target_ev_uptake=0.95,
+        n_steps_for_sweep=10,
+        n_calls=30,
+        noise=0.05
     )
