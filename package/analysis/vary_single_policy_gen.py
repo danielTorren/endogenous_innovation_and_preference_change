@@ -45,7 +45,8 @@ def single_policy_simulation(params, controller_load):
     EV_uptake = data.calc_EV_prop()
     policy_distortion = data.calc_total_policy_distortion()
     cum_em = data.social_network.emissions_cumulative
-    return EV_uptake, policy_distortion, cum_em
+    net_cost = data.calc_net_policy_distortion()
+    return EV_uptake, policy_distortion, cum_em, net_cost
 
 
 def grid_search_policy_with_seeds(grid_scenarios, controller_files):
@@ -145,7 +146,7 @@ def main(
     save_object(policy_list, file_name + "/Data", "policy_list")
     save_object(policy_info_dict, file_name + "/Data", "policy_info_dict")
 
-    data_array = results.reshape( len(policy_list), repetitions, base_params["seed_repetitions"], 3)
+    data_array = results.reshape( len(policy_list), repetitions, base_params["seed_repetitions"], 4)
 
     save_object(data_array, file_name + "/Data", "data_array")
 
@@ -160,7 +161,7 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=50,
+        repetitions=100,
         policy_list = [
             "Carbon_price",
             #"Targeted_research_subsidy",
