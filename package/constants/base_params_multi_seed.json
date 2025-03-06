@@ -91,7 +91,7 @@
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4,
+        "num_beta_segments": 5,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
