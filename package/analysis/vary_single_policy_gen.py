@@ -137,8 +137,6 @@ def main(
 
     # Run policy scenarios starting from saved calibration controllers
     results = grid_search_policy_with_seeds(grid_scenarios, controller_files)
-    print(results.shape)
-    print("results[0][0]", results[0])
 
     print("DONE ALL POLICY RUNS")
     save_object(results, file_name + "/Data", "results")
@@ -146,8 +144,7 @@ def main(
     save_object(policy_info_dict, file_name + "/Data", "policy_info_dict")
 
     data_array = results.reshape( len(policy_list), repetitions, base_params["seed_repetitions"], len(results[0]))
-    print("data array", data_array.shape)
-    
+
     save_object(data_array, file_name + "/Data", "data_array")
 
     # Cleanup: Delete the calibration data folder and all its contents
@@ -161,7 +158,7 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=2,
+        repetitions=100,
         policy_list = [
             "Carbon_price",
             #"Targeted_research_subsidy",
