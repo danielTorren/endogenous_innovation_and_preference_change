@@ -171,7 +171,7 @@ if __name__ == "__main__":
             "Production_subsidy"
             ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=10,
+        n_steps_for_sweep=6,
         n_calls=20,
         noise=0.05,
         epsilon = 0.03
