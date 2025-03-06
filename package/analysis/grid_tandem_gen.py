@@ -123,7 +123,7 @@ def main(
     # Save base params
     save_object(base_params, fileName + "/Data", "base_params")
 
-    vary_double = {"decrb": [emissions_intensity_min, emissions_intensity_max], "carbon_price": [carbon_price_min, carbon_price_max], "reps", grid_resolution}
+    vary_double = {"decrb": [emissions_intensity_min, emissions_intensity_max], "carbon_price": [carbon_price_min, carbon_price_max], "reps": grid_resolution}
     save_object(vary_double, fileName + "/Data", "vary_double")
 
     ######################################################################################################
