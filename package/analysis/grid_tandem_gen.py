@@ -165,5 +165,5 @@ if __name__ == "__main__":
         carbon_price_max=1.0,
         emissions_intensity_min=0.0,
         emissions_intensity_max=1.0,
-        grid_resolution=3,  # Number of points in the grid for each parameter
+        grid_resolution=12,  # Number of points in the grid for each parameter
     )
