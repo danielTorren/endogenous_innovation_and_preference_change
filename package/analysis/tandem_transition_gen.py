@@ -129,9 +129,9 @@ def main(
     params_list = produce_param_list_elect_intensity(base_params, electricity_decarb_vals) 
     print("TOTAL RUNS", 2*len(params_list))
     # Run policy scenarios starting from saved calibration controllers
-    results = grid_search_policy_with_seeds(params_list, controller_files)
+    results_serial = grid_search_policy_with_seeds(params_list, controller_files)
 
-    results = results.reshape(vary_single["reps"], base_params["seed_repetitions"], len(results[0]))
+    results = results_serial.reshape(vary_single["reps"], base_params["seed_repetitions"], len(results_serial[0]))
     save_object(results , fileName + "/Data", "results")
     
 
@@ -142,9 +142,9 @@ def main(
 
     params_list = produce_param_list_elect_intensity(base_params, electricity_decarb_vals) 
     
-    results_with_price = grid_search_policy_with_seeds(params_list, controller_files)
+    results_with_price_serial = grid_search_policy_with_seeds(params_list, controller_files)
 
-    results_with_price = results_with_price.reshape(vary_single["reps"], base_params["seed_repetitions"], len(results_with_price[0]))
+    results_with_price = results_with_price_serial.reshape(vary_single["reps"], base_params["seed_repetitions"], len(results_with_price_serial[0]))
 
 
     save_object(results_with_price , fileName + "/Data", "results_with_price")
