@@ -42,7 +42,7 @@ def single_policy_simulation(params, controller_load):
     #print("value policy", params["parameters_policies"]["Values"]["Carbon_price"])
     #quit()
     data = load_in_controller(controller_load, params)
-    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative
+    return [data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative]
 
 
 
@@ -137,8 +137,9 @@ def main(
 
     # Run policy scenarios starting from saved calibration controllers
     results = grid_search_policy_with_seeds(grid_scenarios, controller_files)
+    print(results.shape)
     print("results[0][0]", results[0][0])
-    
+
     print("DONE ALL POLICY RUNS")
     save_object(results, file_name + "/Data", "results")
     save_object(policy_list, file_name + "/Data", "policy_list")
