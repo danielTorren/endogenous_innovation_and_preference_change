@@ -526,7 +526,7 @@ class Controller:
             self.future_carbon_price_init = 0
             self.future_carbon_price_policy = 0
 
-        #print("carbon price: stae, values", self.Carbon_price_state, self.future_carbon_price_policy)
+
         #DEAL WITH CARBON PRICE
         self.carbon_price_time_series = self.calculate_carbon_price_time_series()
 
@@ -865,7 +865,6 @@ class Controller:
 
         #add on tax
         self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy_prop) + self.carbon_price*self.electricity_emissions_intensity
-        print("self.electricity_price, intesntiy", self.electricity_price, self.electricity_emissions_intensity, self.carbon_price*self.electricity_emissions_intensity/self.electricity_price)
 
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]
