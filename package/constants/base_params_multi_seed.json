@@ -5,7 +5,6 @@
     "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-
     "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time":60,
@@ -17,33 +16,15 @@
         "used_rebate": 1000
     },
     "parameters_scenarios":{
-        "States":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": "Decarbonised"
-        },
-        "Values":{
-            "Gas_price":{
-                "Low": 0.5, 
-                "Current": 1,
-                "High": 1.5
-            },
-            "Electricity_price":{
-                "Low": 0.5, 
-                "Current": 1,
-                "High": 1.5
-            },
-            "Grid_emissions_intensity":{
-                "Weaker": 0.5, 
-                "Decarbonised": 0
-            }
-        }
+            "Grid_emissions_intensity": 0.5
     },
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
             "Targeted_research_subsidy": 0,
-            "Electricity_subsidy": 0,
+            "Electricity_subsidy": 1,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
@@ -56,7 +37,7 @@
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
-            "Electricity_subsidy":0.5,
+            "Electricity_subsidy":0.000342,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,

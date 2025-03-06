@@ -76,7 +76,8 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, target_e
     """
 
     search_space = [Real(bounds[0], bounds[1])]
-
+    print("search_space", search_space)
+    
     result = gp_minimize(
         lambda x: objective_function(x[0], params, controller_files, policy_name, target_ev_uptake),
         search_space,
