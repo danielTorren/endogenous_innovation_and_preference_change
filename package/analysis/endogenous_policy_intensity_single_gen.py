@@ -62,10 +62,10 @@ def objective_function(intensity_level, base_params, controller_files, policy_na
     Objective function for optimization. Returns the absolute error between
     the mean EV uptake and the target.
     """
-    params = deepcopy(base_params)  # Deep copy to reset every time
-    params = update_policy_intensity(params, policy_name, intensity_level)
+    sim_params = deepcopy(base_params)  # Deep copy to reset every time
+    sim_params = update_policy_intensity(sim_params, policy_name, intensity_level)
 
-    EV_uptake_arr, _, _, _, _, _, _, _ = single_policy_with_seeds(params, controller_files)
+    EV_uptake_arr, _, _, _, _, _, _, _ = single_policy_with_seeds(sim_params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
 
@@ -243,6 +243,6 @@ if __name__ == "__main__":
             "Research_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=15,
+        n_calls=10,
         noise=0.05
     )
