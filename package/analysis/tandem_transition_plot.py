@@ -48,11 +48,7 @@ def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, var
     plt.tight_layout()
     plt.savefig(f"{file_name}/Plots/ev_uptake_vs_decarbonization.png", dpi=dpi)
 
-
-# Example usage
-if __name__ == "__main__":
-    file_name = "results/vary_decarb_elec_17_39_47__05_03_2025"  # Replace with the actual file name
-    
+def main(file_name):
     base_params = load_object(file_name + "/Data", "base_params")
     vary_single = load_object(file_name + "/Data", "vary_single")
     results = load_object(file_name + "/Data", "results")
@@ -64,3 +60,7 @@ if __name__ == "__main__":
 
     plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, vary_single, dpi=300)
     plt.show()
+
+# Example usage
+if __name__ == "__main__":
+    main(file_name = "results/vary_decarb_elec_10_27_56__06_03_2025")  # Replace with the actual file name
