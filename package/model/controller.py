@@ -865,7 +865,8 @@ class Controller:
 
         #add on tax
         self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy_prop) + self.carbon_price*self.electricity_emissions_intensity
-        
+        #print("self.electricity_price, intesntiy", self.electricity_price, self.electricity_emissions_intensity)
+
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]
         self.used_rebate_calibration = self.used_rebate_calibration_time_series[self.t_controller]

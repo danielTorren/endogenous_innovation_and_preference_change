@@ -176,7 +176,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
