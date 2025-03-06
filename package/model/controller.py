@@ -857,15 +857,17 @@ class Controller:
         #update_prices_and_emmisions
         self.gas_price = self.gas_price_california_vec[self.t_controller] + self.carbon_price*self.gas_emissions_intensity
 
+        self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
+
+        #pre tax
         self.electricity_price_subsidy_prop = self.electricity_price_subsidy_time_series[self.t_controller]
-        self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy_prop)#ADJUST THE PRICE HERE HERE!
         self.electricity_price_subsidy_dollars = self.electricity_price_vec[self.t_controller]*self.electricity_price_subsidy_prop
 
-        self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
+        #add on tax
+        self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy_prop) + self.carbon_price*self.gas_emissions_intensity
+        
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
-
         self.rebate = self.rebate_time_series[self.t_controller]
-
         self.used_rebate_calibration = self.used_rebate_calibration_time_series[self.t_controller]
         self.used_rebate = self.used_rebate_time_series[self.t_controller]
 
