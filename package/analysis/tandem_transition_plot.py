@@ -120,4 +120,4 @@ def main(file_name):
 
 # Example usage
 if __name__ == "__main__":
-    main(file_name = "results/vary_decarb_elec_10_32_45__06_03_2025")  # Replace with the actual file name
+    main(file_name = "results/vary_decarb_elec_11_32_47__06_03_2025")  # Replace with the actual file name

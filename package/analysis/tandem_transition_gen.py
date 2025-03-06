@@ -166,5 +166,5 @@ if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_tandem_transition_gen.json",
         VARY_LOAD ="package/analysis/vary_single_decarbonize.json",
-        carbon_price = 0.1
+        carbon_price = 0.2
         )
