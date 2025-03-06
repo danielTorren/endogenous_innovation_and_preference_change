@@ -138,15 +138,16 @@ def main(
     # Run policy scenarios starting from saved calibration controllers
     results = grid_search_policy_with_seeds(grid_scenarios, controller_files)
     print(results.shape)
-    print("results[0][0]", results[0][0])
+    print("results[0][0]", results[0])
 
     print("DONE ALL POLICY RUNS")
     save_object(results, file_name + "/Data", "results")
     save_object(policy_list, file_name + "/Data", "policy_list")
     save_object(policy_info_dict, file_name + "/Data", "policy_info_dict")
 
-    data_array = results.reshape( len(policy_list), repetitions, base_params["seed_repetitions"], len(results[0][0]))
-
+    data_array = results.reshape( len(policy_list), repetitions, base_params["seed_repetitions"], len(results[0]))
+    print("data array", data_array.shape)
+    
     save_object(data_array, file_name + "/Data", "data_array")
 
     # Cleanup: Delete the calibration data folder and all its contents
