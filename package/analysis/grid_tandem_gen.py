@@ -53,11 +53,7 @@ def single_policy_simulation(params, controller_load):
     Run a single simulation and return EV uptake and policy distortion.
     """
     data = load_in_controller(controller_load, params)
-    EV_uptake = data.calc_EV_prop()
-    policy_distortion = data.calc_total_policy_distortion()
-    cum_em = data.social_network.emissions_cumulative
-    net_cost = data.calc_net_policy_distortion()
-    return EV_uptake, policy_distortion, cum_em, net_cost
+    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative
 
 
 def grid_search_policy_with_seeds(param_list, controller_files):
