@@ -169,6 +169,6 @@ if __name__ == "__main__":
             ],
         target_ev_uptake=0.95,
         n_steps_for_sweep=10,
-        n_calls=30,
+        n_calls=20,
         noise=0.05
     )
