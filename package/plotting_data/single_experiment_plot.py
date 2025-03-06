@@ -1021,4 +1021,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_09_54_13__27_02_2025")
+    main("results/vary_decarb_elec_12_02_54__06_03_2025")

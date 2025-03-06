@@ -635,8 +635,8 @@ class Controller:
 
         #JOIN BURN IN AND CALIBRATION
         self.pre_future_gas_price_california_vec = np.concatenate((self.burn_in_gas_price_vec,self.calibration_gas_price_california_vec), axis=None) 
-        self.pre_future_electricity_price_vec =  np.concatenate((self.burn_in_gas_price_vec,self.calibration_electricity_price_vec), axis=None) 
-        self.pre_future_electricity_emissions_intensity_vec = np.concatenate((self.burn_in_gas_price_vec,self.calibration_electricity_emissions_intensity_vec), axis=None) 
+        self.pre_future_electricity_price_vec =  np.concatenate((self.burn_in_electricity_price_vec,self.calibration_electricity_price_vec), axis=None) 
+        self.pre_future_electricity_emissions_intensity_vec = np.concatenate((self.burn_in_electricity_emissions_intensity_vec,self.calibration_electricity_emissions_intensity_vec), axis=None) 
         
         #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
         self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
@@ -865,7 +865,7 @@ class Controller:
 
         #add on tax
         self.electricity_price = self.electricity_price_vec[self.t_controller]*(1-self.electricity_price_subsidy_prop) + self.carbon_price*self.electricity_emissions_intensity
-        #print("self.electricity_price, intesntiy", self.electricity_price, self.electricity_emissions_intensity)
+        print("self.electricity_price, intesntiy", self.electricity_price, self.electricity_emissions_intensity, self.carbon_price*self.electricity_emissions_intensity/self.electricity_price)
 
         self.rebate_calibration = self.rebate_calibration_time_series[self.t_controller]
         self.rebate = self.rebate_time_series[self.t_controller]

@@ -5,14 +5,14 @@ from package.resources.utility import load_object
 
 def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, vary_single, dpi=600):
     """
-    Plots EV uptake against Grid decarbonisation %s, distinguishing between scenarios with and without a carbon price.
+    Plots EV uptake against Grid emissions intensity proportion 2022s, distinguishing between scenarios with and without a carbon price.
     Includes shaded regions representing 1 standard deviation around the mean.
     
     Parameters:
     - file_name: The base file name where the results are saved.
     """
     # Load the results
-    # Extract EV uptake and Grid decarbonisation %s
+    # Extract EV uptake and Grid emissions intensity proportion 2022s
     ev_uptake_no_price = results[:, :, 0]  # EV uptake is the first column
     ev_uptake_with_price = results_with_price[:, :, 0]  # EV uptake is the first column
     
@@ -23,7 +23,7 @@ def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, var
     mean_ev_with_price = np.mean(ev_uptake_with_price, axis=1)
     std_ev_with_price = np.std(ev_uptake_with_price, axis=1)
 
-    # Grid decarbonisation %s (x-axis)
+    # Grid emissions intensity proportion 2022s (x-axis)
     electricity_decarb_vals = np.linspace(vary_single["min"], vary_single["max"], vary_single["reps"])
     
     # Create the plot
@@ -38,9 +38,9 @@ def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, var
     ax.fill_between(electricity_decarb_vals, mean_ev_with_price - std_ev_with_price, mean_ev_with_price + std_ev_with_price, color="red", alpha=0.2)
     
     # Customize the plot
-    ax.set_xlabel("Grid decarbonisation %", fontsize=12)
+    ax.set_xlabel("Grid emissions intensity proportion 2022", fontsize=12)
     ax.set_ylabel("EV Uptake", fontsize=12)
-    ax.set_title("EV Uptake vs Grid decarbonisation %", fontsize=14)
+    ax.set_title("EV Uptake vs Grid emissions intensity proportion 2022", fontsize=14)
     ax.legend(fontsize=10)
     ax.grid(alpha=0.3)
     
@@ -50,21 +50,21 @@ def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, var
 
 def plot_ev_uptake_vs_decarbonization_line(file_name, results, results_with_price, vary_single, dpi=600):
     """
-    Plots EV uptake against Grid decarbonisation %s for the same seed, distinguishing between scenarios with and without a carbon price.
+    Plots EV uptake against Grid emissions intensity proportion 2022s for the same seed, distinguishing between scenarios with and without a carbon price.
     Each seed is assigned a unique color, and the same color is used for both scenarios (solid for no carbon price, dashed for with carbon price).
     
     Parameters:
     - file_name: The base file name where the results are saved.
     - results: Results array for the scenario without a carbon price.
     - results_with_price: Results array for the scenario with a carbon price.
-    - vary_single: Dictionary containing the range and repetitions for Grid decarbonisation %s.
+    - vary_single: Dictionary containing the range and repetitions for Grid emissions intensity proportion 2022s.
     - dpi: Dots per inch for the saved figure.
     """
-    # Extract EV uptake and Grid decarbonisation %s
+    # Extract EV uptake and Grid emissions intensity proportion 2022s
     ev_uptake_no_price = results[:, :, 0]  # EV uptake is the first column
     ev_uptake_with_price = results_with_price[:, :, 0]  # EV uptake is the first column
     
-    # Grid decarbonisation %s (x-axis)
+    # Grid emissions intensity proportion 2022s (x-axis)
     electricity_decarb_vals = np.linspace(vary_single["min"], vary_single["max"], vary_single["reps"])
     
     # Create the plot
@@ -92,9 +92,9 @@ def plot_ev_uptake_vs_decarbonization_line(file_name, results, results_with_pric
                 label=f"Seed (With Carbon Price 0.1 $/kgCO2)" if seed_idx == 0 else "")
     
     # Customize the plot
-    ax.set_xlabel("Grid decarbonisation %", fontsize=12)
+    ax.set_xlabel("Grid emissions intensity proportion 2022", fontsize=12)
     ax.set_ylabel("EV Uptake", fontsize=12)
-    ax.set_title("EV Uptake vs Grid decarbonisation % (Same Seed)", fontsize=14)
+    ax.set_title("EV Uptake vs Grid emissions intensity proportion 2022 (Same Seed)", fontsize=14)
     ax.legend(fontsize=10, bbox_to_anchor=(1.05, 1), loc="upper left")  # Place legend outside the plot
     ax.grid(alpha=0.3)
     
