@@ -812,7 +812,7 @@ class Controller:
         """RUN ONCE AT THE END OF SIMULATION"""
         policy_distortion_firms = sum(firm.policy_distortion for firm in self.firm_manager.firms_list)
         policy_distortion = self.social_network.net_policy_distortion - self.firm_manager.policy_distortion - policy_distortion_firms
-        return -policy_distortion
+        return -policy_distortion#NEGATIVE AS ITS COSTS
 
     def calc_EV_prop(self):
         EV_stock_prop = sum(1 if car.transportType == 3 else 0 for car in self.social_network.current_vehicles)/self.social_network.num_individuals#NEED FOR OPTIMISATION, measures the uptake EVS

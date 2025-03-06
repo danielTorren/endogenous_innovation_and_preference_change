@@ -54,6 +54,8 @@ def single_policy_with_seeds(params, controller_files):
     return np.asarray(EV_uptake_arr), np.asarray(total_cost_arr), np.asarray(net_cost_arr), np.asarray(emissions_cumulative_arr), np.asarray(emissions_cumulative_driving_arr), np.asarray(emissions_cumulative_production_arr), np.asarray(utility_cumulative_arr), np.asarray(profit_cumulative_arr)
 
 
+########################################################
+
 def objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake):
     """
     Objective function for optimization. Returns the absolute error between
@@ -61,76 +63,58 @@ def objective_function(intensity_level, params, controller_files, policy_name, t
     """
     params = update_policy_intensity(params, policy_name, intensity_level)
 
-    EV_uptake_arr, _ ,_ , _ , _, _, _ , _ = single_policy_with_seeds(params, controller_files)
+    EV_uptake_arr, _, _, _, _, _, _, _ = single_policy_with_seeds(params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
-    #print(f"Intensity: {intensity_level}, Mean EV uptake: {mean_ev_uptake}, Error: {error}")
 
     return error  # The optimizer will minimize this error
 
 
-##########################################################################################################################################################################
-#Baysian optimization
-
-def logged_objective(intensity, params, controller_files, policy_name, target_ev_uptake, log_file="bo_progress_log.csv"):
-    """
-    Wrapper for objective_function that logs each call to a file.
-    """
-    intensity_level = intensity[0]  # Unpack scalar from 1D array
-    start_time = time.time()
-
-    error = objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake)
-
-    elapsed = time.time() - start_time
-
-    with open(log_file, 'a', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow([intensity_level, error, elapsed])
-
-    return error
-
 def optimize_policy_intensity_BO(params, controller_files, policy_name, target_ev_uptake, bounds, n_calls, noise):
     """
-    Optimizes the intensity of a policy to reach the target EV uptake using SciPy's `minimize_scalar`.
+    Optimizes the intensity of a policy to reach the target EV uptake using Bayesian Optimization.
     """
-    #print(f"Optimizing {policy_name} from {bounds[0]} to {bounds[1]}...")
 
     search_space = [Real(bounds[0], bounds[1])]
 
     result = gp_minimize(
-        lambda x: logged_objective(x, params, controller_files, policy_name, target_ev_uptake),
-         search_space,
+        lambda x: objective_function(x[0], params, controller_files, policy_name, target_ev_uptake),
+        search_space,
         n_calls=n_calls,
-        noise=noise, 
+        noise=noise,
         acq_func="EI"
     )
+
     print("DONE BO")
-    
-    ##########################################################################################################################################
 
     # Get best intensity level
     best_intensity = result.x[0]
+    print(f"Policy {policy_name}, best intensity: {best_intensity}")
 
-    # Run simulation with optimized intensity to get final values
+    # Run simulation with optimized intensity to get final results
     params = update_policy_intensity(params, policy_name, best_intensity)
 
-    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
+    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, \
+    emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
+
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
     mean_total_cost = np.mean(total_cost_arr)
     mean_net_cost = np.mean(net_cost_arr)
     mean_emissions_cumulative = np.mean(emissions_cumulative_arr)
-    mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)   
+    mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)
     mean_emissions_cumulative_production = np.mean(emissions_cumulative_production_arr)
     mean_utility_cumulative = np.mean(utility_cumulative_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
-    print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, STD EV uptake {sd_ev_uptake},  Cost = {mean_total_cost}, Net cost = {mean_net_cost}, E = {mean_emissions_cumulative}, E_D = {mean_emissions_cumulative_driving}, E_P = {mean_emissions_cumulative_production},U = {mean_utility_cumulative}, Profit = {mean_profit_cumulative}")
+    print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, STD EV uptake = {sd_ev_uptake}, "
+          f"Cost = {mean_total_cost}, Net cost = {mean_net_cost}, E = {mean_emissions_cumulative}, "
+          f"E_D = {mean_emissions_cumulative_driving}, E_P = {mean_emissions_cumulative_production}, "
+          f"U = {mean_utility_cumulative}, Profit = {mean_profit_cumulative}")
 
-    ###########################################################################################################################################
-
-    return best_intensity, mean_ev_uptake, sd_ev_uptake ,mean_total_cost, mean_net_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative
-
+    return best_intensity, mean_ev_uptake, sd_ev_uptake, mean_total_cost, mean_net_cost, \
+           mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, \
+           mean_utility_cumulative, mean_profit_cumulative
 
 ####################################################
 
