@@ -63,7 +63,7 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
     num_cols =   num_pairs # You can adjust this for different layouts
     num_rows = (num_pairs + num_cols - 1) // num_cols  # Rows needed to fit all pairs
 
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(20,5), sharey=True)
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(20,5), constrained_layout = True)
     axes = np.atleast_2d(axes)  # Ensure axes is always 2D (works for 1-row cases)
 
     for ax, ((policy1, policy2), data) in zip(axes.flat, pairwise_outcomes.items()):
@@ -72,9 +72,10 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
         mean_costs = np.array([entry[measure] for entry in data])
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
 
-        scatter = ax.scatter(p1_values, p2_values, c=mean_costs, s=80, edgecolor='k', cmap='viridis')
-        #ax.set_title(f'{policy1} vs {policy2}', fontsize=10)
+        scatter = ax.scatter(p1_values, p2_values, c=mean_costs, s=40, edgecolor='k', cmap='viridis')
+        ax.set_title(f'{policy1} vs {policy2}', fontsize=4)
         ax.set_xlabel(f'{policy1} Intensity', fontsize=4)
+        ax.set_ylabel(f'{policy2} Intensity', fontsize=4)
         
         ax.grid(True)
 
@@ -82,7 +83,7 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
         for (x, y, uptake) in zip(p1_values, p2_values, mean_uptake):
             ax.annotate(f'{uptake:.2f}', (x, y), fontsize=7, ha='right')
 
-    axes[0][0].set_ylabel(f'Optimized Carbon Price Intensity', fontsize=8)
+    #axes[0][0].set_ylabel(f'Optimized Carbon Price Intensity', fontsize=8)
 
     # Remove empty subplots (if num_pairs doesn't fit perfectly into grid)
     for idx in range(num_pairs, num_rows * num_cols):
@@ -103,29 +104,31 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
 def main(fileNames):
     # Load observed data
     pairwise_outcomes_complied = {}
-    for fileName in fileNames:
-        base_params = load_object(fileName + "/Data", "base_params")
-        pairwise_outcomes = load_object(fileName + "/Data", "pairwise_outcomes")
-        pairwise_outcomes_complied.update(pairwise_outcomes)
-        save_object(pairwise_outcomes_complied, fileName + "/Data", "pairwise_outcomes_complied")
-    
-    #print(pairwise_outcomes_complied)
-    quit()
 
-    #quit()
+    fileName = fileNames[0]
+
+    if len(fileNames) == 1:
+        pairwise_outcomes_complied = load_object(fileName + "/Data", "pairwise_outcomes")
+    else:
+        for fileName in fileNames:
+            pairwise_outcomes = load_object(fileName + "/Data", "pairwise_outcomes")
+            pairwise_outcomes_complied.update(pairwise_outcomes)
+            save_object(pairwise_outcomes_complied, fileName + "/Data", "pairwise_outcomes_complied")
+
     plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_total_cost")
     plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative")
     plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_utility_cumulative")
     plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_profit_cumulative")
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "sd_ev_uptake")
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative_driving")
+    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative_production")
 
     plt.show()
 
 if __name__ == "__main__":
     main(
         fileNames=[
-            "results/endogenous_policy_intensity_22_02_22__28_02_2025",
-            "results/endogenous_policy_intensity_17_23_17__28_02_2025",
-            "results/endogenous_policy_intensity_17_21_20__28_02_2025",
+            "results/endogenous_policy_intensity_16_35_14__05_03_2025"
             ]
 
     )
