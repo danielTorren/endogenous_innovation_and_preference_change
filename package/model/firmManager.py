@@ -291,24 +291,22 @@ class Firm_Manager:
             num_vehicle_sold = past_new_bought_vehicles.count(car)
             
             if num_vehicle_sold > 0:#ONLY COUNT WHEN A CAR HAS ACTUALLY BEEN SOLD
+                
                 if car.transportType == 3:
                     profit = car.price - np.maximum(0,car.ProdCost_t - prod_subsidy)
                 else:
-                    profit = (car.price - car.ProdCost_t)
+                    profit = car.price - car.ProdCost_t
+
                 total_profit = num_vehicle_sold*profit
                 car.firm.firm_profit += total_profit#I HAVE NO IDEA IF THIS WILL WORK
                 total_profit_all_firms += total_profit
-                
-                #OPTIMIZATION OF DISCRIMINATORY CORPORATE TAX
-                if car.transportType == 2 and total_profit > 0:#ICE CARS THAT MAKE ACTUAL PROFITS
-                    self.policy_distortion += total_profit
 
                 #OPTIMIZATION OF PRODUCTION SUBSIDY
                 if car.transportType == 3:
                     self.policy_distortion += num_vehicle_sold * np.minimum(car.ProdCost_t, self.production_subsidy)
 
         return total_profit_all_firms
-
+    
     def calculate_market_share(self, firm, past_new_bought_vehicles, total_sales):
         """
         Calculate market share for a specific firm.

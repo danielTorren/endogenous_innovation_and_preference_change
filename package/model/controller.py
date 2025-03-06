@@ -27,8 +27,6 @@ class Controller:
         self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
         self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
 
-
-
         self.update_time_series_data()
 
         self.setup_id_gen()
@@ -48,7 +46,6 @@ class Controller:
 
         #NEED TO CREATE INIT OPTIONS
         self.cars_on_sale_all_firms = self.firm_manager.cars_on_sale_all_firms
-
         
         self.second_hand_cars = []#EMPTY INITIATILLY
         
@@ -57,7 +54,6 @@ class Controller:
 
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
-
 
         self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
@@ -810,6 +806,7 @@ class Controller:
         """RUN ONCE AT THE END OF SIMULATION"""
         policy_distortion_firms = sum(firm.policy_distortion for firm in self.firm_manager.firms_list)
         policy_distortion = self.social_network.policy_distortion + self.firm_manager.policy_distortion + policy_distortion_firms
+        #print("costs",self.social_network.policy_distortion ,  self.firm_manager.policy_distortion , policy_distortion_firms )
         return policy_distortion
     
     def calc_net_policy_distortion(self):

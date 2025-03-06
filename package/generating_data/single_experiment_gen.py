@@ -71,7 +71,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.1,
+                "Carbon_price": 0,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
