@@ -162,7 +162,7 @@ if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_grid_tandem_gen.json",
         carbon_price_min=0.0,
-        carbon_price_max=1.0,
+        carbon_price_max=0.5,
         emissions_intensity_min=0.0,
         emissions_intensity_max=1.0,
         grid_resolution=12,  # Number of points in the grid for each parameter
