@@ -7,6 +7,7 @@ from package.plotting_data.single_experiment_plot import save_and_show
 import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import createFolder, save_object
+from matplotlib.colors import Normalize
 
 def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, file_name, dpi=600):
     """
@@ -99,6 +100,96 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
     # Save the combined figure
     plt.savefig(f'{file_name}/Plots/policy_pair_intensity_sweep_{measure}.png', dpi=dpi)
 
+
+
+def plot_all_policy_combinations_on_one_plot(pairwise_outcomes_complied, file_name, dpi=600):
+    """
+    Plots all policy combinations on a single scatter plot with individual policy normalization.
+
+    Parameters:
+    - pairwise_outcomes_complied: Dictionary containing all policy combinations and their outcomes.
+    - file_name: Base file name for saving plots.
+    - dpi: Resolution for saved plots.
+    """
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    # Create a colormap for policy combinations
+    cmap = plt.get_cmap('viridis')
+
+    # Store min and max values for each policy
+    policy_min_max = {}
+
+    # Loop through each policy pair to collect min and max values
+    for (policy1_name, policy2_name), data in pairwise_outcomes_complied.items():
+        p1_values = np.array([entry["policy1_value"] for entry in data])
+        p2_values = np.array([entry["policy2_value"] for entry in data])
+
+        # Store min and max values for each policy
+        if policy1_name not in policy_min_max:
+            policy_min_max[policy1_name] = (p1_values.min(), p1_values.max())
+        if policy2_name not in policy_min_max:
+            policy_min_max[policy2_name] = (p2_values.min(), p2_values.max())
+
+    # Loop through each policy pair and plot on the same axes
+    for (policy1_name, policy2_name), data in pairwise_outcomes_complied.items():
+        # Extract data
+        p1_values = np.array([entry["policy1_value"] for entry in data])
+        p2_values = np.array([entry["policy2_value"] for entry in data])
+        mean_costs = np.array([entry["mean_total_cost"] for entry in data])
+        mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+
+        # Filter data based on EV uptake
+        mask = (mean_uptake >= 0.945) & (mean_uptake <= 0.955)
+        p1_values_filtered = p1_values[mask]
+        p2_values_filtered = p2_values[mask]
+        mean_costs_filtered = mean_costs[mask]
+        mean_uptake_filtered = mean_uptake[mask]
+
+        # Normalize each policy individually
+        p1_min, p1_max = policy_min_max[policy1_name]
+        p2_min, p2_max = policy_min_max[policy2_name]
+
+        p1_normalized = (p1_values_filtered - p1_min) / (p1_max - p1_min)
+        p2_normalized = (p2_values_filtered - p2_min) / (p2_max - p2_min)
+
+        # Calculate policy combination intensity (optional, for coloring)
+        policy_intensity = np.sqrt(p1_normalized**2 + p2_normalized**2)
+
+        # Plot the policy pair intensity relationship
+        scatter = ax.scatter(
+            p1_normalized,
+            p2_normalized,
+            c=policy_intensity,
+            s=100,
+            edgecolor='k',
+            cmap=cmap,
+            label=f'{policy1_name} vs {policy2_name}'
+        )
+
+        # Annotate each point with normalized policy intensity
+        for (x, y) in zip(p1_normalized, p2_normalized):
+            ax.annotate(f'({x:.2f}, {y:.2f})', (x, y), fontsize=8, ha='right')
+
+    # Add colorbar
+    cbar = plt.colorbar(scatter, ax=ax, label='Policy Combination Intensity')
+
+    # Add legend with min and max values for each policy
+    legend_text = []
+    for policy, (min_val, max_val) in policy_min_max.items():
+        legend_text.append(f'{policy} ({min_val:.2f}, {max_val:.2f})')
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), title="Policy Ranges:\n" + "\n".join(legend_text))
+
+    # Set labels and title
+    ax.set_xlabel('Normalized Policy 1 Intensity')
+    ax.set_ylabel('Normalized Policy 2 Intensity')
+    ax.set_title('All Policy Combinations (EV Uptake: 0.945 - 0.955)')
+
+    # Add grid
+    ax.grid(True)
+
+    # Save to file
+    plt.tight_layout()
+    plt.savefig(f'{file_name}/Plots/all_policy_combinations_normalized_plot.png', dpi=dpi)
 
 
 def main(fileNames):

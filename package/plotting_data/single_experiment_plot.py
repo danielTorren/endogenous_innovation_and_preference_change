@@ -1007,7 +1007,6 @@ def main(fileName, dpi=400):
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
 
-    
     plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_segment_count_grid(base_params,firm_manager, time_series, fileName)

@@ -60,7 +60,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
