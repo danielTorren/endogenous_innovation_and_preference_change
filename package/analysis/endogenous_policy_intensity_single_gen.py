@@ -222,12 +222,13 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
         "n_calls": n_calls,
         "noise": noise
     }
+
     save_object(conditions, file_name + "/Data", "conditions")
 
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
-        BOUNDS_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
+        BOUNDS_LOAD="package/analysis/policy_bounds_endog_single_gen.json",
         policy_list=[
             "Carbon_price",
             "Electricity_subsidy",
@@ -237,6 +238,6 @@ if __name__ == "__main__":
             "Research_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=10,
+        n_calls=15,
         noise=0.05
     )
