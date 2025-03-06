@@ -237,6 +237,6 @@ if __name__ == "__main__":
             "Research_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=30,
+        n_calls=10,
         noise=0.05
     )
