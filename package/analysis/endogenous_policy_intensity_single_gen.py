@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 import numpy as np
 from joblib import Parallel, delayed, dump, load
@@ -56,30 +57,32 @@ def single_policy_with_seeds(params, controller_files):
 
 ########################################################
 
-def objective_function(intensity_level, params, controller_files, policy_name, target_ev_uptake):
+def objective_function(intensity_level, base_params, controller_files, policy_name, target_ev_uptake):
     """
     Objective function for optimization. Returns the absolute error between
     the mean EV uptake and the target.
     """
+    params = deepcopy(base_params)  # Deep copy to reset every time
     params = update_policy_intensity(params, policy_name, intensity_level)
 
     EV_uptake_arr, _, _, _, _, _, _, _ = single_policy_with_seeds(params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
 
-    return error  # The optimizer will minimize this error
+    return error
 
 
-def optimize_policy_intensity_BO(params, controller_files, policy_name, target_ev_uptake, bounds, n_calls, noise):
+
+def optimize_policy_intensity_BO(base_params, controller_files, policy_name, target_ev_uptake, bounds, n_calls, noise):
     """
     Optimizes the intensity of a policy to reach the target EV uptake using Bayesian Optimization.
     """
 
     search_space = [Real(bounds[0], bounds[1])]
     print("search_space", search_space)
-    
+
     result = gp_minimize(
-        lambda x: objective_function(x[0], params, controller_files, policy_name, target_ev_uptake),
+        lambda x: objective_function(x[0], base_params, controller_files, policy_name, target_ev_uptake),
         search_space,
         n_calls=n_calls,
         noise=noise,
@@ -93,10 +96,11 @@ def optimize_policy_intensity_BO(params, controller_files, policy_name, target_e
     print(f"Policy {policy_name}, best intensity: {best_intensity}")
 
     # Run simulation with optimized intensity to get final results
-    params = update_policy_intensity(params, policy_name, best_intensity)
+    params_final = deepcopy(base_params)
+    params_final = update_policy_intensity(params_final, policy_name, best_intensity)
 
     EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, \
-    emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params, controller_files)
+    emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params_final, controller_files)
 
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
