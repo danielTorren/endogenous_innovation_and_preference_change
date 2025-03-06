@@ -951,8 +951,7 @@ class Controller:
         self.manage_scenario()
         self.manage_policies() 
 
-        print("EMISSION INTENSITY", self.grid_emissions_intensity_series_future[-1])
-        
+
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
