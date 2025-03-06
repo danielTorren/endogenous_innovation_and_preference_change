@@ -9,20 +9,25 @@ from pathlib import Path  # Path handling
 
 def generate_unique_policy_pairs(policy_list_all, policy_list_works):
     """
-    Generate pairs of policies where:
-    - The first policy can be any policy from policy_list_all.
-    - The second policy is only from policy_list_works.
-    - Policies are not paired with themselves.
-    - Pairs are unique and not reversed (e.g., (A, B) but not (B, A)).
+    Generate unique pairs where:
+    - The first policy comes from policy_list_all.
+    - The second policy comes from policy_list_works.
+    - No duplicates like (A, B) and (B, A) — only the lexicographically first pair is kept.
+    - No self-pairs like (A, A).
     """
-    pairs = []
+    pairs = set()  # Using a set to auto-handle duplicates
+
     for policy1 in policy_list_all:
         for policy2 in policy_list_works:
-            if policy1 != policy2 and policy1 < policy2:  # Enforce consistent ordering
-                pairs.append((policy1, policy2))
+            if policy1 != policy2:
+                pair = tuple(sorted([policy1, policy2]))  # Sort so (A, B) == (B, A)
+                pairs.add(pair)
 
-    print("num pairs", len(pairs))
+    pairs = list(pairs)
+    print("Number of unique pairs:", len(pairs))
     return pairs
+
+
 
 def policy_pair_sweep(
     base_params,
@@ -154,7 +159,7 @@ if __name__ == "__main__":
             "Adoption_subsidy",
             "Adoption_subsidy_used",
             "Production_subsidy",
-            "Research_subsidy"
+            #"Research_subsidy"
         ],
         policy_list_works=[
             "Carbon_price",
