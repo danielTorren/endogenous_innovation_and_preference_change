@@ -38,13 +38,14 @@ def policy_pair_sweep(
     target_ev_uptake=0.9,
     n_steps=10,
     n_calls=40, 
-    noise = 0.05
+    noise = 0.05,
+    epsilon = 0.01
 ):
     """
     Sweep policy1 intensity in steps, optimizing policy2 at each step.
     """
     p1_min, p1_max = bounds_dict[policy1_name]
-    p1_values = np.linspace(p1_max, p1_min, n_steps)
+    p1_values = np.linspace(p1_max*(1-epsilon), p1_min*(1+epsilon), n_steps)
     results_for_pair = []
     
     for p1_val in p1_values:
@@ -92,7 +93,8 @@ def main(
     target_ev_uptake=0.9,
     n_steps_for_sweep=5,
     n_calls=40, 
-    noise = 0.01
+    noise = 0.01,
+    epsilon = 0.01
 ):
     """
     Main function for running pairwise policy optimization.
@@ -126,7 +128,8 @@ def main(
             target_ev_uptake,
             n_steps_for_sweep,
             n_calls, 
-            noise
+            noise,
+            epsilon
         )
         pairwise_outcomes[(policy1_name, policy2_name)] = results
     
@@ -170,5 +173,6 @@ if __name__ == "__main__":
         target_ev_uptake=0.95,
         n_steps_for_sweep=10,
         n_calls=20,
-        noise=0.05
+        noise=0.05,
+        epsilon = 0.03
     )
