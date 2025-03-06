@@ -2,7 +2,7 @@
     "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -24,7 +24,7 @@
         "States":{
             "Carbon_price": 0,
             "Targeted_research_subsidy": 0,
-            "Electricity_subsidy": 1,
+            "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
