@@ -25,8 +25,8 @@ def main(
     print("E, total",controller.social_network.emissions_cumulative)
     print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_no_carbon_price - 2])
     print("uptake end",controller.calc_EV_prop())
-    print("distortion",controller.calc_total_policy_distortion()/controller.computing_coefficient)
-    print("mean price", np.asarray(controller.social_network.history_mean_price[-1])/controller.computing_coefficient)
+    print("distortion",controller.calc_total_policy_distortion(), controller.calc_net_policy_distortion())
+    print("mean price", np.asarray(controller.social_network.history_mean_price[-1]))
     createFolder(fileName)
     save_object(controller, fileName + "/Data", "controller")
     save_object(base_params, fileName + "/Data", "base_params")
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1,
+
     "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time":60,
@@ -56,11 +56,11 @@ if __name__ == "__main__":
     "parameters_scenarios":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": 1
+            "Grid_emissions_intensity": 0.5
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 1,
+                "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
@@ -117,8 +117,8 @@ if __name__ == "__main__":
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,
-        "min_Efficiency": 0.79,#2.73,
-        "max_Efficiency": 3.09,#9.73,
+        "min_Efficiency": 2.73,
+        "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
         "min_Cost": 0,
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

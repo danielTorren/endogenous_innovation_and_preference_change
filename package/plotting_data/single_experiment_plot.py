@@ -5,6 +5,7 @@ from scipy.stats import sem, t
 from package.resources.utility import load_object
 import matplotlib.pyplot as plt
 from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
+import itertools
 
 # Ensure directory existence
 def ensure_directory_exists(path):
@@ -78,7 +79,7 @@ def plot_carbon_price(base_params,controller, time_series, fileName, dpi=600):
 
 def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, np.asarray(firm_manager.history_total_profit[base_params["duration_burn_in"]:])/base_params["computing_coefficient"], marker='o')
+    ax.plot(time_series, np.asarray(firm_manager.history_total_profit[base_params["duration_burn_in"]:]), marker='o')
     format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit, $", legend=False)
     save_and_show(fig, fileName, "total_profit", dpi)
 
@@ -370,7 +371,6 @@ def plot_segment_count_grid(base_params, firm_manager, time_series, fileName):
         time_series: List or array of time steps.
         fileName: Path to save the plot.
     """
-    import itertools
 
     # Retrieve the segment codes
     num_beta_segments = firm_manager.num_beta_segments
@@ -427,6 +427,89 @@ def plot_segment_count_grid(base_params, firm_manager, time_series, fileName):
     ensure_directory_exists(save_path)
     save_and_show(fig, fileName, "segment_count_grid", 600)
 
+
+
+def plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName):
+    """
+    Plots the percentage of individuals in each segment (first two indices) that adopt EVs over time in a grid layout.
+    Segments where the third index is 0 (cannot adopt EVs) are excluded.
+
+    Parameters:
+        base_params: Dictionary containing simulation parameters.
+        firm_manager: Object containing historical segment data.
+        time_series: List or array of time steps.
+        fileName: Path to save the plot.
+    """
+    # Retrieve the segment codes
+    num_beta_segments = firm_manager.num_beta_segments
+    num_gamma_segments = firm_manager.num_gamma_segments
+    all_segment_codes = list(itertools.product(range(num_beta_segments), range(num_gamma_segments), range(2)))
+
+    # Initialize a dictionary to store aggregated segment counts over time
+    segment_counts = {}
+
+    # Organize segment data
+    for t, segment_data in enumerate(firm_manager.history_segment_count):
+        # Calculate total population at time t (excluding segments where the third index is 0)
+        total_population = sum(count for segment_idx, count in enumerate(segment_data) if all_segment_codes[segment_idx][2] == 1)
+
+        # Aggregate counts for segments with the same first two indices (only for third index == 1)
+        for segment_idx, count in enumerate(segment_data):
+            segment_code = all_segment_codes[segment_idx]
+            if segment_code[2] == 1:  # Only consider segments where the third index is 1 (can adopt EVs)
+                key = segment_code[:2]  # Use the first two indices as the key
+                if key not in segment_counts:
+                    segment_counts[key] = []
+                # Ensure the list for this segment has enough time steps
+                while len(segment_counts[key]) <= t:
+                    segment_counts[key].append(0)
+                # Add to the count for this segment
+                segment_counts[key][t] += count
+
+        # Calculate the percentage of the population for each segment
+        for key in segment_counts:
+            if total_population > 0:
+                segment_counts[key][t] = (segment_counts[key][t] / total_population) * 100  # Convert to percentage
+            else:
+                segment_counts[key][t] = 0
+
+    # Ensure all segment counts have the same length as the time series
+    max_time_steps = len(time_series)
+    for segment in segment_counts:
+        while len(segment_counts[segment]) < max_time_steps:
+            segment_counts[segment].append(0)
+
+    # Determine the number of rows and columns for the grid
+    num_segments = len(segment_counts)
+    cols = 4
+    rows = (num_segments + cols - 1) // cols  # Ceiling division for rows
+
+    # Create subplots
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 10), sharex=True, sharey=True)
+    axes = axes.flatten()
+
+    # Plot each segment
+    for i, (segment, percentages) in enumerate(segment_counts.items()):
+        ax = axes[i]
+        ax.plot(time_series[base_params["duration_burn_in"]:], percentages[base_params["duration_burn_in"]:], label=f"Segment {segment}")
+        ax.legend(loc='upper right', fontsize='small')
+        ax.grid()
+        ax.set_title(f"Segment {segment}")
+        ax.set_ylim(0, 100)  # Set y-axis limits to [0, 100] for percentages
+
+    # Remove unused axes
+    for j in range(len(segment_counts), len(axes)):
+        fig.delaxes(axes[j])
+
+    # Add labels and adjust layout
+    fig.supxlabel("Time Step")
+    fig.supylabel("Percentage of EV-Adopting Population")
+    plt.tight_layout()
+
+    # Save the plot
+    save_path = os.path.join(fileName, "Plots")
+    save_and_show(fig, fileName, "segment_percentage_grid", 600)
+
 def plot_history_car_age( base_params,social_network,time_series, fileName, dpi):
     """
     Plots the mean and 95% confidence interval for a time series of ages.
@@ -477,8 +560,8 @@ def plot_calibration_data(base_params, controller, time_series, fileName, dpi=60
     #print(social_network.history_second_hand_bought)
     #quit()
 
-    axes[0].plot((controller.gas_price_california_vec[base_params["duration_burn_in"]:])/base_params["computing_coefficient"])
-    axes[1].plot((controller.electricity_price_vec[base_params["duration_burn_in"]:])/base_params["computing_coefficient"])
+    axes[0].plot((controller.gas_price_california_vec[base_params["duration_burn_in"]:]))
+    axes[1].plot((controller.electricity_price_vec[base_params["duration_burn_in"]:]))
     axes[2].plot(controller.electricity_emissions_intensity_vec[base_params["duration_burn_in"]:])
 
     axes[0].set_ylabel("Gas price california in 2020 Dollars")
@@ -531,7 +614,7 @@ def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=6
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
     
-    data = np.asarray(social_network.history_mean_price_ICE_EV)/base_params["computing_coefficient"]
+    data = np.asarray(social_network.history_mean_price_ICE_EV)
     data_ICE_first = data[:,0,0]
     data_EV_first = data[:,0,1]
     data_ICE_second = data[:,1,0]
@@ -554,7 +637,7 @@ def plot_history_median_price_by_type(base_params, social_network, fileName, dpi
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
     
-    data = np.asarray(social_network.history_median_price_ICE_EV)/base_params["computing_coefficient"]
+    data = np.asarray(social_network.history_median_price_ICE_EV)
     data_ICE_first = data[:,0,0]
     data_EV_first = data[:,0,1]
     data_ICE_second = data[:,1,0]
@@ -700,6 +783,35 @@ def emissions_decomposed(base_params, social_network, time_series, fileName, dpi
     # Format and save
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed", dpi)
+
+def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=600):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
+    
+
+    # Right plot: Stacked area plot for ICE and EV emissions
+    driving_ICE = social_network.history_driving_emissions_ICE[base_params["duration_burn_in"]:]
+    driving_EV =social_network.history_driving_emissions_EV[base_params["duration_burn_in"]:]
+    production_ICE = social_network.history_production_emissions_ICE[base_params["duration_burn_in"]:]
+    production_EV = social_network.history_production_emissions_EV[base_params["duration_burn_in"]:]
+    
+    ax.stackplot(
+        time_series, 
+        driving_ICE, 
+        driving_EV, 
+        production_ICE, 
+        production_EV,
+        labels=['Driving Emissions ICE', 'Driving Emissions EV', 'Production Emissions ICE', 'Production Emissions EV']
+    )
+    ax.plot(time_series, social_network.history_total_emissions[base_params["duration_burn_in"]:], 
+                 label='Total Emissions', color='black', linewidth=1.5)
+    ax.set_title("Emissions Flow by Source")
+    ax.set_xlabel("Time Step")
+    ax.set_ylabel("Emissions Flow")
+    ax.legend()
+
+    # Format and save
+    plt.tight_layout()
+    save_and_show(fig, fileName, "emissions_decomposed_flow", dpi)
 
 def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600):
 
@@ -901,7 +1013,7 @@ def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600)
     
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(time_points, np.asarray(prices)/base_params["computing_coefficient"], marker='o', alpha=0.7)
+    ax.scatter(time_points, np.asarray(prices), marker='o', alpha=0.7)
     ax.set_title("Price History of Cars on Sale")
     ax.set_xlabel("Time")
     ax.set_ylabel("Price, $")
@@ -991,6 +1103,9 @@ def main(fileName, dpi=400):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
+    emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
+    plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
+    
     plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
@@ -1001,6 +1116,7 @@ def main(fileName, dpi=400):
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
     emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
+    
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
     #plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
     plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
@@ -1021,4 +1137,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/vary_decarb_elec_12_02_54__06_03_2025")
+    main("results/single_experiment_13_00_33__06_03_2025")

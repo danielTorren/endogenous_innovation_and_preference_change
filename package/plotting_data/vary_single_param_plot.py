@@ -280,10 +280,10 @@ def plot_price(base_params, data_array, property_values_list, fileName, name_pro
             # Data for this delta and seed: shape (time_steps, num_individuals)
             data = data_array[i, seed, :, :, :]
             
-            data_new_ICE = data[:, 0, 0] / base_params["computing_coefficient"]
-            data_second_hand_ICE = data[:, 1, 0] / base_params["computing_coefficient"]
-            data_new_EV = data[:, 0, 1] / base_params["computing_coefficient"]
-            data_second_hand_EV = data[:, 1, 1] / base_params["computing_coefficient"]
+            data_new_ICE = data[:, 0, 0] 
+            data_second_hand_ICE = data[:, 1, 0] 
+            data_new_EV = data[:, 0, 1] 
+            data_second_hand_EV = data[:, 1, 1] 
 
             # Plot new prices on the upper row
             line_ICE, = ax_new.plot(time_series[base_params["duration_burn_in"]:], 

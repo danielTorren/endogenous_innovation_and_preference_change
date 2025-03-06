@@ -1166,6 +1166,8 @@ class Social_Network:
             elif car.transportType == 3:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity  
+        
+        #print("first", self.current_vehicles[0].transportType, self.current_vehicles[0].fuel_cost_c, self.current_vehicles[0].e_t)
 
     def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, rebate_calibration, used_rebate_calibration):
         """
@@ -1198,6 +1200,7 @@ class Social_Network:
         self.all_vehicles_available = self.new_cars + self.second_hand_cars#ORDER IS VERY IMPORTANT
 
         self.update_prices_and_emissions_intensity()#UPDATE: the prices and emissions intensities of cars which are currently owned
+
         self.current_vehicles = self.update_VehicleUsers()
         
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP

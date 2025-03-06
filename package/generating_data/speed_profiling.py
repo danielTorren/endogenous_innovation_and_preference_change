@@ -19,7 +19,7 @@ if __name__ == '__main__':
     "duration_future": 156,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
-    "computing_coefficient": 1,
+
     "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time":60,

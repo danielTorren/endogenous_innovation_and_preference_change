@@ -136,94 +136,68 @@ def plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy
     plt.tight_layout()
     plt.savefig(f'{file_name}/Plots/policy_intensity_effects_raw.png', dpi=dpi)
 
-def plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, dpi=600):
+import numpy as np
+import matplotlib.pyplot as plt
+
+def plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=600):
     """
-    Plots the effects of different policy intensities on EV uptake, policy distortion, and cumulative emissions.
-    
+    Plots the effects of different policy intensities on specified measures (e.g., EV uptake, policy distortion, etc.).
+
     Parameters:
     - data_array: The array containing the simulation results.
     - policy_list: List of policies to plot.
     - file_name: Base file name for saving plots.
     - policy_info_dict: Dictionary containing policy bounds and other information.
+    - measures_dict: Dictionary mapping measure names to their index in data_array.
+    - selected_measures: List of measures to plot (subset of keys from measures_dict).
     - dpi: Dots per inch for the saved figures.
     """
     num_policies = len(policy_list)
-    measures = ["EV Uptake", "Policy Distortion", "Cumulative Emissions", "Net Policy Cost"]
-    num_measures = len(measures)
-    
-    # Create a figure with rows for measures and columns for policies
-    fig, axes = plt.subplots(num_measures, num_policies, figsize=(15, 6), )
-    
-    # Ensure axes is a 2D array
+    num_measures = len(selected_measures)
+
+    fig, axes = plt.subplots(num_measures, num_policies, figsize=(15, 6 * num_measures), sharey="row")
+
+    # Ensure axes is a 2D array for consistency
     if num_measures == 1:
         axes = np.expand_dims(axes, axis=0)
     if num_policies == 1:
         axes = np.expand_dims(axes, axis=1)
-    
+
+    def plot_with_median(ax, intensities, mean_values, median_values, std_values, label):
+        ax.plot(intensities, mean_values, label=f'Mean {label}')
+        ax.fill_between(intensities, mean_values - std_values, mean_values + std_values, alpha=0.2, label="std")
+        ax.plot(intensities, median_values, linestyle='dashed', label=f'Median {label}', color='red')
+        ax.grid(alpha=0.3)
+
     for i, policy in enumerate(policy_list):
-        # Extract data for the current policy
         policy_data = data_array[i]
-        
-        # Get the intensity bounds for the policy
         min_val, max_val = policy_info_dict['bounds_dict'][policy]
-        intensities = np.linspace(min_val, max_val, policy_data.shape[0])  # Generate intensity values
-        
-        # Calculate mean, median, and standard deviation
-        mean_ev_uptake = np.mean(policy_data[:, :, 0], axis=1)
-        median_ev_uptake = np.median(policy_data[:, :, 0], axis=1)
-        std_ev_uptake = np.std(policy_data[:, :, 0], axis=1)
+        intensities = np.linspace(min_val, max_val, policy_data.shape[0])
 
-        mean_policy_distortion = np.mean(policy_data[:, :, 1], axis=1)
-        median_policy_distortion = np.median(policy_data[:, :, 1], axis=1)
-        std_policy_distortion = np.std(policy_data[:, :, 1], axis=1)
+        for j, measure in enumerate(selected_measures):
+            measure_idx = measures_dict[measure]
+            ax = axes[j, i]
 
-        mean_cum_em = np.mean(policy_data[:, :, 2], axis=1)
-        median_cum_em = np.median(policy_data[:, :, 2], axis=1)
-        std_cum_em = np.std(policy_data[:, :, 2], axis=1)
+            mean_values = np.mean(policy_data[:, :, measure_idx], axis=1)
+            median_values = np.median(policy_data[:, :, measure_idx], axis=1)
+            std_values = np.std(policy_data[:, :, measure_idx], axis=1)
 
-        policy_data[:, :, 3] = -policy_data[:, :, 3] #ITS COST SO FLIP IT
-        mean_net_policy_distortion = np.mean(policy_data[:, :, 3], axis=1)
-        median_net_policy_distortion = np.median(policy_data[:, :, 3], axis=1)
-        std_net_policy_distortion = np.std(policy_data[:, :, 3], axis=1)
+            plot_with_median(ax, intensities, mean_values, median_values, std_values, measure)
 
-        # Define plotting function
-        def plot_with_median(ax, intensities, mean_values, median_values, std_values, label):
-            
-            ax.plot(intensities, mean_values, label=f'Mean {label}')
-            ax.fill_between(intensities, mean_values - std_values, mean_values + std_values, alpha=0.2, label="std")
-            ax.plot(intensities, median_values, linestyle='dashed', label=f'Median {label}', color='red')
+            if i == 0:
+                ax.set_ylabel(measure, fontsize=9)
+            if j == 0:
+                ax.set_title(f'{policy}', fontsize=10)
+            if j == num_measures - 1:
+                ax.set_xlabel('Policy Intensity', fontsize=9)
 
+    # Generate the string of indices for the selected measures
+    measure_indices_str = "".join(str(measures_dict[measure]) for measure in selected_measures)
 
-        # Plot EV Uptake
-        plot_with_median(axes[0, i], intensities, mean_ev_uptake, median_ev_uptake, std_ev_uptake, "EV Uptake")
-
-        # Plot Policy Distortion
-        plot_with_median(axes[1, i], intensities, mean_policy_distortion, median_policy_distortion, std_policy_distortion, "Policy Distortion")
-
-        # Plot Cumulative Emissions
-        plot_with_median(axes[2, i], intensities, mean_cum_em, median_cum_em, std_cum_em, "Cumulative Emissions")
-
-        plot_with_median(axes[3, i], intensities, mean_net_policy_distortion, median_net_policy_distortion, std_net_policy_distortion, "Net Policy Cost")
-
-        # Set titles and labels
-        axes[0, i].set_title(f'{policy}', fontsize=10)
-        axes[0, i].set_ylabel('EV Uptake', fontsize=9)
-        axes[1, i].set_ylabel('Policy Distortion', fontsize=9)
-        axes[2, i].set_ylabel('Cumulative Emissions', fontsize=9)
-        axes[3, i].set_ylabel('Net Policy Cost', fontsize=9)
-
-    # Plot EV Uptake
-    handles, labels_ = axes[0, 0].get_legend_handles_labels()
-
-    # Create a single legend at the bottom of the figure
-    fig.legend(handles, ['Mean','Std',  'Median'], loc='lower left', fontsize=10, ncol=2, frameon=False)
-
-    # Set common x-axis label
-    fig.supxlabel('Policy Intensity', fontsize=10)
-    
-    # Adjust layout and save the figure
+    # Use the string in the filename
     plt.tight_layout()
-    plt.savefig(f'{file_name}/Plots/policy_intensity_effects_means.png', dpi=dpi)
+    plt.savefig(f"{file_name}/Plots/policy_intensity_effects_means_{measure_indices_str}.png", dpi=dpi)
+
 
 def main(file_name):
     # Load the data array, policy list, and policy info dictionary
@@ -231,13 +205,47 @@ def main(file_name):
     policy_list = load_object(file_name + "/Data", "policy_list")
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
     base_params = load_object(file_name + "/Data", "base_params")
-    print(base_params)
-    
+
+    measures_dict = {
+        "EV Uptake": 0,
+        "Policy Distortion": 1,
+        "Net Policy Cost": 2,
+        "Cumulative Emissions": 3,
+        "Driving Emissions": 4,
+        "Production Emissions": 5,
+        "Cumulative Utility": 6,
+        "Cumulative Profit": 7
+    }#
+
+    selected_measures = [
+        "EV Uptake",
+        #"Policy Distortion",
+        "Net Policy Cost",
+        #"Cumulative Emissions",
+        #"Driving Emissions",
+        #"Production Emissions",
+        "Cumulative Utility",
+        "Cumulative Profit"
+    ]
+    plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    selected_measures = [
+        #"EV Uptake",
+        #"Policy Distortion",
+        #"Net Policy Cost",
+        "Cumulative Emissions",
+        "Driving Emissions",
+        "Production Emissions",
+        #"Cumulative Utility",
+        #"Cumulative Profit"
+    ]
+    plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+
+
     # Plot the effects of policy intensities
-    plot_policy_intensity_effects_raw_lines(data_array, policy_list, file_name, policy_info_dict, dpi=300)
-    plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, dpi=300)
-    plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy_info_dict,dpi=300)
+    #plot_policy_intensity_effects_raw_lines(data_array, policy_list, file_name, policy_info_dict, dpi=300)
+    
+    #plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy_info_dict,dpi=300)
 
     plt.show()
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_16_19_15__05_03_2025")
+    main(file_name="results/vary_single_policy_gen_09_53_27__06_03_2025")

@@ -5,7 +5,7 @@
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "computing_coefficient": 1,
+
     "seed": 5,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
