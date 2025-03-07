@@ -29,13 +29,13 @@ def main(
         base_params = json.load(f)
 
     top_policies = load_object(f"{TOP_TEN_LOAD}/Data", "top_10")
-
     root_folder = produce_name_datetime("top10_policy_runs")
     createFolder(root_folder)
 
     print("TOTAL RUNS", 10*base_params["seed_repetitions"])
     outputs = {}
     for (policy1, policy2), welfare_data in top_policies.items():
+
         policy1_value = welfare_data["policy1_value"]
         policy2_value = welfare_data["policy2_value"]
 
@@ -48,20 +48,20 @@ def main(
         history_production_emissions_arr,
         history_total_emissions_arr,#Emmissions flow
         history_prop_EV_arr, 
-        #history_car_age_arr, 
-        #history_lower_percentile_price_ICE_EV_arr,
-        #history_upper_percentile_price_ICE_EV_arr,
-        #history_mean_price_ICE_EV_arr,
-        #history_median_price_ICE_EV_arr, 
+        history_car_age_arr, 
+        history_lower_percentile_price_ICE_EV_arr,
+        history_upper_percentile_price_ICE_EV_arr,
+        history_mean_price_ICE_EV_arr,
+        history_median_price_ICE_EV_arr, 
         history_total_utility_arr, 
         history_market_concentration_arr,
         history_total_profit_arr, 
-        #history_quality_ICE, 
-        #history_quality_EV, 
-        #history_efficiency_ICE, 
-        #history_efficiency_EV, 
-        #history_production_cost_ICE, 
-        #history_production_cost_EV, 
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV
         ) = parallel_run_multi_seed(

@@ -128,7 +128,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
     - Welfare is: utility + profit - net policy cost
 
     Returns:
-        dict: Top 10 policy combinations by welfare, with welfare values.
+        dict: Top 10 policy combinations by welfare, including welfare and policy intensities.
     """
 
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -166,10 +166,14 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
 
             plotted_points.append((emissions, welfare, policy1, policy2, entry["policy1_value"], entry["policy2_value"]))
 
-            # Track the maximum welfare for each policy combination
+            # Track the **best welfare entry** for each policy pair
             policy_key = (policy1, policy2)
-            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]:
-                policy_welfare[policy_key] = welfare
+            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
+                policy_welfare[policy_key] = {
+                    "welfare": welfare,
+                    "policy1_value": entry["policy1_value"],
+                    "policy2_value": entry["policy2_value"]
+                }
 
     if not x_values or not y_values:
         print("No data available for the given uptake range.")
@@ -209,14 +213,11 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
         ax.text(x, y - text_offset_y, f"{norm1:.3f}", fontsize=8, ha='center', va='top')
         ax.text(x, y + text_offset_y, f"{norm2:.3f}", fontsize=8, ha='center', va='bottom')
 
-    # Add BAU as either marker or line
+    # Add BAU point
     bau_welfare = outcomes_BAU["mean_utility_cumulative"] + outcomes_BAU["mean_profit_cumulative"] - outcomes_BAU["mean_net_cost"]
     bau_emissions = outcomes_BAU["mean_emissions_cumulative"]
 
-    if "net_cost" in file_name.lower():
-        ax.axhline(bau_welfare, color='black', linestyle='--', linewidth=1.5, label="BAU (Net Cost Reference)")
-    else:
-        ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=100, edgecolor='black', label="Business as Usual (BAU)")
+    ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=100, edgecolor='black', label="Business as Usual (BAU)")
 
     ax.set_xlabel("Cumulative Emissions")
     ax.set_ylabel("Welfare")
@@ -240,12 +241,8 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
     plt.savefig(save_path, dpi=dpi)
     plt.close()
 
-    # Extract top 10 policy combinations by welfare
-    top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1], reverse=True)[:10])
-
-    print(f"Top 10 policy combinations by welfare:")
-    for (policy1, policy2), welfare in top_10.items():
-        print(f"{policy1} & {policy2}: Welfare = {welfare:.2f}")
+    # Extract and return top 10 policy combinations by welfare (including intensities)
+    top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
 
     return top_10
 
