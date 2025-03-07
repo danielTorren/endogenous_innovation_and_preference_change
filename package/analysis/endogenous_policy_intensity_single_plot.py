@@ -34,5 +34,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/endogenous_policy_intensity_18_43_26__06_03_2025",
+        fileName="results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )
