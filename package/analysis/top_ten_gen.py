@@ -33,7 +33,7 @@ def main(
     root_folder = produce_name_datetime("top10_policy_runs")
     createFolder(root_folder)
 
-    print("TOTAL RUNS", 10*base_params["repetitions"])
+    print("TOTAL RUNS", 10*base_params["seed_repetitions"])
     outputs = {}
     for (policy1, policy2), welfare_data in top_policies.items():
         policy1_value = welfare_data["policy1_value"]
