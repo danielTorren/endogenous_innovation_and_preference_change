@@ -143,13 +143,13 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     return controller_files  # Return list of file paths
 
 
-def set_up_calibration_runs(base_params):
+def set_up_calibration_runs(base_params, root):
 
     future_time_steps = base_params["duration_future"]
     base_params["duration_future"] = 0
 
     base_params_list = params_list_with_seed(base_params)
-    file_name = produce_name_datetime("endogenous_policy_intensity")
+    file_name = produce_name_datetime(root)
 
     createFolder(file_name)
 
