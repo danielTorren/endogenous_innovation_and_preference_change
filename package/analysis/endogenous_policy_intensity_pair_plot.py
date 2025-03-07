@@ -16,10 +16,10 @@ def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val
     policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
     policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
 
-    x_values = []
-    y_values = []
+    x_values, y_values = [], []
     plotted_points = []
 
+    # Process data and compute intensity ranges
     for (policy1, policy2), data in pairwise_outcomes_complied.items():
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
         mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
@@ -39,77 +39,68 @@ def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val
 
             plotted_points.append((x, y, policy1, policy2, entry["policy1_value"], entry["policy2_value"]))
 
-    # Include BAU point into axis limit calculation
-    bau_x = outcomes_BAU[x_measure]
-    bau_y = outcomes_BAU[y_measure]
-
+    # Handle axis limits, including BAU point
+    bau_x, bau_y = outcomes_BAU[x_measure], outcomes_BAU[y_measure]
     if x_values and y_values:
-        x_min = min(min(x_values), bau_x)
-        x_max = max(max(x_values), bau_x)
-        y_min = min(min(y_values), bau_y)
-        y_max = max(max(y_values), bau_y)
+        x_min, x_max = min(min(x_values), bau_x), max(max(x_values), bau_x)
+        y_min, y_max = min(min(y_values), bau_y), max(max(y_values), bau_y)
 
         ax.set_xlim(x_min - 0.05 * (x_max - x_min), x_max + 0.05 * (x_max - x_min))
         ax.set_ylim(y_min - 0.05 * (y_max - y_min), y_max + 0.05 * (y_max - y_min))
 
-    # Define custom half-circle markers
+    # Half-circle marker generator
     def half_circle_marker(start, end):
         angles = np.linspace(np.radians(start), np.radians(end), 100)
         verts = np.column_stack([np.cos(angles), np.sin(angles)])
         verts = np.vstack([verts, [0, 0]])
         return Path(verts, [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY])
 
-    # Plot split-ring markers and annotations
-    for x, y, p1, p2, v1, v2 in plotted_points:
-        color1 = policy_colors[p1]
-        color2 = policy_colors[p2]
+    # Scale marker size based on policy intensity
+    def scale_marker_size(value, policy):
+        min_val = policy_ranges[policy]["min"]
+        max_val = policy_ranges[policy]["max"]
+        if max_val - min_val == 0:
+            return 100  # Fallback if no variation
+        norm = (value - min_val) / (max_val - min_val)
+        return 100 + norm * 300  # Scale size from 100 to 400 (adjustable if needed)
 
-        norm1 = (v1 - policy_ranges[p1]["min"]) / (policy_ranges[p1]["max"] - policy_ranges[p1]["min"])
-        norm2 = (v2 - policy_ranges[p2]["min"]) / (policy_ranges[p2]["max"] - policy_ranges[p2]["min"])
+    # Plot each point with scaled split markers
+    for x, y, policy1, policy2, policy1_value, policy2_value in plotted_points:
+        color1, color2 = policy_colors[policy1], policy_colors[policy2]
+        size1 = scale_marker_size(policy1_value, policy1)
+        size2 = scale_marker_size(policy2_value, policy2)
 
-        if v1 == 0:
-            ax.scatter(x, y, s=100, color=color2, edgecolor="black", marker='o')
-        elif v2 == 0:
-            ax.scatter(x, y, s=100, color=color1, edgecolor="black", marker='o')
+        if policy1_value == 0:
+            ax.scatter(x, y, s=size2, color=color2, edgecolor="black", marker='o')
+        elif policy2_value == 0:
+            ax.scatter(x, y, s=size1, color=color1, edgecolor="black", marker='o')
         else:
-            ax.scatter(x, y, s=100, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
-            ax.scatter(x, y, s=100, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
+            ax.scatter(x, y, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
+            ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
 
-        offset = (y_max - y_min) * 0.016
-        ax.text(x, y - offset, f"{norm1:.3f}", fontsize=8, ha='center', va='top', color='black')
-        ax.text(x, y + offset, f"{norm2:.3f}", fontsize=8, ha='center', va='bottom', color='black')
-
-    # Plot BAU as either line (if net cost involved) or marker
-    #if "net_cost" in x_measure:
-    #    ax.axvline(bau_x, color='black', linestyle='--', linewidth=1.5, label="Business as Usual (BAU)")
-    #elif "net_cost" in y_measure:
-    #    ax.axhline(bau_y, color='black', linestyle='--', linewidth=1.5, label="Business as Usual (BAU)")
-    #else:
+    # Plot BAU point
     ax.scatter(bau_x, bau_y, color='black', edgecolor='black', s=100, label="Business as Usual (BAU)")
 
-    # Axis labels and grid
+    # Set axis labels and grid
     ax.set_xlabel(x_measure.replace("_", " ").capitalize())
     ax.set_ylabel(y_measure.replace("_", " ").capitalize())
     ax.grid(True)
 
-    # Build policy legend
+    # Build color legend with intensity ranges
     legend_elements = [
         Patch(facecolor=policy_colors[policy], edgecolor='black',
-              label=f"{policy}\n({policy_ranges[policy]['min']:.3f}-{policy_ranges[policy]['max']:.3f})")
+              label=f"{policy} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
         for policy in sorted(all_policies)
     ]
     legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
 
-    ax.legend(handles=legend_elements, loc='best', title="Policies and Intensity Ranges")
+    ax.legend(handles=legend_elements, loc='best', title="Policies & Intensity Ranges")
 
-    plt.tight_layout()
-
+    # Save plot
     os.makedirs(f'{file_name}/Plots', exist_ok=True)
     save_path = f'{file_name}/Plots/{x_measure}_vs_{y_measure}.png'
     plt.savefig(save_path, dpi=dpi)
-    #plt.close()
-
-    #print(f"Saved plot to {save_path}")
+    plt.close()
 
 def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
     first_entry = next(iter(pairwise_outcomes_complied.values()))[0]
@@ -121,16 +112,9 @@ def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val
             if i < j:
                 plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val, x_measure, y_measure, outcomes_BAU, dpi)
 
+
+
 def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
-    """
-    Plots welfare vs cumulative emissions with split ring markers, annotations, and policy legend.
-    - If BAU is provided, it is shown as either a black marker (normal case) or dashed line if net cost is involved.
-    - Welfare is: utility + profit - net policy cost
-
-    Returns:
-        dict: Top 10 policy combinations by welfare, including welfare and policy intensities.
-    """
-
     fig, ax = plt.subplots(figsize=(12, 6))
 
     color_map = plt.get_cmap('Set3', 10)
@@ -141,12 +125,10 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
     policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
     policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
 
-    x_values = []
-    y_values = []
     plotted_points = []
     policy_welfare = {}
 
-    # Gather and preprocess data
+    # Collect data and compute intensity ranges
     for (policy1, policy2), data in pairwise_outcomes_complied.items():
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
         mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
@@ -156,9 +138,6 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
             welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
             emissions = entry["mean_emissions_cumulative"]
 
-            x_values.append(emissions)
-            y_values.append(welfare)
-
             policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
             policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], entry["policy1_value"])
             policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], entry["policy2_value"])
@@ -166,7 +145,6 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
 
             plotted_points.append((emissions, welfare, policy1, policy2, entry["policy1_value"], entry["policy2_value"]))
 
-            # Track the **best welfare entry** for each policy pair
             policy_key = (policy1, policy2)
             if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
                 policy_welfare[policy_key] = {
@@ -175,11 +153,11 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
                     "policy2_value": entry["policy2_value"]
                 }
 
-    if not x_values or not y_values:
+    if not plotted_points:
         print("No data available for the given uptake range.")
         return {}
 
-    # Half-circle marker generator
+    # Marker helper functions
     def half_circle_marker(start, end):
         angles = np.linspace(np.radians(start), np.radians(end), 100)
         verts = np.column_stack([np.cos(angles), np.sin(angles)])
@@ -194,56 +172,60 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
         codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 1)
         return Path(verts, codes)
 
-    # Plot split-ring markers with annotations
-    for x, y, policy1, policy2, policy1_value, policy2_value in plotted_points:
-        color1, color2 = policy_colors[policy1], policy_colors[policy2]
+    # Intensity-to-marker-size scaling
+    def scale_marker_size(value, policy):
+        min_val = policy_ranges[policy]["min"]
+        max_val = policy_ranges[policy]["max"]
+        if max_val - min_val == 0:
+            return 100  # Fixed size if no variation
+        norm = (value - min_val) / (max_val - min_val)
+        return 100 + norm * 300  # From 100 to 400 (tweakable)
 
-        norm1 = (policy1_value - policy_ranges[policy1]["min"]) / (policy_ranges[policy1]["max"] - policy_ranges[policy1]["min"])
-        norm2 = (policy2_value - policy_ranges[policy2]["min"]) / (policy_ranges[policy2]["max"] - policy_ranges[policy2]["min"])
+    # Plot points (half circles sized by intensity)
+    for x, y, policy1, policy2, policy1_value, policy2_value in plotted_points:
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+
+        size1 = scale_marker_size(policy1_value, policy1)
+        size2 = scale_marker_size(policy2_value, policy2)
 
         if policy1_value == 0:
-            ax.scatter(x, y, s=100, marker=full_circle_marker(), color=color2, edgecolor="black")
+            ax.scatter(x, y, s=size2, marker=full_circle_marker(), color=color2, edgecolor="black")
         elif policy2_value == 0:
-            ax.scatter(x, y, s=100, marker=full_circle_marker(), color=color1, edgecolor="black")
+            ax.scatter(x, y, s=size1, marker=full_circle_marker(), color=color1, edgecolor="black")
         else:
-            ax.scatter(x, y, s=100, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
-            ax.scatter(x, y, s=100, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
+            ax.scatter(x, y, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
+            ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
 
-        text_offset_y = (max(y_values) - min(y_values)) * 0.016
-        ax.text(x, y - text_offset_y, f"{norm1:.3f}", fontsize=8, ha='center', va='top')
-        ax.text(x, y + text_offset_y, f"{norm2:.3f}", fontsize=8, ha='center', va='bottom')
-
-    # Add BAU point
+    # BAU point
     bau_welfare = outcomes_BAU["mean_utility_cumulative"] + outcomes_BAU["mean_profit_cumulative"] - outcomes_BAU["mean_net_cost"]
     bau_emissions = outcomes_BAU["mean_emissions_cumulative"]
+    ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
 
-    ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=100, edgecolor='black', label="Business as Usual (BAU)")
-
+    # Axis labels and title
     ax.set_xlabel("Cumulative Emissions")
     ax.set_ylabel("Welfare")
-    ax.set_title("Welfare vs Cumulative Emissions")
+    ax.set_title("Welfare vs Cumulative Emissions (Marker Size = Policy Intensity)")
 
     ax.grid(True)
 
+    # Policy color legend with intensity ranges
     legend_elements = [
         Patch(facecolor=policy_colors[policy], edgecolor='black',
-              label=f"{policy}\n({policy_ranges[policy]['min']:.3f}-{policy_ranges[policy]['max']:.3f})")
+              label=f"{policy} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
         for policy in sorted(all_policies)
     ]
     legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    ax.legend(handles=legend_elements, loc='best', title="Policies & Intensity Ranges")
 
-    ax.legend(handles=legend_elements, loc='best', title="Policies and Intensity Ranges")
-
-    plt.tight_layout()
-
+    # Save plot
     save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions.png'
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=dpi)
-    #plt.close()
 
-    # Extract and return top 10 policy combinations by welfare (including intensities)
+
+    # Return top 10 policy combinations by welfare
     top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
-
     return top_10
 
 def main(fileNames, fileName_BAU):
@@ -259,7 +241,6 @@ def main(fileNames, fileName_BAU):
 
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
     top_10 = plot_welfare_vs_emissions(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)
-    plt.show()
     save_object(top_10, f"{fileName}/Data", "top_10")
     
     plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)

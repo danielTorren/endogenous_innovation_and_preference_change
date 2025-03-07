@@ -28,7 +28,7 @@ def main(
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
     base_params["save_timeseries_data_state"] = 1
-    
+
     top_policies = load_object(f"{TOP_TEN_LOAD}/Data", "top_10")
     root_folder = produce_name_datetime("top10_policy_runs")
     createFolder(root_folder)
@@ -81,8 +81,8 @@ def main(
             "history_mean_profit_margins_EV": history_mean_profit_margins_EV
         }
 
-    save_object(outputs, TOP_TEN_LOAD + "/Data", "outputs")
-    save_object(base_params, TOP_TEN_LOAD + "/Data", "base_params")
+    save_object(outputs, root_folder + "/Data", "outputs")
+    save_object(base_params, root_folder + "/Data", "base_params")
 
     print(f"All top 10 policies processed and saved in '{root_folder}'")
 
