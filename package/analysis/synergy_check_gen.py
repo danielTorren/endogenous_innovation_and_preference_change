@@ -134,7 +134,7 @@ def main(
     del pairwise_outcomes_complied[('Discriminatory_corporate_tax', 'Carbon_price')]
 
     # Set up calibration runs
-    controller_files, base_params, file_name = set_up_calibration_runs(base_params)
+    controller_files, base_params, file_name = set_up_calibration_runs(base_params,"synergy_check")
 
     # Extract policy values from the dataset
     policy_values = extract_policy_values(pairwise_outcomes_complied)

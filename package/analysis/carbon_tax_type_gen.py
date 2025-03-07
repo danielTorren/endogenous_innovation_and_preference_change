@@ -152,29 +152,6 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     return controller_files  # Return list of file paths
 
 
-def set_up_calibration_runs(base_params):
-
-    future_time_steps = base_params["duration_future"]
-    base_params["duration_future"] = 0
-
-    base_params_list = params_list_with_seed(base_params)
-    file_name = produce_name_datetime("carbon_tax_type")
-
-    createFolder(file_name)
-
-    ########################################################################################################################
-    #RUN CALIBRATION RUNS
-    controller_files = parallel_multi_run(base_params_list, file_name)
-
-    #UPDATE BASE PARAMS CORRECT NOW
-    base_params["duration_future"] = future_time_steps
-
-    save_object(base_params, file_name + "/Data", "base_params")
-
-    print("Finished Calibration Runs")
-
-    return controller_files, base_params, file_name
-
 def simulate_future_policies(file_name, controller_files, policy_list, policy_params_dict, n_calls, base_params, target_ev_uptake, noise):
 
     ########################################################################################################################

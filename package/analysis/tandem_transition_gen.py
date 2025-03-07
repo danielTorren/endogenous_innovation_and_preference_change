@@ -115,7 +115,7 @@ def main(
 
     
     # Run initial seed calibrations and save controllers
-    controller_files, base_params, fileName = set_up_calibration_runs(base_params)
+    controller_files, base_params, fileName = set_up_calibration_runs(base_params,"tandem_trans")
     print("Finished Calibration Runs")
     # Save base params
     save_object(base_params, fileName + "/Data", "base_params")

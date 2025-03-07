@@ -408,7 +408,7 @@ def plot_segment_count_grid(base_params, firm_manager, time_series, fileName):
     # Plot each segment
     for i, (segment, counts) in enumerate(segment_counts.items()):
         ax = axes[i]
-        ax.plot(time_series, counts[base_params["duration_burn_in"]:], label=f"Segment {segment}")
+        ax.plot(time_series[base_params["duration_burn_in"]:], counts[base_params["duration_burn_in"]:], label=f"Segment {segment}")
         ax.legend(loc='upper right', fontsize='small')
         ax.grid()
         ax.set_title(f"Segment {segment}")
@@ -541,9 +541,9 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, medians[base_params["duration_burn_in"]:], label="Median Age", color='red')
-    ax.plot(time_series, means[base_params["duration_burn_in"]:], label="Mean Age", color='blue')
-    ax.fill_between(time_series, lower_bounds[base_params["duration_burn_in"]:], upper_bounds[base_params["duration_burn_in"]:], color='blue', alpha=0.2, label="95% Confidence Interval")
+    ax.plot(time_series[base_params["duration_burn_in"]:], medians[base_params["duration_burn_in"]:], label="Median Age", color='red')
+    ax.plot(time_series[base_params["duration_burn_in"]:], means[base_params["duration_burn_in"]:], label="Mean Age", color='blue')
+    ax.fill_between(time_series[base_params["duration_burn_in"]:], lower_bounds[base_params["duration_burn_in"]:], upper_bounds[base_params["duration_burn_in"]:], color='blue', alpha=0.2, label="95% Confidence Interval")
     ax.set_title("Mean Age and 95% Confidence Interval Over Time")
     ax.set_xlabel("Time")
     ax.set_ylabel("Age")
@@ -1100,11 +1100,12 @@ def main(fileName, dpi=400):
     social_network = data_controller.social_network
     firm_manager = data_controller.firm_manager
     time_series = np.arange(0, len(data_controller.time_series) - base_params["duration_burn_in"])
+    print(len(time_series))
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
     emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
-    plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
+    #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
     
     plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
@@ -1137,4 +1138,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_00_33__06_03_2025")
+    main("results/single_experiment_10_44_16__07_03_2025")

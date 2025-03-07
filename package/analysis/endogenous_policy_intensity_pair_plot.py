@@ -1,198 +1,247 @@
-from package.resources.utility import (
-    load_object
-)
-import matplotlib.pyplot as plt
-
-from package.plotting_data.single_experiment_plot import save_and_show
+from package.resources.utility import load_object
 import matplotlib.pyplot as plt
 import numpy as np
-from package.resources.utility import createFolder, save_object
-from matplotlib.colors import Normalize
+from matplotlib.path import Path
+import os
+from matplotlib.patches import Patch
 
-def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, file_name, dpi=600):
-    """
-    Plots the sweep of Policy 1 intensity vs optimized Policy 2 intensity.
-    
-    Parameters:
-    - pairwise_outcomes: Dict of results from policy_pair_sweep.
-    - policy1_name: Name of Policy 1 (x-axis).
-    - policy2_name: Name of Policy 2 (y-axis, optimized).
-    - file_name: Base file name for saving plots.
-    - dpi: Resolution for saved plots.
-    """
-    # Extract the data for this policy pair
-    data = pairwise_outcomes[(policy1_name, policy2_name)]
+def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val, x_measure, y_measure, dpi=600):
+    fig, ax = plt.subplots(figsize=(15, 8))
 
-    p1_values = np.array([entry["policy1_value"] for entry in data])
-    p2_values = np.array([entry["policy2_value"] for entry in data])
-    mean_costs = np.array([entry["mean_total_cost"] for entry in data])
-    mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+    color_map = plt.get_cmap('Set3', 10)
+    all_policies = set()
+    for (policy1, policy2) in pairwise_outcomes_complied.keys():
+        all_policies.update([policy1, policy2])
 
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # Extract all x and y values to determine the data range
+    x_values = []
+    y_values = []
+    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}  # Store min/max for each policy
 
-    # Plot the policy pair intensity relationship
-    scatter = ax.scatter(p1_values, p2_values, c=mean_costs, s=100, edgecolor='k', cmap='viridis')
-    plt.colorbar(scatter, ax=ax, label='Mean Total Cost')
-
-    # Optionally, add text labels for each point (show EV uptake)
-    for (x, y, uptake) in zip(p1_values, p2_values, mean_uptake):
-        ax.annotate(f'{uptake:.2f}', (x, y), fontsize=8, ha='right')
-
-    ax.set_xlabel(f'{policy1_name} Intensity')
-    ax.set_ylabel(f'Optimized {policy2_name} Intensity')
-    ax.set_title(f'{policy2_name} Optimized Intensity vs {policy1_name} Intensity')
-    
-    plt.grid(True)
-    plt.tight_layout()
-
-    # Save to file
-    plt.savefig(f'{file_name}/Plots/{policy1_name}_{policy2_name}_intensity_plot.png', dpi=dpi)
-    plt.show()
-
-
-def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
-    """
-    Plots all policy pair sweeps as subfigures in one figure.
-    
-    Parameters:
-    - pairwise_outcomes: Dict of results from policy_pair_sweep.
-    - file_name: Base file name for saving plots.
-    - dpi: Resolution for saved plots.
-    """
-    num_pairs = len(pairwise_outcomes)
-    num_cols =   num_pairs # You can adjust this for different layouts
-    num_rows = (num_pairs + num_cols - 1) // num_cols  # Rows needed to fit all pairs
-
-    fig, axes = plt.subplots(num_rows, num_cols, figsize=(20,5), constrained_layout = True)
-    axes = np.atleast_2d(axes)  # Ensure axes is always 2D (works for 1-row cases)
-
-    for ax, ((policy1, policy2), data) in zip(axes.flat, pairwise_outcomes.items()):
-        p1_values = np.array([entry["policy1_value"] for entry in data])
-        p2_values = np.array([entry["policy2_value"] for entry in data])
-        mean_costs = np.array([entry[measure] for entry in data])
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
+        filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
+        for entry in filtered_data:
+            x_values.append(entry[x_measure])
+            y_values.append(entry[y_measure])
 
-        scatter = ax.scatter(p1_values, p2_values, c=mean_costs, s=40, edgecolor='k', cmap='viridis')
-        ax.set_title(f'{policy1} vs {policy2}', fontsize=4)
-        ax.set_xlabel(f'{policy1} Intensity', fontsize=4)
-        ax.set_ylabel(f'{policy2} Intensity', fontsize=4)
-        
-        ax.grid(True)
+            # Update policy value ranges
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], entry["policy1_value"])
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], entry["policy2_value"])
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], entry["policy2_value"])
 
-        # Optionally annotate with EV uptake
-        for (x, y, uptake) in zip(p1_values, p2_values, mean_uptake):
-            ax.annotate(f'{uptake:.2f}', (x, y), fontsize=7, ha='right')
+    # Calculate tight axes limits based on scatter plot positions
+    if x_values and y_values:  # Ensure there is data
+        x_min, x_max = min(x_values), max(x_values)
+        y_min, y_max = min(y_values), max(y_values)
 
-    #axes[0][0].set_ylabel(f'Optimized Carbon Price Intensity', fontsize=8)
+        # Add padding to the axes limits
+        padding_x = (x_max - x_min) * 0.05  # 10% padding
+        padding_y = (y_max - y_min) * 0.05  # 10% padding
 
-    # Remove empty subplots (if num_pairs doesn't fit perfectly into grid)
-    for idx in range(num_pairs, num_rows * num_cols):
-        fig.delaxes(axes.flat[idx])
+        ax.set_xlim(x_min - padding_x, x_max + padding_x)
+        ax.set_ylim(y_min - padding_y, y_max + padding_y)
+    else:
+        # Fallback if no data is available
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
 
-    # Add colorbar across all subplots
-    cbar = fig.colorbar(scatter, ax=axes, orientation='vertical', shrink=0.9, aspect=25)
-    cbar.set_label(measure)
+    # Define custom half-circle markers
+    def half_circle_marker(angle_start, angle_end):
+        radius = 1.0
+        angles = np.linspace(np.radians(angle_start), np.radians(angle_end), 100)
+        verts = np.column_stack([np.cos(angles), np.sin(angles)])
+        verts = np.vstack([verts, [(0, 0)]])  # Close the shape
+        codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY]
+        return Path(verts, codes)
 
-    #plt.suptitle('Policy Pair Intensity Sweeps', fontsize=14)
-    #plt.tight_layout(rect=[0, 0, 1, 0.96])
-
-    # Save the combined figure
-    plt.savefig(f'{file_name}/Plots/policy_pair_intensity_sweep_{measure}.png', dpi=dpi)
-
-
-
-def plot_all_policy_combinations_on_one_plot(pairwise_outcomes_complied, file_name, dpi=600):
-    """
-    Plots all policy combinations on a single scatter plot with individual policy normalization.
-
-    Parameters:
-    - pairwise_outcomes_complied: Dictionary containing all policy combinations and their outcomes.
-    - file_name: Base file name for saving plots.
-    - dpi: Resolution for saved plots.
-    """
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    # Create a colormap for policy combinations
-    cmap = plt.get_cmap('viridis')
-
-    # Store min and max values for each policy
-    policy_min_max = {}
-
-    # Loop through each policy pair to collect min and max values
-    for (policy1_name, policy2_name), data in pairwise_outcomes_complied.items():
-        p1_values = np.array([entry["policy1_value"] for entry in data])
-        p2_values = np.array([entry["policy2_value"] for entry in data])
-
-        # Store min and max values for each policy
-        if policy1_name not in policy_min_max:
-            policy_min_max[policy1_name] = (p1_values.min(), p1_values.max())
-        if policy2_name not in policy_min_max:
-            policy_min_max[policy2_name] = (p2_values.min(), p2_values.max())
-
-    # Loop through each policy pair and plot on the same axes
-    for (policy1_name, policy2_name), data in pairwise_outcomes_complied.items():
-        # Extract data
-        p1_values = np.array([entry["policy1_value"] for entry in data])
-        p2_values = np.array([entry["policy2_value"] for entry in data])
-        mean_costs = np.array([entry["mean_total_cost"] for entry in data])
+    # Plot the data using scatter with custom markers
+    marker_size = 100  # Size of the markers in points^2
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
+        filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
 
-        # Filter data based on EV uptake
-        mask = (mean_uptake >= 0.945) & (mean_uptake <= 0.955)
-        p1_values_filtered = p1_values[mask]
-        p2_values_filtered = p2_values[mask]
-        mean_costs_filtered = mean_costs[mask]
-        mean_uptake_filtered = mean_uptake[mask]
+        for entry in filtered_data:
+            x = entry[x_measure]
+            y = entry[y_measure]
 
-        # Normalize each policy individually
-        p1_min, p1_max = policy_min_max[policy1_name]
-        p2_min, p2_max = policy_min_max[policy2_name]
+            color1 = policy_colors[policy1]
+            color2 = policy_colors[policy2]
 
-        p1_normalized = (p1_values_filtered - p1_min) / (p1_max - p1_min)
-        p2_normalized = (p2_values_filtered - p2_min) / (p2_max - p2_min)
+            # Plot the first half-circle (policy1)
+            ax.scatter(x, y, s=marker_size, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", linewidth=0.5)
+            # Plot the second half-circle (policy2)
+            ax.scatter(x, y, s=marker_size, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", linewidth=0.5)
 
-        # Calculate policy combination intensity (optional, for coloring)
-        policy_intensity = np.sqrt(p1_normalized**2 + p2_normalized**2)
+            # Normalize policy intensity values
+            norm_policy1 = (entry["policy1_value"] - policy_ranges[policy1]["min"]) / (policy_ranges[policy1]["max"] - policy_ranges[policy1]["min"])
+            norm_policy2 = (entry["policy2_value"] - policy_ranges[policy2]["min"]) / (policy_ranges[policy2]["max"] - policy_ranges[policy2]["min"])
 
-        # Plot the policy pair intensity relationship
-        scatter = ax.scatter(
-            p1_normalized,
-            p2_normalized,
-            c=policy_intensity,
-            s=100,
-            edgecolor='k',
-            cmap=cmap,
-            label=f'{policy1_name} vs {policy2_name}'
-        )
+            # Calculate text position relative to the marker size and data range
+            text_offset_y = (y_max - y_min) * 0.016  # Adjust based on data range
 
-        # Annotate each point with normalized policy intensity
-        for (x, y) in zip(p1_normalized, p2_normalized):
-            ax.annotate(f'({x:.2f}, {y:.2f})', (x, y), fontsize=8, ha='right')
+            # Add annotations for normalized policy intensity
+            ax.text(x, y - text_offset_y, f"{norm_policy1:.3f}", fontsize=8, color='black', ha='center', va='top')  # Below the marker
+            ax.text(x, y + text_offset_y, f"{norm_policy2:.3f}", fontsize=8, color='black', ha='center', va='bottom')  # Above the marker
 
-    # Add colorbar
-    cbar = plt.colorbar(scatter, ax=ax, label='Policy Combination Intensity')
-
-    # Add legend with min and max values for each policy
-    legend_text = []
-    for policy, (min_val, max_val) in policy_min_max.items():
-        legend_text.append(f'{policy} ({min_val:.2f}, {max_val:.2f})')
-    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), title="Policy Ranges:\n" + "\n".join(legend_text))
-
-    # Set labels and title
-    ax.set_xlabel('Normalized Policy 1 Intensity')
-    ax.set_ylabel('Normalized Policy 2 Intensity')
-    ax.set_title('All Policy Combinations (EV Uptake: 0.945 - 0.955)')
-
-    # Add grid
+    ax.set_xlabel(x_measure.replace("_", " ").capitalize())
+    ax.set_ylabel(y_measure.replace("_", " ").capitalize())
     ax.grid(True)
 
-    # Save to file
+    # Add policy value ranges to the legend
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black', label=f"{policy}\n({policy_ranges[policy]['min']:.3f}-{policy_ranges[policy]['max']:.3f})")
+        for policy in all_policies
+    ]
+    ax.legend(handles=legend_elements, loc='best', title="Policies and Ranges: (Relative Intensities)")
+
     plt.tight_layout()
-    plt.savefig(f'{file_name}/Plots/all_policy_combinations_normalized_plot.png', dpi=dpi)
+    #plt.show()
+
+    save_path = f'{file_name}/Plots/{x_measure}_vs_{y_measure}.png'
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=dpi)
+    plt.close()
+# -----------------------------------------------------------
+
+def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val, max_val, dpi=600):
+    first_entry = next(iter(pairwise_outcomes_complied.values()))[0]
+    all_measures = list(first_entry.keys())
+
+    # Remove measures that are not outcomes (like policy values)
+    exclude_measures = {
+        "policy1_value", "policy2_value", "policy1_name", "policy2_name", "mean_ev_uptake", "sd_ev_uptake", "mean_total_cost",
+        }
+    outcome_measures = [m for m in all_measures if m not in exclude_measures]
+    print("outcome_measures", outcome_measures)
+    for i, x_measure in enumerate(outcome_measures):
+        for j, y_measure in enumerate(outcome_measures):
+            if i < j:
+                plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val,
+                                     x_measure, y_measure, dpi)
+
+def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, max_val, dpi=600):
+    """
+    Plots welfare vs cumulative emissions from the pairwise outcomes data with split ring markers,
+    annotations for policy intensity, and a policy legend. 
+    If one policy intensity is zero, the marker is fully colored for the active policy.
+    """
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    color_map = plt.get_cmap('Set3', 10)
+    all_policies = set()
+    for (policy1, policy2) in pairwise_outcomes_complied.keys():
+        all_policies.update([policy1, policy2])
+
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
+    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
+
+    x_values = []
+    y_values = []
+    plotted_points = []
+
+    # Collect all data points and compute min/max for normalization
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
+        mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+
+        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
+        filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
+
+        for entry in filtered_data:
+            welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
+            emissions = entry["mean_emissions_cumulative"]
+
+            x_values.append(emissions)
+            y_values.append(welfare)
+
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], entry["policy1_value"])
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], entry["policy2_value"])
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], entry["policy2_value"])
+
+            plotted_points.append((emissions, welfare, policy1, policy2, entry["policy1_value"], entry["policy2_value"]))
+
+    if not x_values or not y_values:
+        print("No data available for the given uptake range.")
+        return
+
+    def half_circle_marker(angle_start, angle_end):
+        angles = np.linspace(np.radians(angle_start), np.radians(angle_end), 100)
+        verts = np.column_stack([np.cos(angles), np.sin(angles)])
+        verts = np.vstack([verts, [(0, 0)]])
+        codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY]
+        return Path(verts, codes)
+
+    def full_circle_marker():
+        angles = np.linspace(0, 2 * np.pi, 100)
+        verts = np.column_stack([np.cos(angles), np.sin(angles)])
+        verts = np.vstack([verts, [verts[0]]])
+        codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 1)
+        return Path(verts, codes)
+
+    marker_size = 100
+    for (x, y, policy1, policy2, policy1_value, policy2_value) in plotted_points:
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+
+        # Normalize policy intensities
+        norm_policy1 = (policy1_value - policy_ranges[policy1]["min"]) / (policy_ranges[policy1]["max"] - policy_ranges[policy1]["min"])
+        norm_policy2 = (policy2_value - policy_ranges[policy2]["min"]) / (policy_ranges[policy2]["max"] - policy_ranges[policy2]["min"])
+
+        # Plot marker
+        if policy1_value == 0:
+            # Full color for policy2 if policy1 is zero
+            ax.scatter(x, y, s=marker_size, marker=full_circle_marker(), color=color2, edgecolor="black", linewidth=0.5)
+        elif policy2_value == 0:
+            # Full color for policy1 if policy2 is zero
+            ax.scatter(x, y, s=marker_size, marker=full_circle_marker(), color=color1, edgecolor="black", linewidth=0.5)
+        else:
+            # Split ring if both policies have non-zero intensity
+            ax.scatter(x, y, s=marker_size, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", linewidth=0.5)
+            ax.scatter(x, y, s=marker_size, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", linewidth=0.5)
+
+        # Annotations for normalized intensities (always shown)
+        text_offset_y = (max(y_values) - min(y_values)) * 0.016
+        ax.text(x, y - text_offset_y, f"{norm_policy1:.3f}", fontsize=8, color='black', ha='center', va='top')
+        ax.text(x, y + text_offset_y, f"{norm_policy2:.3f}", fontsize=8, color='black', ha='center', va='bottom')
+
+    ax.set_xlabel("Cumulative Emissions")
+    ax.set_ylabel("Welfare")
+    ax.set_title("Welfare vs Cumulative Emissions")
+
+    ax.grid(True)
+
+    # Legend
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+              label=f"{policy}\n({policy_ranges[policy]['min']:.3f}-{policy_ranges[policy]['max']:.3f})")
+        for policy in sorted(all_policies)
+    ]
+    ax.legend(handles=legend_elements, loc='best', title="Policies and Intensity Ranges")
+
+    plt.tight_layout()
+
+    # Save plot
+    save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions.png'
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=dpi)
+
+    print(f"Saved welfare plot to {save_path}")
 
 
-def main(fileNames):
+def main(
+        fileNames,
+        fileName_BAU = "results/BAU"
+        ):
+    
+    outcomes_BAU = load_object(fileName_BAU + "/Data", "outcomes")
+
     # Load observed data
     pairwise_outcomes_complied = {}
 
@@ -204,22 +253,18 @@ def main(fileNames):
         for fileName in fileNames:
             pairwise_outcomes = load_object(fileName + "/Data", "pairwise_outcomes")
             pairwise_outcomes_complied.update(pairwise_outcomes)
-            save_object(pairwise_outcomes_complied, fileName + "/Data", "pairwise_outcomes_complied")
+            #save_object(pairwise_outcomes_complied, fileName + "/Data", "pairwise_outcomes_complied")
 
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_total_cost")
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative")
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_utility_cumulative")
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_profit_cumulative")
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "sd_ev_uptake")
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative_driving")
-    plot_all_policy_pairs(pairwise_outcomes_complied, fileName, "mean_emissions_cumulative_production")
+    plot_welfare_vs_emissions(pairwise_outcomes_complied, fileName, 0.945, 0.955, dpi=600)
+    plt.show()
+    plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.945, 0.955, dpi=600)
 
     plt.show()
 
 if __name__ == "__main__":
     main(
         fileNames=[
-            "results/endogenous_policy_intensity_16_35_14__05_03_2025"
-            ]
-
+            "results/endogenous_policy_intensity_19_30_46__06_03_2025"
+        ], 
+        fileName_BAU = "results/BAU"
     )

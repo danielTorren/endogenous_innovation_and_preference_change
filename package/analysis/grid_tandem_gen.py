@@ -75,7 +75,7 @@ def grid_search_policy_with_seeds(param_list, controller_files):
     return np.asarray(results)
 
 
-def set_up_calibration_runs(base_params):
+def set_up_calibration_runs(base_params, root):
     """
     Set up and run calibration simulations.
     """
@@ -84,7 +84,7 @@ def set_up_calibration_runs(base_params):
 
     base_params_list = params_list_with_seed(base_params)
     print("NUM calibration runs:", len(base_params_list))
-    file_name = produce_name_datetime("grid_search_carbon_price_emissions_intensity")
+    file_name = produce_name_datetime(root)
 
     createFolder(file_name)
 
@@ -113,7 +113,7 @@ def main(
         base_params = json.load(f)
 
     # Run initial seed calibrations and save controllers
-    controller_files, base_params, fileName = set_up_calibration_runs(base_params)
+    controller_files, base_params, fileName = set_up_calibration_runs(base_params, "grid_tandem")
     print("Finished Calibration Runs")
 
     # Save base params

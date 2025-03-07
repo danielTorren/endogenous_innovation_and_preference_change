@@ -39,15 +39,14 @@ if __name__ == "__main__":
     "seed_repetitions": 1,
     "duration_burn_in": 240,
     "duration_no_carbon_price": 264,
-    "duration_future": 156,
+    "duration_future": 324, #156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-
     "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -56,7 +55,7 @@ if __name__ == "__main__":
     "parameters_scenarios":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": 0.5
+            "Grid_emissions_intensity": 1
     },
     "parameters_policies":{
         "States":{
@@ -176,7 +175,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

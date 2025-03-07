@@ -215,7 +215,7 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
     with open(BOUNDS_LOAD) as f:
         policy_params_dict = json.load(f)
 
-    controller_files, base_params, file_name = set_up_calibration_runs(base_params)
+    controller_files, base_params, file_name = set_up_calibration_runs(base_params, "endog_single")
 
     simulate_future_policies(file_name, controller_files, policy_list, policy_params_dict, n_calls, base_params, target_ev_uptake, noise)
 
