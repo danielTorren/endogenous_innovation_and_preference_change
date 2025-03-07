@@ -4,7 +4,8 @@ from package.analysis.endogenous_policy_intensity_single_gen import  set_up_cali
 from package.resources.utility import (
     save_object, 
 )
-
+import shutil  # Cleanup
+from pathlib import Path  # Path handling
 
 def main(
     BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json"
@@ -43,6 +44,8 @@ def main(
     }
 
     save_object(outcomes, file_name + "/Data", "outcomes")#
+
+    shutil.rmtree(Path(file_name) / "Calibration_runs", ignore_errors=True)
 
     return "Done"
 
