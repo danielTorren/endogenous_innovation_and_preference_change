@@ -107,7 +107,7 @@ def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val
     os.makedirs(f'{file_name}/Plots', exist_ok=True)
     save_path = f'{file_name}/Plots/{x_measure}_vs_{y_measure}.png'
     plt.savefig(save_path, dpi=dpi)
-    plt.close()
+    #plt.close()
 
     #print(f"Saved plot to {save_path}")
 
@@ -239,7 +239,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
     save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions.png'
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=dpi)
-    plt.close()
+    #plt.close()
 
     # Extract and return top 10 policy combinations by welfare (including intensities)
     top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
@@ -259,7 +259,7 @@ def main(fileNames, fileName_BAU):
 
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
     top_10 = plot_welfare_vs_emissions(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)
-    
+    plt.show()
     save_object(top_10, f"{fileName}/Data", "top_10")
     
     plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)

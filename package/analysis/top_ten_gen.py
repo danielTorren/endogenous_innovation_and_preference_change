@@ -27,7 +27,8 @@ def main(
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
-
+    base_params["save_timeseries_data_state"] = 1
+    
     top_policies = load_object(f"{TOP_TEN_LOAD}/Data", "top_10")
     root_folder = produce_name_datetime("top10_policy_runs")
     createFolder(root_folder)
