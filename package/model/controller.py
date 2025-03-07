@@ -14,6 +14,7 @@ from scipy.stats import lognorm
 class Controller:
     def __init__(self, parameters_controller):
 
+        self.absolute_2035 = 156
         self.unpack_controller_parameters(parameters_controller)
 
         self.handle_seed()
@@ -392,16 +393,28 @@ class Controller:
 
         self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
         self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Gas_price"]
-        self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
+        if self.duration_future > self.absolute_2035:
+            gas_price_series_future_im = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.absolute_2035)
+            self.gas_price_series_future = np.concatenate((gas_price_series_future_im, np.asarray([gas_price_series_future_im[-1]]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
 
         self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]
         self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Electricity_price"]
-        self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
+        if self.duration_future > self.absolute_2035:
+            electricity_price_series_future_im = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.absolute_2035)
+            self.electricity_price_series_future = np.concatenate((electricity_price_series_future_im, np.asarray([electricity_price_series_future_im[-1]]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
         
         self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]
         self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Grid_emissions_intensity"]
-        self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.duration_future)
-        
+        if self.duration_future > self.absolute_2035:
+            grid_emissions_intensity_series_future_im = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.absolute_2035)
+            self.grid_emissions_intensity_series_future = np.concatenate((grid_emissions_intensity_series_future_im, np.asarray([grid_emissions_intensity_series_future_im[-1]]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.duration_future)
+
     #############################################################################################################################
     #DEAL WITH POLICIES
 
@@ -480,23 +493,23 @@ class Controller:
         for t in time_series:
             carbon_price = self.calculate_price_at_time(t)
             carbon_price_series.append(carbon_price)
-        
         return carbon_price_series
 
     def calculate_price_at_time(self, t):
         if self.future_carbon_price_policy > 0 and self.duration_future > 0:
-            if t < (self.duration_burn_in + self.duration_no_carbon_price):
-                return 0
-            
-            if t >= (self.duration_burn_in + self.duration_no_carbon_price):
+            if t > (self.duration_burn_in + self.duration_no_carbon_price + self.absolute_2035):
+                return self.future_carbon_price_policy
+            elif t >= (self.duration_burn_in + self.duration_no_carbon_price):
                 relative_time = t - (self.duration_burn_in  + self.duration_no_carbon_price)
                 return self.calculate_growth(
                     relative_time, 
-                    self.duration_future,
+                    self.absolute_2035,
                     self.future_carbon_price_init,
                     self.future_carbon_price_policy,
                     self.future_carbon_price_state
                 )
+            else:
+                return 0
         else:
             return 0
 
