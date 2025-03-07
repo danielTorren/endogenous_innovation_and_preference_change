@@ -264,6 +264,7 @@ def main(fileNames, fileName_BAU):
     top_10 = plot_welfare_vs_emissions(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)
     
     save_object(top_10, f"{fileName}/Data", "top_10")
+    
     plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)
 
 if __name__ == "__main__":
