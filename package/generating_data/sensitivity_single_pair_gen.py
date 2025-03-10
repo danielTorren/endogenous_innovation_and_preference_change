@@ -1,5 +1,7 @@
 from copy import deepcopy
 import json
+
+from sklearn import base
 from package.resources.run import ev_prop_parallel_run
 from package.resources.utility import (
     createFolder, 
@@ -16,11 +18,6 @@ from package.resources.run import generate_data
 def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[dict]:
     params_list = []
 
-
-    num_param_combos = int(len(property_dict_1["property_list"])*len(property_dict_2["property_list"]))
-    num_reps = params["seed_repetitions"]
-    print("num_param_combos", num_param_combos)
-    print(" num_reps ",  num_reps )
     for i in property_dict_1["property_list"]:
         for j in  property_dict_2["property_list"]:
             params_updated = deepcopy(params)
@@ -29,7 +26,7 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
             params_list_pairs = params_list_with_seed(params_updated)
             params_list.extend(params_list_pairs)
 
-    return params_list, num_param_combos, num_reps
+    return params_list
 
 def single_simulation(params):
     """
@@ -98,11 +95,16 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-    params_list, num_param_combos, num_reps = produce_param_list(base_params, vary_1, vary_2)
+    params_list = produce_param_list(base_params, vary_1, vary_2)
     
     print("TOTAL SUB RUNS: ", len(params_list))
-    
-    results = runs_with_seeds(params_list, num_param_combos, num_reps) 
+
+
+    num_params_1 = len(vary_1["property_list"])
+    num_params_2 = len(vary_2["property_list"])
+    num_reps = base_params["seed_repetitions"]
+
+    results = runs_with_seeds(params_list, num_params_1, num_params_2, num_reps) 
     createFolder(fileName)
     
     save_object(base_params, fileName + "/Data", "base_params")
