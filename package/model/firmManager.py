@@ -563,9 +563,6 @@ class Firm_Manager:
         self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, targeted_research_subsidy, production_subsidy, research_subsidy, rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment, self.maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
 
-        #print("W im:",np.min(list(self.W_segment.values())),np.max(list(self.W_segment.values())))
         self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
-
-        
 
         return self.cars_on_sale_all_firms

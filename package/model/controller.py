@@ -745,7 +745,6 @@ class Controller:
             self.firm_manager.save_timeseries_data_firm_manager()
             self.second_hand_merchant.save_timeseries_second_hand_merchant()
             self.time_series.append(self.t_controller)
-
             self.save_timeseries_controller()
 
 ##########################################################################################################################################
@@ -881,6 +880,15 @@ class Controller:
         self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.production_subsidy_time_series_future), axis=None) 
         self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.research_subsidy_time_series_future), axis=None) 
 
+        self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
+        if self.save_timeseries_data_state:#SAVE DATA
+            self.set_up_time_series_controller()
+            self.second_hand_merchant.set_up_time_series_second_hand_car()
+            self.social_network.set_up_time_series_social_network()
+            self.firm_manager.set_up_time_series_firm_manager()
+            for firm in self.firm_manager.firms_list:
+                firm.save_timeseries_data_state = 1
+                firm.set_up_time_series_firm()
 
 
 

@@ -8,7 +8,7 @@ class SecondHandMerchant:
         self.cars_on_sale = []
 
         self.age_limit_second_hand = parameters_second_hand["age_limit_second_hand"]
-        self.set_up_time_series_social_network()
+        self.set_up_time_series_second_hand_car()
 
         self.r = parameters_second_hand["r"]
         self.max_num_cars = parameters_second_hand["max_num_cars"]
@@ -176,7 +176,7 @@ class SecondHandMerchant:
 
 ############################################################################################
 
-    def set_up_time_series_social_network(self):
+    def set_up_time_series_second_hand_car(self):
         self.history_num_second_hand = []
         self.history_profit = []
         self.history_age_second_hand_car_removed = []
