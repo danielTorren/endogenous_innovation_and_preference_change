@@ -40,6 +40,7 @@ def main(
     for (var_1, var_2) in pairs_list:
         VARY_LOAD_1 = VARY_LOAD_DICT[var_1]
         VARY_LOAD_2 = VARY_LOAD_DICT[var_2]
+        print(VARY_LOAD_1,VARY_LOAD_2)
         fileName = main_single(BASE_PARAMS_LOAD = BASE_PARAMS_LOAD, VARY_LOAD_1=VARY_LOAD_1, VARY_LOAD_2=VARY_LOAD_2 )
         fileName_list.append(fileName)
 

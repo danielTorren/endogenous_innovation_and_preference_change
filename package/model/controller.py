@@ -210,6 +210,7 @@ class Controller:
         delta = self.parameters_ICE["delta"]
         if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
             print("r and delta: r, delta/1-delta",r, delta,delta/(1-delta))
+            quit()
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
