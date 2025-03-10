@@ -37,7 +37,7 @@ def single_simulation(params):
     return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative, mean_price, max_price, min_price, data.firm_manager.last_step_calc_profit_margin(), data.social_network.calc_mean_car_age()
 
 
-def runs_with_seeds(params_list, num_param_combos, num_reps):
+def runs_with_seeds(params_list, num_params_1, num_params_2, num_reps):
     """
     Run policy scenarios using pre-saved controllers for consistency.
     """
@@ -51,19 +51,19 @@ def runs_with_seeds(params_list, num_param_combos, num_reps):
     
     (params_list)
     results = {
-        "ev_uptake": np.asarray(EV_uptake_arr).reshape(num_param_combos, num_reps),
-        "total_cost": np.asarray(total_cost_arr).reshape(num_param_combos, num_reps),
-        "net_cost": np.asarray(net_cost_arr).reshape(num_param_combos, num_reps),
-        "emissions_cumulative": np.asarray(emissions_cumulative_arr).reshape(num_param_combos, num_reps),
-        "emissions_cumulative_driving": np.asarray(emissions_cumulative_driving_arr).reshape(num_param_combos, num_reps),
-        "emissions_cumulative_production": np.asarray(emissions_cumulative_production_arr).reshape(num_param_combos, num_reps),
-        "utility_cumulative": np.asarray(utility_cumulative_arr).reshape(num_param_combos, num_reps),
-        "profit_cumulative": np.asarray(profit_cumulative_arr).reshape(num_param_combos, num_reps),
-        "price_mean": np.asarray(price_mean).reshape(num_param_combos, num_reps), 
-        "price_max": np.asarray(price_max).reshape(num_param_combos, num_reps), 
-        "price_min": np.asarray(price_min).reshape(num_param_combos, num_reps), 
-        "mean_mark_up": np.asarray(mean_mark_up).reshape(num_param_combos, num_reps), 
-        "mean_car_age": np.asarray(mean_car_age).reshape(num_param_combos, num_reps)
+        "ev_uptake": np.asarray(EV_uptake_arr).reshape(num_params_1, num_params_2, num_reps),
+        "total_cost": np.asarray(total_cost_arr).reshape(num_params_1, num_params_2, num_reps),
+        "net_cost": np.asarray(net_cost_arr).reshape(num_params_1, num_params_2, num_reps),
+        "emissions_cumulative": np.asarray(emissions_cumulative_arr).reshape(num_params_1, num_params_2, num_reps),
+        "emissions_cumulative_driving": np.asarray(emissions_cumulative_driving_arr).reshape(num_params_1, num_params_2, num_reps),
+        "emissions_cumulative_production": np.asarray(emissions_cumulative_production_arr).reshape(num_params_1, num_params_2, num_reps),
+        "utility_cumulative": np.asarray(utility_cumulative_arr).reshape(num_params_1, num_params_2, num_reps),
+        "profit_cumulative": np.asarray(profit_cumulative_arr).reshape(num_params_1, num_params_2, num_reps),
+        "price_mean": np.asarray(price_mean).reshape(num_params_1, num_params_2, num_reps), 
+        "price_max": np.asarray(price_max).reshape(num_params_1, num_params_2, num_reps), 
+        "price_min": np.asarray(price_min).reshape(num_params_1, num_params_2, num_reps), 
+        "mean_mark_up": np.asarray(mean_mark_up).reshape(num_params_1, num_params_2, num_reps), 
+        "mean_car_age": np.asarray(mean_car_age).reshape(num_params_1, num_params_2, num_reps)
     }
     return results
 
