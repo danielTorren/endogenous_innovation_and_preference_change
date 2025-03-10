@@ -11,7 +11,7 @@ def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=6
     num_vary_2 = len(vary_2["property_list"])
 
     data = results[measure]
-    data_mean = np.mean(data, axis = 2)
+    data_mean = np.nanmean(data, axis = 2)
 
     # Plot static heatmap
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -64,4 +64,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/sens_2d_all_13_41_40__10_03_2025")
+    main("results/sens_2d_all_13_51_11__10_03_2025")
