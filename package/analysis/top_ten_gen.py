@@ -1,15 +1,15 @@
-from package.resources.run import parallel_run_multi_seed, load_in_controller
+from package.resources.run import load_in_controller
 from package.analysis.endogenous_policy_intensity_single_gen import update_policy_intensity, set_up_calibration_runs
 from package.resources.utility import (
-    createFolder, 
     save_object, 
-    produce_name_datetime, 
     params_list_with_seed,
     load_object,
 )
-from joblib import Parallel, delayed, dump, load
+from joblib import Parallel, delayed, load
 import multiprocessing
 import numpy as np
+import shutil  # Cleanup
+from pathlib import Path  # Path handling
 
 def produce_param_list_for_policy_pair(base_params, policy1_name, policy2_name, policy1_value, policy2_value):
     params = base_params.copy()
@@ -173,10 +173,8 @@ def main(
             pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
             pairwise_outcomes_complied.update(pairwise_outcomes)
     #print(list(pairwise_outcomes_complied.keys()))
-
-
     top_policies = calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val)
-
+    print("Top policies donte")
     ##########################################################################################
 
     base_params = load_object(fileName + "/Data", "base_params")
@@ -189,8 +187,10 @@ def main(
         "Production_subsidy": 0,
         "Research_subsidy": 0
     }
+    print("base_params",base_params)
     controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "top_ten")
     print("DONE calibration")
+
     ###########################################################################################
 
     base_params["save_timeseries_data_state"] = 1
@@ -286,6 +286,10 @@ def main(
     save_object(outputs, root_folder + "/Data", "outputs")
     save_object(base_params, root_folder + "/Data", "base_params")
     print(f"All top 10 policies processed and saved in '{root_folder}'")
+
+    #######################################################################################################
+    #DELETE CALIBRATION RUNS
+    shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
 
 if __name__ == "__main__":
     main(
