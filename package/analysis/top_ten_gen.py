@@ -10,7 +10,7 @@ import multiprocessing
 import numpy as np
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
-import deepcopy
+from copy import deepcopy
 
 def calc_top_policies_welfare(pairwise_outcomes_complied, min_val, max_val):
     #GET BEST POLICY FROM EACH COMBINATION
