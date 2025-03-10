@@ -10,16 +10,7 @@ import multiprocessing
 import numpy as np
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
-
-def produce_param_list_for_policy_pair(base_params, policy1_name, policy2_name, policy1_value, policy2_value):
-    params = base_params.copy()
-
-    params = update_policy_intensity(params, policy1_name, policy1_value)
-    params = update_policy_intensity(params, policy2_name, policy2_value)
-
-    params_list = params_list_with_seed(params)
-
-    return params_list
+import deepcopy
 
 def calc_top_policies_welfare(pairwise_outcomes_complied, min_val, max_val):
     #GET BEST POLICY FROM EACH COMBINATION
@@ -107,6 +98,7 @@ def single_policy_with_seeds(params, controller_files):
         delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
     )
+    
     (
         history_driving_emissions_arr,#Emmissions flow
         history_production_emissions_arr,
@@ -174,7 +166,7 @@ def main(
             pairwise_outcomes_complied.update(pairwise_outcomes)
     #print(list(pairwise_outcomes_complied.keys()))
     top_policies = calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val)
-    print("Top policies donte")
+    print("Top policies done")
     ##########################################################################################
 
     base_params = load_object(fileName + "/Data", "base_params")
@@ -194,7 +186,6 @@ def main(
     ###########################################################################################
 
     base_params["save_timeseries_data_state"] = 1
-    params_list = params_list_with_seed(base_params)
 
     #RESET TO B SURE
     #RUN BAU
@@ -219,7 +210,7 @@ def main(
     history_production_cost_EV, 
     history_mean_profit_margins_ICE,
     history_mean_profit_margins_EV
-    ) = single_policy_with_seeds(params_list, controller_files)
+    ) = single_policy_with_seeds(base_params, controller_files)
 
     outputs_BAU = {
             "history_driving_emissions": history_driving_emissions_arr,
@@ -246,7 +237,10 @@ def main(
 
         print(f"Running time series for {policy1} & {policy2}")
 
-        params_list = produce_param_list_for_policy_pair(base_params, policy1, policy2, policy1_value, policy2_value)
+
+        params_policy = deepcopy(base_params)
+        params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
+        params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
         (
         history_driving_emissions_arr,#Emmissions flow
@@ -269,7 +263,7 @@ def main(
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV
-        ) = single_policy_with_seeds(params_list, controller_files)
+        ) = single_policy_with_seeds(params_policy, controller_files)
 
         outputs[(policy1, policy2)] = {
             "history_driving_emissions": history_driving_emissions_arr,
