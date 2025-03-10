@@ -17,12 +17,10 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
     params_list = []
 
     for i in property_dict_1["property_list"]:
-        for j in  property_dict_1["property_list"]:
+        for j in  property_dict_2["property_list"]:
             params_updated = deepcopy(params)
             params_updated[property_dict_1["subdict"]][property_dict_1["property_varied"]] = i
             params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = j
-
-
             parames_list_pairs = params_list_with_seed(params_updated)
             params_list.extend(parames_list_pairs)
 
