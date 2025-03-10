@@ -34,6 +34,8 @@ def main(
     fileName_outer = produce_name_datetime("sens_2d_all")
     createFolder(fileName_outer)
 
+    print("TOTAL RUNSish: ", len(pairs_list)*64*4*4)
+    
     fileName_list = []
     for (var_1, var_2) in pairs_list:
         VARY_LOAD_1 = VARY_LOAD_DICT[var_1]

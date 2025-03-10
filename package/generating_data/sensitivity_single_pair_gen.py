@@ -93,7 +93,7 @@ def main(
 
     params_list = produce_param_list(base_params, vary_1, vary_2)
     
-    print("TOTAL RUNS: ", len(params_list))
+    print("TOTAL SUB RUNS: ", len(params_list))
     
     results = ev_prop_parallel_run(params_list) 
     createFolder(fileName)
