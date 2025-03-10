@@ -223,7 +223,6 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=dpi)
 
-
     # Return top 10 policy combinations by welfare
     top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
     return top_10

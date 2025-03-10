@@ -64,4 +64,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/sens_2d_all_13_51_11__10_03_2025")
+    main("results/sens_2d_all_16_15_51__10_03_2025")

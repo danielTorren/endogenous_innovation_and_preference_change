@@ -55,7 +55,7 @@ if __name__ == "__main__":
     "parameters_scenarios":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": 0.5
+            "Grid_emissions_intensity": 1
     },
     "parameters_policies":{
         "States":{

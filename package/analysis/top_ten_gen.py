@@ -8,6 +8,7 @@ from package.resources.utility import (
     params_list_with_seed,
     load_object
 )
+import numpy as np
 
 def produce_param_list_for_policy_pair(base_params, policy1_name, policy2_name, policy1_value, policy2_value):
     params = base_params.copy()
@@ -19,22 +20,94 @@ def produce_param_list_for_policy_pair(base_params, policy1_name, policy2_name, 
 
     return params_list
 
+def calc_top_policies_welfare(pairwise_outcomes_complied, min_val, max_val):
+    #GET BEST POLICY FROM EACH COMBINATION
+    policy_welfare = {}
+
+    # Collect data and compute intensity ranges
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
+        mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
+        filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
+
+        for entry in filtered_data:
+            welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
+            policy_key = (policy1, policy2)
+            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
+                policy_welfare[policy_key] = {
+                    "welfare": welfare,
+                    "policy1_value": entry["policy1_value"],
+                    "policy2_value": entry["policy2_value"]
+                }
+
+    # Return top 10 policy combinations by welfare
+    top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
+
+    return top_10
+
+def calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val):
+    #GET BEST POLICY FROM EACH COMBINATION
+    policy_welfare = {}
+
+    # Collect data and compute intensity ranges
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
+        mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
+        filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
+
+        for entry in filtered_data:
+            welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
+            policy_key = (policy1, policy2)
+            if welfare > policy_welfare[policy_key]["welfare"]:#GET THE BEST OF THAT POLICY OMPETATION
+                policy_welfare[policy_key] = {
+                    "welfare": welfare,
+                    "policy1_value": entry["policy1_value"],
+                    "policy2_value": entry["policy2_value"]
+                }
+
+    # Return top 10 policy combinations by welfare
+    #top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
+    print("policy_welfare", policy_welfare)
+    return policy_welfare
+
 def main(
-        BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
-        TOP_TEN_LOAD="results/endogenous_policy_intensity_19_30_46__06_03_2025"
+        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
+        fileName_BAU="results/BAU_runs_13_30_12__07_03_2025",
+        min_val = 0.945,
+        max_val = 0.955
         ):
     
-    # Load base parameters
-    with open(BASE_PARAMS_LOAD) as f:
-        base_params = json.load(f)
+    fileName = fileNames[0]
+    base_params = load_object(fileName + "/Data", "base_params")
+    base_params["parameters_policies"]["States"] = {
+        "Carbon_price": 0,
+        "Targeted_research_subsidy": 0,
+        "Electricity_subsidy": 0,
+        "Adoption_subsidy": 0,
+        "Adoption_subsidy_used": 0,
+        "Production_subsidy": 0,
+        "Research_subsidy": 0
+    }
+    #RESET TO B SURE
+
+    pairwise_outcomes_complied = {}
+    if len(fileNames) == 1:
+        pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
+    else:
+        for fileName in fileNames:
+            pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
+            pairwise_outcomes_complied.update(pairwise_outcomes)
+
     base_params["save_timeseries_data_state"] = 1
 
-    top_policies = load_object(f"{TOP_TEN_LOAD}/Data", "top_10")
+    top_policies = calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val)
+
     root_folder = produce_name_datetime("top10_policy_runs")
     createFolder(root_folder)
 
-    print("TOTAL RUNS", 10*base_params["seed_repetitions"])
+    print("TOTAL RUNS", len(top_policies)*base_params["seed_repetitions"])
     outputs = {}
+
     for (policy1, policy2), welfare_data in top_policies.items():
 
         policy1_value = welfare_data["policy1_value"]
@@ -89,6 +162,8 @@ def main(
 
 if __name__ == "__main__":
     main(
-        BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
-        TOP_TEN_LOAD="results/endogenous_policy_intensity_19_30_46__06_03_2025"
+        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
+        fileName_BAU="results/BAU_runs_13_30_12__07_03_2025",
+        min_val = 0.945,
+        max_val = 0.955
     )

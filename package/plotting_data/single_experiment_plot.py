@@ -1100,7 +1100,7 @@ def main(fileName, dpi=400):
     social_network = data_controller.social_network
     firm_manager = data_controller.firm_manager
     time_series = np.arange(0, len(data_controller.time_series) - base_params["duration_burn_in"])
-    print(len(time_series))
+
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
@@ -1125,17 +1125,17 @@ def main(fileName, dpi=400):
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
 
     plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
-    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    plot_segment_count_grid(base_params,firm_manager, time_series, fileName)
-    plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
-    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
-    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
-    plot_history_W(base_params, firm_manager,time_series,  fileName)
-    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
-    plot_calibration_data(base_params, data_controller, time_series, fileName, dpi)
-    plot_prop_EV_on_sale(base_params,firm_manager, fileName)
+    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    #plot_segment_count_grid(base_params,firm_manager, time_series, fileName)
+    #plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+    #plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+    #plot_history_W(base_params, firm_manager,time_series,  fileName)
+    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
+    #plot_calibration_data(base_params, data_controller, time_series, fileName, dpi)
+    #plot_prop_EV_on_sale(base_params,firm_manager, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_10_44_16__07_03_2025")
+    main("results/single_experiment_16_47_02__10_03_2025")
