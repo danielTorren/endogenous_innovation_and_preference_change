@@ -9,7 +9,8 @@ from package.plotting_data.single_experiment_plot import save_and_show
 def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=600):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
-
+    print(measure)
+    print(results)
     data = results[measure]
     print(data.shape)
     data_mean = np.mean(data, axis = 2)
@@ -41,11 +42,14 @@ def main(fileName, dpi=600):
         "emissions_cumulative_production",
         "utility_cumulative",
         "profit_cumulative",
+        "price_mean",
+        "price_max",
+        "price_min",
         "mean_mark_up", 
         "mean_car_age"
     ]
 
-    #"price_mean_max_min" eeds to be doen seperately
+    # eeds to be doen seperately
 
     for fileName in fileName_list:
         try:
@@ -56,10 +60,10 @@ def main(fileName, dpi=600):
         except FileNotFoundError:
             print("Data files not found.")
             return
-
-        plot_heatmap(base_params, results,"ev_uptakr", vary_1, vary_2, fileName, dpi)
+        for measure in measure_list:
+            plot_heatmap(base_params, results, measure, vary_1, vary_2, fileName, dpi = 300)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_14_57_35__05_03_2025")
+    main("results/sens_2d_all_13_21_16__10_03_2025")

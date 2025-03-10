@@ -96,7 +96,7 @@ def main(
     
     print("TOTAL SUB RUNS: ", len(params_list))
     
-    results = ev_prop_parallel_run(params_list) 
+    results = runs_with_seeds(params_list) 
     createFolder(fileName)
     
     save_object(base_params, fileName + "/Data", "base_params")

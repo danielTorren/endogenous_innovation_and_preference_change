@@ -55,21 +55,21 @@ if __name__ == "__main__":
             "zeta":  "package/constants/sensitivity/vary_single_zeta_sensitivity.json",
             "r": "package/constants/sensitivity/vary_single_r_sensitivity.json",
             "delta": "package/constants/sensitivity/vary_single_delta_sensitivity.json",
-            "K": "package/constants/sensitivity/vary_single_K_sensitivity.json",
-            "lambda": "package/constants/sensitivity/vary_single_lambda_sensitivity.json",
-            "kappa": "package/constants/sensitivity/vary_single_kappa_sensitivity.json",
-            "mu": "package/constants/sensitivity/vary_single_mu_sensitivity.json",
-            "num_beta_segments": "package/constants/sensitivity/vary_single_beta_segments_sensitivity.json",
-            "num_gamma_segments": "package/constants/sensitivity/vary_single_gamma_segments_sensitivity.json",
-            "a_chi": "package/constants/sensitivity/vary_single_a_chi_sensitivity.json",
-            "b_chi": "package/constants/sensitivity/vary_single_b_chi_sensitivity.json"
+            #"K": "package/constants/sensitivity/vary_single_K_sensitivity.json",
+            #"lambda": "package/constants/sensitivity/vary_single_lambda_sensitivity.json",
+            #"kappa": "package/constants/sensitivity/vary_single_kappa_sensitivity.json",
+            #"mu": "package/constants/sensitivity/vary_single_mu_sensitivity.json",
+            #"num_beta_segments": "package/constants/sensitivity/vary_single_beta_segments_sensitivity.json",
+            #"num_gamma_segments": "package/constants/sensitivity/vary_single_gamma_segments_sensitivity.json",
+            #"a_chi": "package/constants/sensitivity/vary_single_a_chi_sensitivity.json",
+            #"b_chi": "package/constants/sensitivity/vary_single_b_chi_sensitivity.json"
         },
         pairs_list = [
             ("alpha", "zeta"),
             ("r", "delta"),
-            ("K", "lambda"),
-            ("kappa", "mu"),
-            ("num_beta_segments", "num_gamma_segments"),
-            ("a_chi", "b_chi")
+            #("K", "lambda"),
+            #("kappa", "mu"),
+            #("num_beta_segments", "num_gamma_segments"),
+            #("a_chi", "b_chi")
         ]
     )
