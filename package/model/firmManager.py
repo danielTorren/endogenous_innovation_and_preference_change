@@ -364,10 +364,14 @@ class Firm_Manager:
 
         return profit_margin_ICE, profit_margin_EV
     
-    def last_step_calc_profit_margin(self):
+    def calc_last_step_profit_margin(self):
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
         all_profit_margins = profit_margin_ICE +  profit_margin_EV
         return np.mean(all_profit_margins)
+
+    def calc_last_step_HHI(self):
+        HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
+        return HHI
     
     #####################################################################################################################
 

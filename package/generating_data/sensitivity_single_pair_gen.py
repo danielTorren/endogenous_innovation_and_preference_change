@@ -34,7 +34,7 @@ def single_simulation(params):
     """
     data = generate_data(params)  # Run calibration
     mean_price, min_price, max_price = data.social_network.calc_price_mean_max_min()
-    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative, mean_price, max_price, min_price, data.firm_manager.last_step_calc_profit_margin(), data.social_network.calc_mean_car_age()
+    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative, data.firm_manager.calc_last_step_HHI(), mean_price, max_price, min_price, data.firm_manager.calc_last_step_profit_margin(), data.social_network.calc_mean_car_age()
 
 
 def runs_with_seeds(params_list, num_params_1, num_params_2, num_reps):
@@ -47,7 +47,7 @@ def runs_with_seeds(params_list, num_params_1, num_params_2, num_reps):
         delayed(single_simulation)(params_loop) for params_loop in params_list
         )
 
-    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr, price_mean, price_max, price_min, mean_mark_up, mean_car_age = zip(*res)
+    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr, HHI_arr, price_mean, price_max, price_min, mean_mark_up, mean_car_age = zip(*res)
     
     (params_list)
     results = {
@@ -59,6 +59,7 @@ def runs_with_seeds(params_list, num_params_1, num_params_2, num_reps):
         "emissions_cumulative_production": np.asarray(emissions_cumulative_production_arr).reshape(num_params_1, num_params_2, num_reps),
         "utility_cumulative": np.asarray(utility_cumulative_arr).reshape(num_params_1, num_params_2, num_reps),
         "profit_cumulative": np.asarray(profit_cumulative_arr).reshape(num_params_1, num_params_2, num_reps),
+        "HHI": np.asarray(HHI_arr).reshape(num_params_1, num_params_2, num_reps),
         "price_mean": np.asarray(price_mean).reshape(num_params_1, num_params_2, num_reps), 
         "price_max": np.asarray(price_max).reshape(num_params_1, num_params_2, num_reps), 
         "price_min": np.asarray(price_min).reshape(num_params_1, num_params_2, num_reps), 

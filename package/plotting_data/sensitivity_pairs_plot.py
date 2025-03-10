@@ -9,12 +9,9 @@ from package.plotting_data.single_experiment_plot import save_and_show
 def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=600):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
-    print(measure)
-    print(results)
+
     data = results[measure]
-    print(data.shape)
     data_mean = np.mean(data, axis = 2)
-    print(data_mean.shape)
 
     # Plot static heatmap
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -35,13 +32,14 @@ def main(fileName, dpi=600):
     fileName_list = load_object(fileName + "/Data", "2D_sensitivity_fileName_list")
     measure_list = [
         "ev_uptake",
-        "total_cost",
-        "net_cost",
+        #"total_cost",
+        #"net_cost",
         "emissions_cumulative",
-        "emissions_cumulative_driving",
-        "emissions_cumulative_production",
-        "utility_cumulative",
-        "profit_cumulative",
+        #"emissions_cumulative_driving",
+        #"emissions_cumulative_production",
+        #"utility_cumulative",
+        #"profit_cumulative",
+        "HHI",
         "price_mean",
         "price_max",
         "price_min",
@@ -66,4 +64,4 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/sens_2d_all_13_36_22__10_03_2025")
+    main("results/sens_2d_all_13_41_40__10_03_2025")
