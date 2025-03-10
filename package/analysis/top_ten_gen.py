@@ -58,16 +58,14 @@ def calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val):
         for entry in filtered_data:
             welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
             policy_key = (policy1, policy2)
-            if welfare > policy_welfare[policy_key]["welfare"]:#GET THE BEST OF THAT POLICY OMPETATION
+
+            if (policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]) and (entry["policy1_value"] > 0 and entry["policy2_value"] > 0):#GET THE BEST OF THAT POLICY OMPETATION
                 policy_welfare[policy_key] = {
                     "welfare": welfare,
                     "policy1_value": entry["policy1_value"],
                     "policy2_value": entry["policy2_value"]
                 }
 
-    # Return top 10 policy combinations by welfare
-    #top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
-    print("policy_welfare", policy_welfare)
     return policy_welfare
 
 def main(
@@ -76,10 +74,26 @@ def main(
         max_val = 0.955
         ):
     
+    fileName = fileNames[0]
     root_folder = produce_name_datetime("top10_policy_runs")
     createFolder(root_folder)
 
-    fileName = fileNames[0]
+    ##########################################################################################
+
+    pairwise_outcomes_complied = {}
+    if len(fileNames) == 1:
+        pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
+    else:
+        for fileName in fileNames:
+            pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
+            pairwise_outcomes_complied.update(pairwise_outcomes)
+    #print(list(pairwise_outcomes_complied.keys()))
+
+
+    top_policies = calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val)
+    ##########################################################################################
+
+
     base_params = load_object(fileName + "/Data", "base_params")
     base_params["parameters_policies"]["States"] = {
         "Carbon_price": 0,
@@ -134,20 +148,6 @@ def main(
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
 
     ##############################################################################################################################
-
-    ##########################################################################################
-
-    pairwise_outcomes_complied = {}
-    if len(fileNames) == 1:
-        pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
-    else:
-        for fileName in fileNames:
-            pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
-            pairwise_outcomes_complied.update(pairwise_outcomes)
-
-    top_policies = calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val)
-
-
 
     print("TOTAL RUNS", len(top_policies)*base_params["seed_repetitions"])
     outputs = {}
