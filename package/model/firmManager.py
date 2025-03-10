@@ -346,6 +346,7 @@ class Firm_Manager:
         for car in past_new_bought_vehicles:
             if car.transportType == 3:
                 prod_cost = np.maximum(0, car.ProdCost_t - self.production_subsidy)
+                
                 if prod_cost == 0:
                     profit_margin = np.inf
                 else:
@@ -353,6 +354,7 @@ class Firm_Manager:
                 
                 profit_margin_EV.append(profit_margin)
             else:
+                
                 prod_cost = car.ProdCost_t
                 if prod_cost == 0:
                     profit_margin = np.inf
@@ -364,7 +366,8 @@ class Firm_Manager:
     
     def last_step_calc_profit_margin(self):
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
-        return [np.mean(profit_margin_ICE), np.mean(profit_margin_EV)]
+        all_profit_margins = profit_margin_ICE +  profit_margin_EV
+        return np.mean(all_profit_margins)
     
     #####################################################################################################################
 

@@ -31,7 +31,8 @@ def single_simulation(params):
     Run a single simulation and return EV uptake and policy distortion.
     """
     data = generate_data(params)  # Run calibration
-    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative, data.social_network.calc_price_mean_max_min(), data.firm_manager.last_step_calc_profit_margin(), data.social_network.calc_mean_car_age()
+    mean_price, min_price, max_price = data.social_network.calc_price_mean_max_min()
+    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative, mean_price, max_price, min_price, data.firm_manager.last_step_calc_profit_margin(), data.social_network.calc_mean_car_age()
 
 
 def runs_with_seeds(params_list):
@@ -44,7 +45,7 @@ def runs_with_seeds(params_list):
         delayed(single_simulation)(params_loop) for params_loop in params_list
         )
 
-    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr, price_mean_max_min, mean_mark_up, mean_car_age = zip(*res)
+    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr, price_mean, price_max, price_min, mean_mark_up, mean_car_age = zip(*res)
     
     results = {
         "ev_uptake": np.asarray(EV_uptake_arr),
@@ -55,7 +56,9 @@ def runs_with_seeds(params_list):
         "emissions_cumulative_production": np.asarray(emissions_cumulative_production_arr),
         "utility_cumulative": np.asarray(utility_cumulative_arr),
         "profit_cumulative": np.asarray(profit_cumulative_arr),
-        "price_mean_max_min": np.asarray(price_mean_max_min), 
+        "price_mean": np.asarray(price_mean), 
+        "price_max": np.asarray(price_max), 
+        "price_min": np.asarray(price_min), 
         "mean_mark_up": np.asarray(mean_mark_up), 
         "mean_car_age": np.asarray(mean_car_age)
     }

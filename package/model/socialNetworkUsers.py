@@ -1162,7 +1162,7 @@ class Social_Network:
         price_min =  np.min(prices)
         price_max = np.max(prices)
 
-        return [price_mean, price_min, price_max]
+        return price_mean, price_min, price_max
     
     def calc_mean_car_age(self):
         mean_car_age  = np.mean([car.L_a_t for car in self.current_vehicles])
