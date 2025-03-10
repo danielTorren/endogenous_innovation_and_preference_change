@@ -147,14 +147,14 @@ def save_data_csv_2D(data,fileName,title):
 
 def generate_vals(variable_parameters_dict):
     if variable_parameters_dict["property_divisions"] == "linear":
-        property_values_list  = np.linspace(variable_parameters_dict["property_min"], variable_parameters_dict["property_max"], variable_parameters_dict["property_reps"])
+        property_list  = np.linspace(variable_parameters_dict["property_min"], variable_parameters_dict["property_max"], variable_parameters_dict["property_reps"])
     elif variable_parameters_dict["property_divisions"] == "log":
-        property_values_list  = np.logspace(np.log10(variable_parameters_dict["property_min"]),np.log10( variable_parameters_dict["property_max"]), variable_parameters_dict["property_reps"])
+        property_list  = np.logspace(np.log10(variable_parameters_dict["property_min"]),np.log10( variable_parameters_dict["property_max"]), variable_parameters_dict["property_reps"])
     elif variable_parameters_dict["property_divisions"]== "geo":
-        property_values_list = np.geomspace(variable_parameters_dict["property_min"],variable_parameters_dict["property_max"], variable_parameters_dict["property_reps"])
+        property_list = np.geomspace(variable_parameters_dict["property_min"],variable_parameters_dict["property_max"], variable_parameters_dict["property_reps"])
     else:
         print("Invalid divisions, try linear or log")
-    return property_values_list 
+    return property_list 
 
 
 def load_object(fileName, objectName) -> dict:

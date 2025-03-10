@@ -1,5 +1,5 @@
 {
     "property_varied": "delta",
     "subdict": "parameters_ICE",
-    "property_values_list": [0.0001, 0.00025, 0.00075,0.001]
+    "property_list": [0.0001, 0.00025, 0.00075,0.001]
 }

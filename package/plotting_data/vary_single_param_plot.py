@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 
-def plot_distance(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+def plot_distance(data_array, property_list, fileName, name_property, property_save, dpi=600):
     """
     Plots multiple subplots of mean user distance over time for different delta values.
     Each subplot corresponds to one delta value and contains multiple lines for different seeds.
@@ -15,7 +15,7 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
     -----------
     data_array : ndarray
         Data array of shape [num_deltas, num_seeds, time_steps, num_individuals].
-    property_values_list : list or array
+    property_list : list or array
         The list of delta values corresponding to the first dimension of data_array.
     fileName : str
         The directory name or base filename where the plot should be saved.
@@ -36,7 +36,7 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
     if num_deltas == 1:
         axes = [axes]
 
-    for i, delta in enumerate(property_values_list):
+    for i, delta in enumerate(property_list):
         ax = axes[i]
 
         # For each seed, compute the mean over individuals and plot
@@ -82,7 +82,7 @@ def plot_distance(data_array, property_values_list, fileName, name_property, pro
 
 
 
-def plot_ev_prop(base_params,data_array, property_values_list, fileName, name_property, property_save, real_data, dpi=600):
+def plot_ev_prop(base_params,data_array, property_list, fileName, name_property, property_save, real_data, dpi=600):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -97,7 +97,7 @@ def plot_ev_prop(base_params,data_array, property_values_list, fileName, name_pr
     if num_deltas == 1:
         axes = np.array([axes])
 
-    for i, delta in enumerate(property_values_list):
+    for i, delta in enumerate(property_list):
         ax = axes[i]
 
         # Get data after burn-in
@@ -136,7 +136,7 @@ def plot_ev_prop(base_params,data_array, property_values_list, fileName, name_pr
     fig.savefig(f"{fileName}/Plots/user_ev_prop_multi_{property_save}.png", dpi=dpi)
 
 
-def plot_age(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+def plot_age(data_array, property_list, fileName, name_property, property_save, dpi=600):
     """
     Plots multiple subplots of mean user distance over time for different delta values.
     Each subplot corresponds to one delta value and contains multiple lines for different seeds.
@@ -145,7 +145,7 @@ def plot_age(data_array, property_values_list, fileName, name_property, property
     -----------
     data_array : ndarray
         Data array of shape [num_deltas, num_seeds, time_steps, num_individuals].
-    property_values_list : list or array
+    property_list : list or array
         The list of delta values corresponding to the first dimension of data_array.
     fileName : str
         The directory name or base filename where the plot should be saved.
@@ -166,7 +166,7 @@ def plot_age(data_array, property_values_list, fileName, name_property, property
     if num_deltas == 1:
         axes = [axes]
 
-    for i, delta in enumerate(property_values_list):
+    for i, delta in enumerate(property_list):
         ax = axes[i]
 
         # For each seed, compute the mean over individuals and plot
@@ -210,7 +210,7 @@ def plot_age(data_array, property_values_list, fileName, name_property, property
     fig.savefig(f"{fileName}/user_age_multi_{property_save}.png", dpi=dpi)
     #plt.show()
 
-def plot_emissions(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+def plot_emissions(data_array, property_list, fileName, name_property, property_save, dpi=600):
 
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
@@ -225,7 +225,7 @@ def plot_emissions(data_array, property_values_list, fileName, name_property, pr
     if num_deltas == 1:
         axes = [axes]
 
-    for i, delta in enumerate(property_values_list):
+    for i, delta in enumerate(property_list):
         ax = axes[i]
 
         # For each seed, compute the mean over individuals and plot
@@ -253,7 +253,7 @@ def plot_emissions(data_array, property_values_list, fileName, name_property, pr
     # Save and show
     fig.savefig(f"{fileName}/emissions_{property_save}.png", dpi=dpi)
 
-def plot_price(base_params, data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+def plot_price(base_params, data_array, property_list, fileName, name_property, property_save, dpi=600):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -271,7 +271,7 @@ def plot_price(base_params, data_array, property_values_list, fileName, name_pro
     # Store line objects for the legend
     line_handles = {}
 
-    for i, delta in enumerate(property_values_list):
+    for i, delta in enumerate(property_list):
         ax_new = axes[0, i]  # Upper row for new prices
         ax_second_hand = axes[1, i]  # Lower row for second-hand prices
 
@@ -328,7 +328,7 @@ def plot_price(base_params, data_array, property_values_list, fileName, name_pro
 
 ################################################################################################
 
-def plot_efficiency(data_array, property_values_list, fileName, name_property, property_save, dpi=600):
+def plot_efficiency(data_array, property_list, fileName, name_property, property_save, dpi=600):
 
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
@@ -343,7 +343,7 @@ def plot_efficiency(data_array, property_values_list, fileName, name_property, p
     if num_deltas == 1:
         axes = [axes]
 
-    for i, delta in enumerate(property_values_list):
+    for i, delta in enumerate(property_list):
         ax = axes[i]
 
         # For each seed, compute the mean over individuals and plot
@@ -373,7 +373,7 @@ def plot_efficiency(data_array, property_values_list, fileName, name_property, p
 
 
 
-def plot_ev_prop_combined(base_params, data_array, property_values_list, fileName, name_property, property_save, real_data, dpi=600):
+def plot_ev_prop_combined(base_params, data_array, property_list, fileName, name_property, property_save, real_data, dpi=600):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -394,7 +394,7 @@ def plot_ev_prop_combined(base_params, data_array, property_values_list, fileNam
     ax.plot(time_steps_real, real_data, label="California Data 2010-22", color='orange', linestyle="dotted")
     
     # Loop over different parameter values
-    for i, (delta, color) in enumerate(zip(property_values_list, colors)):
+    for i, (delta, color) in enumerate(zip(property_list, colors)):
         # Get data after burn-in
         data_after_burn_in = data_array[i, :, burn_in_step:]
 
@@ -430,20 +430,20 @@ def main(fileName, dpi=300):
     #data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
     vary_single = load_object(fileName + "/Data", "vary_single")
     
-    property_values_list = vary_single["property_values_list"]
+    property_list = vary_single["property_list"]
     name_property = vary_single["property_varied"] 
     property_save = vary_single["property_varied"]
 
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
-    #plot_distance(data_array_distance, property_values_list, fileName, name_property, property_save, 600)
-    plot_ev_prop_combined(base_params, data_array_EV_prop, property_values_list, fileName, name_property, property_save, EV_stock_prop_2010_22, dpi=600)
-    plot_ev_prop(base_params,data_array_EV_prop, property_values_list, fileName, name_property, property_save,EV_stock_prop_2010_22,  600)
-    #plot_age(data_array_age, property_values_list, fileName, name_property, property_save, 600)
-    plot_price(base_params,data_array_price , property_values_list, fileName, name_property, property_save, 600)
-    #plot_emissions(data_array_emissions , property_values_list, fileName, name_property, property_save, 600)
-    #plot_efficiency(data_array_efficiency , property_values_list, fileName, name_property, property_save, 600)
+    #plot_distance(data_array_distance, property_list, fileName, name_property, property_save, 600)
+    plot_ev_prop_combined(base_params, data_array_EV_prop, property_list, fileName, name_property, property_save, EV_stock_prop_2010_22, dpi=600)
+    plot_ev_prop(base_params,data_array_EV_prop, property_list, fileName, name_property, property_save,EV_stock_prop_2010_22,  600)
+    #plot_age(data_array_age, property_list, fileName, name_property, property_save, 600)
+    plot_price(base_params,data_array_price , property_list, fileName, name_property, property_save, 600)
+    #plot_emissions(data_array_emissions , property_list, fileName, name_property, property_save, 600)
+    #plot_efficiency(data_array_efficiency , property_list, fileName, name_property, property_save, 600)
 
     plt.show()
 
