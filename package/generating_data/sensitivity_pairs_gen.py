@@ -59,8 +59,8 @@ if __name__ == "__main__":
             #"lambda": "package/constants/sensitivity/vary_single_lambda_sensitivity.json",
             #"kappa": "package/constants/sensitivity/vary_single_kappa_sensitivity.json",
             #"mu": "package/constants/sensitivity/vary_single_mu_sensitivity.json",
-            "num_beta_segments": "package/constants/sensitivity/constants/vary_single_beta_segments_sensitivity.json",
-            "num_gamma_segments": "package/constants/sensitivity/constants/vary_single_gamma_segments_sensitivity.json",
+            "num_beta_segments": "package/constants/sensitivity/vary_single_beta_segments_sensitivity.json",
+            "num_gamma_segments": "package/constants/sensitivity/vary_single_gamma_segments_sensitivity.json",
             "a_chi": "package/constants/sensitivity/vary_single_a_chi_sensitivity.json",
             "b_chi": "package/constants/sensitivity/vary_single_b_chi_sensitivity.json"
         },
