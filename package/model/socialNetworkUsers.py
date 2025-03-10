@@ -1156,6 +1156,18 @@ class Social_Network:
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
         self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
 
+    def calc_price_mean_max_min(self):
+        prices = [car.price for car in self.new_cars]
+        price_mean =  np.mean(prices)
+        price_min =  np.min(prices)
+        price_max = np.max(prices)
+
+        return [price_mean, price_min, price_max]
+    
+    def calc_mean_car_age(self):
+        mean_car_age  = np.mean([car.L_a_t for car in self.current_vehicles])
+        return mean_car_age
+
 ####################################################################################################################################
 
     def update_prices_and_emissions_intensity(self):

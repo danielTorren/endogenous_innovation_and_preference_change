@@ -16,6 +16,10 @@ class Controller:
 
         self.absolute_2035 = 156
         self.unpack_controller_parameters(parameters_controller)
+        
+        self.parameters_EV["delta"] = self.parameters_ICE["delta"] 
+        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
+        self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
 
         self.handle_seed()
 
@@ -25,8 +29,7 @@ class Controller:
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
         
-        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
-        self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
+
 
         self.update_time_series_data()
 

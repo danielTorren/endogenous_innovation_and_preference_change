@@ -362,6 +362,10 @@ class Firm_Manager:
 
         return profit_margin_ICE, profit_margin_EV
     
+    def last_step_calc_profit_margin(self):
+        profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
+        return [np.mean(profit_margin_ICE), np.mean(profit_margin_EV)]
+    
     #####################################################################################################################
 
     def set_up_time_series_firm_manager(self):

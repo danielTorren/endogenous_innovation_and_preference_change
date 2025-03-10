@@ -1,0 +1,5 @@
+{
+    "property_varied": "alpha",
+    "subdict": "parameters_vehicle_user",
+    "property_values_list": [0.1,0.3, 0.6, 0.8]
+}

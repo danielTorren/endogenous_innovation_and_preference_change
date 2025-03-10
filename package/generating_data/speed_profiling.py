@@ -90,7 +90,6 @@ if __name__ == '__main__':
         "K": 3,
         "A": 4,
         "rho":[1,0,0,0.5],
-        "delta": 0.001,
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,

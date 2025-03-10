@@ -1,0 +1,7 @@
+{
+    "property_varied": "kappa",
+    "subdict":"parameters_vehicle_user",
+    "min": 1e-4,
+    "max": 1e-3,
+    "reps": 4
+}     
