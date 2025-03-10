@@ -29,8 +29,6 @@ class Controller:
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
         
-
-
         self.update_time_series_data()
 
         self.setup_id_gen()
@@ -211,10 +209,9 @@ class Controller:
         r = self.parameters_vehicle_user["r"]
         delta = self.parameters_ICE["delta"]
         if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
-            print("r and delta: r, delta/1-delta",r, delta/(1-delta), self.parameters_EV["delta"]/(1-self.parameters_EV["delta"]))
+            print("r and delta: r, delta/1-delta",r, delta,delta/(1-delta))
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
-
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
         self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
         WTP_E_vec_unclipped = self.random_state_inputs.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
