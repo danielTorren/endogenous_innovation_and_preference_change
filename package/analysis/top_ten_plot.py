@@ -152,6 +152,16 @@ def main(fileName):
         "history_total_profit"
     )
 
+    plot_policy_results(
+        fileName,
+        outputs_BAU,
+        outputs, 
+        top_policies,
+        "Time Step, months", 
+        "Total Profit, $", 
+        "history_policy_net_cost"
+    )
+
 
     plt.show()
 

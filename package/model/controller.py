@@ -730,6 +730,7 @@ class Controller:
         self.history_electricity_emissions_intensity = []
         self.history_rebate = []
         self.history_used_rebate = []
+        self.history_policy_net_cost = []
 
     def save_timeseries_controller(self):
         self.history_gas_price.append(self.gas_price)
@@ -737,6 +738,7 @@ class Controller:
         self.history_electricity_emissions_intensity.append(self.electricity_emissions_intensity)
         self.history_rebate.append(self.rebate)
         self.history_used_rebate.append(self.used_rebate)
+        self.history_policy_net_cost.append(self.calc_net_policy_distortion())
 
     def manage_saves(self):
         #DO it hear to avoid having to record the time in the subobjects
