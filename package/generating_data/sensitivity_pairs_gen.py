@@ -19,7 +19,9 @@ def main(
             "num_beta": "package/constants/vary_single_num_beta_sensitivity.json",
             "num_gamma": "package/constants/vary_single_num_gamma_sensitivity.json",
             "a_chi": "package/constants/vary_single_a_chi_sensitivity.json",
-            "b_chi": "package/constants/vary_single_b_chi_sensitivity.json"
+            "b_chi": "package/constants/vary_single_b_chi_sensitivity.json",
+            "num_users": "package/constants/vary_single_num_users_sensitivity.json",
+            "num_firms": "package/constants/vary_single_num_firms_sensitivity.json",
         },
         pairs_list = [
             ("alpha", "zeta"),
@@ -27,7 +29,8 @@ def main(
             ("K", "lambda"),
             ("kappa", "mu"),
             ("num_beta", "num_gamma"),
-            ("a_chi", "b_chi")
+            ("a_chi", "b_chi"),
+            ("num_users", "num_firms")
         ]
     ) -> str: 
 
@@ -62,14 +65,17 @@ if __name__ == "__main__":
             "num_beta_segments": "package/constants/sensitivity/vary_single_beta_segments_sensitivity.json",
             "num_gamma_segments": "package/constants/sensitivity/vary_single_gamma_segments_sensitivity.json",
             "a_chi": "package/constants/sensitivity/vary_single_a_chi_sensitivity.json",
-            "b_chi": "package/constants/sensitivity/vary_single_b_chi_sensitivity.json"
+            "b_chi": "package/constants/sensitivity/vary_single_b_chi_sensitivity.json",
+            "num_users": "package/constants/vary_single_num_users_sensitivity.json",
+            "num_firms": "package/constants/vary_single_num_firms_sensitivity.json",
         },
         pairs_list = [
-            ("alpha", "zeta"),
-            ("r", "delta"),
-            ("K", "lambda"),
-            ("kappa", "mu"),
-            ("num_beta_segments", "num_gamma_segments"),
-            ("a_chi", "b_chi")
+            #("alpha", "zeta"),
+            #("r", "delta"),
+            #("K", "lambda"),
+            #("kappa", "mu"),
+            #("num_beta_segments", "num_gamma_segments"),
+            #("a_chi", "b_chi"),
+            ("num_users", "num_firms")
         ]
     )
