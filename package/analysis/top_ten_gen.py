@@ -180,8 +180,7 @@ def main(
         "Production_subsidy": 0,
         "Research_subsidy": 0
     }
-    print("base_params",base_params)
-    quit()
+
     controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "top_ten")
     print("DONE calibration")
     #
