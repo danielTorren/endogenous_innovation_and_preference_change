@@ -22,7 +22,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
         Style of the dashed lines. Default is '--'.
     """
     burn_in = base_params["duration_burn_in"]
-    no_carbon_price = base_params["duration_no_carbon_price"]
+    no_carbon_price = base_params["duration_calibration"]
     #ev_research_start_time = base_params["ev_research_start_time"]
     ev_production_start_time = base_params["ev_production_start_time"]
     #second_hand_burn_in = base_params["parameters_second_hand"]["burn_in_second_hand_market"]

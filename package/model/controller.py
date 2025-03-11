@@ -99,7 +99,7 @@ class Controller:
         
         #TIME STUFF#
         self.duration_burn_in = parameters_controller["duration_burn_in"] 
-        self.duration_no_carbon_price = parameters_controller["duration_no_carbon_price"] 
+        self.duration_calibration = parameters_controller["duration_calibration"] 
         self.duration_future = parameters_controller["duration_future"] 
 
         if self.duration_future > 0: 
@@ -374,15 +374,15 @@ class Controller:
     def manage_calibration(self):
 
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
-        self.calibration_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future )
-        self.calibration_used_rebate_time_series = np.zeros(self.duration_no_carbon_price + self.duration_future)
+        self.calibration_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future )
+        self.calibration_used_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future)
         
         if self.parameters_controller["EV_rebate_state"]:#CONTROLLS WHETHER OR NOT THE REBATE POLICY APPLIED DURING FUTURE
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
         else:
-            self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_no_carbon_price] = self.parameters_rebate_calibration["rebate"]
-            self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_no_carbon_price] = self.parameters_rebate_calibration["used_rebate"]
+            self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["rebate"]
+            self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["used_rebate"]
 
         self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
 
@@ -497,10 +497,10 @@ class Controller:
 
     def calculate_price_at_time(self, t):
         if self.future_carbon_price_policy > 0 and self.duration_future > 0:
-            if t > (self.duration_burn_in + self.duration_no_carbon_price + self.absolute_2035):
+            if t > (self.duration_burn_in + self.duration_calibration + self.absolute_2035):
                 return self.future_carbon_price_policy
-            elif t >= (self.duration_burn_in + self.duration_no_carbon_price):
-                relative_time = t - (self.duration_burn_in  + self.duration_no_carbon_price)
+            elif t >= (self.duration_burn_in + self.duration_calibration):
+                relative_time = t - (self.duration_burn_in  + self.duration_calibration)
                 return self.calculate_growth(
                     relative_time, 
                     self.absolute_2035,
@@ -564,27 +564,27 @@ class Controller:
             self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
             self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
             
-            self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.rebate_time_series_future), axis=None) 
-            self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.used_rebate_time_series_future), axis=None) 
+            self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.rebate_time_series_future), axis=None) 
+            self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.used_rebate_time_series_future), axis=None) 
 
-            self.targeted_research_subsidy_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.targeted_research_subsidy_time_series_future), axis=None) 
-            self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
-            self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.production_subsidy_time_series_future), axis=None) 
-            self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.research_subsidy_time_series_future), axis=None) 
+            self.targeted_research_subsidy_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.targeted_research_subsidy_time_series_future), axis=None) 
+            self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.electricity_price_subsidy_time_series_future), axis=None) 
+            self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.production_subsidy_time_series_future), axis=None) 
+            self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.research_subsidy_time_series_future), axis=None) 
 
         else:
             self.gas_price_california_vec = self.pre_future_gas_price_california_vec 
             self.electricity_price_vec = self.pre_future_electricity_price_vec 
             self.electricity_emissions_intensity_vec = self.pre_future_electricity_emissions_intensity_vec
             
-            self.rebate_time_series =  np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
-            self.used_rebate_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.rebate_time_series =  np.zeros(self.duration_burn_in + self.duration_calibration)
+            self.used_rebate_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
 
-            self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
-            self.targeted_research_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
-            self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
-            self.production_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
-            self.research_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_no_carbon_price)
+            self.carbon_price_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
+            self.targeted_research_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
+            self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
+            self.production_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
+            self.research_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
         
         #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
 
@@ -642,7 +642,7 @@ class Controller:
         #create social network
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
-        self.parameters_social_network["policy_start_time"] = self.duration_no_carbon_price
+        self.parameters_social_network["policy_start_time"] = self.duration_calibration
         self.parameters_social_network["carbon_price"] = self.carbon_price
         self.parameters_social_network["IDGenerator_firms"] = self.IDGenerator_firms
         self.parameters_social_network["second_hand_merchant"] = self.second_hand_merchant
@@ -760,7 +760,7 @@ class Controller:
             for firm in self.firm_manager.firms_list:
                 firm.ev_production_bool = True
         
-        if (self.t_controller == self.duration_burn_in + self.duration_no_carbon_price) and self.duration_future > 0 and self.Targeted_research_subsidy_state:#Im worried about timing issues with the end of calibration and start of future runs
+        if (self.t_controller == self.duration_burn_in + self.duration_calibration) and self.duration_future > 0 and self.Targeted_research_subsidy_state:#Im worried about timing issues with the end of calibration and start of future runs
             self.update_target_range_over_cost()
 
         #carbon price
@@ -868,17 +868,17 @@ class Controller:
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec,self.grid_emissions_intensity_series_future ), axis=None) 
         
-        self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.rebate_time_series_future), axis=None) 
-        self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.used_rebate_time_series_future), axis=None) 
+        self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.rebate_time_series_future), axis=None) 
+        self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.used_rebate_time_series_future), axis=None) 
         
         #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
         self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
         self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
 
-        self.targeted_research_subsidy_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.targeted_research_subsidy_time_series_future), axis=None) 
-        self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.electricity_price_subsidy_time_series_future), axis=None) 
-        self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.production_subsidy_time_series_future), axis=None) 
-        self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_no_carbon_price), self.research_subsidy_time_series_future), axis=None) 
+        self.targeted_research_subsidy_time_series =  np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.targeted_research_subsidy_time_series_future), axis=None) 
+        self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.electricity_price_subsidy_time_series_future), axis=None) 
+        self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.production_subsidy_time_series_future), axis=None) 
+        self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.research_subsidy_time_series_future), axis=None) 
 
         self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
         if self.save_timeseries_data_state:#SAVE DATA

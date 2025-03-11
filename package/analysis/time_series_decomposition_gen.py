@@ -497,7 +497,7 @@ def main(fileName):
     whole_simulation = False
 
     if whole_simulation:
-        time_steps_max  = len(controller.electricity_emissions_intensity_vec)#base_params["duration_burn_in"] + base_params["duration_no_carbon_price"] + base_params["duration_future"]
+        time_steps_max  = len(controller.electricity_emissions_intensity_vec)#base_params["duration_burn_in"] + base_params["duration_calibration"] + base_params["duration_future"]
         outputs = {
             "history_ev_prop": np.array(social_network.history_EV_users) / social_network.num_individuals,
             "history_mean_distance_EV": np.nanmean(np.asarray(social_network.history_distance_individual_EV).T, axis=0),

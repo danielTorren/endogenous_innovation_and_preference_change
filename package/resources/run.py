@@ -43,7 +43,7 @@ def generate_data(parameters: dict,print_simu = 0):
 
     if print_simu:
         start_time = time.time()
-    parameters["time_steps_max"] = parameters["duration_burn_in"] + parameters["duration_no_carbon_price"] + parameters["duration_future"]
+    parameters["time_steps_max"] = parameters["duration_burn_in"] + parameters["duration_calibration"] + parameters["duration_future"]
 
     #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
     controller = Controller(parameters)
@@ -68,7 +68,7 @@ def generate_data(parameters: dict,print_simu = 0):
 def load_in_controller(controller_load, base_params_future):
 
     #Need to change stuff so that it now runs till the future
-    base_params_future["time_steps_max"] = controller_load.duration_burn_in + controller_load.duration_no_carbon_price + base_params_future["duration_future"]
+    base_params_future["time_steps_max"] = controller_load.duration_burn_in + controller_load.duration_calibration + base_params_future["duration_future"]
 
     controller = controller_load
     controller.setup_continued_run_future(base_params_future)

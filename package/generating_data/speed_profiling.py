@@ -15,7 +15,7 @@ if __name__ == '__main__':
     base_params = {
     "seed_repetitions": 1,
     "duration_burn_in": 240,
-    "duration_no_carbon_price": 264,
+    "duration_calibration": 264,
     "duration_future": 156,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,

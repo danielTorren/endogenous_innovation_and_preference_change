@@ -2,7 +2,6 @@ from package.resources.run import load_in_controller
 from package.analysis.endogenous_policy_intensity_single_gen import update_policy_intensity, set_up_calibration_runs
 from package.resources.utility import (
     save_object, 
-    params_list_with_seed,
     load_object,
 )
 from joblib import Parallel, delayed, load
@@ -166,6 +165,7 @@ def main(
             pairwise_outcomes_complied.update(pairwise_outcomes)
     #print(list(pairwise_outcomes_complied.keys()))
     top_policies = calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val)
+
     print("Top policies done")
     ##########################################################################################
 
@@ -182,6 +182,9 @@ def main(
     print("base_params",base_params)
     controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "top_ten")
     print("DONE calibration")
+    #
+    #NOW SAVE
+    save_object(top_policies, root_folder + "/Data", "top_policies")
 
     ###########################################################################################
 
@@ -221,7 +224,8 @@ def main(
             "history_market_concentration": history_market_concentration_arr,
             "history_total_profit": history_total_profit_arr,
             "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
-            "history_mean_profit_margins_EV": history_mean_profit_margins_EV
+            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr
     }
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
     print("DONE BAU")
