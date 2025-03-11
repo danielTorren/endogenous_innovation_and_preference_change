@@ -886,9 +886,15 @@ class Controller:
         
         if self.save_timeseries_data_state:#SAVE DATA
             self.set_up_time_series_controller()
+            self.second_hand_merchant.save_timeseries_data_state = 1
+            self.social_network.save_timeseries_data_state = 1
+            self.firm_manager.save_timeseries_data_state = 1
+
             self.second_hand_merchant.set_up_time_series_second_hand_car()
             self.social_network.set_up_time_series_social_network()
             self.firm_manager.set_up_time_series_firm_manager()
+
+
             for firm in self.firm_manager.firms_list:
                 firm.save_timeseries_data_state = 1
                 firm.set_up_time_series_firm()

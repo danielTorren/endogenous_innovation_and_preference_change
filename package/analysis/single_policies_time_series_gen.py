@@ -144,6 +144,9 @@ def main(
 
     policy_outcomes = load_object(fileName + "/Data", "policy_outcomes")
 
+    print(policy_outcomes)
+    quit()
+
     ##########################################################################################
 
     base_params = load_object(fileName + "/Data", "base_params")
@@ -158,12 +161,9 @@ def main(
         "Research_subsidy": 0
     }
 
-    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "top_ten")
+    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "optimal_single_policy_time_series")
     print("DONE calibration")
-    #
-    #NOW SAVE
-    save_object(top_policies, root_folder + "/Data", "top_policies")
-
+    
     ###########################################################################################
 
     base_params["save_timeseries_data_state"] = 1
@@ -209,20 +209,15 @@ def main(
     print("DONE BAU")
     ##############################################################################################################################
 
-    print("TOTAL RUNS", len(top_policies)*base_params["seed_repetitions"])
+    print("TOTAL RUNS", 5*base_params["seed_repetitions"])
     outputs = {}
 
-    for (policy1, policy2), welfare_data in top_policies.items():
-
+    for policy1, welfare_data in policy_outcomes.items():
         policy1_value = welfare_data["policy1_value"]
-        policy2_value = welfare_data["policy2_value"]
-
-        print(f"Running time series for {policy1} & {policy2}")
-
+        print(f"Running time series for {policy1}")
 
         params_policy = deepcopy(base_params)
         params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
-        params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
         (
         history_driving_emissions_arr,#Emmissions flow
@@ -247,7 +242,7 @@ def main(
         history_mean_profit_margins_EV
         ) = single_policy_with_seeds(params_policy, controller_files)
 
-        outputs[(policy1, policy2)] = {
+        outputs[policy1] = {
             "history_driving_emissions": history_driving_emissions_arr,
             "history_production_emissions": history_production_emissions_arr,
             "history_total_emissions": history_total_emissions_arr,
@@ -261,7 +256,6 @@ def main(
 
     save_object(outputs, root_folder + "/Data", "outputs")
     save_object(base_params, root_folder + "/Data", "base_params")
-    print(f"All top 10 policies processed and saved in '{root_folder}'")
 
     #######################################################################################################
     #DELETE CALIBRATION RUNS
