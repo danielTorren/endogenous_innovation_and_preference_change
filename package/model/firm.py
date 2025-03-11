@@ -728,10 +728,6 @@ class Firm:
                 lowest_price = min(price_options)
                 vehicle.price = lowest_price
 
-            if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
-                self.selected_vehicle_segment_counts = {}
-                for segment_code in self.segment_codes:
-                    self.selected_vehicle_segment_counts[segment_code] = np.nan
         else:
             self.zero_profit_options_prod = 0
 
@@ -786,15 +782,6 @@ class Firm:
         vehicles_selected_with_segment = [(x[0], x[1]["segment"]) for x in sorted_vehicles[:self.max_cars_prod]]
         vehicles_selected = [x[0] for x in sorted_vehicles[:self.max_cars_prod]]
 
-        if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
-            # Count segments of selected vehicles
-            self.selected_vehicle_segment_counts = {}
-
-            for vehicle, segment_code in vehicles_selected_with_segment:
-                if segment_code not in self.selected_vehicle_segment_counts:
-                    self.selected_vehicle_segment_counts[segment_code] = 0
-                self.selected_vehicle_segment_counts[segment_code] += 1
-
         return vehicles_selected
 
 
@@ -844,13 +831,6 @@ class Firm:
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
         self.history_num_cars_on_sale.append(len(self.cars_on_sale))
-        if self.production_change_bool == 1:
-            self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
-        else:
-            self.selected_vehicle_segment_counts = {}
-            for segment_code in self.segment_codes:
-                self.selected_vehicle_segment_counts[segment_code] = np.nan
-            self.history_segment_production_counts.append(self.selected_vehicle_segment_counts)
 
         if self.research_bool == 1:
             self.history_attributes_researched.append(self.vehicle_model_research.attributes_fitness)

@@ -883,6 +883,7 @@ class Controller:
         self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.research_subsidy_time_series_future), axis=None) 
 
         self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
+        
         if self.save_timeseries_data_state:#SAVE DATA
             self.set_up_time_series_controller()
             self.second_hand_merchant.set_up_time_series_second_hand_car()
