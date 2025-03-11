@@ -66,8 +66,8 @@ if __name__ == "__main__":
             "num_gamma_segments": "package/constants/sensitivity/vary_single_gamma_segments_sensitivity.json",
             "a_chi": "package/constants/sensitivity/vary_single_a_chi_sensitivity.json",
             "b_chi": "package/constants/sensitivity/vary_single_b_chi_sensitivity.json",
-            "num_users": "package/constants/vary_single_num_users_sensitivity.json",
-            "num_firms": "package/constants/vary_single_num_firms_sensitivity.json",
+            "num_users": "package/constants/sensitivity/vary_single_num_users_sensitivity.json",
+            "num_firms": "package/constants/sensitivity/vary_single_num_firms_sensitivity.json",
         },
         pairs_list = [
             #("alpha", "zeta"),
