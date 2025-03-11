@@ -23,16 +23,14 @@ def main(fileName):
     #base_params = load_object(fileName + "/Data", "base_params")
     policy_outcomes = load_object(fileName + "/Data", "policy_outcomes")
     #runs_data = load_object(fileName + "/Data", "runs_data")
+    print("policy_outcomes", list(policy_outcomes.keys()))
 
     # Apply the function to the data
     policy_outcomes = divide_by_billion(policy_outcomes)
-
-    print("policy_outcomes", policy_outcomes)
-    
 
     plt.show()
 
 if __name__ == "__main__":
     main(
-        fileName="results/endogenous_policy_intensity_18_43_26__06_03_2025"
+        fileName="results/endogenous_policy_intensity_18_17_27__06_03_2025"
     )

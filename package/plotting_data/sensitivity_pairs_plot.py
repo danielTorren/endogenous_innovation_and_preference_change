@@ -24,7 +24,7 @@ def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=6
     ax.set_xlabel(f"{vary_2['property_varied']}")
     ax.set_ylabel(f"{vary_1['property_varied']}")
     save_and_show(fig, fileName, f"heatmap_{measure}", dpi)
-    plt.close()
+
 
 # Main function
 def main(fileName, dpi=600):
@@ -64,4 +64,5 @@ def main(fileName, dpi=600):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/sens_2d_all_16_15_51__10_03_2025")
+    main("results/sens_2d_all_16_17_07__11_03_2025"#sens_2d_all_16_15_51__10_03_2025
+         )

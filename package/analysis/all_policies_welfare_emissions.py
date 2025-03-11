@@ -5,6 +5,9 @@ from matplotlib.path import Path
 import os
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D  # Import this at the top
+import pandas as pd
+import seaborn as sns
+
 # Marker helper functions
 def half_circle_marker(start, end):
     angles = np.linspace(np.radians(start), np.radians(end), 100)
@@ -31,7 +34,7 @@ def scale_marker_size(value, policy,policy_ranges):
     return norm * 350  # From 100 to 400 (tweakable)
 
 
-def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, single_policy_outcomes, dpi=600):
+def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, single_policy_outcomes, dpi=600):
     fig, ax = plt.subplots(figsize=(9, 7))
     ax.grid(True)
 
@@ -54,7 +57,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
         filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
 
         for entry in filtered_data:
-            welfare = (entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"])*1e-9
+            welfare = (entry["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"])*1e-9
             emissions = (entry["mean_emissions_cumulative"])*1e-9
 
 
@@ -80,7 +83,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
         mean_uptake = entry["mean_EV_uptake"]
         mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
         if mask:
-            welfare = (entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"])*1e-9
+            welfare = (entry["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"])*1e-9
             emissions = (entry["mean_emissions_cumulative"])*1e-9
 
             policy_key = policy
@@ -107,7 +110,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
         ax.scatter(x, y, s=size1, marker=full_circle_marker(), color=color1, edgecolor="black")
 
     # BAU point
-    bau_welfare = (outcomes_BAU["mean_utility_cumulative"] + outcomes_BAU["mean_profit_cumulative"] - outcomes_BAU["mean_net_cost"])*1e-9
+    bau_welfare = (outcomes_BAU["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"] + outcomes_BAU["mean_profit_cumulative"] - outcomes_BAU["mean_net_cost"])*1e-9
     bau_emissions = (outcomes_BAU["mean_emissions_cumulative"])*1e-9
     ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
 
@@ -161,16 +164,109 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
     #top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
     #return top_10
 
+
+def extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes):
+    """
+    Extracts policy data and prepares it for LaTeX table formatting.
+    
+    Args:
+        pairwise_outcomes_complied (dict): Dictionary containing outcomes for policy pairs.
+        single_policy_outcomes (dict): Dictionary containing outcomes for single policies.
+        
+    Returns:
+        list: A list of tuples containing policy1, policy2, and mean sd_ev_uptake.
+    """
+    policy_data = {}
+    policy_list = set()
+    
+    # Extract data for policy pairs and aggregate SD EV Uptake values
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
+        key = (policy1, policy2)
+        if key not in policy_data:
+            policy_data[key] = []
+        
+        for entry in data:
+            if (entry["policy1_value"] > 0 and entry["policy2_value"] > 0) and (0.945 < entry["mean_ev_uptake"] < 0.955):
+                policy_data[key].append(entry["sd_ev_uptake"])
+                policy_list.update([policy1, policy2])
+    
+    # Compute the mean SD EV Uptake for each policy combination
+    policy_data_mean = [(p1, p2, np.mean(values)) for (p1, p2), values in policy_data.items()]
+    
+    # Extract data for single policies and add to the diagonal
+    for policy, entry in single_policy_outcomes.items():
+        policy_data_mean.append((policy, policy, entry["sd_ev_uptake"]))
+        policy_list.add(policy)
+    
+    return policy_data_mean, sorted(policy_list)
+
+def plot_policy_heatmap(file_name, policy_data, dpi):
+    """
+    Plots a heatmap using numpy arrays where:
+    - X-axis represents Policy 2
+    - Y-axis represents Policy 1
+    - Color intensity represents the mean SD EV Uptake
+    
+    Args:
+        policy_data (list of tuples): List containing (Policy 1, Policy 2, SD EV Uptake).
+    """
+    
+    # Extract unique policies
+    policy_data, policies = extract_policy_data(*policy_data)
+
+    num_policies = len(policies)
+    
+    # Create a lookup dictionary for indices
+    policy_index = {policy: i for i, policy in enumerate(policies)}
+    
+    # Initialize the heatmap matrix with NaNs
+    heatmap_matrix = np.full((num_policies, num_policies), np.nan)
+    
+    # Fill the matrix with mean SD EV Uptake values
+    for policy1, policy2, sd_ev_uptake in policy_data:
+        print(policy1, policy2, sd_ev_uptake)
+        i, j = policy_index[policy1], policy_index[policy2]
+        heatmap_matrix[i, j] = sd_ev_uptake
+
+    # Strip underscores from policy names
+    policies_cleaned = [p.replace("_", " ") for p in policies]
+    
+    # Plot heatmap
+    fig, ax = plt.subplots(figsize=(8, 6))
+    cax = ax.imshow(heatmap_matrix, cmap='viridis', origin='lower', aspect='auto')
+    fig.colorbar(cax, ax=ax, label='STD EV Uptake')
+    
+    # Format axes with proper tick labels
+    ax.set_xticks(range(num_policies))
+    ax.set_xticklabels(policies_cleaned, rotation=45, ha='right')
+    ax.set_yticks(range(num_policies))
+    ax.set_yticklabels(policies_cleaned)
+    
+    ax.set_xlabel("Policy 2")
+    ax.set_ylabel("Policy 1")
+    
+    plt.tight_layout()
+    
+    save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions.png'
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=dpi)
+    plt.show()
+
+
+
 def main(fileNames, fileName_BAU, fileNames_single_policies):
     #EDNOGENOSU SINGLE POLICY
 
     single_policy_outcomes = load_object(f"{fileNames_single_policies}/Data", "policy_outcomes")
-    print("single_policy_outcomes", single_policy_outcomes)
+    #print("single_policy_outcomes", list(single_policy_outcomes.keys()))
+
     
     #PAIRS OF POLICY 
     fileName = fileNames[0]
+    base_params = load_object(f"{fileName}/Data", "base_params")
+    
     pairwise_outcomes_complied = {}
-
+    
     if len(fileNames) == 1:
         pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
     else:
@@ -181,12 +277,19 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     #BAU
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
 
-    plot_welfare_vs_emissions(pairwise_outcomes_complied, fileName, 0.945, 0.955, outcomes_BAU, single_policy_outcomes, dpi=300)
+    policy_data = extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes)
 
+    #print(policy_table)
+    plot_policy_heatmap(fileName, policy_data=(pairwise_outcomes_complied, single_policy_outcomes), dpi=300)
+
+    #quit()
+
+    #plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 0.955, outcomes_BAU, single_policy_outcomes, dpi=300)
+    plt.show()
 
 if __name__ == "__main__":
     main(
         fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025",
-        fileNames_single_policies = "results/endogenous_policy_intensity_18_43_26__06_03_2025"
+        fileNames_single_policies = "results/endogenous_policy_intensity_18_17_27__06_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

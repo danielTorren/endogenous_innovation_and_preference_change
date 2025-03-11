@@ -44,7 +44,7 @@ def policy_pair_sweep(
     Sweep policy1 intensity in steps, optimizing policy2 at each step.
     """
     p1_min, p1_max = bounds_dict[policy1_name]
-    epsilon = p1_max*0.1
+    epsilon = p1_max*0.2
     p1_values = np.linspace(p1_min +  epsilon, p1_max -  epsilon, n_steps)
     results_for_pair = []
     
@@ -169,7 +169,7 @@ if __name__ == "__main__":
             "Production_subsidy"
             ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=6,
-        n_calls=25,
+        n_steps_for_sweep=4,
+        n_calls=30,
         noise=0.05
     )
