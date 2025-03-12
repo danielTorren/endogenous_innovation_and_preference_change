@@ -86,9 +86,10 @@ def main(fileName):
         outputs, 
         top_policies,
         "Time Step, months", 
-        "Total Profit, $", 
+        "Net cost, $", 
         "history_policy_net_cost"
     )
+
 
     plot_policy_results_ev(
         base_params,
@@ -167,4 +168,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/top_ten_10_22_22__12_03_2025")
+    main("results/top_ten_10_45_15__12_03_2025")
