@@ -126,7 +126,6 @@ def main(
     params_list, intensity_list = produce_param_list(base_params, property_dict_1, property_dict_2)
     print(len(params_list))
     print(intensity_list)
-    quit()
 
     print("TOTAL RUNS", len(params_list)*base_params["seed_repetitions"])
 
