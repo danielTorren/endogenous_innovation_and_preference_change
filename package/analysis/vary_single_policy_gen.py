@@ -105,6 +105,7 @@ def main(
     
     with open(bounds_LOAD) as f:
         policy_info_dict = json.load(f)
+        
     bounds = policy_info_dict["bounds_dict"]
     future_time_steps = base_params["duration_future"]
     
