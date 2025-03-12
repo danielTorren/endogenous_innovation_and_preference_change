@@ -30,7 +30,9 @@ def scale_marker_size(value, policy,policy_ranges):
     if max_val - min_val == 0:
         return 100  # Fixed size if no variation
     norm = (value - min_val) / (max_val - min_val)
-    return 350*0.2  + norm * 350  # From 100 to 400 (tweakable)
+    scale = 350
+    epsilon = 0.2
+    return np.maximum(scale*epsilon, norm * scale)  # From 100 to 400 (tweakable)
     #return norm * 350  # From 100 to 400 (tweakable)
 
 def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, single_policy_outcomes, measure,y_label, dpi=600):
@@ -49,6 +51,32 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
     plotted_points_single = []
     policy_welfare = {}
 
+    #SINGLE POLICY
+    # Collect data and compute intensity ranges
+    for policy, entry in single_policy_outcomes.items():
+        mean_uptake = entry["mean_EV_uptake"]
+        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
+        if mask:
+            if measure == "mean_utility_cumulative":
+                welfare = (entry["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"])*1e-9
+            else:
+                 welfare = entry[measure]*1e-9
+            
+            emissions = (entry["mean_emissions_cumulative"])*1e-9
+
+            policy_key = policy
+            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
+                policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], entry["optimized_intensity"])
+                policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], entry["optimized_intensity"])
+
+                plotted_points_single.append((emissions, welfare, policy, entry["optimized_intensity"]))
+
+                policy_welfare[policy_key] = {
+                    "welfare": welfare,
+                    "policy_value": entry["optimized_intensity"],
+                }
+
+
     # Collect data and compute intensity ranges
     for (policy1, policy2), data in pairwise_outcomes_complied.items():
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
@@ -62,8 +90,6 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
                  welfare = entry[measure]*1e-9
             
             emissions = (entry["mean_emissions_cumulative"])*1e-9
-
-
 
             policy_key = (policy1, policy2)
             if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
@@ -79,29 +105,7 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
                     "policy1_value": entry["policy1_value"],
                     "policy2_value": entry["policy2_value"]
                 }
-    #SINGLE POLICY
-    # Collect data and compute intensity ranges
 
-    for policy, entry in single_policy_outcomes.items():
-        mean_uptake = entry["mean_EV_uptake"]
-        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
-        if mask:
-            if measure == "mean_utility_cumulative":
-                welfare = (entry["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"])*1e-9
-            else:
-                 welfare = entry[measure]*1e-9
-
-            policy_key = policy
-            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
-                policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], entry["optimized_intensity"])
-                policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], entry["optimized_intensity"])
-
-                plotted_points_single.append((emissions, welfare, policy, entry["optimized_intensity"]))
-
-                policy_welfare[policy_key] = {
-                    "welfare": welfare,
-                    "policy_value": entry["optimized_intensity"],
-                }
 
     if not plotted_points:
         print("No data available for the given uptake range.")
@@ -300,7 +304,7 @@ def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name
     #return top_10
 
 
-def extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes):
+def extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes,  min_ev_uptake,max_ev_uptake ):
     """
     Extracts policy data and prepares it for LaTeX table formatting.
     
@@ -321,7 +325,7 @@ def extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes):
             policy_data[key] = []
         
         for entry in data:
-            if (entry["policy1_value"] > 0 and entry["policy2_value"] > 0) and (0.945 < entry["mean_ev_uptake"] < 0.955):
+            if (entry["policy1_value"] > 0 and entry["policy2_value"] > 0) and ( min_ev_uptake  < entry["mean_ev_uptake"] <  max_ev_uptake ):
                 policy_data[key].append(entry["sd_ev_uptake"])
                 policy_list.update([policy1, policy2])
     
@@ -335,7 +339,7 @@ def extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes):
     
     return policy_data_mean, sorted(policy_list)
 
-def plot_policy_heatmap(file_name, policy_data, dpi):
+def plot_policy_heatmap(file_name, policy_data,min_ev_uptake,max_ev_uptake, dpi):
     """
     Plots a heatmap using numpy arrays where:
     - X-axis represents Policy 2
@@ -347,7 +351,7 @@ def plot_policy_heatmap(file_name, policy_data, dpi):
     """
     
     # Extract unique policies
-    policy_data, policies = extract_policy_data(*policy_data)
+    policy_data, policies = extract_policy_data(*policy_data, min_ev_uptake,max_ev_uptake)
 
     num_policies = len(policies)
     
@@ -412,23 +416,27 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     #BAU
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
 
-    policy_data = extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes)
+    
+
+    min_ev_uptake = 0.945
+    max_ev_uptake = 0.965
 
     #print(policy_table)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
 
-    #plot_policy_heatmap(fileName, policy_data=(pairwise_outcomes_complied, single_policy_outcomes), dpi=300)
+    #policy_data = extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes, min_ev_uptake,max_ev_uptake)
+    #plot_policy_heatmap(fileName, policy_data=(pairwise_outcomes_complied, single_policy_outcomes), min_ev_uptake,max_ev_uptake, dpi=300)
 
     #quit()
 
-    plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes, dpi=300)
+    plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes, dpi=300)
     plt.show()
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_19_10_07__11_03_2025"],
+        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],#["results/endog_pair_19_10_07__11_03_2025"],#
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025",
         fileNames_single_policies = "results/endogenous_policy_intensity_18_17_27__06_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

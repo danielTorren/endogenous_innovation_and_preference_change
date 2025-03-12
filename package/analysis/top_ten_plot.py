@@ -110,7 +110,7 @@ def plot_policy_results_cum(fileName, outputs_BAU, outputs, top_policies, x_labe
 
 def main(fileName):
     base_params = load_object(fileName + "/Data", "base_params")
-    base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+    #base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
     outputs_BAU = load_object(fileName + "/Data", "outputs_BAU")
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
@@ -208,10 +208,7 @@ def main(fileName):
         "history_total_profit"
     )
 
-
-
-
     plt.show()
 
 if __name__ == "__main__":
-    main("results/top_ten_10_45_15__12_03_2025")
+    main("results/top_ten_15_12_21__12_03_2025")
