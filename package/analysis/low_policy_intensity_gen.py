@@ -73,7 +73,7 @@ def main(fileName_load):
     ##########################################################################################
 
     base_params = load_object(fileName_load + "/Data", "base_params")
-    #base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+    base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
     base_params["parameters_policies"]["States"] = {
         "Carbon_price": 0,
         "Targeted_research_subsidy": 0,
@@ -91,7 +91,7 @@ def main(fileName_load):
     save_object(top_policies, root_folder + "/Data", "top_policies")
     save_object(min_ev_uptake, root_folder + "/Data", "min_ev_uptake")
     save_object(max_ev_uptake, root_folder + "/Data", "max_ev_uptake")
-    
+
     ###########################################################################################
 
     base_params["save_timeseries_data_state"] = 1
