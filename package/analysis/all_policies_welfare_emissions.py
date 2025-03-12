@@ -30,8 +30,8 @@ def scale_marker_size(value, policy,policy_ranges):
     if max_val - min_val == 0:
         return 100  # Fixed size if no variation
     norm = (value - min_val) / (max_val - min_val)
-    #return 150 + norm * 350  # From 100 to 400 (tweakable)
-    return norm * 350  # From 100 to 400 (tweakable)
+    return 350*0.2  + norm * 350  # From 100 to 400 (tweakable)
+    #return norm * 350  # From 100 to 400 (tweakable)
 
 def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, single_policy_outcomes, measure,y_label, dpi=600):
     fig, ax = plt.subplots(figsize=(9, 7))
@@ -415,20 +415,20 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     policy_data = extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes)
 
     #print(policy_table)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 0.955, outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 0.955, outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 0.955, outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
 
     #plot_policy_heatmap(fileName, policy_data=(pairwise_outcomes_complied, single_policy_outcomes), dpi=300)
 
     #quit()
 
-    plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 0.955, outcomes_BAU, single_policy_outcomes, dpi=300)
+    plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, single_policy_outcomes, dpi=300)
     plt.show()
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
+        fileNames=["results/endog_pair_19_10_07__11_03_2025"],
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025",
         fileNames_single_policies = "results/endogenous_policy_intensity_18_17_27__06_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

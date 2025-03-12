@@ -152,7 +152,7 @@ def single_policy_with_seeds(params, controller_files):
 def main(
         fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
         min_val = 0.945,
-        max_val = 0.955
+        max_val = 1
         ):
     
     fileName = fileNames[0]
@@ -299,7 +299,7 @@ def main(
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
+        fileNames=["results/endog_pair_19_10_07__11_03_2025"],
         min_val = 0.945,
-        max_val = 0.955
+        max_val = 1
     )

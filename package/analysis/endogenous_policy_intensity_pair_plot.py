@@ -114,7 +114,7 @@ def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val
 
 
 
-def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
+def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     color_map = plt.get_cmap('Set3', 10)
@@ -135,7 +135,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
         filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
 
         for entry in filtered_data:
-            welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
+            welfare = entry["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
             emissions = entry["mean_emissions_cumulative"]
 
             policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
@@ -198,7 +198,7 @@ def plot_welfare_vs_emissions(pairwise_outcomes_complied, file_name, min_val, ma
             ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
 
     # BAU point
-    bau_welfare = outcomes_BAU["mean_utility_cumulative"] + outcomes_BAU["mean_profit_cumulative"] - outcomes_BAU["mean_net_cost"]
+    bau_welfare = outcomes_BAU["mean_utility_cumulative"]/base_params["parameters_social_network"]["prob_switch_car"] + outcomes_BAU["mean_profit_cumulative"] - outcomes_BAU["mean_net_cost"]
     bau_emissions = outcomes_BAU["mean_emissions_cumulative"]
     ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
 
@@ -239,13 +239,15 @@ def main(fileNames, fileName_BAU):
             pairwise_outcomes_complied.update(pairwise_outcomes)
 
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
-    top_10 = plot_welfare_vs_emissions(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)
+    base_params = load_object(f"{fileName}/Data", "base_params")
+    
+    top_10 = plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
     save_object(top_10, f"{fileName}/Data", "top_10")
     
-    plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.94, 0.96, outcomes_BAU, dpi=300)
+    plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
+        fileNames=["results/endog_pair_19_10_07__11_03_2025"],
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025"
     )
