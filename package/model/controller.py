@@ -857,7 +857,6 @@ class Controller:
         self.duration_future = self.parameters_controller["duration_future"]
         self.time_steps_max = self.parameters_controller["time_steps_max"]
         self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
-        print("self.save_timeseries_data_state", self.save_timeseries_data_state)
 
         if self.save_timeseries_data_state:#SAVE DATA
             self.set_up_time_series_controller()
