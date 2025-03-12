@@ -69,15 +69,15 @@ def load_in_controller(controller_load, base_params_future):
 
     #Need to change stuff so that it now runs till the future
     base_params_future["time_steps_max"] = controller_load.duration_burn_in + controller_load.duration_calibration + base_params_future["duration_future"]
-
-    controller = controller_load
-    controller.setup_continued_run_future(base_params_future)
-
+    print(base_params_future["save_timeseries_data_state"])
+    print(base_params_future["time_steps_max"],  controller_load.duration_burn_in,  controller_load.duration_calibration , base_params_future["duration_future"])
+    quit()
+    controller_load.setup_continued_run_future(base_params_future)
     #### RUN TIME STEPS
-    while controller.t_controller < base_params_future["time_steps_max"]-1:
-        controller.next_step()
+    while controller_load.t_controller < base_params_future["time_steps_max"]-1:
+        controller_load.next_step()
 
-    return controller
+    return controller_load
 
 
 #########################################################################################
