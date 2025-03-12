@@ -184,7 +184,7 @@ def main(
     outputs = {}
 
     for policy1, welfare_data in policy_outcomes.items():
-        policy1_value = welfare_data["policy1_value"]
+        policy1_value = welfare_data["optimized_intensity"]
         print(f"Running time series for {policy1}")
 
         params_policy = deepcopy(base_params)
