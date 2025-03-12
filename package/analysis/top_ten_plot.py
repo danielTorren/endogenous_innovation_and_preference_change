@@ -80,6 +80,15 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
 
+    plot_policy_results(
+        fileName,
+        outputs_BAU,
+        outputs, 
+        top_policies,
+        "Time Step, months", 
+        "Total Profit, $", 
+        "history_policy_net_cost"
+    )
 
     plot_policy_results_ev(
         base_params,
@@ -152,18 +161,10 @@ def main(fileName):
         "history_total_profit"
     )
 
-    plot_policy_results(
-        fileName,
-        outputs_BAU,
-        outputs, 
-        top_policies,
-        "Time Step, months", 
-        "Total Profit, $", 
-        "history_policy_net_cost"
-    )
+
 
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/top_ten_19_45_50__10_03_2025")
+    main("results/top_ten_10_22_22__12_03_2025")
