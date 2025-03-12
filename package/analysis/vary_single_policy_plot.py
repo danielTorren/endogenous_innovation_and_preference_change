@@ -1,13 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import load_object
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-import numpy as np
-import matplotlib.pyplot as plt
-
 def plot_policy_intensity_effects_raw_lines(data_array, policy_list, file_name, policy_info_dict, dpi=600):
     """
     Plots the effects of different policy intensities on EV uptake, policy distortion, and cumulative emissions.
@@ -136,8 +129,6 @@ def plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy
     plt.tight_layout()
     plt.savefig(f'{file_name}/Plots/policy_intensity_effects_raw.png', dpi=dpi)
 
-import numpy as np
-import matplotlib.pyplot as plt
 
 def plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=600):
     """
@@ -182,6 +173,10 @@ def plot_policy_intensity_effects_means(data_array, policy_list, file_name, poli
             median_values = np.median(policy_data[:, :, measure_idx], axis=1)
             std_values = np.std(policy_data[:, :, measure_idx], axis=1)
 
+            if measure == "Cumulative Utility":
+                mean_values *= 12 
+                median_values *= 12 
+                std_values *= 12 
             plot_with_median(ax, intensities, mean_values, median_values, std_values, measure)
 
             if i == 0:
@@ -205,6 +200,11 @@ def main(file_name):
     policy_list = load_object(file_name + "/Data", "policy_list")
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
     base_params = load_object(file_name + "/Data", "base_params")
+    
+    print(data_array.shape)
+    policy_list = policy_list[:5]
+    data_array = data_array[:5,:, :, :]#REMOVE ERSAEARHCH SUBSIDY
+    print(data_array.shape)
 
     measures_dict = {
         "EV Uptake": 0,

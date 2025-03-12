@@ -11,31 +11,6 @@ import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from copy import deepcopy
 
-def calc_top_policies_welfare(pairwise_outcomes_complied, min_val, max_val):
-    #GET BEST POLICY FROM EACH COMBINATION
-    policy_welfare = {}
-
-    # Collect data and compute intensity ranges
-    for (policy1, policy2), data in pairwise_outcomes_complied.items():
-        mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
-        mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
-        filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
-
-        for entry in filtered_data:
-            welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
-            policy_key = (policy1, policy2)
-            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
-                policy_welfare[policy_key] = {
-                    "welfare": welfare,
-                    "policy1_value": entry["policy1_value"],
-                    "policy2_value": entry["policy2_value"]
-                }
-
-    # Return top 10 policy combinations by welfare
-    top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
-
-    return top_10
-
 def single_policy_simulation(params, controller_file):
     """
     Run a single simulation and return EV uptake and policy distortion.
