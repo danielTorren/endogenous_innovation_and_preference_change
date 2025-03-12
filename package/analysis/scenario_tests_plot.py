@@ -83,7 +83,9 @@ def plot_policy_results_cum(base_params,fileName,  outputs,  x_label, y_label, p
 
 def main(fileName):
     base_params = load_object(fileName + "/Data", "base_params")
-    #base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+    if "duration_calibration" not in base_params:
+        base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+
     outputs = load_object(fileName + "/Data", "outputs")
 
     plot_policy_results_cum(

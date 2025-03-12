@@ -527,6 +527,7 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
     medians = []
 
     ages_list = social_network.history_car_age
+
     for ages in ages_list:
         ages = np.array(ages)
         valid_ages = ages[~np.isnan(ages)]  # Exclude NaNs from calculations
@@ -541,9 +542,9 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series[base_params["duration_burn_in"]:], medians[base_params["duration_burn_in"]:], label="Median Age", color='red')
-    ax.plot(time_series[base_params["duration_burn_in"]:], means[base_params["duration_burn_in"]:], label="Mean Age", color='blue')
-    ax.fill_between(time_series[base_params["duration_burn_in"]:], lower_bounds[base_params["duration_burn_in"]:], upper_bounds[base_params["duration_burn_in"]:], color='blue', alpha=0.2, label="95% Confidence Interval")
+    ax.plot(time_series, medians[base_params["duration_burn_in"]:], label="Median Age", color='red')
+    ax.plot(time_series, means[base_params["duration_burn_in"]:], label="Mean Age", color='blue')
+    ax.fill_between(time_series, lower_bounds[base_params["duration_burn_in"]:], upper_bounds[base_params["duration_burn_in"]:], color='blue', alpha=0.2, label="95% Confidence Interval")
     ax.set_title("Mean Age and 95% Confidence Interval Over Time")
     ax.set_xlabel("Time")
     ax.set_ylabel("Age")
@@ -1104,9 +1105,12 @@ def main(fileName, dpi=400):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
-    emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
+    #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
     
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    plt.show()
+    quit()
     plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
@@ -1125,7 +1129,7 @@ def main(fileName, dpi=400):
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
 
     plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
-    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    #
     #plot_segment_count_grid(base_params,firm_manager, time_series, fileName)
     #plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
     #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
@@ -1138,4 +1142,4 @@ def main(fileName, dpi=400):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_16_47_02__10_03_2025")
+    main("results/single_experiment_23_25_15__12_03_2025")

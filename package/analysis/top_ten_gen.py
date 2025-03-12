@@ -173,7 +173,9 @@ def main(
     ##########################################################################################
 
     base_params = load_object(fileName + "/Data", "base_params")
-    #base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+    if "duration_calibration" not in base_params:
+        base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+
     base_params["parameters_policies"]["States"] = {
         "Carbon_price": 0,
         "Targeted_research_subsidy": 0,

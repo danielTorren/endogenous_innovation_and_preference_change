@@ -53,7 +53,7 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
 
         if best_entry:
             best_entries[(policy1, policy2)] = best_entry
-            #print((policy1, policy2), best_entries[(policy1, policy2)]["policy1_value"],best_entries[(policy1, policy2)]["policy2_value"])
+            print((policy1, policy2), best_entries[(policy1, policy2)]["policy1_value"],best_entries[(policy1, policy2)]["policy2_value"])
     #print(best_entries)
 
     return best_entries
@@ -69,11 +69,13 @@ def main(fileName_load):
     #base_params = load_object(f"{fileName}/Data", "base_params")
     
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
-
+    print()
     ##########################################################################################
 
     base_params = load_object(fileName_load + "/Data", "base_params")
-    base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+    if "duration_calibration" not in base_params:
+        base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+
     base_params["parameters_policies"]["States"] = {
         "Carbon_price": 0,
         "Targeted_research_subsidy": 0,
