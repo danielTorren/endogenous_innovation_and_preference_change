@@ -126,8 +126,8 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
 
 def main(
     BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
-    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1, 1.5] }, 
-    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [0.5, 1, 1.5] } 
+    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1] }, 
+    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [1, 1.5] } 
         ):
     
     with open(BASE_PARAMS_LOAD) as f:
@@ -137,7 +137,7 @@ def main(
     print(len(params_list))
 
     print("TOTAL RUNS", len(params_list)*base_params["seed_repetitions"])
-    
+
     ###############################################################################################################################
 
     controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "sceanrio_tests_gen")
