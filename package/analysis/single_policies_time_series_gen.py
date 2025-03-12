@@ -136,7 +136,7 @@ def main(
     policy_outcomes = load_object(fileName + "/Data", "policy_outcomes")
 
     print(policy_outcomes)
-    quit()
+    #quit()
 
     ##########################################################################################
 
