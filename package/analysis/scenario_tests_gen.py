@@ -11,15 +11,6 @@ from pathlib import Path  # Path handling
 from copy import deepcopy
 import json
 
-def update_scenario_intensity(params,scenario_name, intensity_level):
-    """
-    Update the scenario intensity in the parameter dictionary.
-    """
-    params["parameters_scenarios"][scenario_name] = intensity_level
-
-    return params
-
-
 def single_policy_simulation(params, controller_file):
     """
     Run a single simulation and return EV uptake and policy distortion.
@@ -55,7 +46,7 @@ def single_policy_with_seeds(params, controller_files):
     Run policy scenarios using pre-saved controllers for consistency.
     """
     num_cores = multiprocessing.cpu_count()
-    res = Parallel(n_jobs=num_cores, verbose=0)(
+    res = Parallel(n_jobs=num_cores, verbose=1)(
         delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
     )
@@ -109,13 +100,12 @@ def single_policy_with_seeds(params, controller_files):
         np.asarray(history_policy_net_cost)
     )
 
-
 def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[dict]:
     params_list = []
     intensity_list = []
     for i in property_dict_1["property_list"]:
         print("i", i)
-        for j in  property_dict_1["property_list"]:
+        for j in  property_dict_2["property_list"]:
             print("j",j)
             params_updated = deepcopy(params)
             params_updated[property_dict_1["subdict"]][property_dict_1["property_varied"]] = i
@@ -126,8 +116,8 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
 
 def main(
     BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
-    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1] }, 
-    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [1, 1.5] } 
+    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1]}, 
+    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [1, 1.5]} 
         ):
     
     with open(BASE_PARAMS_LOAD) as f:
@@ -135,18 +125,18 @@ def main(
     
     params_list, intensity_list = produce_param_list(base_params, property_dict_1, property_dict_2)
     print(len(params_list))
+    print(intensity_list)
+    quit()
 
     print("TOTAL RUNS", len(params_list)*base_params["seed_repetitions"])
 
     ###############################################################################################################################
 
-    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "sceanrio_tests_gen")
+    controller_files, base_params, root_folder = set_up_calibration_runs(base_params, "sceanrio_tests_gen")
     print("DONE calibration")
     
     ##############################################################################################################################
     outputs = {}
-
-
 
     for i, params_scenario in enumerate(params_list):
         (
@@ -190,6 +180,7 @@ def main(
     save_object(base_params, root_folder + "/Data", "base_params")
     save_object(property_dict_1 , root_folder + "/Data", "property_dict_1")
     save_object(property_dict_2 , root_folder + "/Data", "property_dict_2")
+
     #######################################################################################################
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
@@ -199,5 +190,4 @@ if __name__ == "__main__":
     BASE_PARAMS_LOAD="package/constants/base_params_scenarios_2050_BAU.json",
     property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1] }, 
     property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [1, 1.5] } 
-    
     )
