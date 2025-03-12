@@ -114,12 +114,14 @@ def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[d
     params_list = []
     intensity_list = []
     for i in property_dict_1["property_list"]:
+        print("i", i)
         for j in  property_dict_1["property_list"]:
+            print("j",j)
             params_updated = deepcopy(params)
             params_updated[property_dict_1["subdict"]][property_dict_1["property_varied"]] = i
             params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = j
-            params_list.extend(params_updated)
-            intensity_list.extend((i,j))
+            params_list.append(params_updated)
+            intensity_list.append((i,j))
     return params_list, intensity_list
 
 def main(
@@ -131,16 +133,20 @@ def main(
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
     
+    params_list, intensity_list = produce_param_list(base_params, property_dict_1, property_dict_2)
+    print(len(params_list))
 
-    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "optimal_single_policy_time_series")
+    print("TOTAL RUNS", len(params_list)*base_params["seed_repetitions"])
+    
+    ###############################################################################################################################
+
+    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "sceanrio_tests_gen")
     print("DONE calibration")
     
     ##############################################################################################################################
     outputs = {}
 
-    params_list, intensity_list = produce_param_list(base_params, property_dict_1, property_dict_2)
-    print(len(params_list))
-    print("TOTAL RUNS", len(params_list)*base_params["seed_repetitions"])
+
 
     for i, params_scenario in enumerate(params_list):
         (
