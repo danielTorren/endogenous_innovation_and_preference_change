@@ -61,9 +61,6 @@ class Social_Network:
         self.emissions_flow = 0
         self.utility_cumulative = 0
 
-        if self.save_timeseries_data_state:
-            self.emissions_flow_history = []
-
         self.init_network_settings(parameters_social_network)
 
         self.random_state = parameters_social_network["random_state"]
@@ -877,7 +874,7 @@ class Social_Network:
       
     def set_up_time_series_social_network(self):
         #"""
-
+        self.emissions_flow_history = []
         self.history_utility_components = []
         self.history_max_index_segemnt = []
         

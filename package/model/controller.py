@@ -856,6 +856,23 @@ class Controller:
 
         self.duration_future = self.parameters_controller["duration_future"]
         self.time_steps_max = self.parameters_controller["time_steps_max"]
+        self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
+        print("self.save_timeseries_data_state", self.save_timeseries_data_state)
+
+        if self.save_timeseries_data_state:#SAVE DATA
+            self.set_up_time_series_controller()
+            self.time_series = []
+
+            self.second_hand_merchant.save_timeseries_data_state = 1
+            self.social_network.save_timeseries_data_state = 1
+            self.firm_manager.save_timeseries_data_state = 1
+
+            self.second_hand_merchant.set_up_time_series_second_hand_car()
+            self.social_network.set_up_time_series_social_network()
+            self.firm_manager.set_up_time_series_firm_manager()
+            for firm in self.firm_manager.firms_list:
+                firm.save_timeseries_data_state = 1
+                firm.set_up_time_series_firm()
 
         #RESET COUNTERS FOR POLICY
         self.social_network.emissions_cumulative = 0
@@ -882,22 +899,9 @@ class Controller:
         self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.production_subsidy_time_series_future), axis=None) 
         self.research_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.research_subsidy_time_series_future), axis=None) 
 
-        self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
         
-        if self.save_timeseries_data_state:#SAVE DATA
-            self.set_up_time_series_controller()
-            self.second_hand_merchant.save_timeseries_data_state = 1
-            self.social_network.save_timeseries_data_state = 1
-            self.firm_manager.save_timeseries_data_state = 1
+        
 
-            self.second_hand_merchant.set_up_time_series_second_hand_car()
-            self.social_network.set_up_time_series_social_network()
-            self.firm_manager.set_up_time_series_firm_manager()
-
-
-            for firm in self.firm_manager.firms_list:
-                firm.save_timeseries_data_state = 1
-                firm.set_up_time_series_firm()
 
 
 

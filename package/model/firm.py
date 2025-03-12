@@ -82,7 +82,6 @@ class Firm:
 
         self.lambda_exp = parameters_firm["lambda"]
 
-
         self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
         self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
 
@@ -100,7 +99,6 @@ class Firm:
             self.cars_on_sale = [self.init_tech_ICE] 
 
         self.set_car_init_price_and_base_U()
-
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
