@@ -133,15 +133,6 @@ def main(
 
     ##########################################################################################
 
-    pairwise_outcomes_complied = {}
-    if len(fileNames) == 1:
-        pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
-    else:
-        for fileName in fileNames:
-            pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
-            pairwise_outcomes_complied.update(pairwise_outcomes)
-    #print(list(pairwise_outcomes_complied.keys()))
-
     policy_outcomes = load_object(fileName + "/Data", "policy_outcomes")
 
     print(policy_outcomes)
