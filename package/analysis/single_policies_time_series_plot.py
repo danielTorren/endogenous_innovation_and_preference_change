@@ -17,12 +17,12 @@ def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_poli
     ax.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
 
     # Plot each policy combination
-    for (policy1, policy2), data in outputs.items():
+    for policy1, data in outputs.items():
         
-        intensity_1 = top_policies[(policy1, policy2)]['policy1_value']
-        intensity_2 = top_policies[(policy1, policy2)]['policy2_value']
+        intensity_1 = top_policies[policy1]["optimized_intensity"]
 
-        policy_label = f"{policy1} ({round(intensity_1, 3)}), {policy2} ({round(intensity_2, 3)})"
+        policies_cleaned = policy1.replace("_", " ")
+        policy_label = f"{policies_cleaned} ({round(intensity_1, 3)})"
         mean_values = np.mean(data[prop_name], axis=0)[start:]
         ci_values = (sem(data[prop_name], axis=0) * t.ppf(0.975, df=data[prop_name].shape[0] - 1))[start:]
         ax.plot(time_steps, mean_values, label=policy_label)
@@ -50,12 +50,13 @@ def plot_policy_results(fileName, outputs_BAU, outputs, top_policies, x_label, y
     ax.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
 
     # Plot each policy combination
-    for (policy1, policy2), data in outputs.items():
+    for policy1, data in outputs.items():
         
-        intensity_1 = top_policies[(policy1, policy2)]['policy1_value']
-        intensity_2 = top_policies[(policy1, policy2)]['policy2_value']
+        intensity_1 = top_policies[policy1]["optimized_intensity"]
 
-        policy_label = f"{policy1} ({round(intensity_1, 3)}), {policy2} ({round(intensity_2, 3)})"
+        policies_cleaned = policy1.replace("_", " ")
+        policy_label = f"{policies_cleaned } ({round(intensity_1, 3)})"
+
         mean_values = np.mean(data[prop_name], axis=0)
         ci_values = sem(data[prop_name], axis=0) * t.ppf(0.975, df=data[prop_name].shape[0] - 1)
         ax.plot(time_steps, mean_values, label=policy_label)
@@ -77,7 +78,11 @@ def main(fileName):
     base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
     outputs_BAU = load_object(fileName + "/Data", "outputs_BAU")
     outputs = load_object(fileName + "/Data", "outputs")
-    top_policies = load_object(fileName + "/Data", "top_policies")
+    top_policies =  load_object(fileName + "/Data", "policy_outcomes")
+
+    del outputs['Adoption_subsidy_used']
+    del top_policies ['Adoption_subsidy_used']
+
 
     plot_policy_results(
         fileName,
@@ -167,4 +172,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/top_ten_10_45_15__12_03_2025")
+    main("results/optimal_single_policy_time_series_11_19_35__12_03_2025")

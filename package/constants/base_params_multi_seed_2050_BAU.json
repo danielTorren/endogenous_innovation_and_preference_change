@@ -16,8 +16,8 @@
         "used_rebate": 1000
     },
     "parameters_scenarios":{
-            "Gas_price": 1,
-            "Electricity_price": 1,
+            "Gas_price": 0.5,
+            "Electricity_price": 1.5,
             "Grid_emissions_intensity": 0.5
     },
     "parameters_policies":{

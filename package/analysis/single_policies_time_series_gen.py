@@ -229,7 +229,7 @@ def main(
 
     save_object(outputs, root_folder + "/Data", "outputs")
     save_object(base_params, root_folder + "/Data", "base_params")
-
+    save_object(policy_outcomes, root_folder + "/Data", "policy_outcomes" )
     #######################################################################################################
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
