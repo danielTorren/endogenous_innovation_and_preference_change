@@ -42,7 +42,8 @@ class SecondHandMerchant:
             "Eff_omega_a_t": [], 
             "price": [], 
             "L_a_t": [],
-            "delta_P": []
+            "delta_P": [],
+            "B": []
         }
 
         # Iterate over each vehicle to populate the arrays
@@ -52,6 +53,7 @@ class SecondHandMerchant:
             vehicle_dict_vecs["price"].append(vehicle.price)
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
             vehicle_dict_vecs["delta_P"].append(vehicle.delta_P)
+            vehicle_dict_vecs["B"].append(vehicle.B)
 
         # convert lists to numpy arrays for vectorised operations
         for key in vehicle_dict_vecs:
@@ -64,14 +66,16 @@ class SecondHandMerchant:
         vehicle_dict_vecs = {
             "Quality_a_t": [], 
             "Eff_omega_a_t": [], 
-            "price": []
+            "price": [],
+            "B": []
         }
 
         # Iterate over each vehicle to populate the arrays
         for vehicle in list_vehicles:
             vehicle_dict_vecs["Quality_a_t"].append(vehicle.Quality_a_t)
             vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
-            vehicle_dict_vecs["price"].append(vehicle.price)            
+            vehicle_dict_vecs["price"].append(vehicle.price)       
+            vehicle_dict_vecs["B"].append(vehicle.B)       
 
         # convert lists to numpy arrays for vectorised operations
         for key in vehicle_dict_vecs:
@@ -88,27 +92,34 @@ class SecondHandMerchant:
         first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
         first_hand_efficiency =  vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
         first_hand_prices = vehicle_dict_vecs_new_cars["price"]
+        first_hand_B = vehicle_dict_vecs_new_cars["B"]
 
         # Extract Quality, Efficiency, and Age of second-hand cars
         second_hand_quality = vehicle_dict_vecs_second_hand_cars["Quality_a_t"]
         second_hand_efficiency = vehicle_dict_vecs_second_hand_cars["Eff_omega_a_t"]
         second_hand_ages = vehicle_dict_vecs_second_hand_cars["L_a_t"]
         second_hand_delta_P = vehicle_dict_vecs_second_hand_cars["delta_P"]
+        second_hand_B = vehicle_dict_vecs_second_hand_cars["B"]
 
         first_hand_quality_max = np.max(first_hand_quality)
         first_hand_efficiency_max = np.max(first_hand_efficiency)
+        first_hand_B_max = np.max(first_hand_B)
 
         normalized_first_hand_quality = first_hand_quality / first_hand_quality_max 
         normalized_first_hand_efficiency = first_hand_efficiency / first_hand_efficiency_max 
+        normalized_first_hand_B = first_hand_B / first_hand_B_max
 
         normalized_second_hand_quality = second_hand_quality  / first_hand_quality_max 
         normalized_second_hand_efficiency = second_hand_efficiency / first_hand_efficiency_max
+        normalized_second_hand_B = second_hand_B / first_hand_B_max
 
         # Compute proximity (Euclidean distance) for all second-hand cars to all first-hand cars
         diff_quality = normalized_second_hand_quality[:, np.newaxis] - normalized_first_hand_quality
         diff_efficiency = normalized_second_hand_efficiency[:, np.newaxis] - normalized_first_hand_efficiency
+        diff_B = normalized_second_hand_B[:, np.newaxis] - normalized_first_hand_B
 
-        distances = np.sqrt(diff_quality ** 2 + diff_efficiency ** 2)
+        distances = np.sqrt(diff_quality ** 2 + diff_efficiency ** 2 + diff_B ** 2)
+
 
         # Find the closest first-hand car for each second-hand car
         closest_idxs = np.argmin(distances, axis=1)

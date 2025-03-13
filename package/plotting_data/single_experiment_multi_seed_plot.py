@@ -238,7 +238,7 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
-    fig, ax1 = plt.subplots(1, 1, figsize=(10, 12), sharex=True)
+    fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
 
     # First subplot: Mean and 95% CI with real data
     ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="dotted")
@@ -937,4 +937,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_11_45_08__12_03_2025")
+    main("results/multi_seed_single_23_32_36__12_03_2025")

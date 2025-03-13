@@ -1109,8 +1109,6 @@ def main(fileName, dpi=400):
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
     
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    plt.show()
-    quit()
     plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
