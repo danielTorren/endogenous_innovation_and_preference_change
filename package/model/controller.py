@@ -12,9 +12,9 @@ import itertools
 from scipy.stats import lognorm
 
 from mpi4py import MPI
-from repast4py import core, schedule
+from repast4py import Model, schedule
 
-class Controller(core.Model):
+class Controller(Model):
     def __init__(self, parameters_controller):
         super().__init__()
 
