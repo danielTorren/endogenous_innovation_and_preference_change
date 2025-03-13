@@ -13,6 +13,11 @@ from package.model.controller import Controller
 from package.resources.utility import load_object
 from copy import deepcopy
 
+from mpi4py import MPI
+from repast4py import core, schedule, runner
+
+
+
 # modules
 ####################################################################################################################################################
 #LOAD IN THE DATA TIME SERIES
@@ -38,6 +43,9 @@ def generate_data(parameters: dict,print_simu = 0):
     #load_in_output_data()
     #future_electricity_emissions_intensity_data = future_calibration_data()
     
+    comm = MPI.COMM_WORLD  # Get MPI communicator
+    #rank = comm.Get_rank()  # Get process ID (rank)
+
     calibration_data_input = load_object("package/calibration_data", "calibration_data_input")
     parameters["calibration_data"] =  calibration_data_input
 
@@ -46,16 +54,14 @@ def generate_data(parameters: dict,print_simu = 0):
     parameters["time_steps_max"] = parameters["duration_burn_in"] + parameters["duration_calibration"] + parameters["duration_future"]
 
     #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
-    controller = Controller(parameters)
+    model = Controller(parameters)
     #controller = CombinedController(parameters)
     
+    # Create a runner for execution
+    model_runner = runner.SharedModelRunner(model)
 
-    #### RUN TIME STEPS
-    """FIX THIS!!!"""
-    #while controller.t_controller < parameters["time_steps_max"]:
-    while controller.t_controller < parameters["time_steps_max"]-1:
-        controller.next_step()
-        #print("step: ", round((controller.t_controller/parameters["time_steps_max"]),3)*100)
+    # Run the simulation (distributed execution)
+    model_runner.execute()
 
     if print_simu:
         print(
@@ -63,7 +69,7 @@ def generate_data(parameters: dict,print_simu = 0):
             "or %s s" % ((time.time() - start_time)),
         )
         
-    return controller
+    return model
 
 def load_in_controller(controller_load, base_params_future):
 

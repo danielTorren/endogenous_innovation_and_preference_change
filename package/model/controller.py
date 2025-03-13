@@ -11,8 +11,17 @@ import numpy as np
 import itertools
 from scipy.stats import lognorm
 
-class Controller:
+from mpi4py import MPI
+from repast4py import core, schedule
+
+class Controller(core.Model):
     def __init__(self, parameters_controller):
+        super().__init__()
+
+        # Initialize MPI settings
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
 
         self.absolute_2035 = 156
         self.unpack_controller_parameters(parameters_controller)
@@ -76,6 +85,10 @@ class Controller:
             self.firm_manager.set_up_time_series_firm_manager()
             self.time_series = []
             self.set_up_time_series_controller()
+
+        # Schedule the next step function
+        self.schedule = schedule.Schedule()
+        self.schedule.schedule_repeating_event(1, 1, self.next_step)
         
     def unpack_controller_parameters(self,parameters_controller):
         
@@ -835,6 +848,10 @@ class Controller:
     ################################################################################################
 
     def next_step(self,):
+
+        # Synchronize MPI ranks at the start of the step
+        self.comm.Barrier()
+
         self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
         #print("TIME STEP", self.t_controller)
@@ -845,6 +862,19 @@ class Controller:
         self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()
+
+        # Synchronize MPI ranks at the end of the step
+        self.comm.Barrier()
+
+    def is_done(self):
+        """
+        Check if the simulation should stop.
+        Ensures that all MPI ranks receive the same stopping condition.
+        """
+        local_done = self.t_controller >= self.time_steps_max  # Check for local process
+        global_done = self.comm.allreduce(local_done, op=MPI.LOR)  # Sync across ranks
+        return global_done
+
 
     #################################################################################################
 
