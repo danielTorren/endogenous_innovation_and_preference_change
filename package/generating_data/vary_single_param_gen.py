@@ -50,7 +50,7 @@ def main(
     #data_array_age = data_flat_age.reshape(len(property_list),seed_repetitions, len(data_flat_age[0]), base_params["parameters_social_network"]["num_individuals"])
     data_array_price = data_flat_price.reshape(len(property_list),seed_repetitions, len(data_flat_price[0]), 2, 2)
     data_array_margins = data_flat_margins.reshape(len(property_list),seed_repetitions, len(data_flat_ev_prop[0]))
-
+    #data_flat_market_concentration = data_flat_market_concentration.reshape(len(property_list),seed_repetitions, len(data_flat_ev_prop[0]))
     createFolder(fileName)
 
     save_object(data_array_ev_prop , fileName + "/Data", "data_array_ev_prop")
@@ -65,5 +65,5 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_delta.json",
-        VARY_LOAD ="package/constants/vary_single_mu.json", #"package/constants/vary_single_delta.json"
+        VARY_LOAD ="package/constants/vary_single_kappa.json", #"package/constants/vary_single_delta.json"
         )

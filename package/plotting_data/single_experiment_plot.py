@@ -625,6 +625,31 @@ def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=60
     ax.legend(loc='lower right')
     save_and_show(fig, fileName, "count_buy_stacked", dpi)
 
+def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600):
+    fig, ax = plt.subplots(figsize=(6, 6))
+
+    # Convert to numpy array
+    data = np.asarray(social_network.history_count_buy)  # shape: (timesteps, categories)
+
+    # Prepare x-axis and labels
+    x = np.arange(data.shape[0])
+    labels = ["current", "new", "second hand"]
+
+    # Plot each category as a line
+    for i in range(data.shape[1]):
+        ax.plot(x, data[:, i], label=labels[i])
+
+    # Labeling
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Count of buys")
+    ax.set_xlim(left=base_params["duration_burn_in"])
+
+    # Add vertical lines (assuming add_vertical_lines is defined elsewhere)
+    add_vertical_lines(ax, base_params)
+
+    ax.legend(loc='best')
+    save_and_show(fig, fileName, "count_buy_lines", dpi)
+
 def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=600):
 
     # Create a grid of subplots (4x4 layout)
@@ -1091,7 +1116,7 @@ def plot_distance_individuals_mean_median_type(base_params, social_network, time
     # Save and show the plot
     save_and_show(fig, fileName, "user_distance_mean_median_type", dpi)
 # Sample main function
-def main(fileName, dpi=400):
+def main(fileName, dpi=300):
     try:
         base_params = load_object(fileName + "/Data", "base_params")
         data_controller = load_object(fileName + "/Data", "controller")
@@ -1108,29 +1133,31 @@ def main(fileName, dpi=400):
 
     #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
-    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
-    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+
+    #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
     plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
-    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
+    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     #plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
-    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    #plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi)
     
-    plot_history_prop_EV_research(base_params,firm_manager, fileName)
+    #plot_history_prop_EV_research(base_params,firm_manager, fileName)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
-    plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
+    #plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
     plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
     #emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
     
-    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
     
     #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
-    plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+    plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
+    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
     #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
 
     #plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)

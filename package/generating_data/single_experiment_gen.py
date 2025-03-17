@@ -36,7 +36,7 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_repetitions": 1,
+    "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_calibration": 264,
     "duration_future": 0,
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 10000,
+        "min_Cost": 0,
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
@@ -135,12 +135,12 @@ if __name__ == "__main__":
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
-        "init_price_multiplier": 1.25,
+        "init_price_multiplier": 1.1,
         "min_profit": 1000,
         "max_cars_prod": 10
     },
     "parameters_social_network":{
-        "num_individuals":5000,
+        "num_individuals":3000,
         "chi_max": 0.9,
         "a_chi": 1.221, 
         "b_chi": 2.2873,
@@ -157,12 +157,12 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1e-4,
+        "kappa": 2e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
-        "r": 0.00246626977, #0.0016515813,#.00643403011
-        "mu": 0.25,
+        "r": 0.00246626977,
+        "mu": 1,
         "alpha": 0.5,
         "zeta":0.29697
     }

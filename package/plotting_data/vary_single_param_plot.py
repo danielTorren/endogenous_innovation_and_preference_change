@@ -135,7 +135,7 @@ def plot_ev_prop(base_params,data_array, property_list, fileName, name_property,
     # Save the figure
     fig.savefig(f"{fileName}/Plots/user_ev_prop_multi_{property_save}.png", dpi=dpi)
 
-def plot_margin(base_params,data_array, property_list, fileName, name_property, property_save, real_data, dpi=600):
+def plot_margin(base_params,data_array, property_list, fileName, name_property, property_save, dpi=600):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -162,12 +162,7 @@ def plot_margin(base_params,data_array, property_list, fileName, name_property, 
         sem_data = stats.sem(data_after_burn_in, axis=0)
         ci_range = sem_data * stats.t.ppf(0.975, num_seeds - 1)  # 95% CI
 
-        # Plot real data (assume it starts after burn-in + offset)
-        init_index = burn_in_step + 120
-        time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
-        ax.plot(time_steps_real, real_data, label="Real Data", color='orange', linestyle="dotted")
-
-        # Plot individual traces in grey
+        # Plot individual traces in gre
         for seed in range(num_seeds):
             ax.plot(time_series[burn_in_step:], data_after_burn_in[seed, :], color='gray', alpha=0.3, linewidth=0.8)
 
@@ -180,7 +175,7 @@ def plot_margin(base_params,data_array, property_list, fileName, name_property, 
         ax.set_title(f"{delta}")
 
     fig.supxlabel("Time Step")
-    fig.supylabel("EV prop")
+    fig.supylabel("Margin ICE")
 
     # Adjust layout
     plt.tight_layout()
@@ -479,6 +474,8 @@ def main(fileName, dpi=300):
     data_array_EV_prop = load_object(fileName + "/Data", "data_array_EV_prop")
     #data_array_age =  load_object(fileName + "/Data", "data_array_age")
     data_array_price =  load_object(fileName + "/Data", "data_array_price")
+
+    data_array_margins =  load_object(fileName + "/Data", "data_array_margins")
     #data_array_emissions = load_object(fileName + "/Data", "data_array_emissions")
     #data_array_efficiency = load_object(fileName + "/Data", "data_array_efficiency")
     vary_single = load_object(fileName + "/Data", "vary_single")
@@ -490,9 +487,11 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
+    plot_margin(base_params,data_array_margins, property_list, fileName, name_property, property_save, dpi=600)
+
     #plot_distance(data_array_distance, property_list, fileName, name_property, property_save, 600)
     plot_ev_prop_combined(base_params, data_array_EV_prop, property_list, fileName, name_property, property_save, EV_stock_prop_2010_22, dpi=600)
-    plot_ev_prop(base_params,data_array_EV_prop, property_list, fileName, name_property, property_save,EV_stock_prop_2010_22,  600)
+    #plot_ev_prop(base_params,data_array_EV_prop, property_list, fileName, name_property, property_save,EV_stock_prop_2010_22,  600)
     #plot_age(data_array_age, property_list, fileName, name_property, property_save, 600)
     plot_price(base_params,data_array_price , property_list, fileName, name_property, property_save, 600)
     #plot_emissions(data_array_emissions , property_list, fileName, name_property, property_save, 600)
@@ -501,4 +500,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_11_18_51__27_02_2025")
+    main("results/single_param_vary_16_36_16__17_03_2025")

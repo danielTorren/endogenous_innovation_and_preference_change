@@ -691,8 +691,8 @@ class Controller:
         parameters_EV["median_beta"] = self.beta_median 
         parameters_EV["median_gamma"] = self.gamma_median
         parameters_EV["median_nu"] = self.nu_median
-        parameters_EV["fuel_cost_c"] = self.parameters_calibration_data["electricity_price_vec"][0]
-        parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][0]
+        parameters_EV["fuel_cost_c"] = self.parameters_calibration_data["electricity_price_vec"][self.parameters_controller["ev_production_start_time"]]
+        parameters_EV["e_t"] = self.parameters_calibration_data["electricity_emissions_intensity_vec"][self.parameters_controller["ev_production_start_time"]]
         parameters_EV["d_mean"] = np.mean(self.d_vec)
         parameters_EV["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_EV["zeta"] = self.parameters_vehicle_user["zeta"]

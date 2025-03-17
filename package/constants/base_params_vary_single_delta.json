@@ -1,11 +1,10 @@
 {
-    "seed_repetitions": 64,
+    "seed_repetitions": 2,
     "duration_burn_in": 240,
     "duration_calibration": 264,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-
     "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time":60,
@@ -34,7 +33,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.1,
+                "Carbon_price": 0,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
@@ -95,7 +94,7 @@
         "num_gamma_segments": 2
     },
     "parameters_firm":{
-        "lambda": 1e-4,
+        "lambda": 1e-3,
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
@@ -106,8 +105,8 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.22,
-        "b_chi": 2,
+        "a_chi": 1.221, 
+        "b_chi": 2.2873,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -121,11 +120,11 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1e-4,
+        "kappa": 5e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
-        "r": 0.0016515813,
+        "r": 0.00246626977,
         "mu": 1,
         "alpha": 0.5,
         "zeta":0.29697
