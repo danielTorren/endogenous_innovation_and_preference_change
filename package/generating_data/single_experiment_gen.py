@@ -59,7 +59,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 0,
+        "min_Cost": 10000,
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2e-4,
+        "kappa": 1e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
