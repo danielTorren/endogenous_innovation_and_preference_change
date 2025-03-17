@@ -1,5 +1,3 @@
-import numpy as np
-
 class CarModel:
     def __init__(self, component_string, nk_landscape , parameters, choosen_tech_bool = False, firm = None):
         self.firm = firm

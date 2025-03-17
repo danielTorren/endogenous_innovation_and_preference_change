@@ -82,7 +82,7 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 12,
+        "age_limit_second_hand": 36,#12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4,
+        "num_beta_segments": 6,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
@@ -135,8 +135,8 @@ if __name__ == "__main__":
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
-        "init_price_multiplier": 1.1,
-        "min_profit": 1000,
+        "init_price_multiplier": 1.2,
+        "min_profit": 0,
         "max_cars_prod": 10
     },
     "parameters_social_network":{
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2e-4,
+        "kappa": 2.2e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,

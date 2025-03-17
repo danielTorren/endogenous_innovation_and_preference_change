@@ -131,15 +131,12 @@ class Firm:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
     def calc_utility_prop(self,U,W, maxU):
-        #print("self.kappa*U", self.kappa*U)
-        #print("self.kappa*maxU", self.kappa*maxU)
+
         exp_input = self.kappa*U - self.kappa*maxU
         #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         norm_exp_input = -self.kappa*maxU
         #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
-        #print("size", norm_exp_input,W, exp_input)
-        #quit()
         utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
 
         return utility_proportion
@@ -314,7 +311,6 @@ class Firm:
             self.last_researched_car_EV = self.vehicle_model_research
 
             #OPTIMIZATION OF RESEARCH SUBSIDY
-            #print("self.vehicle_model_research.range_over_cost/self.target_range_over_cost", self.vehicle_model_research.range_over_cost/self.target_range_over_cost, self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost))
             self.policy_distortion += self.research_subsidy + self.targeted_research_subsidy*(self.vehicle_model_research.range_over_cost/self.target_range_over_cost)
         else:
             self.last_researched_car_ICE = self.vehicle_model_research
@@ -689,7 +685,7 @@ class Firm:
         # Step 0: Build the profit matrix (segments x technologies)
 
         technologies = car_list
-        profit_matrix = np.zeros((self.num_segments, len(technologies)))
+        profit_matrix_raw = np.zeros((self.num_segments, len(technologies)))
 
         vehicles_selected_profits = []  # Used to track the vehicle and the expected profit
         vehicle_segments = []  # To keep track of vehicle segment which it was targeting
@@ -697,27 +693,18 @@ class Firm:
         # Populate the profit matrix with expected profits
         for i, segment_code in enumerate(self.segment_codes):
             for j, car in enumerate(technologies):
-                profit_matrix[i, j] = car.expected_profit_segments[segment_code]
 
-        # Extract ICE and EV profits separately
-        ice_profits = []
-        ev_profits = []
+                profit_matrix_raw[i, j] = car.expected_profit_segments[segment_code]
 
-        for j, car in enumerate(technologies):
-            if car.transportType == 2:  # ICE Vehicles
-                ice_profits.append(profit_matrix[:, j])  # Extract column for ICE
-            elif car.transportType == 3:  # EV Vehicles
-                ev_profits.append(profit_matrix[:, j])  # Extract column for EVs
-
-        # Convert lists to NumPy arrays for easier calculations
-        ice_profits = np.array(ice_profits)
-        ev_profits = np.array(ev_profits)
-
-        # Compute average expected profit across all segments
+        # Step 2: Identify rows with at least one nonzero value
+        valid_rows_mask = np.any(profit_matrix_raw > 0, axis=1)  # Boolean mask for rows with nonzero values
+        
+        # Step 3: Filter the profit matrix and corresponding segment codes
+        profit_matrix = profit_matrix_raw[valid_rows_mask, :]
+        valid_segment_codes_conditions = [self.segment_codes[i] for i in range(self.num_segments) if valid_rows_mask[i]]
 
         if not np.any(profit_matrix): #PROFIT IS ALL 0, pick up to 
             self.zero_profit_options_prod = 1
-            
             vehicles_selected = technologies
 
             #NEED TO SET PRICES HERE, WHAT TO DO WHEN ALL THE CARS ARE TERRIBLE, SET THE LOWEST PRICE?
@@ -725,12 +712,11 @@ class Firm:
                 price_options = vehicle.optimal_price_segments.values()
                 lowest_price = min(price_options)
                 vehicle.price = lowest_price
-
         else:
             self.zero_profit_options_prod = 0
 
             # Iterate until all segments are covered or the max number of cars are chosen
-            for _ in range(self.num_segments):
+            for _ in range(len(valid_segment_codes_conditions)):
                 # Step 1: Choose the highest value square in the matrix
                 max_index = np.unravel_index(np.argmax(profit_matrix, axis=None), profit_matrix.shape)
                 max_row, max_col = max_index
@@ -738,18 +724,18 @@ class Firm:
 
                 # Select the car and mark the segment as covered
                 selected_vehicle = technologies[max_col]
-                vehicles_selected_profits.append((selected_vehicle, max_profit, self.segment_codes[max_row]))
-                vehicle_segments.append((selected_vehicle, self.segment_codes[max_row]))
+                vehicles_selected_profits.append((selected_vehicle, max_profit, valid_segment_codes_conditions[max_row]))
+                vehicle_segments.append((selected_vehicle, valid_segment_codes_conditions[max_row]))
 
                 # Step 2: Remove the segment (set the row to negative infinity)
                 profit_matrix[max_row, :] = -np.inf
 
                 # Step 3: Update the column for the selected technology using the optimal price for the chosen segment
-                optimal_price_chosen_segment = selected_vehicle.optimal_price_segments[self.segment_codes[max_row]]
+                optimal_price_chosen_segment = selected_vehicle.optimal_price_segments[valid_segment_codes_conditions[max_row]]
                 selected_vehicle.price = optimal_price_chosen_segment  # SET PRICE
 
                 valid_indices = np.where(profit_matrix[:, max_col] != -np.inf)[0]
-                valid_segment_codes = [self.segment_codes[i] for i in valid_indices]
+                valid_segment_codes = [valid_segment_codes_conditions[i] for i in valid_indices]
 
                 for segment_code in valid_segment_codes:
                     selected_vehicle.optimal_price_segments[segment_code] = optimal_price_chosen_segment
@@ -778,6 +764,7 @@ class Firm:
         
         sorted_vehicles = sorted(vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True)
         vehicles_selected_with_segment = [(x[0], x[1]["segment"]) for x in sorted_vehicles[:self.max_cars_prod]]
+
         vehicles_selected = [x[0] for x in sorted_vehicles[:self.max_cars_prod]]
 
         return vehicles_selected
@@ -873,7 +860,7 @@ class Firm:
             #print("production", self.firm_id)
             self.cars_on_sale = self.choose_cars_segments()
             self.production_change_bool = 1
-            self.prod_counter += 1
+            self.prod_counter += 1                    
 
         self.update_memory_timer()
 

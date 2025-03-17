@@ -29,6 +29,8 @@ class Firm_Manager:
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
         self.num_gamma_segments = parameters_firm_manager["num_gamma_segments"]
 
+        self.ev_production_bool = 0
+
         self.production_subsidy = 0 #NEEDED FOR TIEM STEP 0
 
         self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(self.num_gamma_segments), range(2)))
@@ -71,6 +73,28 @@ class Firm_Manager:
             car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=1)
             car_real.L_a_t = age_list[i]
             car_list.append(car_real)
+        return car_list
+    
+    def gen_old_cars_second_hand(self):
+        """
+        Using random assortment of cars intially pick some random cars and set a random age distribution
+        """
+
+        model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
+        # Define mean and standard deviation for normal distribution
+        mu = 120#self.age_max / 2  # Mean age at half of max age
+        sigma = 60#self.age_max / 4  # Standard deviation (adjustable)
+
+        # Generate normally distributed ages, ensuring values are within range
+        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
+
+        car_list = []
+        for i, car in enumerate(model_choices):
+            personalCar_id = self.id_generator.get_new_id()
+            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=0)
+            car_real.L_a_t = age_list[i]
+            car_list.append(car_real)
+            
         return car_list
 
     def init_firms(self):
@@ -188,10 +212,12 @@ class Firm_Manager:
 
         # 3) Compute midpoints for each segment
         for i, code in enumerate(self.all_segment_codes):
-            b_idx, g_idx, _ = code
+            b_idx, g_idx, e_idx = code
 
-            # Assign values to the market data
-            self.market_data[code]["I_s_t"] = segment_counts[code]
+            if (e_idx == 0) or (e_idx == 1 and self.ev_production_bool):
+                self.market_data[code]["I_s_t"] = segment_counts[code]#IS NOT AN EV SEGMENT or CAN PRODUCE EVS AND THE SEGMENT ALLOWS IT
+            else:
+                self.market_data[code]["I_s_t"] = 0#CANT PRODUCE AN EV
         
         #4) calc the utility of each car (already did base utility in the car but need the full value including price and emissiosn production)
         for firm in self.firms_list:
@@ -259,7 +285,14 @@ class Firm_Manager:
 
         for code in self.market_data.keys():
             # Append current values to history
-            self.market_data[code]["history_I_s_t"].append(segment_counts[code])
+            #SEGMENT COUNTS
+            e_idx = code[2]
+            if (e_idx == 0) or (e_idx == 1 and self.ev_production_bool):
+                count = segment_counts[code]#IS NOT AN EV SEGMENT or CAN PRODUCE EVS AND THE SEGMENT ALLOWS IT
+            else:
+                count = 0#CANT PRODUCE AN EV
+            self.market_data[code]["history_I_s_t"].append(count)
+
             self.market_data[code]["history_W"].append(W_segment[code])
 
             # Trim history to the last N time steps

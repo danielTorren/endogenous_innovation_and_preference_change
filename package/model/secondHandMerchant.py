@@ -1,11 +1,11 @@
 import numpy as np
 
 class SecondHandMerchant:
-
-
     def __init__(self, unique_id, parameters_second_hand):
         self.id = unique_id
         self.cars_on_sale = []
+
+        self.t_second_hand_cars = 0
 
         self.age_limit_second_hand = parameters_second_hand["age_limit_second_hand"]
         self.set_up_time_series_second_hand_car()
@@ -28,10 +28,21 @@ class SecondHandMerchant:
         self.assets = 0
         self.profit = 0
         self.scrap_loss = 0
-
+        self.age_second_hand_car_removed = []
+        
     def calc_median(self, beta_vec, gamma_vec):
         self.median_beta =  np.median(beta_vec)
         self.median_gamma = np.median(gamma_vec)
+
+    def create_second_hand_car_list(self, old_cars):
+        self.cars_on_sale_pre_burn_in = []
+        for car in old_cars:
+            car.scenario = "second_hand"
+            car.second_hand_counter = 0
+            car.owner_id = self.id
+            car.cost_second_hand_merchant = (car.ProdCost_t*1.2)*((1 - car.delta_P) ** car.L_a_t)/2#Need a value as a place holder, use 25% increase on production cost then assume a pay out of 50% correct price
+            self.cars_on_sale_pre_burn_in.append(car)
+
 
     ###############################################################################################################
 
@@ -50,7 +61,7 @@ class SecondHandMerchant:
         for vehicle in list_vehicles:
             vehicle_dict_vecs["Quality_a_t"].append(vehicle.Quality_a_t)
             vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
-            vehicle_dict_vecs["price"].append(vehicle.price)
+            #vehicle_dict_vecs["price"].append(vehicle.price)
             vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
             vehicle_dict_vecs["delta_P"].append(vehicle.delta_P)
             vehicle_dict_vecs["B"].append(vehicle.B)
@@ -174,7 +185,7 @@ class SecondHandMerchant:
             # Use list comprehension to filter out the cars to remove
             self.cars_on_sale = [car for car in self.cars_on_sale if car not in cars_to_remove] 
         
-
+        
     def add_to_stock(self,vehicle):
         #add new car to stock
         vehicle.price = vehicle.price_second_hand_merchant
@@ -205,8 +216,9 @@ class SecondHandMerchant:
         Update ages of cars and the prices and emissiosn intensities
         """
         for car in list_cars:
-            car.L_a_t += 1
-            car.second_hand_counter += 1#UPDATE THE STEPS ITS BEEN HERE
+            if self.t_second_hand_cars > self.burn_in_second_hand_market:
+                car.L_a_t += 1
+                car.second_hand_counter += 1#UPDATE THE STEPS ITS BEEN HERE
         
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
@@ -216,6 +228,8 @@ class SecondHandMerchant:
 
     def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale):
         
+        self.t_second_hand_cars += 1
+
         self.gas_price =  gas_price
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
@@ -223,9 +237,16 @@ class SecondHandMerchant:
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []
+        
+        if self.t_second_hand_cars == self.burn_in_second_hand_market:
+            self.cars_on_sale = self.cars_on_sale_pre_burn_in
 
-        if self.cars_on_sale:
+        if self.cars_on_sale and self.t_second_hand_cars > self.burn_in_second_hand_market:
             self.update_stock_contents()
+            #ages = [car.L_a_t for car in self.cars_on_sale]
+            #ages_EV = [car.L_a_t for car in self.cars_on_sale if car.transportType == 3]
+            #ages_ICE = [car.L_a_t for car in self.cars_on_sale if car.transportType == 2]
+            #print(self.t_second_hand_cars,":",np.mean(ages_ICE),  np.mean(ages_EV), len(self.cars_on_sale))
 
         self.profit = self.income - self.spent
 

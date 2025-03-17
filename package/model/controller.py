@@ -53,6 +53,7 @@ class Controller:
         
         self.parameters_social_network["init_car_options"] =  self.cars_on_sale_all_firms 
         self.parameters_social_network["old_cars"] = self.firm_manager.old_cars
+        self.second_hand_merchant.create_second_hand_car_list(self.firm_manager.gen_old_cars_second_hand())#FILL SECOND HAND MERCHANT WITH SOME CARS
 
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
@@ -759,6 +760,7 @@ class Controller:
                 firm.list_technology_memory = firm.list_technology_memory_ICE + firm.list_technology_memory_EV
 
         if self.t_controller == self.ev_production_start_time:
+            self.firm_manager.ev_production_bool = 1
             for firm in self.firm_manager.firms_list:
                 firm.ev_production_bool = True
         
@@ -800,8 +802,9 @@ class Controller:
 
     def get_second_hand_cars(self):
         self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms)
+        cars_on_sale_second_hand = self.second_hand_merchant.cars_on_sale
 
-        return self.second_hand_merchant.cars_on_sale
+        return cars_on_sale_second_hand
 
     def update_target_range_over_cost(self):
         target_range_over_cost = self.firm_manager.calc_target_target_range_over_cost()

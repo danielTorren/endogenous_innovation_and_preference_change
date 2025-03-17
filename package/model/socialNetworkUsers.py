@@ -499,7 +499,7 @@ class Social_Network:
                     user.vehicle.owner_id = self.second_hand_merchant.id
                     self.second_hand_merchant.add_to_stock(user.vehicle)
                     user.vehicle = None
-            
+                    
             if vehicle_chosen.owner_id == self.second_hand_merchant.id:# Buy a second-hand car
                 #USED ADOPTION SUBSIDY OPTIMIZATION
                 if vehicle_chosen.transportType == 3:

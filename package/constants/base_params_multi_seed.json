@@ -37,7 +37,7 @@
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
-            "Electricity_subsidy":0.000342,
+            "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,
@@ -45,7 +45,7 @@
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 12,
+        "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -90,7 +90,7 @@
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 8,
+        "num_beta_segments": 6,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
@@ -98,12 +98,12 @@
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
-        "init_price_multiplier": 1.1,
-        "min_profit": 1000,
+        "init_price_multiplier": 1.2,
+        "min_profit": 0,
         "max_cars_prod": 10
     },
     "parameters_social_network":{
-        "num_individuals":10000,
+        "num_individuals":3000,
         "chi_max": 0.9,
         "a_chi": 1.221, 
         "b_chi": 2.2873,
@@ -120,13 +120,14 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1e-4,
+        "kappa": 2.2e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
-        "r": 0.0016515813,
+        "r": 0.00246626977,
         "mu": 1,
         "alpha": 0.5,
         "zeta":0.29697
     }
 }
+    
