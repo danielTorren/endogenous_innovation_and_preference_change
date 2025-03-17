@@ -238,7 +238,7 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
 
     #print(A,A.shape)
     
-    ci_range = 2*np.std(data_after_burn_in,axis=0)#sem(data_after_burn_in, axis=0) * 1.96#t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
+    ci_range = sem(data_after_burn_in, axis=0) *t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
@@ -868,7 +868,6 @@ def main(fileName, dpi=300):
                         "Proportion of EVs", 
                         "history_prop_EV")
     
-    plt.show()
     
 
     plot_history_mean_price_multiple_seeds(
@@ -946,4 +945,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_23_32_36__12_03_2025")
+    main("results/multi_seed_single_21_07_28__17_03_2025")

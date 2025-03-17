@@ -120,7 +120,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.2e-4,
+        "kappa": 2e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
