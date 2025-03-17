@@ -94,7 +94,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.0015,
+        "delta": 0.001,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         "min_Efficiency": 2.73,
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
-        "max_Battery_size": 130,
+        "max_Battery_size": 150,
         "min_Cost": 0,
         "max_Cost": 58150
     },
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 6,
+        "num_beta_segments": 4,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         "memory_cap": 30,
         "prob_innovate": 0.083,
         "prob_change_production": 0.083,
-        "init_price_multiplier": 1.1,
+        "init_price_multiplier": 1.25,
         "min_profit": 1000,
         "max_cars_prod": 10
     },
