@@ -406,10 +406,16 @@ class Firm_Manager:
         self.history_prop_EV_research = []
         self.history_prop_ICE_research = []
 
+        self.history_past_new_bought_vehicles_prop_ev = []
+
 
     def save_timeseries_data_firm_manager(self):
         #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
         #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
+        if self.past_new_bought_vehicles:
+            self.history_past_new_bought_vehicles_prop_ev.append(sum([1 for car in self.past_new_bought_vehicles if car.transportType == 3])/len(self.past_new_bought_vehicles))
+        else:
+            self.history_past_new_bought_vehicles_prop_ev.append(np.nan)
 
         # Extract research type history for each firm (last 12 years, or fewer if not available)
         research_history = [firm.history_research_type[-12:] for firm in self.firms_list]

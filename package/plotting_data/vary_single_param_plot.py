@@ -135,6 +135,59 @@ def plot_ev_prop(base_params,data_array, property_list, fileName, name_property,
     # Save the figure
     fig.savefig(f"{fileName}/Plots/user_ev_prop_multi_{property_save}.png", dpi=dpi)
 
+def plot_margin(base_params,data_array, property_list, fileName, name_property, property_save, real_data, dpi=600):
+    num_deltas = data_array.shape[0]
+    num_seeds = data_array.shape[1]
+    time_steps = data_array.shape[2]
+
+    # Create time series array
+    time_series = np.arange(time_steps)
+
+    # Create subplots (one row for mean + confidence interval)
+    fig, axes = plt.subplots(nrows=1, ncols=num_deltas, figsize=(5 * num_deltas, 5), sharex=True, sharey=True)
+
+    # If there's only one delta, axes might not be an array
+    if num_deltas == 1:
+        axes = np.array([axes])
+
+    for i, delta in enumerate(property_list):
+        ax = axes[i]
+
+        # Get data after burn-in
+        burn_in_step = base_params["duration_burn_in"]
+        data_after_burn_in = data_array[i, :, burn_in_step:]
+
+        # Calculate mean and 95% confidence interval
+        mean_data = np.mean(data_after_burn_in, axis=0)
+        sem_data = stats.sem(data_after_burn_in, axis=0)
+        ci_range = sem_data * stats.t.ppf(0.975, num_seeds - 1)  # 95% CI
+
+        # Plot real data (assume it starts after burn-in + offset)
+        init_index = burn_in_step + 120
+        time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+        ax.plot(time_steps_real, real_data, label="Real Data", color='orange', linestyle="dotted")
+
+        # Plot individual traces in grey
+        for seed in range(num_seeds):
+            ax.plot(time_series[burn_in_step:], data_after_burn_in[seed, :], color='gray', alpha=0.3, linewidth=0.8)
+
+        # Plot mean and confidence interval
+        ax.plot(time_series[burn_in_step:], mean_data, color='blue', label='Mean', linewidth=2)
+        ax.fill_between(time_series[burn_in_step:], mean_data - ci_range, mean_data + ci_range, color='blue', alpha=0.3, label='95% CI')
+
+        ax.grid()
+        ax.legend()
+        ax.set_title(f"{delta}")
+
+    fig.supxlabel("Time Step")
+    fig.supylabel("EV prop")
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Save the figure
+    fig.savefig(f"{fileName}/Plots/user_margin_{property_save}.png", dpi=dpi)
+
 
 def plot_age(data_array, property_list, fileName, name_property, property_save, dpi=600):
     """

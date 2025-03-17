@@ -97,6 +97,21 @@ def plot_ev_consider_adoption_rate(base_params,social_network, time_series, file
     save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
 
 
+def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi=600):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    EV_stock_prop_2010_22
+
+    time_yearly = np.arange(12 + 108, 12 + 264, 12)
+    ax.plot(time_yearly,EV_stock_prop_2010_22, label = "California data", linestyle= "dashed", color = "orange")
+    ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
+    ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
+    ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars", color = "red")
+    
+    add_vertical_lines(ax, base_params)
+    ax.legend()
+    format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
+    save_and_show(fig, fileName, "plot_ev_consider_adoption_bought_rate", dpi)
+
 
 def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -816,23 +831,9 @@ def emissions_decomposed_flow(base_params, social_network, time_series, fileName
 
 def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600):
 
-    time_points_new_ICE = []
-    time_points_new_EV = []
-    profit_margins_ICE = []
-    profit_margins_EV = []
-    
-    for i, pm_list in enumerate(firm_manager.history_profit_margins_ICE[base_params["duration_burn_in"]:]):
-        time_points_new_ICE.extend([time_series[i]] * len(pm_list))  
-        profit_margins_ICE.extend(pm_list)
-
-    for i, pm_list in enumerate(firm_manager.history_profit_margins_EV[base_params["duration_burn_in"]:]):
-        time_points_new_EV.extend([time_series[i]] * len(pm_list))  
-        profit_margins_EV.extend(pm_list)
-    # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    print()
-    ax.scatter(time_points_new_ICE, profit_margins_ICE, marker='o', alpha=0.7, color = "blue", label = "ICE")
-    ax.scatter(time_points_new_EV, profit_margins_EV, marker='o', alpha=0.7, color = "green", label = "EV")
+    ax.scatter(time_series, firm_manager.history_mean_profit_margins_ICE[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "blue", label = "ICE")
+    ax.scatter(time_series, firm_manager.history_mean_profit_margins_EV[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "green", label = "EV")
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Profit margin (P-C)/C")
@@ -1107,37 +1108,42 @@ def main(fileName, dpi=400):
 
     #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
+    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
+    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    plot_preferences(social_network, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
-    plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    
     plot_history_prop_EV_research(base_params,firm_manager, fileName)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
     plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
     plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
     plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
-    emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
+    #emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
     
     plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
-    #plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
-    plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
+    
+    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
-    plot_total_utility(base_params,social_network, time_series, fileName, dpi)
+    #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
 
-    plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
+    #plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
     #
     #plot_segment_count_grid(base_params,firm_manager, time_series, fileName)
     #plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
-    #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
-    #plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+    #
+    
     #plot_history_W(base_params, firm_manager,time_series,  fileName)
-    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     #plot_calibration_data(base_params, data_controller, time_series, fileName, dpi)
     #plot_prop_EV_on_sale(base_params,firm_manager, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_23_25_15__12_03_2025")
+    main("results/single_experiment_13_18_01__17_03_2025")

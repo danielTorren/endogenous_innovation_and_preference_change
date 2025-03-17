@@ -143,7 +143,7 @@ def distance_ev_prop_parallel_run(
 #########################################################################################
 def generate_multi(params):
     data = generate_data(params)
-    return data.social_network.history_prop_EV, data.social_network.history_mean_price_ICE_EV
+    return data.social_network.history_prop_EV, data.social_network.history_mean_price_ICE_EV, data.firm_manager.history_mean_profit_margins_ICE
 #data_flat_age, data_flat_price , data_flat_emissions 
 
 def ev_prop_price_emissions_parallel_run(
@@ -152,10 +152,10 @@ def ev_prop_price_emissions_parallel_run(
     num_cores = multiprocessing.cpu_count()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_multi)(i) for i in params_dict)
-    ev_prop_list, price_list = zip(
+    ev_prop_list, price_list, margins_list = zip(
         *res
     )
-    return np.asarray(ev_prop_list), np.asarray(price_list) 
+    return np.asarray(ev_prop_list), np.asarray(price_list), np.asarray(margins_list)
 #########################################################################################
 
 def policy_generate_multi(params, controller_load):

@@ -234,8 +234,11 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     # Calculate mean and 95% confidence interval for data after burn-in
     mean_values = np.mean(data_after_burn_in, axis=0)
     median_values = np.median(data_after_burn_in, axis=0)
+    #print(data_after_burn_in.shape)
 
-    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
+    #print(A,A.shape)
+    
+    ci_range = 2*np.std(data_after_burn_in,axis=0)#sem(data_after_burn_in, axis=0) * 1.96#t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
 
     # Create subplots
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
@@ -859,6 +862,15 @@ def main(fileName, dpi=300):
     # Plot each dataset
     #"""
 
+    plot_ev_uptake_single(EV_stock_prop_2010_22, base_params, fileName, history_prop_EV_arr, 
+                        "Proportion of EVs Over Time", 
+                        "Time Step, months", 
+                        "Proportion of EVs", 
+                        "history_prop_EV")
+    
+    plt.show()
+    
+
     plot_history_mean_price_multiple_seeds(
         base_params, 
         history_mean_price_ICE_EV_arr, 
@@ -867,6 +879,7 @@ def main(fileName, dpi=300):
         history_upper_percentile_price_ICE_EV_arr,
         fileName
     )
+
 
     plot_margins(base_params, fileName,history_mean_profit_margins_ICE, history_mean_profit_margins_EV, 
                         "Profit margin Over Time", 
@@ -899,11 +912,7 @@ def main(fileName, dpi=300):
                         "Total Emissions, kgCO2", 
                         "history_total_emissions")
 
-    plot_ev_uptake_single(EV_stock_prop_2010_22, base_params, fileName, history_prop_EV_arr, 
-                        "Proportion of EVs Over Time", 
-                        "Time Step, months", 
-                        "Proportion of EVs", 
-                        "history_prop_EV")
+
 
     plot_data_across_seeds(base_params, fileName,history_total_utility_arr, 
                         "Total Utility Over Time", 
