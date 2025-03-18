@@ -525,7 +525,7 @@ def plot_segment_count_grid_percentage(base_params, firm_manager, time_series, f
     save_path = os.path.join(fileName, "Plots")
     save_and_show(fig, fileName, "segment_percentage_grid", 600)
 
-def plot_history_car_age( base_params,social_network,time_series, fileName, dpi):
+def plot_history_car_age_full( base_params,social_network,time_series, fileName, dpi):
     """
     Plots the mean and 95% confidence interval for a time series of ages.
     
@@ -567,11 +567,56 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
     ax.set_ylabel("Age")
 
     ax.grid(True)
+    #add_vertical_lines(ax, base_params)
+    ax.legend()
+    # Save and show the plot
+    save_and_show(fig, fileName, "car age owned_full", dpi)   
+
+
+def plot_history_car_age( base_params,social_network,time_series, fileName, dpi):
+    """
+    Plots the mean and 95% confidence interval for a time series of ages.
+    
+    Args:
+    - time_series: A list of time steps.
+    - ages_list: A list of lists, where each inner list contains ages at a given time step.
+    - fileName: The name of the file where the plot will be saved.
+    - dpi: Resolution for the saved plot.
+    """
+    # Calculate mean and confidence interval
+    means = []
+    lower_bounds = []
+    upper_bounds = []
+    medians = []
+
+    ages_list = social_network.history_car_age
+
+    for ages in ages_list:
+        ages = np.array(ages)
+        valid_ages = ages[~np.isnan(ages)]  # Exclude NaNs from calculations
+        mean = np.mean(valid_ages)
+        median  = np.median(valid_ages)
+        confidence = t.ppf(0.975, len(valid_ages)-1) * sem(valid_ages)
+        
+        means.append(mean)
+        medians.append(median)
+        lower_bounds.append(mean - confidence)
+        upper_bounds.append(mean + confidence)
+
+    # Plot the data
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, medians[base_params["duration_burn_in"]:], label="Median Age", color='red')
+    ax.plot(time_series, means[base_params["duration_burn_in"]:], label="Mean Age", color='blue')
+    ax.fill_between(time_series, lower_bounds[base_params["duration_burn_in"]:], upper_bounds[base_params["duration_burn_in"]:], color='blue', alpha=0.2, label="95% Confidence Interval")
+    ax.set_title("Mean Age and 95% Confidence Interval Over Time")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Age")
+
+    ax.grid(True)
     add_vertical_lines(ax, base_params)
     ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned", dpi)   
-
 
 def plot_calibration_data(base_params, controller, time_series, fileName, dpi=600):
     fig, axes = plt.subplots(ncols = 3,figsize=(10, 6))
@@ -1133,6 +1178,10 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
+    plt.show()
+    quit()
     #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
 
@@ -1140,7 +1189,7 @@ def main(fileName, dpi=300):
     plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
-    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    
     #plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)

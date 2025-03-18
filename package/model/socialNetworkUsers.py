@@ -113,9 +113,38 @@ class Social_Network:
         """GIVE PEOPLE CARS NO CHOICE"""
         old_cars = parameters_social_network["old_cars"]
 
-        vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs(old_cars)
+        # Extract properties using list comprehensions
+        quality_a_t = np.array([vehicle.Quality_a_t for vehicle in old_cars])
+        eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in old_cars])
+        ProdCost_t = np.array([vehicle.ProdCost_t for vehicle in old_cars])
+        production_emissions = np.array([vehicle.emissions for vehicle in old_cars])
+        fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in old_cars])
+        e_t = np.array([vehicle.e_t for vehicle in old_cars])
+        transport_type = np.array([vehicle.transportType for vehicle in old_cars])
+        delta = np.array([vehicle.delta for vehicle in old_cars])
+        rebate_vec = np.where(transport_type == 3, self.rebate_calibration + self.rebate, 0)
+        B = np.array([vehicle.B for vehicle in old_cars])
+        # Create the dictionary directly with NumPy arrays
+        vehicle_dict_vecs = {
+            "Quality_a_t": quality_a_t,
+            "Eff_omega_a_t": eff_omega_a_t,
+            "ProdCost_t": ProdCost_t,
+            "production_emissions": production_emissions,
+            "fuel_cost_c": fuel_cost_c,
+            "e_t": e_t,
+            "transportType": transport_type,
+            "rebate": rebate_vec,
+            "delta": delta,
+            "B": B
+        }
 
-        U_a_i_t_matrix = self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
+
+        price_difference = 1.2*vehicle_dict_vecs["ProdCost_t"][:, np.newaxis]  # Apply rebate
+        price_difference_T = price_difference.T
+        U_a_i_t_matrix  = -price_difference_T - self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+
+        #U_a_i_t_matrix = self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
 
         # Sort people by their maximum utility for any car
         people_indices = np.argsort(np.max(U_a_i_t_matrix, axis=1))[::-1]  # Descending order

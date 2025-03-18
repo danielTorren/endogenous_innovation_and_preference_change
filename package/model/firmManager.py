@@ -100,7 +100,7 @@ class Firm_Manager:
             car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=0)
             car_real.L_a_t = age_list[i]
             car_list.append(car_real)
-            
+        
         return car_list
 
     def init_firms(self):
