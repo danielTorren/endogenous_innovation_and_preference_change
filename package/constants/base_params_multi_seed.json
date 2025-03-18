@@ -2,7 +2,7 @@
     "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_calibration": 264,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -22,7 +22,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -90,7 +90,7 @@
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4,
+        "num_beta_segments": 8,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
@@ -103,7 +103,7 @@
         "max_cars_prod": 10
     },
     "parameters_social_network":{
-        "num_individuals":3000,
+        "num_individuals":6000,
         "chi_max": 0.9,
         "a_chi": 1.221, 
         "b_chi": 2.2873,
