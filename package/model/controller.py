@@ -34,8 +34,20 @@ class Controller:
             np.log10(self.parameters_social_network["prob_switch_car"]),  # End at final probability
             int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
         )
+
+        self.prob_innovate_arr = np.logspace(
+            np.log10(1e-4),  # Start at 1e-4
+            np.log10(self.parameters_firm["prob_innovate"]),  # End at final probability
+            int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
+        )
+
+        self.prob_change_production_arr = np.logspace(
+            np.log10(1e-4),  # Start at 1e-4
+            np.log10(self.parameters_firm["prob_change_production"]),  # End at final probability
+            int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
+        )
         #AVOID SYNCRONISATION OF CAR AGES
-        
+
         self.update_time_series_data()
 
         self.setup_id_gen()
@@ -778,13 +790,20 @@ class Controller:
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
 
     def update_firms(self):
+        #handle_burn_in probaility
+        if self.t_controller < self.duration_burn_in*(3/4):
+            for firm in self.firm_manager.firms_list:
+                firm.prob_innovate = self.prob_innovate_arr[self.t_controller]
+                firm.prob_change_production = self.prob_change_production_arr[self.t_controller]
+            
+
         cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
         
          #handle_burn_in probaility
-        if self.t_controller < self.duration_burn_in/2:
+        if self.t_controller < self.duration_burn_in*(3/4):
             self.social_network.prob_switch_car = self.prob_switch_car_arr[self.t_controller]
 
         # Update social network based on firm preferences
