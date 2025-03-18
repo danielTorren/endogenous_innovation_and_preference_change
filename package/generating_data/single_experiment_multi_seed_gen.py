@@ -45,7 +45,8 @@ def main(
         history_production_cost_ICE, 
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV
+        history_mean_profit_margins_EV,
+        history_mean_car_age
     ) = parallel_run_multi_seed(
         params_list
     )
@@ -72,6 +73,7 @@ def main(
     #save_object(history_production_cost_EV, fileName + "/Data", "history_production_cost_EV")
     save_object(history_mean_profit_margins_ICE, fileName + "/Data", "history_mean_profit_margins_ICE")
     save_object(history_mean_profit_margins_EV, fileName + "/Data", "history_mean_profit_margins_EV")
+    save_object(history_mean_car_age, fileName + "/Data", "history_mean_car_age")
     #save_object(history_distance_individual_ICE, fileName + "/Data", "history_distance_individual_ICE")
     #save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
     save_object(base_params, fileName + "/Data", "base_params")

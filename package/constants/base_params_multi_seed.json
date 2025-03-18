@@ -2,7 +2,7 @@
     "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_calibration": 264,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,

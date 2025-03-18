@@ -851,7 +851,7 @@ def main(fileName, dpi=300):
 
     history_mean_profit_margins_ICE = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_ICE"))
     history_mean_profit_margins_EV = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_EV"))
-
+    history_mean_car_age_arr = np.asarray(load_object( fileName + "/Data", "history_mean_car_age"))
 
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
     CO2_index_2010_22 = calibration_data_output["CO2_index"]
@@ -932,6 +932,14 @@ def main(fileName, dpi=300):
                         "history_total_profit"
     )
 
+    plot_data_across_seeds(base_params, fileName,history_mean_car_age_arr, 
+                        "Mean car age Over Time", 
+                        "Time Step, months", 
+                        "Car Age", 
+                        "history_mean_car_age"
+    )
+
+
     """
     plot_vehicle_attribute_time_series_by_type_split(
         base_params, 
@@ -945,4 +953,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_13_10_56__18_03_2025")
+    main("results/multi_seed_single_13_18_47__18_03_2025")

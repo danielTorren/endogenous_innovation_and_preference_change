@@ -921,6 +921,7 @@ class Social_Network:
         self.history_second_hand_bought = []
         self.history_new_car_bought = []
         self.history_car_age = []
+        self.history_mean_car_age = []
 
         self.history_cars_cum_distances_driven = []
         self.history_cars_cum_driven_emissions = []
@@ -1128,6 +1129,7 @@ class Social_Network:
         self.history_attributes_ICE_cars_on_sale_all_firms.append(data_ice)
 
         self.history_car_age.append(self.car_ages)
+        self.history_mean_car_age.append(np.mean(self.car_ages))
 
         self.history_cars_cum_distances_driven.append(self.cars_cum_distances_driven)
         self.history_cars_cum_driven_emissions.append(self.cars_cum_driven_emissions)
