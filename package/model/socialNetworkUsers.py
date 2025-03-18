@@ -112,6 +112,46 @@ class Social_Network:
     def set_init_cars_selection(self, parameters_social_network):
         """GIVE PEOPLE CARS NO CHOICE"""
         old_cars = parameters_social_network["old_cars"]
+
+        vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs(old_cars)
+
+        U_a_i_t_matrix = self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+
+        # Sort people by their maximum utility for any car
+        people_indices = np.argsort(np.max(U_a_i_t_matrix, axis=1))[::-1]  # Descending order
+        assigned_cars = set()
+        
+        # Initialize vehicle assignment
+        user_vehicle_map = {}
+
+        for person_idx in people_indices:
+            # Find the car with the highest utility for this person
+            car_utilities = U_a_i_t_matrix[person_idx, :]
+            sorted_car_indices = np.argsort(car_utilities)[::-1]  # Descending order
+
+            # Assign the first available car from the sorted list
+            for car_idx in sorted_car_indices:
+                if car_idx not in assigned_cars:
+                    assigned_cars.add(car_idx)
+                    user_vehicle_map[person_idx] = car_idx
+                    break  # Move to the next person after assigning a car
+
+        # Assign cars based on the computed mapping
+        for i, (person_idx, car_idx) in enumerate(user_vehicle_map.items()):
+            self.vehicleUsers_list[person_idx].vehicle = old_cars[car_idx]
+
+        # Set the user ID of cars
+        for individual in self.vehicleUsers_list:
+            individual.vehicle.owner_id = individual.user_id
+
+        current_cars = [user.vehicle for user in self.vehicleUsers_list]
+
+
+        return current_cars  # Return the assigned cars
+    
+    def set_init_cars_selection_old(self, parameters_social_network):
+        """GIVE PEOPLE CARS NO CHOICE"""
+        old_cars = parameters_social_network["old_cars"]
     
         for i, car in enumerate(old_cars):
             self.vehicleUsers_list[i].vehicle = car
