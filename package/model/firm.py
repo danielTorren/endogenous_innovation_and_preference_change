@@ -78,7 +78,6 @@ class Firm:
         
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
         
-        self.carbon_price =  self.parameters_firm["carbon_price"]
 
         self.lambda_exp = parameters_firm["lambda"]
 
@@ -90,6 +89,14 @@ class Firm:
 
         self.parameters_car_ICE = parameters_car_ICE
         self.parameters_car_EV = parameters_car_EV
+
+        self.carbon_price =  self.parameters_firm["carbon_price"]
+        self.gas_price =  self.parameters_firm["gas_price"]
+        self.electricity_price =  self.parameters_firm["electricity_price"]
+        self.electricity_emissions_intensity =  self.parameters_firm["electricity_emissions_intensity"]
+        self.rebate_calibration =  self.parameters_firm["rebate_calibration"]
+        self.rebate =  0
+        self.production_subsidy =  0
 
         self.expected_profits_segments = {}      
         
@@ -861,6 +868,23 @@ class Firm:
         if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()
             self.research_bool = 0
+
+        return self.cars_on_sale
+    
+    def next_step_burn_in(self, I_s_t_vec, W_vec, nu_UMax_vec):
+        
+        self.I_s_t_vec = I_s_t_vec
+        self.W_vec =  W_vec
+        self.maxU_vec = nu_UMax_vec
+
+        #update cars to sell   
+        if self.random_state.rand() < self.prob_change_production:
+            self.cars_on_sale = self.choose_cars_segments()
+          
+        self.update_memory_timer()
+
+        if self.random_state.rand() < self.prob_innovate:
+            self.innovate()
 
         return self.cars_on_sale
 

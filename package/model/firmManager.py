@@ -51,7 +51,7 @@ class Firm_Manager:
         #calculate the inital attributes of all the cars on sale
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
         self.age_max = parameters_firm_manager["init_car_age_max"]
-        self.old_cars = self.gen_old_cars()        
+             
 
     ###########################################################################################################
     #INITIALISATION
@@ -60,7 +60,7 @@ class Firm_Manager:
         """
         Using random assortment of cars intially pick some random cars and set a random age distribution
         """
-
+        print("self.cars_on_sale_all_firms", len(self.cars_on_sale_all_firms))
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
         # Define mean and standard deviation for normal distribution
         mu = 120#self.age_max / 2  # Mean age at half of max age
@@ -75,7 +75,9 @@ class Firm_Manager:
             car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=1)
             car_real.L_a_t = age_list[i]
             car_list.append(car_real)
-        return car_list
+
+        self.old_cars = car_list   
+        return self.old_cars
     
     def gen_old_cars_second_hand(self):
         """
@@ -591,15 +593,13 @@ class Firm_Manager:
             cars_on_sale_all_firms.extend(cars_on_sale)
 
         return cars_on_sale_all_firms
-
-
-    def calc_target_target_range_over_cost(self):
-        ice_cars_list = [car for car in self.cars_on_sale_all_firms if car.transportType == 2]
-        target_range_over_cost_list = np.asarray([car.range_over_cost for car in ice_cars_list])
-        best_target_range_over_cost = np.max(target_range_over_cost_list )
-
-        return best_target_range_over_cost
-
+    
+    def update_firms_burn_in(self):
+        cars_on_sale_all_firms = []
+        for firm in self.firms_list:
+            cars_on_sale = firm.next_step_burn_in(self.I_s_t_vec, self.W_vec, self.maxU_vec)
+            cars_on_sale_all_firms.extend(cars_on_sale)
+        return cars_on_sale_all_firms
 
 #####################################################################################################################
 
@@ -620,3 +620,12 @@ class Firm_Manager:
         self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
 
         return self.cars_on_sale_all_firms
+    
+
+    def next_step_burn_in(self):
+        
+        self.cars_on_sale_all_firms  = self.update_firms_burn_in()#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.W_segment, self.maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
+        self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues
+
+    

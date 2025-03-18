@@ -65,19 +65,34 @@ class Controller:
 
         self.gen_firms()
 
+        ####################################################################################################
+        #BURN IN THE RESEARCH WITHOUT THE SOCIAL NETWORK WITH NO CARS
+        self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
+        self.firm_manager.input_social_network_data(self.beta_vec, self.gamma_vec, self.consider_ev_vec, self.beta_bins, self.gamma_bins)
+       
+        #Need to calculate sum U give the consumption choices by individuals
+        self.firm_manager.generate_market_data()
+
+        for i in range(self.duration_burn_in_firms):
+            self.firm_manager.next_step_burn_in()
+            
+        old_cars = self.firm_manager.gen_old_cars()
+
+        ####################################################################################################
+
+
         #NEED TO CREATE INIT OPTIONS
         self.cars_on_sale_all_firms = self.firm_manager.cars_on_sale_all_firms
         
         self.second_hand_cars = []#EMPTY INITIATILLY
         
         self.parameters_social_network["init_car_options"] =  self.cars_on_sale_all_firms 
-        self.parameters_social_network["old_cars"] = self.firm_manager.old_cars
+        self.parameters_social_network["old_cars"] = old_cars
         self.second_hand_merchant.create_second_hand_car_list(self.firm_manager.gen_old_cars_second_hand())#FILL SECOND HAND MERCHANT WITH SOME CARS
 
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
 
-        self.consider_ev_vec = self.social_network.consider_ev_vec
         #NEED THE LIST OF VEHICLES CHOSEN to record data
         self.new_bought_vehicles = self.social_network.current_vehicles
 
@@ -86,10 +101,7 @@ class Controller:
 
         #pass information across one time
         #self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
-        self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins, self.gamma_bins)
-       
-        #Need to calculate sum U give the consumption choices by individuals
-        self.firm_manager.generate_market_data()
+
 
         if self.save_timeseries_data_state:
             self.social_network.set_up_time_series_social_network()
@@ -121,6 +133,7 @@ class Controller:
         self.duration_burn_in = parameters_controller["duration_burn_in"] 
         self.duration_calibration = parameters_controller["duration_calibration"] 
         self.duration_future = parameters_controller["duration_future"] 
+        self.duration_burn_in_firms = parameters_controller["duration_burn_in_research"] 
 
         if self.duration_future > 0: 
             self.full_run_state = True
