@@ -29,6 +29,7 @@ class Controller:
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
         
+        self.prob_switch_car_arr = np.linspace(1e-4, self.parameters_social_network["prob_switch_car"], int(round(self.duration_burn_in*(3/4))))#AVOID SYNCRONISATION OF CAR AGES
         self.update_time_series_data()
 
         self.setup_id_gen()
@@ -649,13 +650,12 @@ class Controller:
         self.parameters_social_network["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_social_network["zeta"] = self.parameters_vehicle_user["zeta"]
 
+
     def setup_vehicle_users_parameters(self):
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_vehicle_user["compression_factor_state"] = self.compression_factor_state
 
     def setup_ICE_landscape(self, parameters_ICE):    
-
-        
         parameters_ICE["init_price_multiplier"] = self.parameters_firm["init_price_multiplier"]
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
         parameters_ICE["median_beta"] = self.beta_median
@@ -776,6 +776,11 @@ class Controller:
         return cars_on_sale_all_firms
     
     def update_social_network(self):
+        
+         #handle_burn_in probaility
+        if self.t_controller < self.duration_burn_in/2:
+            self.social_network.prob_switch_car = self.prob_switch_car_arr[self.t_controller]
+
         # Update social network based on firm preferences
         consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration)
         return consider_ev_vec, new_bought_vehicles
