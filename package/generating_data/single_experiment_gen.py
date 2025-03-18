@@ -44,8 +44,8 @@ if __name__ == "__main__":
     "compression_factor_state": 1,
     "seed": 5,
     "seed_inputs": 22,
-    "ev_research_start_time":60,
-    "ev_production_start_time": 60,
+    "ev_research_start_time":263,
+    "ev_production_start_time": 263,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 108,
@@ -69,10 +69,9 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
-
             "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
@@ -81,7 +80,7 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,#12,
+        "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -93,7 +92,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.001,
+        "delta": 0.0015,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -126,7 +125,7 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 4,
+        "num_beta_segments": 8,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
@@ -160,12 +159,13 @@ if __name__ == "__main__":
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
-        "r": 0.00246626977,
+        "r": 0.00407412378,
         "mu": 1,
         "alpha": 0.5,
         "zeta":0.29697
     }
 }
+    
     
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")

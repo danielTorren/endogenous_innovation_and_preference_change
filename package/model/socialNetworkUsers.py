@@ -115,8 +115,7 @@ class Social_Network:
 
         vehicle_dict_vecs = self.gen_current_vehicle_dict_vecs(old_cars)
 
-        U_a_i_t_matrix = self.beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - self.d_vec*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-        
+        U_a_i_t_matrix = self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
 
         # Sort people by their maximum utility for any car
         people_indices = np.argsort(np.max(U_a_i_t_matrix, axis=1))[::-1]  # Descending order
@@ -146,7 +145,8 @@ class Social_Network:
             individual.vehicle.owner_id = individual.user_id
 
         current_cars = [user.vehicle for user in self.vehicleUsers_list]
-        
+
+
         return current_cars  # Return the assigned cars
         
     def normalize_vec_sum(self, vec):
