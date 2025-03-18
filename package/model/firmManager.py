@@ -387,21 +387,6 @@ class Firm_Manager:
         return HHI
 
 
-    def calculate_market_concentration_old(self, past_new_bought_vehicles):
-        """
-        Calculate market concentration (HHI) based on market shares of all firms.
-        Parameters:
-            past_new_bought_vehicles : list - List of car objects representing vehicles sold in the past period
-        Returns:
-            HHI : float - Market concentration (HHI)
-        """
-        # Calculate total market sales by summing prices of all cars sold in the market
-        total_sales = sum(car.price for car in past_new_bought_vehicles)
-
-        # Calculate the HHI by summing the squares of market shares for each firm in firm_list
-        HHI = sum(self.calculate_market_share(firm, past_new_bought_vehicles, total_sales)**2 for firm in self.firms_list)
-        return HHI
-
     def calc_profit_margin(self, past_new_bought_vehicles):
         
         profit_margin_ICE = []
