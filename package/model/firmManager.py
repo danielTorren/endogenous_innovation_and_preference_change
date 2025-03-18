@@ -60,7 +60,7 @@ class Firm_Manager:
         """
         Using random assortment of cars intially pick some random cars and set a random age distribution
         """
-        print("self.cars_on_sale_all_firms", len(self.cars_on_sale_all_firms))
+
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
         # Define mean and standard deviation for normal distribution
         mu = 120#self.age_max / 2  # Mean age at half of max age
