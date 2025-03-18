@@ -34,15 +34,6 @@ class SecondHandMerchant:
         self.median_beta =  np.median(beta_vec)
         self.median_gamma = np.median(gamma_vec)
 
-    def create_second_hand_car_list(self, old_cars):
-        self.cars_on_sale_pre_burn_in = []
-        for car in old_cars:
-            car.scenario = "second_hand"
-            car.second_hand_counter = 0
-            car.owner_id = self.id
-            car.cost_second_hand_merchant = (car.ProdCost_t*1.2)*((1 - car.delta_P) ** car.L_a_t)/2#Need a value as a place holder, use 25% increase on production cost then assume a pay out of 50% correct price
-            self.cars_on_sale_pre_burn_in.append(car)
-
 
     ###############################################################################################################
 
@@ -237,16 +228,9 @@ class SecondHandMerchant:
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []
-        
-        if self.t_second_hand_cars == self.burn_in_second_hand_market:
-            self.cars_on_sale = self.cars_on_sale_pre_burn_in
 
         if self.cars_on_sale and self.t_second_hand_cars > self.burn_in_second_hand_market:
             self.update_stock_contents()
-            #ages = [car.L_a_t for car in self.cars_on_sale]
-            #ages_EV = [car.L_a_t for car in self.cars_on_sale if car.transportType == 3]
-            #ages_ICE = [car.L_a_t for car in self.cars_on_sale if car.transportType == 2]
-            #print(self.t_second_hand_cars,":",np.mean(ages_ICE),  np.mean(ages_EV), len(self.cars_on_sale))
 
         self.profit = self.income - self.spent
 

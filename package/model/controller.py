@@ -89,8 +89,7 @@ class Controller:
         
         self.parameters_social_network["init_car_options"] =  self.cars_on_sale_all_firms 
         self.parameters_social_network["old_cars"] = old_cars
-        self.second_hand_merchant.create_second_hand_car_list(self.firm_manager.gen_old_cars_second_hand())#FILL SECOND HAND MERCHANT WITH SOME CARS
-
+        
         #self.parameters_social_network["init_vehicle_options"] = self.mix_in_vehicles()
         self.gen_social_network()#users have chosen a vehicle
 
@@ -395,10 +394,29 @@ class Controller:
         return beta_s
 
     #####################################################################################################################################
+
+
+    # Define noise function
+    def add_noise(self, data, percentage=0.05):
+        noise = np.random.normal(loc=0, scale=percentage * np.abs(data[0]), size=len(data))
+        return data + noise
+
     def manage_burn_in(self):
-        self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
-        self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
-        self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.calibration_electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
+        # Adding noise to the time series
+        self.burn_in_gas_price_vec = self.add_noise(
+            np.asarray([self.calibration_gas_price_california_vec[0]] * self.duration_burn_in), 0.05
+        )
+        self.burn_in_electricity_price_vec = self.add_noise(
+            np.asarray([self.calibration_electricity_price_vec[0]] * self.duration_burn_in), 0.05
+        )
+        self.burn_in_electricity_emissions_intensity_vec = self.add_noise(
+            np.asarray([self.calibration_electricity_emissions_intensity_vec[0]] * self.duration_burn_in), 0.05
+        )
+
+        #self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
+        #self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
+        #self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.calibration_electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
+
         self.burn_in_rebate_time_series = np.zeros(self.duration_burn_in)
         self.burn_in_used_rebate_time_series = np.zeros(self.duration_burn_in)
 

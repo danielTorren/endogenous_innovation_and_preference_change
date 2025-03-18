@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     base_params = {
     "seed_repetitions": 64,
-    "duration_burn_in_research": 120,
-    "duration_burn_in": 120,
+    "duration_burn_in_research": 0,
+    "duration_burn_in": 180,
     "duration_calibration": 264,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
-        "scrap_price": 0#669.8
+        "scrap_price": 669.8
     },
     "parameters_ICE":{
         "prop_explore": 0.1,
@@ -123,8 +123,8 @@ if __name__ == "__main__":
     },
     "parameters_firm_manager": {
         "J": 16,
-        "init_car_age_mean": 120,
-        "init_car_age_std": 30,
+        "init_car_age_mean": 0,
+        "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 8,
