@@ -29,7 +29,13 @@ class Controller:
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
         
-        self.prob_switch_car_arr = np.linspace(1e-4, self.parameters_social_network["prob_switch_car"], int(round(self.duration_burn_in*(3/4))))#AVOID SYNCRONISATION OF CAR AGES
+        self.prob_switch_car_arr = np.logspace(
+            np.log10(1e-4),  # Start at 1e-4
+            np.log10(self.parameters_social_network["prob_switch_car"]),  # End at final probability
+            int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
+        )
+        #AVOID SYNCRONISATION OF CAR AGES
+        
         self.update_time_series_data()
 
         self.setup_id_gen()
