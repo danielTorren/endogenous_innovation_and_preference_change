@@ -2,7 +2,7 @@
     "seed_repetitions": 64,
     "duration_burn_in": 240,
     "duration_calibration": 264,
-    "duration_future": 0,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -22,7 +22,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Targeted_research_subsidy": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
@@ -33,7 +33,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Targeted_research_subsidy":1000000,
