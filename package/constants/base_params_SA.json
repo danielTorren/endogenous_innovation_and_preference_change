@@ -23,7 +23,7 @@
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Targeted_research_subsidy": 0,
+
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
