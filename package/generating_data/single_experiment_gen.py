@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.002,
+        "delta": 0.0021,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,

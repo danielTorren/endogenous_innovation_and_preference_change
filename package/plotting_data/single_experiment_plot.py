@@ -1180,8 +1180,8 @@ def main(fileName, dpi=300):
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
-    plt.show()
-    quit()
+    #plt.show()
+    #quit()
     #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
 
