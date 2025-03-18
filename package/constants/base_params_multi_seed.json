@@ -86,7 +86,8 @@
     },
     "parameters_firm_manager": {
         "J": 16,
-        "init_car_age_max": 240,
+        "init_car_age_mean": 160,
+        "init_car_age_std": 50,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 8,

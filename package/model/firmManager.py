@@ -31,6 +31,9 @@ class Firm_Manager:
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
         self.num_gamma_segments = parameters_firm_manager["num_gamma_segments"]
 
+        self.init_car_age_mean = parameters_firm_manager["init_car_age_mean"]
+        self.init_car_age_std = parameters_firm_manager["init_car_age_std"]
+
         self.ev_production_bool = 0
 
         self.production_subsidy = 0 #NEEDED FOR TIEM STEP 0
@@ -50,7 +53,6 @@ class Firm_Manager:
         
         #calculate the inital attributes of all the cars on sale
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
-        self.age_max = parameters_firm_manager["init_car_age_max"]
              
 
     ###########################################################################################################
@@ -63,11 +65,11 @@ class Firm_Manager:
 
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
         # Define mean and standard deviation for normal distribution
-        mu = 180#self.age_max / 2  # Mean age at half of max age
-        sigma = 40#self.age_max / 4  # Standard deviation (adjustable)
+        mu = self.init_car_age_mean#self.age_max / 2  # Mean age at half of max age
+        sigma = self.init_car_age_std#self.age_max / 4  # Standard deviation (adjustable)
 
         # Generate normally distributed ages, ensuring values are within range
-        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
+        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0,np.inf).astype(int)
 
         car_list = []
         for i, car in enumerate(model_choices):
@@ -86,11 +88,11 @@ class Firm_Manager:
 
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
         # Define mean and standard deviation for normal distribution
-        mu = 120#self.age_max / 2  # Mean age at half of max age
-        sigma = 60#self.age_max / 4  # Standard deviation (adjustable)
+        mu = self.init_car_age_mean#self.age_max / 2  # Mean age at half of max age
+        sigma = self.init_car_age_std#self.age_max / 4  # Standard deviation (adjustable)
 
         # Generate normally distributed ages, ensuring values are within range
-        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
+        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0, np.inf).astype(int)
 
         car_list = []
         for i, car in enumerate(model_choices):

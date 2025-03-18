@@ -38,7 +38,7 @@ if __name__ == "__main__":
     base_params = {
     "seed_repetitions": 64,
     "duration_burn_in_research": 240,
-    "duration_burn_in": 120,
+    "duration_burn_in": 240,
     "duration_calibration": 264,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.0015,
+        "delta": 0.002,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -123,7 +123,8 @@ if __name__ == "__main__":
     },
     "parameters_firm_manager": {
         "J": 16,
-        "init_car_age_max": 240,
+        "init_car_age_mean": 160,
+        "init_car_age_std": 50,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 8,

@@ -540,6 +540,8 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
     lower_bounds = []
     upper_bounds = []
     medians = []
+    
+    time_series = np.arange(len(social_network.history_car_age))
 
     ages_list = social_network.history_car_age
 
@@ -557,9 +559,9 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
 
     # Plot the data
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_series, medians[base_params["duration_burn_in"]:], label="Median Age", color='red')
-    ax.plot(time_series, means[base_params["duration_burn_in"]:], label="Mean Age", color='blue')
-    ax.fill_between(time_series, lower_bounds[base_params["duration_burn_in"]:], upper_bounds[base_params["duration_burn_in"]:], color='blue', alpha=0.2, label="95% Confidence Interval")
+    ax.plot(time_series, medians, label="Median Age", color='red')
+    ax.plot(time_series, means, label="Mean Age", color='blue')
+    ax.fill_between(time_series, lower_bounds, upper_bounds, color='blue', alpha=0.2, label="95% Confidence Interval")
     ax.set_title("Mean Age and 95% Confidence Interval Over Time")
     ax.set_xlabel("Time")
     ax.set_ylabel("Age")
@@ -1173,4 +1175,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_18_01__17_03_2025")
+    main("results/single_experiment_17_08_17__18_03_2025")
