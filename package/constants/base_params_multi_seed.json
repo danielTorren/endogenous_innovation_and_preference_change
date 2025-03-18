@@ -7,8 +7,8 @@
     "compression_factor_state": 1,
     "seed": 5,
     "seed_inputs": 22,
-    "ev_research_start_time":60,
-    "ev_production_start_time": 60,
+    "ev_research_start_time":263,
+    "ev_production_start_time": 263,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 108,
@@ -118,7 +118,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2e-4,
+        "kappa": 2.2e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
