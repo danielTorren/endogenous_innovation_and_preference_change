@@ -955,7 +955,6 @@ class Social_Network:
 
         self.history_second_hand_merchant_price_paid = []
 
-        self.history_zero_util_count = []
 
         self.history_mean_efficiency_vals_EV = []
         self.history_mean_efficiency_vals_ICE = []
@@ -1142,8 +1141,6 @@ class Social_Network:
         self.history_quality_users_raw_adjusted.append([(car.Quality_a_t,car.Quality_a_t*(1-car.delta)**car.L_a_t ) for car in self.current_vehicles])
 
         self.history_second_hand_merchant_price_paid.append(self.second_hand_merchant_price_paid)
-
-        self.history_zero_util_count.append(self.zero_util_count/self.num_switchers)
     
     def update_emisisons(self, vehicle_chosen, driven_distance):      
         
