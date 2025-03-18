@@ -1,7 +1,7 @@
 {
     "seed_repetitions": 64,
     "duration_burn_in_research": 240,
-    "duration_burn_in": 120,
+    "duration_burn_in": 240,
     "duration_calibration": 264,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
