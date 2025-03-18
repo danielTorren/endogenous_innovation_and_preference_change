@@ -60,7 +60,6 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -127,7 +126,7 @@ if __name__ == "__main__":
         "init_car_age_max": 240,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 6,
+        "num_beta_segments": 4,
         "num_gamma_segments": 2
     },
     "parameters_firm":{

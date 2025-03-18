@@ -17,6 +17,8 @@ class Firm_Manager:
 
         self.zero_profit_options_prod_sum = 0
 
+        self.HHI_past_new_bought_vehicles_history = []
+
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
         self.carbon_price = parameters_firm_manager["carbon_price"]
@@ -356,7 +358,36 @@ class Firm_Manager:
         MS_firm = firm_sales / total_sales if total_sales > 0 else 0
         return MS_firm
 
-    def calculate_market_concentration(self, past_new_bought_vehicles):
+    def calculate_market_concentration(self, new_bought_vehicles):
+        """
+        Calculate market concentration (HHI) using all cars bought over the last 12 time steps.
+        This function maintains its own history of purchases.
+        """
+
+        # Append the new purchases to history
+        self.HHI_past_new_bought_vehicles_history.append(new_bought_vehicles)
+
+        # Trim to last 12 time steps
+        if len(self.HHI_past_new_bought_vehicles_history) > 12:
+            self.HHI_past_new_bought_vehicles_history.pop(0)
+
+        # Flatten the list to get all purchases from the last 12 time steps
+        all_purchases = list(itertools.chain(*self.HHI_past_new_bought_vehicles_history))
+
+        # Calculate total market sales over the last 12 time steps
+        total_sales = sum(car.price for car in all_purchases)
+
+        # If no sales, return HHI as zero
+        if total_sales == 0:
+            return 0
+
+        # Calculate the HHI by summing the squares of market shares for each firm
+        HHI = sum(self.calculate_market_share(firm, all_purchases, total_sales) ** 2 for firm in self.firms_list)
+
+        return HHI
+
+
+    def calculate_market_concentration_old(self, past_new_bought_vehicles):
         """
         Calculate market concentration (HHI) based on market shares of all firms.
         Parameters:
