@@ -57,8 +57,8 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
     """
     # Determine the start of the data after the burn-in period
     burn_in_step = base_params["duration_burn_in"]
-    data_after_burn_in = data#[:, burn_in_step:]
-    time_steps = np.arange(0, data.shape[1])#np.arange(burn_in_step, data.shape[1])
+    data_after_burn_in = data[:, burn_in_step:]
+    time_steps = np.arange(burn_in_step, data.shape[1])#np.arange(0, data.shape[1])#
 
     # Calculate mean and 95% confidence interval
     mean_values = np.mean(data_after_burn_in, axis=0)
@@ -953,4 +953,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_16_52_49__18_03_2025")
+    main("results/multi_seed_single_18_32_57__18_03_2025")
