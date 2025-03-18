@@ -73,10 +73,8 @@ class Controller:
        
         #Need to calculate sum U give the consumption choices by individuals
         self.firm_manager.generate_market_data()
-
         for i in range(self.duration_burn_in_firms):
             self.firm_manager.next_step_burn_in()
-            
         old_cars = self.firm_manager.gen_old_cars()
 
         ####################################################################################################

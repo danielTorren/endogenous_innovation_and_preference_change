@@ -63,8 +63,8 @@ class Firm_Manager:
 
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
         # Define mean and standard deviation for normal distribution
-        mu = 120#self.age_max / 2  # Mean age at half of max age
-        sigma = 60#self.age_max / 4  # Standard deviation (adjustable)
+        mu = 180#self.age_max / 2  # Mean age at half of max age
+        sigma = 40#self.age_max / 4  # Standard deviation (adjustable)
 
         # Generate normally distributed ages, ensuring values are within range
         age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0, self.age_max).astype(int)
