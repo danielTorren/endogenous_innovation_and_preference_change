@@ -122,10 +122,10 @@
     "parameters_vehicle_user":{
         "kappa": 2.2e-4,
         "U_segments_init": 0,
-        "W_calibration":1e5,
+        "W_calibration":1e10,
         "min_W": 1e-10,
         "r": 0.00407412378,
-        "mu": 1,
+        "mu": 0.2,
         "alpha": 0.5,
         "zeta":0.29697
     }

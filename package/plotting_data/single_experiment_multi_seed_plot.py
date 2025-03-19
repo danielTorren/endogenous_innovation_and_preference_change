@@ -891,10 +891,7 @@ def main(fileName, dpi=300):
                         "Time Step, months", 
                         "Proportion of EVs", 
                         "history_prop_EV",
-                        annotation_height_prop = [0.8, 0.8, 0.8])
-    
-    plt.show()
-    
+                        annotation_height_prop = [0.8, 0.8, 0.8])    
 
     plot_history_mean_price_multiple_seeds(
         base_params, 
@@ -986,4 +983,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_16_22_42__19_03_2025")
+    main("results/multi_seed_single_22_33_44__19_03_2025")
