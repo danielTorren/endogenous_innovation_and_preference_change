@@ -23,67 +23,80 @@ def format_plot(ax, title, xlabel, ylabel, legend=True, grid=True):
         ax.grid()
 
 # Helper function to save and show plots
-def save_and_show(fig, fileName, plot_name, dpi=600):
+def save_and_show(fig, fileName, plot_name, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     save_path = os.path.join(fileName, "Plots")
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
 import matplotlib.pyplot as plt
 
-def add_vertical_lines(ax, base_params, color='black', linestyle='--'):
+def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotation_height_prop=[0.2, 0.2, 0.2]):
     """
-    Adds dashed vertical lines to the plot at specified steps, ensuring data is plotted only from the end of the burn-in period onwards.
+    Adds dashed vertical lines to the plot at specified steps with vertical annotations.
 
     Parameters:
     ax : matplotlib.axes.Axes
         The Axes object to add the lines to.
     base_params : dict
-        Dictionary containing 'duration_burn_in' and 'duration_calibration'.
+        Dictionary containing relevant parameters for placing vertical lines.
     color : str, optional
         Color of the dashed lines. Default is 'black'.
     linestyle : str, optional
         Style of the dashed lines. Default is '--'.
+    annotation_height : float, optional
+        Y-position for text annotations (default is the middle of the y-axis).
     """
     burn_in = base_params["duration_burn_in"]
     no_carbon_price = base_params["duration_calibration"]
-    ev_research_start_time = base_params["ev_research_start_time"]
     ev_production_start_time = base_params["ev_production_start_time"]
-    #second_hand_burn_in = base_params["parameters_second_hand"]["burn_in_second_hand_market"]
 
-    # Ensure the x-axis limits start at the end of the burn-in period
-    #ax.set_xlim(left=burn_in)
-    
-    # Adding the dashed lines
-    #ax.axvline(second_hand_burn_in, color=color, linestyle='-.', label="Second hand market start")
-    #ax.axvline(burn_in, color=color, linestyle='--', label="Burn-in period end")
-    ax.axvline(ev_research_start_time, color=color, linestyle=':', label="EV research start")
-    ax.axvline(ev_production_start_time, color="red", linestyle=':', label="EV sale start")
-    
+    # Determine the middle of the plot if no custom height is provided
+    y_min, y_max = ax.get_ylim()
+
+    annotation_height_0 = y_min  + annotation_height_prop[0]*(y_max - y_min)
+    annotation_height_1 = y_min  + annotation_height_prop[1]*(y_max - y_min)
+    annotation_height_2 = y_min  + annotation_height_prop[2]*(y_max - y_min)
+
+    # Add vertical line with annotation
+    ev_sale_start_time = ev_production_start_time
+    ax.axvline(ev_sale_start_time, color="black", linestyle=':')
+    ax.annotate("EV Sale Start", xy=(ev_sale_start_time, annotation_height_0),
+                rotation=90, verticalalignment='center', horizontalalignment='right',
+                fontsize=8, color='black')
+
     if base_params["EV_rebate_state"]:
-        ax.axvline(base_params["parameters_rebate_calibration"]["start_time"], 
-                   color="red", linestyle='-.', label="EV adoption subsidy start")
-    if base_params["duration_future"] > 0:
-        ax.axvline(no_carbon_price, color="red", linestyle='--', label="Policy start")
+        rebate_start_time =  base_params["parameters_rebate_calibration"]["start_time"]
+        ax.axvline(rebate_start_time, color="black", linestyle='-.')
+        ax.annotate("EV Adoption Subsidy Start", xy=(rebate_start_time, annotation_height_1),
+                    rotation=90, verticalalignment='center', horizontalalignment='right',
+                    fontsize=8, color='black')
 
-def plot_total_utility(base_params, social_network, time_series, fileName, dpi=600):
+    if base_params["duration_future"] > 0:
+        policy_start_time =  no_carbon_price
+        ax.axvline(policy_start_time, color="black", linestyle='--')
+        ax.annotate("Policy Start", xy=(policy_start_time, annotation_height_2),
+                    rotation=90, verticalalignment='center', horizontalalignment='right',
+                    fontsize=8, color='black')
+
+def plot_total_utility(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, social_network.history_total_utility[base_params["duration_burn_in"]:], marker='o')
     format_plot(ax, "Total Utility Over Time", "Time Step", "Total Utility", legend=False)
     save_and_show(fig, fileName, "total_utility", dpi)
 
-def plot_carbon_price(base_params,controller, time_series, fileName, dpi=600):
+def plot_carbon_price(base_params,controller, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     "FIX THIS!!"
     ax.plot(time_series, controller.carbon_price_time_series[:len(time_series)], marker='o')
     format_plot(ax, "Carbon price Over Time", "Time Step", "Carbon price", legend=False)
     save_and_show(fig, fileName, "carbon_price", dpi)
 
-def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600):
+def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, np.asarray(firm_manager.history_total_profit[base_params["duration_burn_in"]:]), marker='o')
     format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit, $", legend=False)
     save_and_show(fig, fileName, "total_profit", dpi)
 
-def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_23, dpi=600):
+def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_23, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     EV_stock_prop_2010_23
 
@@ -91,21 +104,26 @@ def plot_ev_consider_adoption_rate(base_params,social_network, time_series, file
     ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
     save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
 
 
-def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi=600):
+def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     EV_stock_prop_2010_23
 
     time_yearly = np.arange(12 + 108, 12 + 264, 12)
+    
+    init_real = 108 + 4#STARTS AT APRIL of THE END OF 2010
+    print(init_real, len(EV_stock_prop_2010_23) * 12)
+    time_yearly = np.arange(init_real, init_real + len(EV_stock_prop_2010_23) * 12, 12)
+
     ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
-    ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars monthly", color = "grey", linestyle = "--")
+    #ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars monthly", color = "grey", linestyle = "--")
     
     # Extract the relevant data after burn-in period
     data_series = firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:]
@@ -122,19 +140,19 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     ax.plot(time_series_adjusted, rolling_avg, label="12-Month Rolling Avg (New Cars)", color="red")
 
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
     save_and_show(fig, fileName, "plot_ev_consider_adoption_bought_rate", dpi)
 
 
-def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600):
+def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot stacked area (continuous stacked bar equivalent)
     ax.plot(firm_manager.history_prop_EV[base_params["duration_burn_in"]:])
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     # Set plot labels and limits
     ax.set_xlabel("Time Step")
     ax.set_ylabel("Proportion of Cars on Sale EV")
@@ -144,7 +162,7 @@ def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600):
     # Save and show the plot
     save_and_show(fig, fileName, "plot_prop_EV_on_sale", dpi)
 
-def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600):
+def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
 
@@ -152,7 +170,7 @@ def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600):
     ax.plot(firm_manager.history_prop_EV_research[base_params["duration_burn_in"]:], color = "Green")
     #ax.plot(firm_manager.history_prop_ICE_research[base_params["duration_burn_in"]:], color = "Blue", label = "ICE")
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     # Set plot labels and limits
     ax.set_xlabel("Time Step")
     ax.set_ylabel("Yearly average all firms: Proportion of Reserach EV")
@@ -163,7 +181,7 @@ def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600):
 
 
 
-def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=600):
+def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Calculate total users at each time step
@@ -177,7 +195,7 @@ def plot_transport_users_stacked(base_params,social_network, time_series, fileNa
     ax.stackplot(time_series, ice_prop[base_params["duration_burn_in"]:], ev_prop[base_params["duration_burn_in"]:],
                  labels=['ICE', 'EV' ],
                  alpha=0.8)
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     # Set plot labels and limits
     ax.set_title("Transport Users Over Time (Proportion)")
     ax.set_xlabel("Time Step")
@@ -188,7 +206,7 @@ def plot_transport_users_stacked(base_params,social_network, time_series, fileNa
     # Save and show the plot
     save_and_show(fig, fileName, "plot_transport_users_stacked", dpi)
 
-def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi=600):
+def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     """
     Plots time series of Quality, Efficiency (separate for ICE and EV), 
     and Production Cost for both ICE and EV with means and confidence intervals.
@@ -211,22 +229,22 @@ def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network
 
     # Plot Quality (big plot, top-left)
     ax_quality = fig.add_subplot(gs[0, 0])
-    plot_attribute(ax_quality, "Quality", attributes["Quality"], base_params, social_network, time_series)
+    plot_attribute(ax_quality, "Quality", attributes["Quality"], base_params, social_network, time_series, annotation_height_prop=annotation_height_prop)
 
     # Plot Production Cost (big plot, top-right)
     ax_cost = fig.add_subplot(gs[0, 1])
-    plot_attribute(ax_cost, "Production Cost", attributes["Production Cost"], base_params, social_network, time_series)
+    plot_attribute(ax_cost, "Production Cost", attributes["Production Cost"], base_params, social_network, time_series, annotation_height_prop=annotation_height_prop)
 
     # Plot Efficiency ICE (bottom-left)
     ax_efficiency_ice = fig.add_subplot(gs[1, 0])
     plot_single_efficiency(
-        ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, social_network, time_series, color="blue"
+        ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, social_network, time_series, color="blue", annotation_height_prop=annotation_height_prop
     )
 
     # Plot Efficiency EV (bottom-right)
     ax_efficiency_ev = fig.add_subplot(gs[1, 1])
     plot_single_efficiency(
-        ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, social_network, time_series, color="green"
+        ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, social_network, time_series, color="green", annotation_height_prop=annotation_height_prop
     )
 
     fig.suptitle("Vehicle Attributes (ICE and EV) Over Time - In use")
@@ -235,7 +253,7 @@ def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network
     # Save and show the plot
     save_and_show(fig, fileName, "vehicle_attribute_time_series_ICE_EV", dpi)
 
-def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, time_series):
+def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, time_series, annotation_height_prop=[0.2, 0.2, 0.2]):
     """
     Helper function to plot a single attribute (Quality or Production Cost).
     """
@@ -288,9 +306,9 @@ def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, 
     ax.grid()
     ax.legend()
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
-def plot_single_efficiency(ax, title, attr_name, base_params, social_network, time_series, color):
+def plot_single_efficiency(ax, title, attr_name, base_params, social_network, time_series, color, annotation_height_prop=[0.5, 0.5, 0.5]):
     """
     Helper function to plot Efficiency for a single vehicle type (ICE or EV).
     """
@@ -318,9 +336,9 @@ def plot_single_efficiency(ax, title, attr_name, base_params, social_network, ti
     ax.set_ylabel("Efficiency")
     ax.grid()
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
-def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi=600):
+def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     """
     Plots time series of Quality, Efficiency (separate for ICE and EV), 
     and Production Cost for both ICE and EV with means and confidence intervals.
@@ -343,22 +361,22 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
 
     # Plot Quality (big plot, top-left)
     ax_quality = fig.add_subplot(gs[0, 0])
-    plot_attribute(ax_quality, "Quality", attributes["Quality"], base_params, firm_manager, time_series)
+    plot_attribute(ax_quality, "Quality", attributes["Quality"], base_params, firm_manager, time_series, annotation_height_prop=annotation_height_prop)
 
     # Plot Production Cost (big plot, top-right)
     ax_cost = fig.add_subplot(gs[0, 1])
-    plot_attribute(ax_cost, "Production Cost", attributes["Production Cost"], base_params, firm_manager, time_series)
+    plot_attribute(ax_cost, "Production Cost", attributes["Production Cost"], base_params, firm_manager, time_series, annotation_height_prop=annotation_height_prop)
 
     # Plot Efficiency ICE (bottom-left)
     ax_efficiency_ice = fig.add_subplot(gs[1, 0])
     plot_single_efficiency(
-        ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, firm_manager, time_series, color="blue"
+        ax_efficiency_ice, "Efficiency (ICE)", efficiency_attributes[0], base_params, firm_manager, time_series, color="blue", annotation_height_prop=annotation_height_prop
     )
 
     # Plot Efficiency EV (bottom-right)
     ax_efficiency_ev = fig.add_subplot(gs[1, 1])
     plot_single_efficiency(
-        ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, firm_manager, time_series, color="green"
+        ax_efficiency_ev, "Efficiency (EV)", efficiency_attributes[1], base_params, firm_manager, time_series, color="green", annotation_height_prop=annotation_height_prop
     )
 
     fig.suptitle("Prod Vehicle Attributes (ICE and EV) Over Time")
@@ -367,7 +385,7 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     # Save and show the plot
     save_and_show(fig, fileName, "vehicle_prod_attribute_time_series_ICE_EV", dpi)
 
-def plot_preferences(social_network, fileName, dpi=600):
+def plot_preferences(social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, axes = plt.subplots(nrows=1,ncols=3,figsize=(12, 6))
     axes[0].hist(social_network.beta_vec, bins=30, alpha=0.5, label=r'$\beta_i$ (Price sentivity)')
     axes[1].hist(social_network.gamma_vec, bins=30, alpha=0.5, label=r'$\gamma_i$ (Environmental concern)')
@@ -384,7 +402,7 @@ def plot_preferences(social_network, fileName, dpi=600):
 
     save_and_show(fig, fileName, "preferences", dpi)
 
-def plot_history_research_type(firm_manager, time_series, fileName, dpi=600):
+def plot_history_research_type(firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     data = np.asarray([firm.history_research_type for firm in firm_manager.firms_list])
     for firm_data in data:
@@ -540,7 +558,7 @@ def plot_segment_count_grid_percentage(base_params, firm_manager, time_series, f
     save_path = os.path.join(fileName, "Plots")
     save_and_show(fig, fileName, "segment_percentage_grid", 600)
 
-def plot_history_car_age_full( base_params,social_network,time_series, fileName, dpi):
+def plot_history_car_age_full( base_params,social_network,time_series, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5]):
     """
     Plots the mean and 95% confidence interval for a time series of ages.
     
@@ -582,13 +600,13 @@ def plot_history_car_age_full( base_params,social_network,time_series, fileName,
     ax.set_ylabel("Age")
 
     ax.grid(True)
-    #add_vertical_lines(ax, base_params)
+    #add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned_full", dpi)   
 
 
-def plot_history_car_age( base_params,social_network,time_series, fileName, dpi):
+def plot_history_car_age( base_params,social_network,time_series, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5]):
     """
     Plots the mean and 95% confidence interval for a time series of ages.
     
@@ -628,12 +646,12 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi)
     ax.set_ylabel("Age")
 
     ax.grid(True)
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned", dpi)   
 
-def plot_calibration_data(base_params, controller, time_series, fileName, dpi=600):
+def plot_calibration_data(base_params, controller, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, axes = plt.subplots(ncols = 3,figsize=(10, 6))
     #print(social_network.history_second_hand_bought)
     #quit()
@@ -648,7 +666,7 @@ def plot_calibration_data(base_params, controller, time_series, fileName, dpi=60
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_calibration_data", dpi)   
 
-def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600):
+def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     data_truncated = convert_data(social_network.history_prop_EV, base_params)
 
     # Create a grid of subplots (4x4 layout)
@@ -660,7 +678,7 @@ def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600):
     ax.legend(loc="best")
     save_and_show(fig, fileName, "plot_ev_stock", dpi)
 
-def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=600):
+def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(6, 6))
 
     # Convert to numpy array
@@ -683,11 +701,11 @@ def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=60
     ax.set_ylim([0, 1])
     ax.set_xlim(left = base_params["duration_burn_in"])
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(loc='lower right')
     save_and_show(fig, fileName, "count_buy_stacked", dpi)
 
-def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600):
+def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(6, 6))
 
     # Convert to numpy array
@@ -707,12 +725,12 @@ def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600)
     ax.set_xlim(left=base_params["duration_burn_in"])
 
     # Add vertical lines (assuming add_vertical_lines is defined elsewhere)
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
     ax.legend(loc='best')
     save_and_show(fig, fileName, "count_buy_lines", dpi)
 
-def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=600):
+def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -731,11 +749,11 @@ def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=6
     ax.set_xlabel("Time")
     ax.set_ylabel("Mean Price, $")
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     save_and_show(fig, fileName, "history_mean_price_by_type", dpi)
 
-def plot_history_median_price_by_type(base_params, social_network, fileName, dpi=600):
+def plot_history_median_price_by_type(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -754,7 +772,7 @@ def plot_history_median_price_by_type(base_params, social_network, fileName, dpi
     ax.set_xlabel("Time")
     ax.set_ylabel("Median Price, $")
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     save_and_show(fig, fileName, "history_median_price_by_type", dpi)
 
@@ -789,7 +807,7 @@ def plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_s
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("Kg CO2 per vehicle")
 
-    #add_vertical_lines(ax, base_params)
+    #add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     
     ax.legend(loc="center left")
     save_and_show(fig, fileName, "plot_kg_co2_per_year_per_vehicle_by_type", dpi)
@@ -808,7 +826,7 @@ def plot_fuel_costs_verus_carbon_price_kWhr(base_params,controller, fileName, dp
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("Dollars per kWhr")
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     
     ax.legend()
     save_and_show(fig, fileName, "plot_fuel_costs_verus_carbon_price_kWhr", dpi)
@@ -832,7 +850,7 @@ def plot_fuel_costs_verus_carbon_price_km(base_params,controller, fileName, dpi 
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("Dollars per km")
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     
     ax.legend()
     save_and_show(fig, fileName, "plot_fuel_costs_verus_carbon_price_km", dpi)
@@ -853,12 +871,12 @@ def plot_fuel_emissions_verus_carbon_price_km(base_params,controller, fileName, 
     ax.set_xlabel("Months, 2010-2022")
     ax.set_ylabel("Emissions per km")
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     
     ax.legend()
     save_and_show(fig, fileName, "plot_fuel_Emissions_verus_carbon_price_km", dpi)
 
-def emissions_decomposed(base_params, social_network, time_series, fileName, dpi=600):
+def emissions_decomposed(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
     
 
@@ -887,7 +905,7 @@ def emissions_decomposed(base_params, social_network, time_series, fileName, dpi
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed", dpi)
 
-def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=600):
+def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
     
 
@@ -916,7 +934,7 @@ def emissions_decomposed_flow(base_params, social_network, time_series, fileName
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed_flow", dpi)
 
-def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600):
+def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.scatter(time_series, firm_manager.history_mean_profit_margins_ICE[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "blue", label = "ICE")
@@ -926,12 +944,12 @@ def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName
     ax.set_ylabel("Profit margin (P-C)/C")
     ax.grid(True)
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "plot_profit_margins_by_type", dpi)
 
-def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600):
+def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
 
     # Plot the data
@@ -945,12 +963,12 @@ def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600):
     ax.set_ylabel("W")
     ax.grid(True)
 
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "plot_history_W", dpi)
 
-def plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi=600):
+def plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     # Ensure the data is in numpy arrays for easier manipulation
     time_steps = np.array(time_series)
     concentration = np.array(firm_manager.history_market_concentration[base_params["duration_burn_in"]:])
@@ -974,7 +992,7 @@ def plot_market_concentration_yearly(base_params,firm_manager, time_series, file
     format_plot(ax, "Yearly Average Market Concentration", "Year", "Market Concentration", legend=False)
     save_and_show(fig, fileName, "market_concentration_yearly", dpi)
 
-def plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi=600):
+def plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     used_history = social_network.history_battery_EV
     prod_history = firm_manager.history_battery_EV
@@ -1081,7 +1099,7 @@ def plot_battery(base_params, firm_manager,social_network,time_series,  fileName
 
     save_and_show(fig, fileName, "battery_evolution", dpi)
 
-def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600):
+def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     """
     Plots the price history of cars on sale over time.
 
@@ -1107,23 +1125,23 @@ def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600)
     ax.set_xlabel("Time")
     ax.set_ylabel("Price, $")
     ax.grid(True)
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     # Save and show the plot
     save_and_show(fig, fileName, "price_cars_sale", dpi)  
 
-def plot_car_sale_prop(base_params, social_network, time_series, fileName, dpi=600):
+def plot_car_sale_prop(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     #print(social_network.history_second_hand_bought)
     #quit()
     ax.plot(time_series, social_network.history_second_hand_bought[base_params["duration_burn_in"]:],label = "second hand",  marker='o')
     ax.plot(time_series, social_network.history_new_car_bought[base_params["duration_burn_in"]:],label = "new cars",  marker='o')
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     format_plot(ax, "New versus Second hand cars", "Time Step", "# Cars bought", legend=False)
     save_and_show(fig, fileName, "num_cars_bought_type", dpi)      
 
-def plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName, dpi=600):
+def plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Extract data for EV and ICE
@@ -1169,7 +1187,7 @@ def plot_distance_individuals_mean_median_type(base_params, social_network, time
     )
 
     # Add vertical lines for base parameters (e.g., milestones or events)
-    add_vertical_lines(ax, base_params)
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
     # Format plot
     format_plot(ax, "User Distance Over Time", "Time Step", "Individual Distance")
@@ -1194,8 +1212,7 @@ def main(fileName, dpi=300):
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
     plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
-    
-    #plt.show()
+
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
     #plt.show()
@@ -1241,4 +1258,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_12_42_50__19_03_2025")
+    main("results/single_experiment_17_21_42__19_03_2025")

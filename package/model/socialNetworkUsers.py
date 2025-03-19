@@ -1267,7 +1267,7 @@ class Social_Network:
         None
         """
 
-        self.t_social_network +=1
+        
 
         self.carbon_price = carbon_price
         self.gas_price =  gas_price
@@ -1292,5 +1292,7 @@ class Social_Network:
         self.update_EV_stock()
 
         #print("median profit", np.median(self.max_utility_list), np.mean(self.max_utility_list))
+        
+        self.t_social_network +=1
         
         return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

@@ -45,17 +45,16 @@ def generate_data(parameters: dict,print_simu = 0):
         start_time = time.time()
     parameters["time_steps_max"] = parameters["duration_burn_in"] + parameters["duration_calibration"] + parameters["duration_future"]
 
-    #print("tim step max", parameters["time_steps_max"],parameters["burn_in_duration"], parameters["carbon_price_duration"])
     controller = Controller(parameters)
-    #controller = CombinedController(parameters)
-    
 
+    #print(controller.t_controller)
+    #print("outside")
     #### RUN TIME STEPS
     """FIX THIS!!!"""
-    #while controller.t_controller < parameters["time_steps_max"]:
-    while controller.t_controller <= parameters["time_steps_max"]:
+    while controller.t_controller < parameters["time_steps_max"]:
+        #print(controller.t_controller,"before next step")
         controller.next_step()
-        #print("step: ", round((controller.t_controller/parameters["time_steps_max"]),3)*100)
+        #print(controller.t_controller,"inside")
 
     if print_simu:
         print(

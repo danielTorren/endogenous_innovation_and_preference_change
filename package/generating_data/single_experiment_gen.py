@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 156,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.0021,
+        "delta": 0.002,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 0,
+        "min_Cost": 5000,
         "max_Cost": 58150
     }, 
     "parameters_EV":{
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 0,
+        "min_Cost": 5000,
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.2e-4,
+        "kappa": 2.1e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
@@ -167,7 +167,6 @@ if __name__ == "__main__":
         "zeta":0.29697
     }
 }
-    
     
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")

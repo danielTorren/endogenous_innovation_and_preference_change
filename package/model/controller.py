@@ -844,7 +844,6 @@ class Controller:
     ################################################################################################
 
     def next_step(self,):
-        self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
 
         #print("TIME STEP", self.t_controller)
 
@@ -854,6 +853,9 @@ class Controller:
         self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
 
         self.manage_saves()
+
+        self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
+
 
     #################################################################################################
 

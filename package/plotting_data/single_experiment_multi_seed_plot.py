@@ -246,7 +246,7 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     data_after_burn_in = data[:, burn_in_step:]
     time_steps = np.arange(0, data_after_burn_in.shape[1])
 
-    init_real = 108 + 12#STARTS AT THE END OF 2010
+    init_real = 108 + 4#STARTS AT APRIL of THE END OF 2010
     print(init_real, len(real_data) * 12)
     time_steps_real = np.arange(init_real, init_real + len(real_data) * 12, 12)
 
