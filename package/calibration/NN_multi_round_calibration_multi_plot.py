@@ -93,15 +93,15 @@ def main(fileName):
     #save_object(samples, fileName + "/Data", "samples")
 
 
-    #log_probability_samples = posterior.log_prob(samples, x=x_o)
+    log_probability_samples = posterior.log_prob(samples, x=x_o)
     #save_object(log_probability_samples, fileName + "/Data", "log_probability_samples")
     
     #print("Log probabilities:", log_probability_samples)
 
     # Find sample with greatest log probability
-    #max_log_prob_index = log_probability_samples.argmax()
-    #best_sample = samples[max_log_prob_index]
-    #print("Sample with the greatest log probability:", best_sample)
+    max_log_prob_index = log_probability_samples.argmax()
+    best_sample = samples[max_log_prob_index]
+    print("Sample with the greatest log probability:", best_sample)
     #print("Greatest log probability:", log_probability_samples[max_log_prob_index])
 
     #save_object(best_sample, fileName + "/Data", "best_sample")
@@ -111,5 +111,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_18_13_11__04_03_2025",
+        fileName="results/NN_calibration_multi_00_08_47__19_03_2025",
     )
