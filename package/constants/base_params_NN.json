@@ -33,18 +33,18 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
-            "Adoption_subsidy":20000,
+            "Adoption_subsidy":10000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,
             "Research_subsidy":1000000
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,
+        "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -56,7 +56,7 @@
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.002,
+        "delta": 0.0021,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -107,7 +107,7 @@
         "chi_max": 0.9,
         "a_chi": 1.221, 
         "b_chi": 2.2873,
-        "SW_network_density": 0.05,
+        "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
@@ -120,9 +120,9 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.2e-4,
+        "kappa": 2.4e-4,
         "U_segments_init": 0,
-        "W_calibration":1e5,
+        "W_calibration":1e10,
         "min_W": 1e-10,
         "r": 0.00407412378,
         "mu": 1,
