@@ -83,12 +83,12 @@ def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600)
     format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit, $", legend=False)
     save_and_show(fig, fileName, "total_profit", dpi)
 
-def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_22, dpi=600):
+def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_23, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    EV_stock_prop_2010_22
+    EV_stock_prop_2010_23
 
     time_yearly = np.arange(12 + 108, 12 + 264, 12)
-    ax.plot(time_yearly,EV_stock_prop_2010_22, label = "California data", linestyle= "dashed", color = "orange")
+    ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
     add_vertical_lines(ax, base_params)
@@ -97,12 +97,12 @@ def plot_ev_consider_adoption_rate(base_params,social_network, time_series, file
     save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
 
 
-def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi=600):
+def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi=600):
     fig, ax = plt.subplots(figsize=(10, 6))
-    EV_stock_prop_2010_22
+    EV_stock_prop_2010_23
 
     time_yearly = np.arange(12 + 108, 12 + 264, 12)
-    ax.plot(time_yearly,EV_stock_prop_2010_22, label = "California data", linestyle= "dashed", color = "orange")
+    ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
     ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars monthly", color = "grey", linestyle = "--")
@@ -1191,9 +1191,9 @@ def main(fileName, dpi=300):
     time_series = np.arange(0, len(data_controller.time_series) - base_params["duration_burn_in"])
 
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
     
     #plt.show()
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
@@ -1209,8 +1209,8 @@ def main(fileName, dpi=300):
     
     
     #plot_preferences(social_network, fileName, dpi)
-    #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
-    #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    #plot_ev_stock(base_params, EV_stock_prop_2010_23, social_network, fileName, dpi)
+    #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_23, dpi)
 
     #plot_history_prop_EV_research(base_params,firm_manager, fileName)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)

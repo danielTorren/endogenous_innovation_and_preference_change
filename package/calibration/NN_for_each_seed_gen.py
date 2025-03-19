@@ -61,8 +61,8 @@ def main(
     print("TOTAL RUNS: ", total_runs)
 
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    EV_stock_prop_2016_22 = EV_stock_prop_2010_22[6:]
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2016_22 = EV_stock_prop_2010_23[6:]
 
     root = "NN_for_each_seed"
     fileName = produce_name_datetime(root)

@@ -65,8 +65,8 @@ def load_data_and_params(file_path):
     base_params = load_object(file_path + "/Data", "base_params")
     data_flat_ev_prop = load_object(file_path + "/Data", "data_flat_ev_prop")
     calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    return base_params, data_flat_ev_prop, EV_stock_prop_2010_22, vary_1, vary_2, vary_3
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
+    return base_params, data_flat_ev_prop, EV_stock_prop_2010_23, vary_1, vary_2, vary_3
 
 def prepare_training_data(data_flat_ev_prop, real_data, base_params):
     # Reshape the data array to (num_samples, num_months)
@@ -121,14 +121,14 @@ def train_neural_network(params_arr, X, real_data, file_path):
     save_object(samples, f"{file_path}/Data", "samples")
 
 def main(file_path):
-    base_params, data_array_ev_prop_flat, EV_stock_prop_2010_22, vary_1, vary_2, vary_3 = load_data_and_params(file_path)
+    base_params, data_array_ev_prop_flat, EV_stock_prop_2010_23, vary_1, vary_2, vary_3 = load_data_and_params(file_path)
     # Generate the parameter list
     params_arr = produce_param_arr(vary_1, vary_2, vary_3, base_params["seed_repetitions"])
     
     print("params_arr.shape",params_arr.shape)
     print(f"Loaded data array shape: {data_array_ev_prop_flat.shape}")
 
-    X, real_data = prepare_training_data(data_array_ev_prop_flat, EV_stock_prop_2010_22, base_params)
+    X, real_data = prepare_training_data(data_array_ev_prop_flat, EV_stock_prop_2010_23, base_params)
 
     train_neural_network(params_arr, X, real_data, file_path)
 

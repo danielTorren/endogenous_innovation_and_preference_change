@@ -290,8 +290,8 @@ def main(fileName, dpi=600):
     calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
 
     # Extract actual EV stock proportions (2010-2022)
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    EV_stock_prop_2016_22 = np.asarray(EV_stock_prop_2010_22)[6:]  
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2016_22 = np.asarray(EV_stock_prop_2010_23)[6:]  
     #print("EV_stock_prop_2016_22",len(EV_stock_prop_2016_22))
     # Plot heatmaps for different metrics
 

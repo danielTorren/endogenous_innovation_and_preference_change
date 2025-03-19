@@ -100,9 +100,9 @@ def main(
     history_prop_EV_arr_BAU= load_object(fileName_BAU + "/Data", "history_prop_EV_arr")
     history_prop_EV_arr_BAU_no_rebate= load_object(fileName_BAU_no_policy + "/Data", "history_prop_EV_arr")
 
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    plot_ev_uptake_single(EV_stock_prop_2010_22, base_params, fileName_BAU, history_prop_EV_arr_BAU, history_prop_EV_arr_BAU_no_rebate,
+    plot_ev_uptake_single(EV_stock_prop_2010_23, base_params, fileName_BAU, history_prop_EV_arr_BAU, history_prop_EV_arr_BAU_no_rebate,
                         "Proportion of EVs Over Time", 
                         "Time Step, months", 
                         "Proportion of EVs", 

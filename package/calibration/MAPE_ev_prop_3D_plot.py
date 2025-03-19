@@ -153,19 +153,19 @@ def main(fileName, dpi=600):
         return
 
     calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
     print("Max",np.max(data_array_ev_prop))
 
-    plot_ev_uptake_over_time(data_array_ev_prop, EV_stock_prop_2010_22, vary_1, vary_2, vary_3, base_params, fileName)
+    plot_ev_uptake_over_time(data_array_ev_prop, EV_stock_prop_2010_23, vary_1, vary_2, vary_3, base_params, fileName)
 
     best_params_dict = {}
-    process_metrics(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
-    process_metrics(calc_smape, "smape", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
-    process_metrics(calc_mse, "mse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
-    process_metrics(calc_rmse, "rmse", base_params, EV_stock_prop_2010_22, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
+    process_metrics(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2010_23, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
+    process_metrics(calc_smape, "smape", base_params, EV_stock_prop_2010_23, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
+    process_metrics(calc_mse, "mse", base_params, EV_stock_prop_2010_23, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
+    process_metrics(calc_rmse, "rmse", base_params, EV_stock_prop_2010_23, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi)
 
-    plot_combined_best_metrics(best_params_dict, data_array_ev_prop, EV_stock_prop_2010_22, base_params, vary_1, vary_2, vary_3, fileName, dpi)
+    plot_combined_best_metrics(best_params_dict, data_array_ev_prop, EV_stock_prop_2010_23, base_params, vary_1, vary_2, vary_3, fileName, dpi)
     plt.show()
 
 

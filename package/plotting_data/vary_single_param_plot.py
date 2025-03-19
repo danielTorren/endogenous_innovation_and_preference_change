@@ -111,7 +111,7 @@ def plot_ev_prop(base_params,data_array, property_list, fileName, name_property,
 
         # Plot real data (assume it starts after burn-in + offset)
         init_index = burn_in_step + 120
-        time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+        time_steps_real = np.arange(init_index, init_index + len(real_data) * 12,12)
         ax.plot(time_steps_real, real_data, label="Real Data", color='orange', linestyle="dotted")
 
         # Plot individual traces in grey
@@ -438,7 +438,7 @@ def plot_ev_prop_combined(base_params, data_array, property_list, fileName, name
     # Plot real data (assume it starts after burn-in + offset)
     burn_in_step = base_params["duration_burn_in"]
     init_index = burn_in_step + 120
-    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12,12)
     ax.plot(time_steps_real, real_data, label="California Data 2010-22", color='orange', linestyle="dotted")
     
     # Loop over different parameter values
@@ -485,13 +485,13 @@ def main(fileName, dpi=300):
     property_save = vary_single["property_varied"]
 
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
     plot_margin(base_params,data_array_margins, property_list, fileName, name_property, property_save, dpi=600)
 
     #plot_distance(data_array_distance, property_list, fileName, name_property, property_save, 600)
-    plot_ev_prop_combined(base_params, data_array_EV_prop, property_list, fileName, name_property, property_save, EV_stock_prop_2010_22, dpi=600)
-    #plot_ev_prop(base_params,data_array_EV_prop, property_list, fileName, name_property, property_save,EV_stock_prop_2010_22,  600)
+    plot_ev_prop_combined(base_params, data_array_EV_prop, property_list, fileName, name_property, property_save, EV_stock_prop_2010_23, dpi=600)
+    #plot_ev_prop(base_params,data_array_EV_prop, property_list, fileName, name_property, property_save,EV_stock_prop_2010_23,  600)
     #plot_age(data_array_age, property_list, fileName, name_property, property_save, 600)
     plot_price(base_params,data_array_price , property_list, fileName, name_property, property_save, 600)
     #plot_emissions(data_array_emissions , property_list, fileName, name_property, property_save, 600)

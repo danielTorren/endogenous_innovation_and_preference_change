@@ -100,7 +100,7 @@ def plot_calibrated_index_emissions(real_data, base_params, fileName, data, titl
 
     # Adjust the real data's time steps
     init_index = base_params["duration_burn_in"]
-    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12,12)
 
     # Determine the start of the data after the burn-in period
     burn_in_step = base_params["duration_burn_in"]
@@ -164,7 +164,7 @@ def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, 
 
     # Adjust the real data's time steps
     init_index = base_params["duration_burn_in"] + 120
-    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12,12)
 
     # Calculate mean and 95% confidence interval for data after burn-in
     mean_values = np.mean(data_after_burn_in, axis=0)
@@ -228,8 +228,9 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     time_steps = np.arange(burn_in_step, data.shape[1])
 
     # Adjust the real data's time steps
-    init_index = base_params["duration_burn_in"] + 120
-    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12, 12)
+    init_index = base_params["duration_burn_in"] + 11 * 12#DATA STARTS IN 2010
+
+    time_steps_real = np.arange(init_index, init_index + len(real_data) * 12,12)
 
     # Calculate mean and 95% confidence interval for data after burn-in
     mean_values = np.mean(data_after_burn_in, axis=0)
@@ -853,16 +854,17 @@ def main(fileName, dpi=300):
     history_mean_profit_margins_EV = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_EV"))
     history_mean_car_age_arr = np.asarray(load_object( fileName + "/Data", "history_mean_car_age"))
 
-    EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
-    CO2_index_2010_22 = calibration_data_output["CO2_index"]
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
+    print(len(EV_stock_prop_2010_23))
+    #CO2_index_2010_23 = calibration_data_output["CO2_index"]
 
-    #plot_ev_stock_multi_seed(base_params, EV_stock_prop_2010_22, data_array_ev_prop, fileName, dpi)
-    #plot_ev_stock_multi_seed_pair(base_params, EV_stock_prop_2010_22, history_prop_EV_arr, fileName, dpi)
+    #plot_ev_stock_multi_seed(base_params, EV_stock_prop_2010_23, data_array_ev_prop, fileName, dpi)
+    #plot_ev_stock_multi_seed_pair(base_params, EV_stock_prop_2010_23, history_prop_EV_arr, fileName, dpi)
 
     # Plot each dataset
     #"""
 
-    plot_ev_uptake_single(EV_stock_prop_2010_22, base_params, fileName, history_prop_EV_arr, 
+    plot_ev_uptake_single(EV_stock_prop_2010_23, base_params, fileName, history_prop_EV_arr, 
                         "Proportion of EVs Over Time", 
                         "Time Step, months", 
                         "Proportion of EVs", 
@@ -887,7 +889,7 @@ def main(fileName, dpi=300):
                         "history_profit_margin"
     )
 
-    #plot_calibrated_index_emissions(CO2_index_2010_22,base_params, fileName,history_driving_emissions_arr, 
+    #plot_calibrated_index_emissions(CO2_index_2010_23,base_params, fileName,history_driving_emissions_arr, 
     #                "Total Driving Emissions Over Time", 
     #                "Time Step, months", 
     #                "Total Emissions, kgCO2", 
@@ -953,4 +955,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_09_28_22__19_03_2025")
+    main("results/multi_seed_single_16_06_28__19_03_2025")
