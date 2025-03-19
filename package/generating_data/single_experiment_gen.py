@@ -38,7 +38,7 @@ if __name__ == "__main__":
     base_params = {
     "seed_repetitions": 64,
     "duration_burn_in_research": 0,
-    "duration_burn_in": 180,
+    "duration_burn_in": 240,
     "duration_calibration": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
