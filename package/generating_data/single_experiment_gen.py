@@ -39,8 +39,8 @@ if __name__ == "__main__":
     "seed_repetitions": 64,
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
-    "duration_calibration": 264,
-    "duration_future": 0,
+    "duration_calibration": 276,
+    "duration_future": 156,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -70,11 +70,11 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.1,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
-            "Adoption_subsidy":20000,
+            "Adoption_subsidy":10000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,
             "Research_subsidy":1000000
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

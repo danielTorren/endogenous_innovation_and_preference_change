@@ -77,7 +77,7 @@ class Controller:
         self.firm_manager.generate_market_data()
         for i in range(self.duration_burn_in_firms):
             self.firm_manager.next_step_burn_in()
-        old_cars = self.firm_manager.gen_old_cars()
+        old_cars = self.firm_manager.gen_initial_cars()
 
         ####################################################################################################
 
@@ -394,28 +394,11 @@ class Controller:
         return beta_s
 
     #####################################################################################################################################
-
-
-    # Define noise function
-    def add_noise(self, data, percentage=0.05):
-        noise = np.random.normal(loc=0, scale=percentage * np.abs(data[0]), size=len(data))
-        return data + noise
-
     def manage_burn_in(self):
-        # Adding noise to the time series
-        self.burn_in_gas_price_vec = self.add_noise(
-            np.asarray([self.calibration_gas_price_california_vec[0]] * self.duration_burn_in), 0.05
-        )
-        self.burn_in_electricity_price_vec = self.add_noise(
-            np.asarray([self.calibration_electricity_price_vec[0]] * self.duration_burn_in), 0.05
-        )
-        self.burn_in_electricity_emissions_intensity_vec = self.add_noise(
-            np.asarray([self.calibration_electricity_emissions_intensity_vec[0]] * self.duration_burn_in), 0.05
-        )
 
-        #self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
-        #self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
-        #self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.calibration_electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
+        self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
+        self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
+        self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.calibration_electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
 
         self.burn_in_rebate_time_series = np.zeros(self.duration_burn_in)
         self.burn_in_used_rebate_time_series = np.zeros(self.duration_burn_in)
@@ -436,36 +419,34 @@ class Controller:
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["used_rebate"]
 
-        self.parameters_social_network["income"] = self.parameters_calibration_data["income"]
-
     #############################################################################################################################
     #DEAL WITH SCENARIOS
 
     def manage_scenario(self):
 
-        self.Gas_price_2022 = self.parameters_calibration_data["Gas_price_2022"]
-        self.Gas_price_future = self.Gas_price_2022*self.parameters_controller["parameters_scenarios"]["Gas_price"]
+        self.Gas_price_2023 = self.parameters_calibration_data["Gas_price_2023"]
+        self.Gas_price_future = self.Gas_price_2023*self.parameters_controller["parameters_scenarios"]["Gas_price"]
         if self.duration_future > self.absolute_2035:
-            gas_price_series_future_im = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.absolute_2035)
+            gas_price_series_future_im = np.linspace(self.Gas_price_2023, self.Gas_price_future, self.absolute_2035)
             self.gas_price_series_future = np.concatenate((gas_price_series_future_im, np.asarray([gas_price_series_future_im[-1]]*(self.duration_future - self.absolute_2035))), axis=None)
         else:
-            self.gas_price_series_future = np.linspace(self.Gas_price_2022, self.Gas_price_future, self.duration_future)
+            self.gas_price_series_future = np.linspace(self.Gas_price_2023, self.Gas_price_future, self.duration_future)
 
-        self.Electricity_price_2022 = self.parameters_calibration_data["Electricity_price_2022"]
-        self.Electricity_price_future = self.Electricity_price_2022*self.parameters_controller["parameters_scenarios"]["Electricity_price"]
+        self.Electricity_price_2023 = self.parameters_calibration_data["Electricity_price_2023"]
+        self.Electricity_price_future = self.Electricity_price_2023*self.parameters_controller["parameters_scenarios"]["Electricity_price"]
         if self.duration_future > self.absolute_2035:
-            electricity_price_series_future_im = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.absolute_2035)
+            electricity_price_series_future_im = np.linspace(self.Electricity_price_2023, self.Electricity_price_future, self.absolute_2035)
             self.electricity_price_series_future = np.concatenate((electricity_price_series_future_im, np.asarray([electricity_price_series_future_im[-1]]*(self.duration_future - self.absolute_2035))), axis=None)
         else:
-            self.electricity_price_series_future = np.linspace(self.Electricity_price_2022, self.Electricity_price_future, self.duration_future)
+            self.electricity_price_series_future = np.linspace(self.Electricity_price_2023, self.Electricity_price_future, self.duration_future)
         
-        self.Grid_emissions_intensity_2022 = self.parameters_calibration_data["Electricity_emissions_intensity_2022"]
-        self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2022*self.parameters_controller["parameters_scenarios"]["Grid_emissions_intensity"]
+        self.Grid_emissions_intensity_2023 = self.parameters_calibration_data["Electricity_emissions_intensity_2023"]
+        self.Grid_emissions_intensity_future = self.Grid_emissions_intensity_2023*self.parameters_controller["parameters_scenarios"]["Grid_emissions_intensity"]
         if self.duration_future > self.absolute_2035:
-            grid_emissions_intensity_series_future_im = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.absolute_2035)
+            grid_emissions_intensity_series_future_im = np.linspace(self.Grid_emissions_intensity_2023, self.Grid_emissions_intensity_future, self.absolute_2035)
             self.grid_emissions_intensity_series_future = np.concatenate((grid_emissions_intensity_series_future_im, np.asarray([grid_emissions_intensity_series_future_im[-1]]*(self.duration_future - self.absolute_2035))), axis=None)
         else:
-            self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2022, self.Grid_emissions_intensity_future, self.duration_future)
+            self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2023, self.Grid_emissions_intensity_future, self.duration_future)
 
     #############################################################################################################################
     #DEAL WITH POLICIES
@@ -822,21 +803,10 @@ class Controller:
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
 
     def update_firms(self):
-        #handle_burn_in probaility
-        #if self.t_controller < self.duration_burn_in*(3/4):
-        #    for firm in self.firm_manager.firms_list:
-        #        firm.prob_innovate = self.prob_innovate_arr[self.t_controller]
-        #        firm.prob_change_production = self.prob_change_production_arr[self.t_controller]
-            
         cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
-        
-         #handle_burn_in probaility
-        #if self.t_controller < self.duration_burn_in*(3/4):
-        #    self.social_network.prob_switch_car = self.prob_switch_car_arr[self.t_controller]
-
         # Update social network based on firm preferences
         consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration)
         return consider_ev_vec, new_bought_vehicles
@@ -846,11 +816,6 @@ class Controller:
         cars_on_sale_second_hand = self.second_hand_merchant.cars_on_sale
 
         return cars_on_sale_second_hand
-
-    def update_target_range_over_cost(self):
-        target_range_over_cost = self.firm_manager.calc_target_target_range_over_cost()
-        for firm in self.firm_manager.firms_list:
-            firm.target_range_over_cost = target_range_over_cost
 
     def calc_price_range_ice(self):
         prices = [car.price for car in self.cars_on_sale_all_firms if car.transportType == 2]

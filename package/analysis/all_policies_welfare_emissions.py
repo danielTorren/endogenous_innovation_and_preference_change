@@ -169,7 +169,9 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
     # Save plot
     save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions_{measure}.png'
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    
     plt.savefig(save_path, dpi=dpi)
+    plt.savefig(f'{file_name}/Plots/welfare_vs_cumulative_emissions_{measure}_VECTOR.eps', format='eps', dpi=dpi)
 
 
 

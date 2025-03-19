@@ -105,8 +105,23 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     ax.plot(time_yearly,EV_stock_prop_2010_22, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
-    ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars", color = "red")
+    ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars monthly", color = "grey", linestyle = "--")
     
+    # Extract the relevant data after burn-in period
+    data_series = firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:]
+
+    # Define the rolling window size
+    window_size = 12
+
+    # Compute the 12-month rolling average using NumPy's convolution
+    rolling_avg = np.convolve(data_series, np.ones(window_size) / window_size, mode='valid')
+
+    # Adjust the time series to match the new rolling average length
+    time_series_adjusted = time_series[len(time_series) - len(rolling_avg):]
+
+    ax.plot(time_series_adjusted, rolling_avg, label="12-Month Rolling Avg (New Cars)", color="red")
+
+
     add_vertical_lines(ax, base_params)
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
@@ -1178,6 +1193,9 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_22 = calibration_data_output["EV Prop"]
 
+    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi)
+    
+    #plt.show()
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
     #plt.show()
@@ -1193,8 +1211,7 @@ def main(fileName, dpi=300):
     #plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_22, social_network, fileName, dpi)
     #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_22, dpi)
-    #plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_22, dpi)
-    
+
     #plot_history_prop_EV_research(base_params,firm_manager, fileName)
     plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     #plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
@@ -1224,4 +1241,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_08_17__18_03_2025")
+    main("results/single_experiment_12_42_50__19_03_2025")

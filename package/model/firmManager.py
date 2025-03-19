@@ -58,24 +58,14 @@ class Firm_Manager:
     ###########################################################################################################
     #INITIALISATION
 
-    def gen_old_cars(self):
-        """
-        Using random assortment of cars intially pick some random cars and set a random age distribution
-        """
-
+    def gen_initial_cars(self):
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
-        # Define mean and standard deviation for normal distribution
-        mu = self.init_car_age_mean#self.age_max / 2  # Mean age at half of max age
-        sigma = self.init_car_age_std#self.age_max / 4  # Standard deviation (adjustable)
-
-        # Generate normally distributed ages, ensuring values are within range
-        age_list = np.clip(self.random_state_input.normal(mu, sigma, self.num_individuals), 0,np.inf).astype(int)
 
         car_list = []
         for i, car in enumerate(model_choices):
             personalCar_id = self.id_generator.get_new_id()
             car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=1)
-            car_real.L_a_t = age_list[i]
+            car_real.L_a_t = 0
             car_list.append(car_real)
 
         self.old_cars = car_list   

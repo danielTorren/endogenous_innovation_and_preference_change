@@ -100,6 +100,7 @@ def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val
     os.makedirs(f'{file_name}/Plots', exist_ok=True)
     save_path = f'{file_name}/Plots/{x_measure}_vs_{y_measure}.png'
     plt.savefig(save_path, dpi=dpi)
+    plt.savefig(f'{file_name}/Plots/{x_measure}_vs_{y_measure}_VECTOR.eps', format='eps', dpi=dpi)
     plt.close()
 
 def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
@@ -222,6 +223,7 @@ def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name
     save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions.png'
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=dpi)
+    
 
     # Return top 10 policy combinations by welfare
     top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
@@ -248,6 +250,6 @@ def main(fileNames, fileName_BAU):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_19_10_07__11_03_2025"],
+        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025"
     )
