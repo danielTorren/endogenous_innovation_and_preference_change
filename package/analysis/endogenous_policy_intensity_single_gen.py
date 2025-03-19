@@ -231,7 +231,7 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_endog_single_gen.json",
         policy_list=[
-            #"Carbon_price",
+            "Carbon_price",
             "Electricity_subsidy",
             "Adoption_subsidy",
             #"Adoption_subsidy_used",
@@ -239,6 +239,6 @@ if __name__ == "__main__":
             #"Research_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=10,
+        n_calls=20,
         noise=0.05
     )
