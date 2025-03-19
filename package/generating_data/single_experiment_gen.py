@@ -23,7 +23,7 @@ def main(
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 
     print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_calibration - 2])
+    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_calibration - 1])
     print("uptake end",controller.calc_EV_prop())
     print("distortion",controller.calc_total_policy_distortion(), controller.calc_net_policy_distortion())
     print("mean price", np.asarray(controller.social_network.history_mean_price[-1]))
@@ -38,13 +38,13 @@ if __name__ == "__main__":
     base_params = {
     "seed_repetitions": 64,
     "duration_burn_in_research": 0,
-    "duration_burn_in": 180,
+    "duration_burn_in": 240,
     "duration_calibration": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "seed": 5,
-    "seed_inputs": 22,
+    "seed": 8,
+    "seed_inputs": 20,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
     "EV_rebate_state": 1,
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,
+        "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.002,
+        "delta": 0.0022,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 5000,
+        "min_Cost": 0,
         "max_Cost": 58150
     }, 
     "parameters_EV":{
@@ -117,8 +117,8 @@ if __name__ == "__main__":
         "min_Efficiency": 2.73,
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
-        "max_Battery_size": 150,
-        "min_Cost": 5000,
+        "max_Battery_size": 130,
+        "min_Cost": 0,
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
-        "num_beta_segments": 8,
+        "num_beta_segments": 5,
         "num_gamma_segments": 2
     },
     "parameters_firm":{
@@ -140,11 +140,11 @@ if __name__ == "__main__":
         "max_cars_prod": 10
     },
     "parameters_social_network":{
-        "num_individuals":3000,
+        "num_individuals":5000,
         "chi_max": 0.9,
-        "a_chi": 1.221, 
+        "a_chi": 1.2, 
         "b_chi": 2.2873,
-        "SW_network_density": 0.05,
+        "SW_network_density": 0.01,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
@@ -157,12 +157,12 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.1e-4,
+        "kappa": 2.25e-4,
         "U_segments_init": 0,
-        "W_calibration":1e5,
+        "W_calibration":1e10,
         "min_W": 1e-10,
         "r": 0.00407412378,
-        "mu": 1,
+        "mu": 0.2,
         "alpha": 0.5,
         "zeta":0.29697
     }
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

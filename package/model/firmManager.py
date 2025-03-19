@@ -18,6 +18,7 @@ class Firm_Manager:
         self.zero_profit_options_prod_sum = 0
 
         self.HHI_past_new_bought_vehicles_history = []
+        self.margin_past_new_bought_vehicles_history = []
 
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
@@ -359,13 +360,27 @@ class Firm_Manager:
 
         return HHI
 
+    def calc_profit_margin(self, new_bought_vehicles):
+        """
+        Calculate market concentration (HHI) using all cars bought over the last 12 time steps.
+        This function maintains its own history of purchases.
+        """
 
-    def calc_profit_margin(self, past_new_bought_vehicles):
-        
+        # Append the new purchases to history
+        self.margin_past_new_bought_vehicles_history.append(new_bought_vehicles)
+
+        # Trim to last 12 time steps
+        if len(self.margin_past_new_bought_vehicles_history) > 12:
+            self.margin_past_new_bought_vehicles_history.pop(0)
+
+        # Flatten the list to get all purchases from the last 12 time steps
+        all_purchases = list(itertools.chain(*self.HHI_past_new_bought_vehicles_history))
+
         profit_margin_ICE = []
         profit_margin_EV = []
 
-        for car in past_new_bought_vehicles:
+        # Calculate the HHI by summing the squares of market shares for each firm
+        for car in all_purchases:
             if car.transportType == 3:
                 prod_cost = np.maximum(0, car.ProdCost_t - self.production_subsidy)
                 
@@ -386,6 +401,7 @@ class Firm_Manager:
 
         return profit_margin_ICE, profit_margin_EV
     
+
     def calc_last_step_profit_margin(self):
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
         all_profit_margins = profit_margin_ICE +  profit_margin_EV
@@ -413,6 +429,10 @@ class Firm_Manager:
 
         self.history_mean_profit_margins_EV = []
         self.history_mean_profit_margins_ICE = []
+
+        self.history_median_profit_margins_EV = []
+        self.history_median_profit_margins_ICE = []
+
         self.history_W = []
 
         self.history_quality_ICE = []
@@ -475,13 +495,17 @@ class Firm_Manager:
 
         if profit_margin_EV:
             self.history_mean_profit_margins_EV.append(np.nanmean(profit_margin_EV))
+            self.history_median_profit_margins_EV.append(np.nanmedian(profit_margin_EV))
         else:
             self.history_mean_profit_margins_EV.append(np.nan)
+            self.history_median_profit_margins_EV.append(np.nan)
 
         if profit_margin_ICE:
             self.history_mean_profit_margins_ICE.append(np.nanmean(profit_margin_ICE))
+            self.history_median_profit_margins_ICE.append(np.nanmedian(profit_margin_ICE))
         else:
             self.history_mean_profit_margins_ICE.append(np.nan)
+            self.history_median_profit_margins_ICE.append(np.nan)
 
         self.calc_vehicles_chosen_list(self.past_new_bought_vehicles)
         self.history_cars_on_sale_price.append([car.price for car in self.cars_on_sale_all_firms])

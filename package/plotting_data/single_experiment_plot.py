@@ -730,6 +730,38 @@ def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600,
     ax.legend(loc='best')
     save_and_show(fig, fileName, "count_buy_lines", dpi)
 
+
+def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=600, annotation_height_prop=[0.5, 0.5, 0.5]):
+    fig, ax1 = plt.subplots(figsize=(6, 6))
+
+    # Convert to numpy array
+    data = np.asarray(social_network.history_count_buy)  # shape: (timesteps, categories)
+    x = np.arange(data.shape[0])
+
+    count = base_params["parameters_social_network"]["num_individuals"]
+    data_new = data[:, 1]
+    data_sold = data[:, 1] + data[:, 2]  # Assuming sold is the sum of two columns
+
+    # First Y-axis (left side) - New sales out of population
+    ax1.scatter(x, data_new/count, label="New sales out of population", color="tab:blue")
+    ax1.set_xlabel("Time")
+    ax1.set_ylabel("New sales / Population", color="tab:blue")
+    ax1.tick_params(axis='y', labelcolor="tab:blue")
+    #ax1.set_xlim(left=base_params["duration_burn_in"])
+
+    # Second Y-axis (right side) - New sales out of sold
+    ax2 = ax1.twinx()  # Create a second y-axis
+    ax2.scatter(x, data_new/data_sold, label="New sales out of sold", color="tab:red")
+    ax2.set_ylabel("New sales / Sold", color="tab:red")
+    ax2.tick_params(axis='y', labelcolor="tab:red")
+
+    # Add vertical lines
+    add_vertical_lines(ax1, base_params, annotation_height_prop=annotation_height_prop)
+
+    fig.tight_layout()  # Adjust layout to prevent overlap
+    save_and_show(fig, fileName, "count_buy_prop", dpi)
+
+
 def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     # Create a grid of subplots (4x4 layout)
@@ -937,11 +969,12 @@ def emissions_decomposed_flow(base_params, social_network, time_series, fileName
 def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.scatter(time_series, firm_manager.history_mean_profit_margins_ICE[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "blue", label = "ICE")
-    ax.scatter(time_series, firm_manager.history_mean_profit_margins_EV[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "green", label = "EV")
+    ax.scatter(time_series, firm_manager.history_mean_profit_margins_ICE[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "blue", label = "ICE mean")
+    ax.scatter(time_series, firm_manager.history_mean_profit_margins_EV[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "green", label = "EV mean")
+
 
     ax.set_xlabel("Time")
-    ax.set_ylabel("Profit margin (P-C)/C")
+    ax.set_ylabel("Profit margin (P-C)/C, 12-month rolling window")
     ax.grid(True)
 
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
@@ -1241,7 +1274,9 @@ def main(fileName, dpi=300):
     
     #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
     plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
+
     plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
     #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
 
@@ -1258,4 +1293,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_21_42__19_03_2025")
+    main("results/single_experiment_19_17_07__19_03_2025")
