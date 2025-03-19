@@ -736,7 +736,8 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=600,
 
     # Convert to numpy array
     data = np.asarray(social_network.history_count_buy)  # shape: (timesteps, categories)
-    x = np.arange(data.shape[0])
+    data = data[base_params["duration_burn_in"]:, :]
+    x = np.arange(0, data.shape[0])
 
     count = base_params["parameters_social_network"]["num_individuals"]
     data_new = data[:, 1]
