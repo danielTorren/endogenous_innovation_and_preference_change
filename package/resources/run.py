@@ -53,7 +53,7 @@ def generate_data(parameters: dict,print_simu = 0):
     #### RUN TIME STEPS
     """FIX THIS!!!"""
     #while controller.t_controller < parameters["time_steps_max"]:
-    while controller.t_controller < parameters["time_steps_max"]-1:
+    while controller.t_controller <= parameters["time_steps_max"]:
         controller.next_step()
         #print("step: ", round((controller.t_controller/parameters["time_steps_max"]),3)*100)
 
