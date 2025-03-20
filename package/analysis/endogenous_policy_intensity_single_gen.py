@@ -238,6 +238,6 @@ if __name__ == "__main__":
             "Production_subsidy"
         ],
         target_ev_uptake=0.99,
-        n_calls=30,
+        n_calls=40,
         noise=0.05
     )
