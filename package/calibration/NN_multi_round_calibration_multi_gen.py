@@ -23,7 +23,7 @@ def convert_data(data_to_fit, base_params):
     # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
     # Define the starting and ending indices for the years 2010 to 2022
     start_year = 2016
-    end_year = 2022
+    end_year = 2023
 
     # Calculate the average of the last three months of each year
     averages = []
@@ -31,12 +31,8 @@ def convert_data(data_to_fit, base_params):
     #print("filtered_data", filtered_data)
     for year in range(start_year, end_year + 1):
         year_start_index = (year - 2001) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
-        start_idx = year_start_index + 9  # October index
-        end_idx = year_start_index + 12  # December index (exclusive)
-        # Ensure the indices are within bounds
-        last_three_months = data_to_fit[start_idx:end_idx]
-        
-        averages.append(np.mean(last_three_months))
+        april_idx = year_start_index + 3  # APRIL index
+        averages.append(data_to_fit[april_idx])
 
     averages_array = np.array(averages)
 
@@ -179,6 +175,6 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=48,
-        num_rounds= 3
+        num_simulations=3,
+        num_rounds= 4
     )
