@@ -234,11 +234,10 @@ if __name__ == "__main__":
             "Carbon_price",
             "Electricity_subsidy",
             "Adoption_subsidy",
-            #"Adoption_subsidy_used",
-            "Production_subsidy",
-            #"Research_subsidy"
+            "Adoption_subsidy_used",
+            "Production_subsidy"
         ],
-        target_ev_uptake=0.95,
-        n_calls=20,
+        target_ev_uptake=0.99,
+        n_calls=30,
         noise=0.05
     )

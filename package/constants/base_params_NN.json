@@ -3,8 +3,8 @@
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 0,
-    "save_timeseries_data_state": 0,
+    "duration_future": 144,
+    "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
     "seed_inputs": 22,
@@ -85,7 +85,7 @@
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
-        "J": 20,
+        "J": 16,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
@@ -105,8 +105,8 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.221, 
-        "b_chi": 2.2873,
+        "a_chi": 1.1968, 
+        "b_chi": 2.6805,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
