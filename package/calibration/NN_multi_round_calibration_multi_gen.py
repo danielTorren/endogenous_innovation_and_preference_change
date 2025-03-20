@@ -30,8 +30,11 @@ def convert_data(data_to_fit, base_params):
 
     #print("filtered_data", filtered_data)
     for year in range(start_year, end_year + 1):
+        print("year", year)
         year_start_index = (year - 2001) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
+        print("year_start_index", year_start_index)
         april_idx = year_start_index + 3  # APRIL index
+        print("april_idx", april_idx)
         averages.append(data_to_fit[april_idx])
 
     averages_array = np.array(averages)
