@@ -224,7 +224,7 @@ def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, 
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
 
-def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600,
+def plot_ev_uptake_single(real_data, base_params, fileName, data,history_past_new_bought_vehicles_prop_ev, title, x_label, y_label, save_name, dpi=600,
                         annotation_height_prop = 0.8):
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces,
@@ -244,6 +244,8 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     # Determine the start of the data after the burn-in period
     burn_in_step = base_params["duration_burn_in"]
     data_after_burn_in = data[:, burn_in_step:]
+    data_buy = history_past_new_bought_vehicles_prop_ev[:, burn_in_step:]
+
     time_steps = np.arange(0, data_after_burn_in.shape[1])
 
     init_real = 108 + 4#STARTS AT APRIL of THE END OF 2010
@@ -253,11 +255,16 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
     # Calculate mean and 95% confidence interval for data after burn-in
     mean_values = np.mean(data_after_burn_in, axis=0)
     median_values = np.median(data_after_burn_in, axis=0)
+
+    data_buy_mean = np.mean(data_buy, axis=0)
+    data_buy_median = np.median(data_buy, axis=0)
+
     #print(data_after_burn_in.shape)
 
     #print(A,A.shape)
     
     ci_range = sem(data_after_burn_in, axis=0) *t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)  # 95% CI
+    ci_range_buy = sem(data_buy, axis=0) *t.ppf(0.975, df=data_buy.shape[0] - 1)  # 95% CI
 
     # Create subplots
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
@@ -274,6 +281,18 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data, title, x_label
         color='blue',
         alpha=0.3,
         label='95% Confidence Interval'
+    )
+
+    ax1.plot(time_steps, data_buy_mean, label='Mean, EV sales', color='green')
+    ax1.plot(time_steps, data_buy_median, label="Median, EV sales", color='yellow', linestyle="dashed")
+    median_values
+    ax1.fill_between(
+        time_steps,
+        data_buy_mean- ci_range_buy,
+        data_buy_mean + ci_range_buy,
+        color='green',
+        alpha=0.3,
+        label='95% Confidence Interval, EV sales'
     )
 
     # Second subplot: Individual traces with real data
@@ -875,6 +894,7 @@ def main(fileName, dpi=300):
     history_mean_profit_margins_ICE = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_ICE"))
     history_mean_profit_margins_EV = np.asarray(load_object( fileName + "/Data", "history_mean_profit_margins_EV"))
     history_mean_car_age_arr = np.asarray(load_object( fileName + "/Data", "history_mean_car_age"))
+    history_past_new_bought_vehicles_prop_ev = load_object( fileName + "/Data", "history_past_new_bought_vehicles_prop_ev")
 
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
@@ -886,7 +906,7 @@ def main(fileName, dpi=300):
     # Plot each dataset
     #"""
 
-    plot_ev_uptake_single(EV_stock_prop_2010_23, base_params, fileName, history_prop_EV_arr, 
+    plot_ev_uptake_single(EV_stock_prop_2010_23, base_params, fileName, history_prop_EV_arr, history_past_new_bought_vehicles_prop_ev, 
                         "Proportion of EVs Over Time", 
                         "Time Step, months", 
                         "Proportion of EVs", 
@@ -983,4 +1003,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_22_38_06__20_03_2025")
+    main("results/multi_seed_single_22_49_55__20_03_2025")
