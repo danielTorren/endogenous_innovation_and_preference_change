@@ -1,4 +1,3 @@
-from sbi import analysis as analysis  # https://github.com/sbi-dev/sbi
 from sbi.analysis import pairplot
 import matplotlib.pyplot as plt
 from package.resources.utility import load_object, save_object
@@ -48,13 +47,13 @@ def main(fileName):
 
 
     # Extract observed statistics
-    EV_stock_prop_2016_22 = match_data["EV_stock_prop_2016_22"]
+    EV_stock_prop_2016_23 = match_data["EV_stock_prop_2016_23"]
     #median_distance_traveled = match_data["median_distance_traveled"]
     #median_age = match_data["median_age"]
     #median_price = match_data["median_price"]
 
     # Convert data to tensors
-    EV_stock_prop_2016_22_tensor = torch.tensor(EV_stock_prop_2016_22, dtype=torch.float32)
+    EV_stock_prop_2016_23_tensor = torch.tensor(EV_stock_prop_2016_23, dtype=torch.float32)
     #median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
     #median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
     #median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
@@ -64,7 +63,7 @@ def main(fileName):
     #                 median_distance_traveled_tensor, 
     #                 median_age_tensor, 
     #                 median_price_tensor), dim=0)
-    x_o = EV_stock_prop_2016_22_tensor
+    x_o = EV_stock_prop_2016_23_tensor
 
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
@@ -111,5 +110,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_00_08_47__19_03_2025",
+        fileName="results/NN_calibration_multi_10_19_01__20_03_2025",
     )
