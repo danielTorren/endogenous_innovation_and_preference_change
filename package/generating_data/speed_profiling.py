@@ -16,7 +16,7 @@ if __name__ == '__main__':
     "seed_repetitions": 1,
     "duration_burn_in": 240,
     "duration_calibration": 276,
-    "duration_future": 156,
+    "duration_future": 148,
     "save_timeseries_data_state": 0,
     "compression_factor_state": 1,
 

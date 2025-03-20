@@ -159,7 +159,7 @@ def main(
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=20,
+        repetitions=50,
         policy_list = [
             "Carbon_price",
             #"Targeted_research_subsidy",
