@@ -30,11 +30,8 @@ def convert_data(data_to_fit, base_params):
 
     #print("filtered_data", filtered_data)
     for year in range(start_year, end_year + 1):
-        print("year", year)
         year_start_index = (year - 2001) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
-        print("year_start_index", year_start_index)
         april_idx = year_start_index + 3  # APRIL index
-        print("april_idx", april_idx)
         averages.append(data_to_fit[april_idx])
 
     averages_array = np.array(averages)
@@ -81,14 +78,14 @@ def main(
     # Load observed data
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
-    EV_stock_prop_2016_22 = EV_stock_prop_2010_23[6:]
+    EV_stock_prop_2016_23 = EV_stock_prop_2010_23[6:]
 
     root = "NN_calibration_multi"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
     # Observed data
-    x_o = torch.tensor(EV_stock_prop_2016_22, dtype=torch.float32)
+    x_o = torch.tensor(EV_stock_prop_2016_23, dtype=torch.float32)
 
     # Define the prior
     low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -146,7 +143,7 @@ def main(
     createFolder(fileName)
 
     # Save results
-    match_data = {"EV_stock_prop_2016_22": EV_stock_prop_2016_22}
+    match_data = {"EV_stock_prop_2016_23": EV_stock_prop_2016_23}
     save_object(match_data, fileName + "/Data", "match_data")
     save_object(posterior, fileName + "/Data", "posterior")
     save_object(prior, fileName + "/Data", "prior")
