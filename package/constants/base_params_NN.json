@@ -85,7 +85,7 @@
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
-        "J": 16,
+        "J": 20,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
