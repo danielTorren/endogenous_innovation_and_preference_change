@@ -237,7 +237,7 @@ if __name__ == "__main__":
             #"Adoption_subsidy_used",
             "Production_subsidy"
         ],
-        target_ev_uptake=0.99,
+        target_ev_uptake=0.95,
         n_calls=40,
         noise=0.05
     )
