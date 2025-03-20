@@ -163,7 +163,7 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.1, 1.3]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.08, 1.3]},
         {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [1.75, 2.75]},
         #{"name": "proportion_zero_target", "subdict": "parameters_social_network", "bounds": [0.001, 0.05]},
         #{"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [9.9e-5, 5e-4]},
