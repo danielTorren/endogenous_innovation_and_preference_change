@@ -24,7 +24,7 @@
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Electricity_subsidy": 1,
+            "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
@@ -36,7 +36,7 @@
                 "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
-            "Electricity_subsidy":1,
+            "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,
