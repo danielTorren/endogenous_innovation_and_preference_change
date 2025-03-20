@@ -305,7 +305,8 @@ def generate_multi_seed(params: dict):
         data.social_network.history_production_cost_EV, 
         data.firm_manager.history_mean_profit_margins_ICE,
         data.firm_manager.history_mean_profit_margins_EV,
-        data.social_network.history_mean_car_age
+        data.social_network.history_mean_car_age,
+        data.firm_manager.history_past_new_bought_vehicles_prop_ev
     )
 
 def parallel_run_multi_seed(params_list):
@@ -337,7 +338,8 @@ def parallel_run_multi_seed(params_list):
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV,
-        history_mean_car_age
+        history_mean_car_age,
+        history_past_new_bought_vehicles_prop_ev 
     ) = zip(*res)
     
     # Return results as arrays where applicable
@@ -362,5 +364,6 @@ def parallel_run_multi_seed(params_list):
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV,
-        np.asarray(history_mean_car_age)
+        np.asarray(history_mean_car_age),
+        np.asarray(history_past_new_bought_vehicles_prop_ev)
     )
