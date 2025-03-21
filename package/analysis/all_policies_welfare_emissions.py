@@ -62,8 +62,14 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
             plotted_points_single.append((emissions, welfare, policy, intensity))
 
     # --- Policy pair outcomes
+
+    # Collect all pairwise points for global frontier filtering
+    all_emissions, all_welfare, all_blends, all_colors1, all_colors2 = [], [], [], [], []
+
+
     plotted_points = []
     for (policy1, policy2), data in pairwise_outcomes_complied.items():
+                # Filter again for uptake bounds
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
         mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
         filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
@@ -81,45 +87,85 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
 
             plotted_points.append((emissions, welfare, policy1, policy2, intensity1, intensity2))
 
-        # --- Colored Line Rendering
-        if len(filtered_data) < 2:
-            continue
-
-        color1 = np.array(policy_colors[policy1])
-        color2 = np.array(policy_colors[policy2])
-        segments = []
-        colors = []
-
-        # Prepare and sort points
-        emissions_list, welfare_list, blend_ratios = [], [], []
         for entry in filtered_data:
             e = entry["mean_emissions_cumulative"] * 1e-9
             w = (entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
                  if measure == "mean_utility_cumulative" else entry[measure] * 1e-9)
-            i1 = entry["policy1_value"]
-            i2 = entry["policy2_value"]
+            p1 = entry["policy1_value"]
+            p2 = entry["policy2_value"]
 
-            n1 = (i1 - policy_ranges[policy1]["min"]) / (policy_ranges[policy1]["max"] - policy_ranges[policy1]["min"]) if policy_ranges[policy1]["max"] > policy_ranges[policy1]["min"] else 0.5
-            n2 = (i2 - policy_ranges[policy2]["min"]) / (policy_ranges[policy2]["max"] - policy_ranges[policy2]["min"]) if policy_ranges[policy2]["max"] > policy_ranges[policy2]["min"] else 0.5
+            color1 = np.array(policy_colors[policy1])
+            color2 = np.array(policy_colors[policy2])
+
+            n1 = (p1 - policy_ranges[policy1]["min"]) / (policy_ranges[policy1]["max"] - policy_ranges[policy1]["min"]) if policy_ranges[policy1]["max"] > policy_ranges[policy1]["min"] else 0.5
+            n2 = (p2 - policy_ranges[policy2]["min"]) / (policy_ranges[policy2]["max"] - policy_ranges[policy2]["min"]) if policy_ranges[policy2]["max"] > policy_ranges[policy2]["min"] else 0.5
             r = n2 / (n1 + n2) if (n1 + n2) > 0 else 0.5
 
-            emissions_list.append(e)
-            welfare_list.append(w)
-            blend_ratios.append(r)
+            all_emissions.append(e)
+            all_welfare.append(w)
+            all_blends.append(r)
+            all_colors1.append(color1)
+            all_colors2.append(color2)
 
-        emissions_arr = np.array(emissions_list)
-        welfare_arr = np.array(welfare_list)
-        blend_arr = np.array(blend_ratios)
-        sort_idx = np.argsort(emissions_arr)
+    all_emissions = np.array(all_emissions)
+    all_welfare = np.array(all_welfare)
+    all_blends = np.array(all_blends)
+    all_colors1 = np.array(all_colors1)
+    all_colors2 = np.array(all_colors2)
+
+    # --- Pareto frontier detection
+    frontier_idx = []
+    if measure in ["mean_utility_cumulative", "mean_profit_cumulative"]:
+        sorted_idx = np.argsort(all_emissions)
+        max_y = -np.inf
+        for i in sorted_idx:
+            if all_welfare[i] > max_y:
+                frontier_idx.append(i)
+                max_y = all_welfare[i]
+    elif measure == "mean_net_cost":
+        sorted_idx = np.argsort(all_emissions)
+        min_y = np.inf
+        for i in sorted_idx:
+            if all_welfare[i] < min_y:
+                frontier_idx.append(i)
+                min_y = all_welfare[i]
+
+    if len(frontier_idx) >= 2:
+        frontier_idx = np.array(frontier_idx)
+        e_f = all_emissions[frontier_idx]
+        w_f = all_welfare[frontier_idx]
+        b_f = all_blends[frontier_idx]
+        c1_f = all_colors1[frontier_idx]
+        c2_f = all_colors2[frontier_idx]
+
+        # Build gradient segments along frontier
+        sort_idx = np.argsort(e_f)
+        segments = []
+        colors = []
+
+        num_subdiv = 20  # controls smoothness of gradient
 
         for i in range(len(sort_idx) - 1):
             idx1, idx2 = sort_idx[i], sort_idx[i + 1]
-            p1 = [emissions_arr[idx1], welfare_arr[idx1]]
-            p2 = [emissions_arr[idx2], welfare_arr[idx2]]
-            blend = (blend_arr[idx1] + blend_arr[idx2]) / 2
-            blended_color = blend * color2 + (1 - blend) * color1
-            segments.append([p1, p2])
-            colors.append(blended_color)
+            x0, y0 = e_f[idx1], w_f[idx1]
+            x1, y1 = e_f[idx2], w_f[idx2]
+
+            c1 = b_f[idx1] * c2_f[idx1] + (1 - b_f[idx1]) * c1_f[idx1]
+            c2 = b_f[idx2] * c2_f[idx2] + (1 - b_f[idx2]) * c1_f[idx2]
+
+            for j in range(num_subdiv):
+                t0 = j / num_subdiv
+                t1 = (j + 1) / num_subdiv
+
+                # Line interpolation
+                p_start = [x0 * (1 - t0) + x1 * t0, y0 * (1 - t0) + y1 * t0]
+                p_end = [x0 * (1 - t1) + x1 * t1, y0 * (1 - t1) + y1 * t1]
+
+                # Color interpolation
+                color = c1 * (1 - t0) + c2 * t0
+
+                segments.append([p_start, p_end])
+                colors.append(color)
 
         lc = LineCollection(segments, colors=colors, linewidths=3, zorder=3)
         ax.add_collection(lc)
@@ -146,11 +192,11 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
            #ax.scatter(x, y, s=size1, marker=full_circle_marker(), color=color1, edgecolor="black")
         else:
             if measure == "mean_utility_cumulative":
-                if x < bau_emissions and y > bau_welfare:
+                #if x < bau_emissions and y > bau_welfare:
                     ax.scatter(x, y, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
                     ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
             elif measure == "mean_profit_cumulative":
-                if x < bau_emissions:
+                #if x < bau_emissions:
                     ax.scatter(x, y, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
                     ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
             elif measure == "mean_net_cost":
