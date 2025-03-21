@@ -44,7 +44,7 @@ def policy_pair_sweep(
     Sweep policy1 intensity in steps, optimizing policy2 at each step.
     """
     p1_min, p1_max = bounds_dict[policy1_name]
-    epsilon = p1_max*0.2
+    epsilon = p1_max*0.15
     p1_values = np.linspace(p1_min +  epsilon, p1_max -  epsilon, n_steps)
     results_for_pair = []
     
@@ -78,19 +78,19 @@ def main(
     BOUNDS_LOAD="package/analysis/policy_bounds.json", 
     policy_list_all=[
         "Carbon_price",
-        "Targeted_research_subsidy",
         "Electricity_subsidy",
         "Adoption_subsidy",
         "Adoption_subsidy_used",
         "Production_subsidy",
-        "Research_subsidy"
     ],
     policy_list_works=[
         "Carbon_price",
-        "Targeted_research_subsidy",
-        "Electricity_subsidy"
+        "Electricity_subsidy",
+        "Adoption_subsidy",
+        "Adoption_subsidy_used",
+        "Production_subsidy",
     ],
-    target_ev_uptake=0.9,
+    target_ev_uptake=0.95,
     n_steps_for_sweep=5,
     n_calls=40, 
     noise = 0.01
@@ -155,21 +155,20 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
             "Carbon_price",
-            #"Targeted_research_subsidy",
             "Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",
             "Production_subsidy",
-            #"Research_subsidy"
         ],
         policy_list_works=[
             "Carbon_price",
             "Electricity_subsidy",
             "Adoption_subsidy",
-            "Production_subsidy"
+            "Adoption_subsidy_used",
+            "Production_subsidy",
             ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=4,
-        n_calls=30,
+        n_steps_for_sweep=5,
+        n_calls=40,
         noise=0.05
     )

@@ -1,7 +1,7 @@
 {
-    "Carbon_price": [0, 0.2137],
-    "Electricity_subsidy": [0, 0.9544],
-    "Adoption_subsidy": [0, 23510],
-    "Adoption_subsidy_used": [0, 23510],
-    "Production_subsidy": [0, 20233]
+    "Carbon_price": [0, 0.316],
+    "Electricity_subsidy": [0,1],
+    "Adoption_subsidy": [0, 18514],
+    "Adoption_subsidy_used": [0, 18514],
+    "Production_subsidy": [0, 17847]
 }

@@ -9,8 +9,9 @@ import pandas as pd
 import seaborn as sns
 
 # Marker helper functions
-def half_circle_marker(start, end):
-    angles = np.linspace(np.radians(start), np.radians(end), 100)
+def half_circle_marker(start, end, offset=-45):
+    # Add an offset to the start and end angles to make the half-circles diagonal
+    angles = np.linspace(np.radians(start + offset), np.radians(end + offset), 100)
     verts = np.column_stack([np.cos(angles), np.sin(angles)])
     verts = np.vstack([verts, [0, 0]])
     codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY]
@@ -172,8 +173,6 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
     
     plt.savefig(save_path, dpi=dpi)
     plt.savefig(f'{file_name}/Plots/welfare_vs_cumulative_emissions_{measure}_VECTOR.eps', format='eps', dpi=dpi)
-
-
 
 def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, single_policy_outcomes, dpi=600):
     fig, ax = plt.subplots(figsize=(9, 7))
@@ -425,15 +424,15 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
     #print(policy_table)
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
+    #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
+    #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
 
     #policy_data = extract_policy_data(pairwise_outcomes_complied, single_policy_outcomes, min_ev_uptake,max_ev_uptake)
     #plot_policy_heatmap(fileName, policy_data=(pairwise_outcomes_complied, single_policy_outcomes), min_ev_uptake,max_ev_uptake, dpi=300)
 
     #quit()
 
-    plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes, dpi=300)
+    #plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes, dpi=300)
     plt.show()
 
 if __name__ == "__main__":
