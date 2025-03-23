@@ -1,5 +1,5 @@
 {
-    "Carbon_price": [0, 0.316],
+    "Carbon_price": [0, 0.33],
     "Electricity_subsidy": [0,1],
     "Adoption_subsidy": [0, 19000],
     "Adoption_subsidy_used": [0, 19000],
