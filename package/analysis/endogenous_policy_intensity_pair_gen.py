@@ -6,6 +6,7 @@ from package.resources.utility import (
 )
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
+from copy import deepcopy
 
 def generate_unique_policy_pairs(policy_list_all, policy_list_works):
     """
@@ -51,7 +52,11 @@ def policy_pair_sweep(
     for p1_val in p1_values:
         print("Policy1, Val: ", policy1_name, p1_val)
         #UPDATE THE BASE PARAMS
-        base_params = update_policy_intensity(base_params, policy1_name, p1_val)
+
+        # Always start from a clean copy for this iteration
+        params_for_this_run = deepcopy(base_params)
+        params_for_this_run = update_policy_intensity(params_for_this_run, policy1_name, p1_val)
+
 
         best_intensity, mean_ev_uptake, sd_ev_uptake, mean_total_cost, mean_net_cost, mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
             base_params, controller_files, policy2_name, target_ev_uptake=target_ev_uptake,
@@ -155,20 +160,20 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
             "Carbon_price",
-            "Electricity_subsidy",
+            #"Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",
-            "Production_subsidy",
+            #"Production_subsidy",
         ],
         policy_list_works=[
             "Carbon_price",
-            "Electricity_subsidy",
+            #"Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",
-            "Production_subsidy",
+            #"Production_subsidy",
             ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=10,
+        n_steps_for_sweep=4,
         n_calls=40,
-        noise=0.05
+        noise=0.1
     )
