@@ -8,25 +8,24 @@ import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from copy import deepcopy
 
-def generate_unique_policy_pairs(policy_list_all, policy_list_works):
+def generate_unique_policy_pairs(policy_list_all):
     """
-    Generate unique pairs where:
-    - The first policy comes from policy_list_all.
-    - The second policy comes from policy_list_works.
-    - No duplicates like (A, B) and (B, A) — only the lexicographically first pair is kept.
+    Generate unique, consistently ordered pairs where:
+    - The first and second policies come from policy_list_all.
+    - Only unique pairs like (A, B) are included — not (B, A).
     - No self-pairs like (A, A).
+    - Output is always in the same order for the same input.
     """
-    pairs = set()  # Using a set to auto-handle duplicates
+    pairs = set()
 
-    for policy1 in policy_list_all:
-        for policy2 in policy_list_works:
-            if policy1 != policy2:
-                pair = tuple(sorted([policy1, policy2]))  # Sort so (A, B) == (B, A)
-                pairs.add(pair)
+    for i, policy1 in enumerate(policy_list_all):
+        for policy2 in policy_list_all[i+1:]:  # Avoid self-pair and duplicate combinations
+            pair = tuple(sorted([policy1, policy2]))
+            pairs.add(pair)
 
-    pairs = list(pairs)
-    print("Number of unique pairs:", len(pairs))
-    return pairs
+    sorted_pairs = sorted(pairs)  # Sort to ensure consistent output order
+    print("Number of unique pairs:", len(sorted_pairs))
+    return sorted_pairs
 
 
 
@@ -88,13 +87,6 @@ def main(
         "Adoption_subsidy_used",
         "Production_subsidy",
     ],
-    policy_list_works=[
-        "Carbon_price",
-        "Electricity_subsidy",
-        "Adoption_subsidy",
-        "Adoption_subsidy_used",
-        "Production_subsidy",
-    ],
     target_ev_uptake=0.95,
     n_steps_for_sweep=5,
     n_calls=40, 
@@ -109,9 +101,12 @@ def main(
     with open(BOUNDS_LOAD) as f:
         bounds_dict = json.load(f)
 
-    policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
-    policy_pairs = policy_pairs[:4]
+    policy_pairs = generate_unique_policy_pairs(policy_list_all)
+    policy_pairs = policy_pairs[:5]
+    #policy_pairs = policy_pairs[5:8]
+    #policy_pairs = policy_pairs[8:]
     print("policy_pairs", policy_pairs)
+    #quit()
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
 
     ###################################################################################################################
@@ -166,13 +161,6 @@ if __name__ == "__main__":
             "Adoption_subsidy_used",
             "Production_subsidy",
         ],
-        policy_list_works=[
-            "Carbon_price",
-            "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Adoption_subsidy_used",
-            "Production_subsidy",
-            ],
         target_ev_uptake=0.95,
         n_steps_for_sweep=10,
         n_calls=40,
