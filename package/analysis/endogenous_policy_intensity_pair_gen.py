@@ -103,8 +103,8 @@ def main(
 
     policy_pairs = generate_unique_policy_pairs(policy_list_all)
     #policy_pairs = policy_pairs[:5]
-    policy_pairs = policy_pairs[5:8]
-    #policy_pairs = policy_pairs[8:]
+    #policy_pairs = policy_pairs[5:8]
+    policy_pairs = policy_pairs[8:]
     print("policy_pairs", policy_pairs)
     #quit()
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
