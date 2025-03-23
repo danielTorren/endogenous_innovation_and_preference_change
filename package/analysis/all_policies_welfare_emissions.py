@@ -51,15 +51,16 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
     # --- Single policy outcomes
     plotted_points_single = []
     for policy, entry in single_policy_outcomes.items():
-        if min_val <= entry["mean_EV_uptake"] <= max_val:
-            emissions = entry["mean_emissions_cumulative"] * 1e-9
-            welfare = (entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
-                       if measure == "mean_utility_cumulative" else entry[measure] * 1e-9)
-            intensity = entry["optimized_intensity"]
-            policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], intensity)
-            policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], intensity)
-            policy_points[policy].append((emissions, welfare, intensity))
-            plotted_points_single.append((emissions, welfare, policy, intensity))
+        if policy in all_policies:
+            if min_val <= entry["mean_EV_uptake"] <= max_val:
+                emissions = entry["mean_emissions_cumulative"] * 1e-9
+                welfare = (entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
+                        if measure == "mean_utility_cumulative" else entry[measure] * 1e-9)
+                intensity = entry["optimized_intensity"]
+                policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], intensity)
+                policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], intensity)
+                policy_points[policy].append((emissions, welfare, intensity))
+                plotted_points_single.append((emissions, welfare, policy, intensity))
 
     # --- Policy pair outcomes
 
@@ -255,7 +256,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_15_49_56__21_03_2025"],#["results/endog_pair_19_10_07__11_03_2025"],#
+        fileNames=["results/endog_pair_12_40_36__23_03_2025"],#["results/endog_pair_19_10_07__11_03_2025"],#
         fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
         fileNames_single_policies = "results/endog_single_00_16_15__21_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

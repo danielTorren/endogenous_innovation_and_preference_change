@@ -110,7 +110,8 @@ def main(
         bounds_dict = json.load(f)
 
     policy_pairs = generate_unique_policy_pairs(policy_list_all, policy_list_works)
-
+    policy_pairs = policy_pairs[:4]
+    print("policy_pairs", policy_pairs)
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
 
     ###################################################################################################################
@@ -160,20 +161,20 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json", 
         policy_list_all=[
             "Carbon_price",
-            #"Electricity_subsidy",
+            "Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",
-            #"Production_subsidy",
+            "Production_subsidy",
         ],
         policy_list_works=[
             "Carbon_price",
-            #"Electricity_subsidy",
+            "Electricity_subsidy",
             "Adoption_subsidy",
             "Adoption_subsidy_used",
-            #"Production_subsidy",
+            "Production_subsidy",
             ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=4,
+        n_steps_for_sweep=10,
         n_calls=40,
-        noise=0.1
+        noise=0.05
     )

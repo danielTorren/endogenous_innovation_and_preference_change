@@ -246,11 +246,17 @@ def main(fileNames, fileName_BAU):
     top_10 = plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
     save_object(top_10, f"{fileName}/Data", "top_10")
     
+
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
+    
+    
     plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
 
     plt.show()
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_15_49_56__21_03_2025"],
+        fileNames=["results/endog_pair_12_40_36__23_03_2025"],
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025"
     )
