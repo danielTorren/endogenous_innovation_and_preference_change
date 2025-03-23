@@ -64,7 +64,7 @@ def main(fileName_load):
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     min_ev_uptake = 0.945
-    max_ev_uptake = 1#0.955
+    max_ev_uptake = 0.955
 
     #base_params = load_object(f"{fileName}/Data", "base_params")
     

@@ -245,7 +245,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
 
     min_ev_uptake = 0.945
-    max_ev_uptake = 1#0.955
+    max_ev_uptake = 0.955
 
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
