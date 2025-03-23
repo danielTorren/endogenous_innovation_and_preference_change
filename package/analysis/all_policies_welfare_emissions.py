@@ -245,7 +245,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
 
     min_ev_uptake = 0.945
-    max_ev_uptake = 0.965
+    max_ev_uptake = 1#0.955
 
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
@@ -255,7 +255,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],#["results/endog_pair_19_10_07__11_03_2025"],#
-        fileName_BAU="results/BAU_runs_13_30_12__07_03_2025",
-        fileNames_single_policies = "results/endogenous_policy_intensity_18_17_27__06_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
+        fileNames=["results/endog_pair_15_49_56__21_03_2025"],#["results/endog_pair_19_10_07__11_03_2025"],#
+        fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
+        fileNames_single_policies = "results/endog_single_00_16_15__21_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

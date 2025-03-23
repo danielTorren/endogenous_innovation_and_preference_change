@@ -248,8 +248,9 @@ def main(fileNames, fileName_BAU):
     
     plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
 
+    plt.show()
 if __name__ == "__main__":
     main(
-        fileNames=["results/endogenous_policy_intensity_19_30_46__06_03_2025"],
+        fileNames=["results/endog_pair_15_49_56__21_03_2025"],
         fileName_BAU="results/BAU_runs_13_30_12__07_03_2025"
     )

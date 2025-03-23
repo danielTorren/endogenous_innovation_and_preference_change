@@ -64,7 +64,7 @@ def main(fileName_load):
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     min_ev_uptake = 0.945
-    max_ev_uptake = 0.965
+    max_ev_uptake = 1#0.955
 
     #base_params = load_object(f"{fileName}/Data", "base_params")
     
@@ -204,5 +204,5 @@ def main(fileName_load):
 
 if __name__ == "__main__":
     main(
-        fileName_load="results/endogenous_policy_intensity_19_30_46__06_03_2025",
+        fileName_load="results/endog_pair_15_49_56__21_03_2025",
     )
