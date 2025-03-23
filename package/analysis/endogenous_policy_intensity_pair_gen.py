@@ -104,13 +104,12 @@ def main(
     policy_pairs = generate_unique_policy_pairs(policy_list_all)
     #policy_pairs = policy_pairs[:5]
     #policy_pairs = policy_pairs[5:8]
-    policy_pairs = policy_pairs[8:]
+    #policy_pairs = policy_pairs[8:]
     print("policy_pairs", policy_pairs)
     #quit()
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
 
     ###################################################################################################################
-        
 
     #RUN POLICY OUTCOMES
     print("TOTAL RUNS BO: ", len(policy_pairs)*n_steps_for_sweep*n_calls*base_params["seed_repetitions"])
@@ -140,7 +139,6 @@ def main(
 
     conditions = {
         "policy_list_all": policy_list_all,
-        "policy_list_works": policy_list_works,
         "target_ev_uptake": target_ev_uptake,
         "n_steps_for_sweep": n_steps_for_sweep,
         "n_calls": n_calls,
