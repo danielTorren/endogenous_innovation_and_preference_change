@@ -47,7 +47,7 @@ def calc_top_policies_pairs(pairwise_outcomes_complied, min_val, max_val):
         filtered_data = [entry for i, entry in enumerate(data) if mask[i]]
 
         for entry in filtered_data:
-            welfare = entry["mean_utility_cumulative"] + entry["mean_profit_cumulative"] - entry["mean_net_cost"]
+            welfare = entry["mean_utility_cumulative"] #+ entry["mean_profit_cumulative"] - entry["mean_net_cost"]
             policy_key = (policy1, policy2)
 
             if (policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]) and (entry["policy1_value"] > 0 and entry["policy2_value"] > 0):#GET THE BEST OF THAT POLICY OMPETATION
