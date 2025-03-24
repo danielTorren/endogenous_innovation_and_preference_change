@@ -530,7 +530,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
     createFolder(file_name)
 
-    save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes_complied")
+    save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
 
     plt.show()
 
