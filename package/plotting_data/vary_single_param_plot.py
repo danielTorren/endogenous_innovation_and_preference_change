@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 
-def plot_distance(data_array, property_list, fileName, name_property, property_save, dpi=600):
+def plot_distance(data_array, property_list, fileName, name_property, property_save, dpi=300):
     """
     Plots multiple subplots of mean user distance over time for different delta values.
     Each subplot corresponds to one delta value and contains multiple lines for different seeds.
@@ -82,7 +82,7 @@ def plot_distance(data_array, property_list, fileName, name_property, property_s
 
 
 
-def plot_ev_prop(base_params,data_array, property_list, fileName, name_property, property_save, real_data, dpi=600):
+def plot_ev_prop(base_params,data_array, property_list, fileName, name_property, property_save, real_data, dpi=300):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -135,7 +135,7 @@ def plot_ev_prop(base_params,data_array, property_list, fileName, name_property,
     # Save the figure
     fig.savefig(f"{fileName}/Plots/user_ev_prop_multi_{property_save}.png", dpi=dpi)
 
-def plot_margin(base_params,data_array, property_list, fileName, name_property, property_save, dpi=600):
+def plot_margin(base_params,data_array, property_list, fileName, name_property, property_save, dpi=300):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -184,7 +184,7 @@ def plot_margin(base_params,data_array, property_list, fileName, name_property, 
     fig.savefig(f"{fileName}/Plots/user_margin_{property_save}.png", dpi=dpi)
 
 
-def plot_age(data_array, property_list, fileName, name_property, property_save, dpi=600):
+def plot_age(data_array, property_list, fileName, name_property, property_save, dpi=300):
     """
     Plots multiple subplots of mean user distance over time for different delta values.
     Each subplot corresponds to one delta value and contains multiple lines for different seeds.
@@ -258,7 +258,7 @@ def plot_age(data_array, property_list, fileName, name_property, property_save, 
     fig.savefig(f"{fileName}/user_age_multi_{property_save}.png", dpi=dpi)
     #plt.show()
 
-def plot_emissions(data_array, property_list, fileName, name_property, property_save, dpi=600):
+def plot_emissions(data_array, property_list, fileName, name_property, property_save, dpi=300):
 
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
@@ -301,7 +301,7 @@ def plot_emissions(data_array, property_list, fileName, name_property, property_
     # Save and show
     fig.savefig(f"{fileName}/emissions_{property_save}.png", dpi=dpi)
 
-def plot_price(base_params, data_array, property_list, fileName, name_property, property_save, dpi=600):
+def plot_price(base_params, data_array, property_list, fileName, name_property, property_save, dpi=300):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -376,7 +376,7 @@ def plot_price(base_params, data_array, property_list, fileName, name_property, 
 
 ################################################################################################
 
-def plot_efficiency(data_array, property_list, fileName, name_property, property_save, dpi=600):
+def plot_efficiency(data_array, property_list, fileName, name_property, property_save, dpi=300):
 
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
@@ -421,7 +421,7 @@ def plot_efficiency(data_array, property_list, fileName, name_property, property
 
 
 
-def plot_ev_prop_combined(base_params, data_array, property_list, fileName, name_property, property_save, real_data, dpi=600):
+def plot_ev_prop_combined(base_params, data_array, property_list, fileName, name_property, property_save, real_data, dpi=300):
     num_deltas = data_array.shape[0]
     num_seeds = data_array.shape[1]
     time_steps = data_array.shape[2]
@@ -487,10 +487,10 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    plot_margin(base_params,data_array_margins, property_list, fileName, name_property, property_save, dpi=600)
+    plot_margin(base_params,data_array_margins, property_list, fileName, name_property, property_save, dpi=300)
 
     #plot_distance(data_array_distance, property_list, fileName, name_property, property_save, 600)
-    plot_ev_prop_combined(base_params, data_array_EV_prop, property_list, fileName, name_property, property_save, EV_stock_prop_2010_23, dpi=600)
+    plot_ev_prop_combined(base_params, data_array_EV_prop, property_list, fileName, name_property, property_save, EV_stock_prop_2010_23, dpi=300)
     #plot_ev_prop(base_params,data_array_EV_prop, property_list, fileName, name_property, property_save,EV_stock_prop_2010_23,  600)
     #plot_age(data_array_age, property_list, fileName, name_property, property_save, 600)
     plot_price(base_params,data_array_price , property_list, fileName, name_property, property_save, 600)

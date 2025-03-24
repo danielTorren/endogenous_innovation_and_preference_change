@@ -58,7 +58,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 
 
 
-def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label, save_name, dpi=600, annotation_height_prop=[0.2, 0.2, 0.2]): 
+def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label, save_name, dpi=300, annotation_height_prop=[0.2, 0.2, 0.2]): 
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces, 
     starting from the end of the burn-in period.
@@ -114,7 +114,7 @@ def plot_data_across_seeds(base_params, fileName, data, title, x_label, y_label,
     save_and_show(fig, fileName, save_name, dpi)
 
 
-def plot_calibrated_index_emissions(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600): 
+def plot_calibrated_index_emissions(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=300): 
 
     # Adjust the real data's time steps
     init_index = base_params["duration_burn_in"]
@@ -159,7 +159,7 @@ def plot_calibrated_index_emissions(real_data, base_params, fileName, data, titl
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
 
-def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=600):
+def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, y_label, save_name, dpi=300):
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces,
     starting from the end of the burn-in period.
@@ -224,7 +224,7 @@ def plot_ev_uptake_dual(real_data, base_params, fileName, data, title, x_label, 
     plt.tight_layout()
     save_and_show(fig, fileName, save_name, dpi)
 
-def plot_ev_uptake_single(real_data, base_params, fileName, data,history_past_new_bought_vehicles_prop_ev, title, x_label, y_label, save_name, dpi=600,
+def plot_ev_uptake_single(real_data, base_params, fileName, data,history_past_new_bought_vehicles_prop_ev, title, x_label, y_label, save_name, dpi=300,
                         annotation_height_prop = 0.8):
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces,
@@ -314,7 +314,7 @@ def plot_vehicle_attribute_time_series_by_type_split(
     history_quality_ICE, history_quality_EV, 
     history_efficiency_ICE, history_efficiency_EV, 
     history_production_cost_ICE, history_production_cost_EV, 
-    fileName, dpi=600
+    fileName, dpi=300
 ):
     """
     Plots time series of Quality, Efficiency (separate for ICE and EV),
@@ -425,7 +425,7 @@ def plot_distance_individuals_mean_median_type_multiple_seeds(
     base_params, 
     history_distance_individual_EV, 
     history_distance_individual_ICE, 
-    fileName, dpi=600
+    fileName, dpi=300
 ):
     """
     Plots mean and median individual distances for EV and ICE with 95% confidence intervals across multiple seeds,
@@ -552,7 +552,7 @@ def plot_history_mean_price_multiple_seeds(
     history_lower_price_ICE_EV,
     history_upper_price_ICE_EV,
     fileName, 
-    dpi=600,
+    dpi=300,
     annotation_height_prop = 0.5
 ):
     """
@@ -700,7 +700,7 @@ def plot_history_mean_profit_margin_multiple_seeds(
     history_mean_profit_margins_ICE,
     history_mean_profit_margins_EV, 
     fileName, 
-    dpi=600,
+    dpi=300,
     annotation_height_prop = 0.5
 ):
     """
@@ -779,7 +779,7 @@ def plot_history_mean_profit_margin_multiple_seeds(
     plt.tight_layout()
     save_and_show(fig, fileName, "history_mean_profit_margin_with_traces_by_type", dpi)
 
-def plot_margins(base_params, fileName, data_ICE, data_EV, title, x_label, y_label, save_name, dpi=600, annotation_height_prop = 0.5): 
+def plot_margins(base_params, fileName, data_ICE, data_EV, title, x_label, y_label, save_name, dpi=300, annotation_height_prop = 0.5): 
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces, 
     starting from the end of the burn-in period.

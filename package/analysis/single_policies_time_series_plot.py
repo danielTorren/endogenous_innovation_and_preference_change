@@ -4,7 +4,7 @@ from scipy.stats import sem, t
 from package.resources.utility import load_object
 
 
-def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=600):
+def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300):
     
     start = base_params["duration_burn_in"] + base_params["duration_calibration"] - 1#-1 is because i cant keep track of tiem correnctly
     time_steps = np.arange(base_params["duration_future"])
@@ -38,7 +38,7 @@ def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_poli
     print("Done", prop_name)
 
 
-def plot_policy_results(fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=600):
+def plot_policy_results(fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300):
 
     time_steps = np.arange(outputs_BAU[prop_name].shape[1])
     fig, ax = plt.subplots(figsize=(12, 7))
@@ -72,7 +72,7 @@ def plot_policy_results(fileName, outputs_BAU, outputs, top_policies, x_label, y
 
     print("Done", prop_name)
 
-def plot_policy_results_cum(fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=600):
+def plot_policy_results_cum(fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300):
 
     time_steps = np.arange(outputs_BAU[prop_name].shape[1])
     fig, ax = plt.subplots(figsize=(12, 7))

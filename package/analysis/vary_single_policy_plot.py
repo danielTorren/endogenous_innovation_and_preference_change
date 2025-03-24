@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import load_object
-def plot_policy_intensity_effects_raw_lines(data_array, policy_list, file_name, policy_info_dict, dpi=600):
+def plot_policy_intensity_effects_raw_lines(data_array, policy_list, file_name, policy_info_dict, dpi=300):
     """
     Plots the effects of different policy intensities on EV uptake, policy distortion, and cumulative emissions.
     
@@ -54,7 +54,7 @@ def plot_policy_intensity_effects_raw_lines(data_array, policy_list, file_name, 
     plt.tight_layout()
     plt.savefig(f'{file_name}/Plots/policy_intensity_effects_raw_lines.png', dpi=dpi)
 
-def plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy_info_dict, dpi=600):
+def plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy_info_dict, dpi=300):
     """
     Plots the effects of different policy intensities on EV uptake, policy distortion, and cumulative emissions.
     
@@ -130,7 +130,7 @@ def plot_policy_intensity_effects_raw(data_array, policy_list, file_name, policy
     plt.savefig(f'{file_name}/Plots/policy_intensity_effects_raw.png', dpi=dpi)
 
 
-def plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=600):
+def plot_policy_intensity_effects_means(data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300):
     """
     Plots the effects of different policy intensities on specified measures (e.g., EV uptake, policy distortion, etc.).
 
@@ -194,7 +194,7 @@ def plot_policy_intensity_effects_means(data_array, policy_list, file_name, poli
     plt.savefig(f"{file_name}/Plots/policy_intensity_effects_means_{measure_indices_str}.png", dpi=dpi)
 
 
-def plot_policy_intensity_effects_means_95(data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=600):
+def plot_policy_intensity_effects_means_95(data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300):
     """
     Plots the effects of different policy intensities on specified measures with 95% confidence intervals.
 

@@ -6,7 +6,7 @@ from package.plotting_data.single_experiment_plot import save_and_show
 
 
 
-def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=600):
+def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=300):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
 
@@ -27,7 +27,7 @@ def plot_heatmap(base_params, results, measure,  vary_1, vary_2, fileName, dpi=6
 
 
 # Main function
-def main(fileName, dpi=600):
+def main(fileName, dpi=300):
 
     fileName_list = load_object(fileName + "/Data", "2D_sensitivity_fileName_list")
     measure_list = [

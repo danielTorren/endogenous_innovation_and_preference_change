@@ -4,7 +4,7 @@ from package.resources.utility import load_object
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 
-def plot_heatmap(file_name, data, vary_double, label, dpi=600):
+def plot_heatmap(file_name, data, vary_double, label, dpi=300):
     """
     Plots a heatmap of EV uptake across carbon price and emissions intensity decarbonization.
 
@@ -49,7 +49,7 @@ def plot_heatmap(file_name, data, vary_double, label, dpi=600):
     plt.savefig(f"{file_name}/Plots/{label}_heatmap.png", dpi=dpi)
 
 
-def plot_ev_uptake_lines(file_name, results, vary_double, dpi=600):
+def plot_ev_uptake_lines(file_name, results, vary_double, dpi=300):
     """
     Plots EV uptake as lines, colored according to emissions intensity decarbonization.
 

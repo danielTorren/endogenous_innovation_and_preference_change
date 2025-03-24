@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import createFolder, save_object
 
-def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, file_name, dpi=600):
+def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, file_name, dpi=300):
     """
     Plots the sweep of Policy 1 intensity vs optimized Policy 2 intensity.
     
@@ -50,7 +50,7 @@ def plot_policy_pair_intensities(pairwise_outcomes, policy1_name, policy2_name, 
     plt.show()
 
 
-def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
+def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=300):
     """
     Plots all policy pair sweeps as subfigures in one figure.
     
@@ -99,7 +99,7 @@ def plot_all_policy_pairs(pairwise_outcomes, file_name,measure, dpi=600):
     plt.savefig(f'{file_name}/Plots/policy_pair_intensity_sweep_{measure}.png', dpi=dpi)
 
 
-def plot_all_policy_pairs_welfare(pairwise_outcomes, file_name, dpi=600):
+def plot_all_policy_pairs_welfare(pairwise_outcomes, file_name, dpi=300):
     """
     Plots all policy pair sweeps as subfigures in one figure.
     

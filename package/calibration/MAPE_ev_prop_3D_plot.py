@@ -41,7 +41,7 @@ def save_top_parameters(top_params, metric_name, vary_1, vary_2, vary_3, file_pa
         json.dump(top_fit_info, f, indent=4)
 
 
-def plot_combined_best_metrics(best_params_dict, data_array_ev_prop, real_data, base_params, vary_1, vary_2, vary_3, fileName, dpi=600):
+def plot_combined_best_metrics(best_params_dict, data_array_ev_prop, real_data, base_params, vary_1, vary_2, vary_3, fileName, dpi=300):
     metrics = list(best_params_dict.keys())
     fig, axs = plt.subplots(2, 2, figsize=(15, 10))
     axs = axs.flatten()
@@ -77,7 +77,7 @@ def plot_combined_best_metrics(best_params_dict, data_array_ev_prop, real_data, 
     save_and_show(fig, fileName, "combined_best_metrics_timeseries", dpi)
 
 
-def process_metrics(metric_function, metric_name, base_params, real_data, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi=600):
+def process_metrics(metric_function, metric_name, base_params, real_data, data_array_ev_prop, vary_1, vary_2, vary_3, best_params_dict, fileName, dpi=300):
 
     all_metrics = []
 
@@ -97,7 +97,7 @@ def process_metrics(metric_function, metric_name, base_params, real_data, data_a
 
 
 
-def plot_ev_uptake_over_time(data_array_ev_prop, real_data, vary_1, vary_2, vary_3, base_params, fileName, dpi=600):
+def plot_ev_uptake_over_time(data_array_ev_prop, real_data, vary_1, vary_2, vary_3, base_params, fileName, dpi=300):
     # Convert real-world data to yearly format
     num_real_time_steps = real_data.shape[0] if real_data.ndim == 1 else real_data.shape[1]
     time_steps = np.arange(num_real_time_steps)  # Ensure the correct length of time steps
@@ -139,7 +139,7 @@ def plot_ev_uptake_over_time(data_array_ev_prop, real_data, vary_1, vary_2, vary
     #plt.tight_layout()
     save_and_show(fig, fileName, "ev_timeseries", dpi)
 
-def main(fileName, dpi=600):
+def main(fileName, dpi=300):
     try:
         serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
         base_params = load_object(fileName + "/Data", "base_params")

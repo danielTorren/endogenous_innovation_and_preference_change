@@ -23,7 +23,7 @@ def format_plot(ax, title, xlabel, ylabel, legend=True, grid=True):
         ax.grid()
 
 # Helper function to save and show plots
-def save_and_show(fig, fileName, plot_name, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def save_and_show(fig, fileName, plot_name, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     save_path = os.path.join(fileName, "Plots")
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
@@ -77,26 +77,26 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
                     rotation=90, verticalalignment='center', horizontalalignment='right',
                     fontsize=8, color='black')
 
-def plot_total_utility(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_total_utility(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, social_network.history_total_utility[base_params["duration_burn_in"]:], marker='o')
     format_plot(ax, "Total Utility Over Time", "Time Step", "Total Utility", legend=False)
     save_and_show(fig, fileName, "total_utility", dpi)
 
-def plot_carbon_price(base_params,controller, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_carbon_price(base_params,controller, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     "FIX THIS!!"
     ax.plot(time_series, controller.carbon_price_time_series[:len(time_series)], marker='o')
     format_plot(ax, "Carbon price Over Time", "Time Step", "Carbon price", legend=False)
     save_and_show(fig, fileName, "carbon_price", dpi)
 
-def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_total_profit(base_params, firm_manager, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, np.asarray(firm_manager.history_total_profit[base_params["duration_burn_in"]:]), marker='o')
     format_plot(ax, "Total Profit Over Time", "Time Step", "Total Profit, $", legend=False)
     save_and_show(fig, fileName, "total_profit", dpi)
 
-def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_23, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_ev_consider_adoption_rate(base_params,social_network, time_series, fileName, EV_stock_prop_2010_23, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     EV_stock_prop_2010_23
 
@@ -110,7 +110,7 @@ def plot_ev_consider_adoption_rate(base_params,social_network, time_series, file
     save_and_show(fig, fileName, "plot_ev_consider_adoption_rate", dpi)
 
 
-def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     EV_stock_prop_2010_23
 
@@ -146,7 +146,7 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     save_and_show(fig, fileName, "plot_ev_consider_adoption_bought_rate", dpi)
 
 
-def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Plot stacked area (continuous stacked bar equivalent)
@@ -162,7 +162,7 @@ def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=600, annotation
     # Save and show the plot
     save_and_show(fig, fileName, "plot_prop_EV_on_sale", dpi)
 
-def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
 
@@ -181,7 +181,7 @@ def plot_history_prop_EV_research(base_params,firm_manager, fileName, dpi=600, a
 
 
 
-def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_transport_users_stacked(base_params,social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Calculate total users at each time step
@@ -206,7 +206,7 @@ def plot_transport_users_stacked(base_params,social_network, time_series, fileNa
     # Save and show the plot
     save_and_show(fig, fileName, "plot_transport_users_stacked", dpi)
 
-def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     """
     Plots time series of Quality, Efficiency (separate for ICE and EV), 
     and Production Cost for both ICE and EV with means and confidence intervals.
@@ -338,7 +338,7 @@ def plot_single_efficiency(ax, title, attr_name, base_params, social_network, ti
 
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
-def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     """
     Plots time series of Quality, Efficiency (separate for ICE and EV), 
     and Production Cost for both ICE and EV with means and confidence intervals.
@@ -385,7 +385,7 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     # Save and show the plot
     save_and_show(fig, fileName, "vehicle_prod_attribute_time_series_ICE_EV", dpi)
 
-def plot_preferences(social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_preferences(social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, axes = plt.subplots(nrows=1,ncols=3,figsize=(12, 6))
     axes[0].hist(social_network.beta_vec, bins=30, alpha=0.5, label=r'$\beta_i$ (Price sentivity)')
     axes[1].hist(social_network.gamma_vec, bins=30, alpha=0.5, label=r'$\gamma_i$ (Environmental concern)')
@@ -402,7 +402,7 @@ def plot_preferences(social_network, fileName, dpi=600, annotation_height_prop= 
 
     save_and_show(fig, fileName, "preferences", dpi)
 
-def plot_history_research_type(firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_research_type(firm_manager, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     data = np.asarray([firm.history_research_type for firm in firm_manager.firms_list])
     for firm_data in data:
@@ -651,7 +651,7 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi,
     # Save and show the plot
     save_and_show(fig, fileName, "car age owned", dpi)   
 
-def plot_calibration_data(base_params, controller, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_calibration_data(base_params, controller, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, axes = plt.subplots(ncols = 3,figsize=(10, 6))
     #print(social_network.history_second_hand_bought)
     #quit()
@@ -666,7 +666,7 @@ def plot_calibration_data(base_params, controller, time_series, fileName, dpi=60
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_calibration_data", dpi)   
 
-def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     data_truncated = convert_data(social_network.history_prop_EV, base_params)
 
     # Create a grid of subplots (4x4 layout)
@@ -678,7 +678,7 @@ def plot_ev_stock(base_params, real_data, social_network, fileName, dpi=600, ann
     ax.legend(loc="best")
     save_and_show(fig, fileName, "plot_ev_stock", dpi)
 
-def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(6, 6))
 
     # Convert to numpy array
@@ -705,7 +705,7 @@ def plot_history_count_buy_stacked(base_params, social_network, fileName, dpi=60
     ax.legend(loc='lower right')
     save_and_show(fig, fileName, "count_buy_stacked", dpi)
 
-def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(6, 6))
 
     # Convert to numpy array
@@ -731,7 +731,7 @@ def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=600,
     save_and_show(fig, fileName, "count_buy_lines", dpi)
 
 
-def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=600, annotation_height_prop=[0.5, 0.5, 0.5]):
+def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300, annotation_height_prop=[0.5, 0.5, 0.5]):
     fig, ax1 = plt.subplots(figsize=(6, 6))
 
     # Convert to numpy array
@@ -763,7 +763,7 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=600,
     save_and_show(fig, fileName, "count_buy_prop", dpi)
 
 
-def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -786,7 +786,7 @@ def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=6
     ax.legend()
     save_and_show(fig, fileName, "history_mean_price_by_type", dpi)
 
-def plot_history_median_price_by_type(base_params, social_network, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_median_price_by_type(base_params, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     # Create a grid of subplots (4x4 layout)
     fig, ax = plt.subplots(nrows=1,ncols=1,  figsize=(6, 6))
@@ -909,7 +909,7 @@ def plot_fuel_emissions_verus_carbon_price_km(base_params,controller, fileName, 
     ax.legend()
     save_and_show(fig, fileName, "plot_fuel_Emissions_verus_carbon_price_km", dpi)
 
-def emissions_decomposed(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def emissions_decomposed(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
     
 
@@ -938,7 +938,7 @@ def emissions_decomposed(base_params, social_network, time_series, fileName, dpi
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed", dpi)
 
-def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
     
 
@@ -967,7 +967,7 @@ def emissions_decomposed_flow(base_params, social_network, time_series, fileName
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed_flow", dpi)
 
-def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.scatter(time_series, firm_manager.history_mean_profit_margins_ICE[base_params["duration_burn_in"]:], marker='o', alpha=0.7, color = "blue", label = "ICE mean")
@@ -983,7 +983,7 @@ def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName
     # Save and show the plot
     save_and_show(fig, fileName, "plot_profit_margins_by_type", dpi)
 
-def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
 
 
     # Plot the data
@@ -1002,7 +1002,7 @@ def plot_history_W(base_params, firm_manager,time_series,  fileName, dpi=600, an
     # Save and show the plot
     save_and_show(fig, fileName, "plot_history_W", dpi)
 
-def plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     # Ensure the data is in numpy arrays for easier manipulation
     time_steps = np.array(time_series)
     concentration = np.array(firm_manager.history_market_concentration[base_params["duration_burn_in"]:])
@@ -1026,7 +1026,7 @@ def plot_market_concentration_yearly(base_params,firm_manager, time_series, file
     format_plot(ax, "Yearly Average Market Concentration", "Year", "Market Concentration", legend=False)
     save_and_show(fig, fileName, "market_concentration_yearly", dpi)
 
-def plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
 
     used_history = social_network.history_battery_EV
     prod_history = firm_manager.history_battery_EV
@@ -1133,7 +1133,7 @@ def plot_battery(base_params, firm_manager,social_network,time_series,  fileName
 
     save_and_show(fig, fileName, "battery_evolution", dpi)
 
-def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     """
     Plots the price history of cars on sale over time.
 
@@ -1164,7 +1164,7 @@ def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=600,
     # Save and show the plot
     save_and_show(fig, fileName, "price_cars_sale", dpi)  
 
-def plot_car_sale_prop(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_car_sale_prop(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     #print(social_network.history_second_hand_bought)
     #quit()
@@ -1175,7 +1175,7 @@ def plot_car_sale_prop(base_params, social_network, time_series, fileName, dpi=6
     format_plot(ax, "New versus Second hand cars", "Time Step", "# Cars bought", legend=False)
     save_and_show(fig, fileName, "num_cars_bought_type", dpi)      
 
-def plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName, dpi=600, annotation_height_prop= [0.5, 0.5, 0.5]):
+def plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
 
     # Extract data for EV and ICE

@@ -5,7 +5,7 @@ from matplotlib.path import Path
 import os
 from matplotlib.patches import Patch
 
-def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val, x_measure, y_measure, outcomes_BAU, dpi=600):
+def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val, x_measure, y_measure, outcomes_BAU, dpi=300):
     fig, ax = plt.subplots(figsize=(15, 8))
 
     color_map = plt.get_cmap('Set3', 10)
@@ -101,9 +101,8 @@ def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val
     save_path = f'{file_name}/Plots/{x_measure}_vs_{y_measure}.png'
     plt.savefig(save_path, dpi=dpi)
     plt.savefig(f'{file_name}/Plots/{x_measure}_vs_{y_measure}_VECTOR.eps', format='eps', dpi=dpi)
-    plt.close()
 
-def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
+def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=300):
     first_entry = next(iter(pairwise_outcomes_complied.values()))[0]
     exclude = {"policy1_value", "policy2_value", "policy1_name", "policy2_name", "mean_ev_uptake", "sd_ev_uptake", "mean_total_cost"}
     measures = [m for m in first_entry.keys() if m not in exclude]
@@ -115,7 +114,7 @@ def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val
 
 
 
-def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=600):
+def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=300):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     color_map = plt.get_cmap('Set3', 10)
@@ -229,6 +228,113 @@ def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name
     top_10 = dict(sorted(policy_welfare.items(), key=lambda item: item[1]["welfare"], reverse=True)[:10])
     return top_10
 
+def plot_ev_uptake_all(base_params, pairwise_outcomes_complied, file_name, outcomes_BAU, dpi=300):
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    color_map = plt.get_cmap('Set3', 10)
+    all_policies = set()
+    for (policy1, policy2) in pairwise_outcomes_complied.keys():
+        all_policies.update([policy1, policy2])
+
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
+    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
+
+    plotted_points = []
+    policy_welfare = {}
+
+    # Collect data and compute intensity ranges
+    for (policy1, policy2), data in pairwise_outcomes_complied.items():
+        mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
+
+        for entry in mean_uptake:
+            welfare = entry["mean_ev_uptake"]
+            emissions = entry["mean_emissions_cumulative"]
+
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], entry["policy1_value"])
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], entry["policy2_value"])
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], entry["policy2_value"])
+
+            plotted_points.append((emissions, welfare, policy1, policy2, entry["policy1_value"], entry["policy2_value"]))
+
+            policy_key = (policy1, policy2)
+            if policy_key not in policy_welfare or welfare > policy_welfare[policy_key]["welfare"]:
+                policy_welfare[policy_key] = {
+                    "welfare": welfare,
+                    "policy1_value": entry["policy1_value"],
+                    "policy2_value": entry["policy2_value"]
+                }
+
+    if not plotted_points:
+        print("No data available for the given uptake range.")
+        return {}
+
+    # Marker helper functions
+    def half_circle_marker(start, end):
+        angles = np.linspace(np.radians(start), np.radians(end), 100)
+        verts = np.column_stack([np.cos(angles), np.sin(angles)])
+        verts = np.vstack([verts, [0, 0]])
+        codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY]
+        return Path(verts, codes)
+
+    def full_circle_marker():
+        angles = np.linspace(0, 2 * np.pi, 100)
+        verts = np.column_stack([np.cos(angles), np.sin(angles)])
+        verts = np.vstack([verts, [verts[0]]])
+        codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 1)
+        return Path(verts, codes)
+
+    # Intensity-to-marker-size scaling
+    def scale_marker_size(value, policy):
+        min_val = policy_ranges[policy]["min"]
+        max_val = policy_ranges[policy]["max"]
+        if max_val - min_val == 0:
+            return 100  # Fixed size if no variation
+        norm = (value - min_val) / (max_val - min_val)
+        return 100 + norm * 300  # From 100 to 400 (tweakable)
+
+    # Plot points (half circles sized by intensity)
+    for x, y, policy1, policy2, policy1_value, policy2_value in plotted_points:
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+
+        size1 = scale_marker_size(policy1_value, policy1)
+        size2 = scale_marker_size(policy2_value, policy2)
+
+        if policy1_value == 0:
+            ax.scatter(x, y, s=size2, marker=full_circle_marker(), color=color2, edgecolor="black")
+        elif policy2_value == 0:
+            ax.scatter(x, y, s=size1, marker=full_circle_marker(), color=color1, edgecolor="black")
+        else:
+            ax.scatter(x, y, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
+            ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
+
+    # BAU point
+    bau_welfare = outcomes_BAU["mean_ev_uptake"]
+    bau_emissions = outcomes_BAU["mean_emissions_cumulative"]
+    ax.scatter(bau_emissions, bau_welfare, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
+
+    # Axis labels and title
+    ax.set_xlabel("Cumulative Emissions")
+    ax.set_ylabel("EV uptake")
+    ax.grid(True)
+
+    # Policy color legend with intensity ranges
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+              label=f"{policy} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+        for policy in sorted(all_policies)
+    ]
+    legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    ax.legend(handles=legend_elements, loc='best', title="Policies & Intensity Ranges")
+
+    # Save plot
+    save_path = f'{file_name}/Plots/welfare_vs_cumulative_emissions.png'
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    plt.savefig(save_path, dpi=dpi)
+
+
+
 def main(fileNames, fileName_BAU):
     fileName = fileNames[0]
     pairwise_outcomes_complied = {}
@@ -243,20 +349,20 @@ def main(fileNames, fileName_BAU):
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
     base_params = load_object(f"{fileName}/Data", "base_params")
     
-    top_10 = plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
+
+    plot_ev_uptake_all(base_params, pairwise_outcomes_complied, fileName, outcomes_BAU, dpi=300)
+
+    min_ev = 0.945,
+    max_ev = 0.955
+    
+    top_10 = plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, fileName,min_ev,max_ev , outcomes_BAU, dpi=300)
     save_object(top_10, f"{fileName}/Data", "top_10")
     
-
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
-    
-    
-    plot_all_measure_combinations(pairwise_outcomes_complied, fileName, 0.945, 1, outcomes_BAU, dpi=300)
+    plot_all_measure_combinations(pairwise_outcomes_complied, fileName,min_ev,max_ev, outcomes_BAU, dpi=300)
 
     plt.show()
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_12_40_36__23_03_2025"],
-        fileName_BAU="results/BAU_runs_13_30_12__07_03_2025"
+        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025"],
+        fileName_BAU="results/BAU_runs_11_18_33__23_03_2025"
     )

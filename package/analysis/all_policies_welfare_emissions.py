@@ -32,9 +32,176 @@ def scale_marker_size(value, policy, policy_ranges):
     epsilon = 0.2
     return np.maximum(scale * epsilon, norm * scale)
 
+def plot_ev_uptake(pairwise_outcomes_complied, file_name,
+                   outcomes_BAU, single_policy_outcomes, dpi=600):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib.patches import Patch
+
+    fig, ax = plt.subplots(figsize=(9, 7))
+    ax.grid(True)
+
+    color_map = plt.get_cmap('Set1', 10)
+    all_policies = set()
+    for (policy1, policy2) in pairwise_outcomes_complied.keys():
+        all_policies.update([policy1, policy2])
+
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
+    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
+    policy_points = {policy: [] for policy in all_policies}
+
+    plotted_points_single = []
+    for policy, entry in single_policy_outcomes.items():
+        if policy in all_policies:
+            welfare = entry["mean_EV_uptake"]
+            intensity = entry["optimized_intensity"]
+            policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], intensity)
+            policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], intensity)
+            policy_points[policy].append((welfare, intensity))
+            plotted_points_single.append((policy, welfare, intensity))
+
+    plotted_points = []
+    for (policy1, policy2), data in sorted(pairwise_outcomes_complied.items(), key=lambda x: tuple(sorted(x[0]))):
+        for entry in data:
+            welfare = entry["mean_ev_uptake"]
+            intensity1 = entry["policy1_value"]
+            intensity2 = entry["policy2_value"]
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], intensity1)
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], intensity1)
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], intensity2)
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], intensity2)
+            plotted_points.append((welfare, policy1, policy2, intensity1, intensity2))
+
+    # --- Plot everything with index as X axis
+    x_index = 0
+
+    # BAU
+    bau_welfare = outcomes_BAU["mean_ev_uptake"]
+    ax.scatter(x_index, bau_welfare, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
+    x_index += 1
+
+    # Single policies
+    for policy, welfare, intensity in sorted(plotted_points_single, key=lambda x: x[0]):
+        size = scale_marker_size(intensity, policy, policy_ranges)
+        ax.scatter(x_index, welfare, s=size, marker='o', color=policy_colors[policy], edgecolor="black")
+        x_index += 1
+
+    # Policy pairs
+    for welfare, policy1, policy2, val1, val2 in plotted_points:
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+        size1 = scale_marker_size(val1, policy1, policy_ranges)
+        size2 = scale_marker_size(val2, policy2, policy_ranges)
+
+        if val1 == 0 or val2 == 0:
+            pass  # keep your marker logic untouched
+        else:
+            ax.scatter(x_index, welfare, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
+            ax.scatter(x_index, welfare, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
+        x_index += 1
+
+    # Axes and legend
+    ax.set_xlabel("Policy index (ordered)")
+    ax.set_ylabel("EV uptake")
+
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+              label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+        for policy in sorted(all_policies)
+    ]
+    legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    ax.legend(handles=legend_elements, loc="best", title="Policy Intensity Range")
+
+    save_path = f'{file_name}/Plots/ev_uptake.png'
+    plt.savefig(save_path, dpi=dpi)
+
+
+def plot_ev_uptake_std(pairwise_outcomes_complied, file_name,
+                       outcomes_BAU, single_policy_outcomes, dpi=600):
+
+
+    fig, ax = plt.subplots(figsize=(9, 7))
+    ax.grid(True)
+
+    color_map = plt.get_cmap('Set1', 10)
+    all_policies = set()
+    for (policy1, policy2) in pairwise_outcomes_complied.keys():
+        all_policies.update([policy1, policy2])
+
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
+    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
+
+    # --- Collect single policy points
+    plotted_points_single = []
+    for policy, entry in single_policy_outcomes.items():
+        if policy in all_policies:
+            std = entry["sd_ev_uptake"]
+            intensity = entry["optimized_intensity"]
+            policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], intensity)
+            policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], intensity)
+            plotted_points_single.append((policy, std, intensity))
+
+    # --- Collect policy pair points
+    plotted_points = []
+    for (policy1, policy2), data in sorted(pairwise_outcomes_complied.items(), key=lambda x: tuple(sorted(x[0]))):
+        for entry in data:
+            std = entry["sd_ev_uptake"]
+            intensity1 = entry["policy1_value"]
+            intensity2 = entry["policy2_value"]
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], intensity1)
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], intensity1)
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], intensity2)
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], intensity2)
+            plotted_points.append((std, policy1, policy2, intensity1, intensity2))
+
+    # --- Plot using indexed x-axis
+    x_index = 0
+
+    # BAU
+    bau_std = outcomes_BAU["sd_ev_uptake"]
+    ax.scatter(x_index, bau_std, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
+    x_index += 1
+
+    # Single policies
+    for policy, std, intensity in sorted(plotted_points_single, key=lambda x: x[0]):
+        size = scale_marker_size(intensity, policy, policy_ranges)
+        ax.scatter(x_index, std, s=size, marker='o', color=policy_colors[policy], edgecolor="black")
+        x_index += 1
+
+    # Policy pairs
+    for std, policy1, policy2, val1, val2 in plotted_points:
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+        size1 = scale_marker_size(val1, policy1, policy_ranges)
+        size2 = scale_marker_size(val2, policy2, policy_ranges)
+
+        if val1 == 0 or val2 == 0:
+            pass  # same as before
+        else:
+            ax.scatter(x_index, std, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
+            ax.scatter(x_index, std, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
+        x_index += 1
+
+    # Axes and legend
+    ax.set_xlabel("Policy index (ordered)")
+    ax.set_ylabel("Standard Deviation of EV Uptake")
+
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+              label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+        for policy in sorted(all_policies)
+    ]
+    legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    ax.legend(handles=legend_elements, loc="best", title="Policy Intensity Range")
+
+    save_path = f'{file_name}/Plots/ev_uptake_std.png'
+    plt.savefig(save_path, dpi=dpi)
+
+
+
 def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, file_name,
                                         min_val, max_val, outcomes_BAU,
-                                        single_policy_outcomes, measure, y_label, dpi=600):
+                                        single_policy_outcomes, measure, y_label, dpi=300):
 
     fig, ax = plt.subplots(figsize=(9, 7))
     ax.grid(True)
@@ -224,6 +391,82 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
     plt.savefig(save_path, dpi=dpi)
     plt.savefig(f'{file_name}/Plots/welfare_vs_cumulative_emissions_{measure}_VECTOR.eps', format='eps', dpi=dpi)
 
+def plot_ev_uptake_vs_std(pairwise_outcomes_complied, file_name,
+                          outcomes_BAU, single_policy_outcomes, dpi=600):
+
+    fig, ax = plt.subplots(figsize=(9, 7))
+    ax.grid(True)
+
+    color_map = plt.get_cmap('Set1', 10)
+    all_policies = set()
+    for (policy1, policy2) in pairwise_outcomes_complied.keys():
+        all_policies.update([policy1, policy2])
+
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(sorted(all_policies))}
+    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
+
+    plotted_points_single = []
+    for policy, entry in single_policy_outcomes.items():
+        if policy in all_policies:
+            mean_val = entry["mean_EV_uptake"]
+            std_val = entry["sd_ev_uptake"]
+            intensity = entry["optimized_intensity"]
+            policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], intensity)
+            policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], intensity)
+            plotted_points_single.append((policy, std_val, mean_val, intensity))
+
+    plotted_points = []
+    for (policy1, policy2), data in sorted(pairwise_outcomes_complied.items(), key=lambda x: tuple(sorted(x[0]))):
+        for entry in data:
+            mean_val = entry["mean_ev_uptake"]
+            std_val = entry["sd_ev_uptake"]
+            intensity1 = entry["policy1_value"]
+            intensity2 = entry["policy2_value"]
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], intensity1)
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], intensity1)
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], intensity2)
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], intensity2)
+            plotted_points.append((std_val, mean_val, policy1, policy2, intensity1, intensity2))
+
+    # --- BAU
+    bau_mean = outcomes_BAU["mean_ev_uptake"]
+    bau_std = outcomes_BAU["sd_ev_uptake"]
+    ax.scatter(bau_std, bau_mean, color='black', marker='o', s=400, edgecolor='black', label="Business as Usual (BAU)")
+
+    # --- Single policies
+    for policy, std_val, mean_val, intensity in sorted(plotted_points_single, key=lambda x: x[0]):
+        size = scale_marker_size(intensity, policy, policy_ranges)
+        ax.scatter(std_val, mean_val, s=size, marker='o', color=policy_colors[policy], edgecolor="black")
+
+    # --- Policy pairs with half-circle markers
+    for std_val, mean_val, policy1, policy2, val1, val2 in plotted_points:
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+        size1 = scale_marker_size(val1, policy1, policy_ranges)
+        size2 = scale_marker_size(val2, policy2, policy_ranges)
+
+        if val1 == 0 or val2 == 0:
+            pass
+        else:
+            ax.scatter(std_val, mean_val, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black")
+            ax.scatter(std_val, mean_val, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black")
+
+    # --- Labels and legend
+    ax.set_xlabel("Standard Deviation of EV Uptake")
+    ax.set_ylabel("Mean EV Uptake")
+
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+              label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+        for policy in sorted(all_policies)
+    ]
+    legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    ax.legend(handles=legend_elements, loc="best", title="Policy Intensity Range")
+
+    save_path = f'{file_name}/Plots/ev_uptake_vs_std.png'
+    plt.savefig(save_path, dpi=dpi)
+
+
 def main(fileNames, fileName_BAU, fileNames_single_policies):
     #EDNOGENOSU SINGLE POLICY
 
@@ -244,6 +487,26 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
     #BAU
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
+    
+    min_ev_uptake = 0
+    max_ev_uptake = 1
+
+    plot_ev_uptake(pairwise_outcomes_complied, fileName,
+                                         outcomes_BAU,
+                                        single_policy_outcomes, dpi=300)
+    plot_ev_uptake_std(pairwise_outcomes_complied, fileName,
+                                            outcomes_BAU,
+                                            single_policy_outcomes, dpi=300)
+    
+    plot_ev_uptake_vs_std(pairwise_outcomes_complied, fileName,
+                          outcomes_BAU, single_policy_outcomes, dpi=600)
+    
+    plt.show()
+
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
+    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
+    plt.show()
 
     min_ev_uptake = 0.945
     max_ev_uptake = 0.955
@@ -256,7 +519,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_12_40_36__23_03_2025"],#["results/endog_pair_19_10_07__11_03_2025"],#
+        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025"],
         fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
         fileNames_single_policies = "results/endog_single_00_16_15__21_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

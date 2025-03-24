@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from package.resources.utility import load_object
 
-def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, vary_single, dpi=600):
+def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, vary_single, dpi=300):
     """
     Plots EV uptake against Grid emissions intensity proportion 2022s, distinguishing between scenarios with and without a carbon price.
     Includes shaded regions representing 1 standard deviation around the mean.
@@ -48,7 +48,7 @@ def plot_ev_uptake_vs_decarbonization(file_name,results, results_with_price, var
     plt.tight_layout()
     plt.savefig(f"{file_name}/Plots/ev_uptake_vs_decarbonization.png", dpi=dpi)
 
-def plot_ev_uptake_vs_decarbonization_line(file_name, results, results_with_price, vary_single, dpi=600):
+def plot_ev_uptake_vs_decarbonization_line(file_name, results, results_with_price, vary_single, dpi=300):
     """
     Plots EV uptake against Grid emissions intensity proportion 2022s for the same seed, distinguishing between scenarios with and without a carbon price.
     Each seed is assigned a unique color, and the same color is used for both scenarios (solid for no carbon price, dashed for with carbon price).

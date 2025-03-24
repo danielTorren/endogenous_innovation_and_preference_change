@@ -114,7 +114,7 @@ def plot_time_series_derivatives(fileName, base_params, derivatives, time_steps,
 
 
 
-    save_and_show(fig, fileName, "plot_time_series_derivatives", dpi=600)
+    save_and_show(fig, fileName, "plot_time_series_derivatives", dpi=300)
 
 def compute_relative_impacts(derivatives):
     """
@@ -207,7 +207,7 @@ def plot_normalized_time_series(outputs, fileName, base_params, whole_simulation
     
     # Layout and save/show
     plt.tight_layout()
-    save_and_show(fig, fileName, "plot_normalized_time_series", dpi=600)
+    save_and_show(fig, fileName, "plot_normalized_time_series", dpi=300)
 
 def unify_time_series_lengths(outputs):
     """
@@ -350,7 +350,7 @@ def plot_time_series_elasticities(
     ax.grid()
     plt.tight_layout()
 
-    save_and_show(fig, fileName, "plot_time_series_elasticities", dpi=600)
+    save_and_show(fig, fileName, "plot_time_series_elasticities", dpi=300)
 
 def plot_stacked_contributions_with_net(
     derivatives,
@@ -478,7 +478,7 @@ def plot_stacked_contributions_with_net(
         add_vertical_lines(ax, base_params)
 
     plt.tight_layout()
-    save_and_show(fig, fileName, "plot_stacked_contributions_with_net", dpi=600)
+    save_and_show(fig, fileName, "plot_stacked_contributions_with_net", dpi=300)
 
 
 def main(fileName):

@@ -60,7 +60,7 @@ def save_best_parameters(best_params, best_metric, metric_name, vary_1, vary_2, 
         json.dump(best_fit_info, f, indent=4)
 
 # Generic function to plot heatmaps for different metrics
-def plot_metric_heatmap(metric_function, metric_name, base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+def plot_metric_heatmap(metric_function, metric_name, base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=300):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
     metric_values = np.zeros((num_vary_1, num_vary_2))
@@ -98,7 +98,7 @@ def plot_metric_heatmap(metric_function, metric_name, base_params, real_data, da
     save_and_show(fig, fileName, f"{metric_name}_heatmap", dpi)
 
 # Plot best parameters from all metrics
-def plot_best_parameters_all_metrics(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+def plot_best_parameters_all_metrics(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=300):
     metrics = ["mape", "smape", "mse", "rmse"]
     metric_functions = {
         "mape": calc_mape_vectorized,
@@ -145,7 +145,7 @@ def plot_best_parameters_all_metrics(base_params, real_data, data_array_ev_prop,
 
     save_and_show(fig, fileName, "best_parameters_all_metrics", dpi)
 
-def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=300):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
 
@@ -197,7 +197,7 @@ def plot_ev_stock_all_combinations(base_params, real_data, data_array_ev_prop, v
     plt.tight_layout()
     save_and_show(fig, fileName, "plot_ev_stock_combinations", dpi)
 
-def plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi=600):
+def plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi=300):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
     print(data_array_price_range.shape)
@@ -217,7 +217,7 @@ def plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, file
 
     save_and_show(fig, fileName, "price_range_heatmap", dpi)
 
-def plot_ev_uptake_heatmap(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+def plot_ev_uptake_heatmap(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=300):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
     ev_uptake_values = np.zeros((num_vary_1, num_vary_2))
@@ -243,7 +243,7 @@ def plot_ev_uptake_heatmap(base_params, real_data, data_array_ev_prop, vary_1, v
 
     save_and_show(fig, fileName, "ev_uptake_heatmap", dpi)
 
-def plot_ev_uptake_contour(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=600):
+def plot_ev_uptake_contour(base_params, real_data, data_array_ev_prop, vary_1, vary_2, fileName, dpi=300):
     num_vary_1 = len(vary_1["property_list"])
     num_vary_2 = len(vary_2["property_list"])
     ev_uptake_values = np.zeros((num_vary_1, num_vary_2))
@@ -275,7 +275,7 @@ def plot_ev_uptake_contour(base_params, real_data, data_array_ev_prop, vary_1, v
     save_and_show(fig, fileName, "ev_uptake_contour", dpi)
 
 # Main function
-def main(fileName, dpi=600):
+def main(fileName, dpi=300):
     try:
         #serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
         base_params = load_object(fileName + "/Data", "base_params")

@@ -8,7 +8,7 @@ from package.calibration.NN_multi_round_calibration_multi_gen import convert_dat
 from package.plotting_data.single_experiment_plot import save_and_show, format_plot
 
 
-def plot_ev_uptake_single(real_data, base_params, fileName, data,  data2, title, x_label, y_label, save_name, dpi=600):
+def plot_ev_uptake_single(real_data, base_params, fileName, data,  data2, title, x_label, y_label, save_name, dpi=300):
     """
     Plot data across multiple seeds with mean, confidence intervals, and individual traces,
     starting from the end of the burn-in period.

@@ -32,7 +32,7 @@ def plot_emissions_flow(fileName, emissions_time_series_reshaped):
     # Save the figure
     plotName = fileName + "/Plots"
     f = plotName + "/plot_emissions_flow"
-    fig.savefig(f + ".png", dpi=600, format="png")
+    fig.savefig(f + ".png", dpi=300, format="png")
 
 def plot_emissions_cum(fileName, emissions_time_series_reshaped):
     """
@@ -52,7 +52,7 @@ def plot_emissions_cum(fileName, emissions_time_series_reshaped):
     # Save the figure
     plotName = fileName + "/Plots"
     f = plotName + "/plot_emissions_cum"
-    fig.savefig(f + ".png", dpi=600, format="png")
+    fig.savefig(f + ".png", dpi=300, format="png")
 
 def main(fileName) -> None:
     #emissions_time_series_reshaped = load_object(fileName + "/Data", "data_reshaped")
