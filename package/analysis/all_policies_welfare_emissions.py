@@ -5,6 +5,9 @@ from matplotlib.path import Path
 import os
 from matplotlib.patches import Patch
 from matplotlib.collections import LineCollection
+from package.resources.utility import (
+    createFolder, save_object, produce_name_datetime
+)
 
 # Marker helper functions
 def half_circle_marker(start, end, offset=-45):
@@ -483,8 +486,15 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     else:
         for fileName in fileNames:
             pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
+
+
             pairwise_outcomes_complied.update(pairwise_outcomes)
 
+    del pairwise_outcomes_complied[('Adoption_subsidy', 'Adoption_subsidy_used')]
+    del pairwise_outcomes_complied[('Adoption_subsidy',  'Electricity_subsidy')]
+    #del pairwise_outcomes_complied[('Carbon_price','Electricity_subsidy') ]
+
+    print(pairwise_outcomes_complied)
     #BAU
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
     
@@ -501,12 +511,11 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     plot_ev_uptake_vs_std(pairwise_outcomes_complied, fileName,
                           outcomes_BAU, single_policy_outcomes, dpi=600)
     
-    plt.show()
 
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
-    plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
-    plt.show()
+    #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
+    #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
+    #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
+    #plt.show()
 
     min_ev_uptake = 0.945
     max_ev_uptake = 0.955
@@ -515,11 +524,19 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
     
+
+
+    file_name = produce_name_datetime("all_policies")
+
+    createFolder(file_name)
+
+    save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes_complied")
+
     plt.show()
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025"],
+        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025", "results/endog_pair_12_09_32__24_03_2025", "results/endog_pair_12_08_29__24_03_2025"],
         fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
         fileNames_single_policies = "results/endog_single_00_16_15__21_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )
