@@ -59,17 +59,15 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
     return best_entries
 
 
-def main(fileName_load):
+def main(fileName_load,
+        min_ev_uptake = 0.945,
+        max_ev_uptake = 0.955
+        ):
 
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
-    min_ev_uptake = 0.945
-    max_ev_uptake = 0.955
-
-    #base_params = load_object(f"{fileName}/Data", "base_params")
-    
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
-    print()
+
     ##########################################################################################
 
     base_params = load_object(fileName_load + "/Data", "base_params")
@@ -204,5 +202,7 @@ def main(fileName_load):
 
 if __name__ == "__main__":
     main(
-        fileName_load="results/endog_pair_15_49_56__21_03_2025",
+        fileName_load="results/all_policies_16_41_47__24_03_2025",
+        min_ev_uptake = 0.945,
+        max_ev_uptake = 0.955
     )
