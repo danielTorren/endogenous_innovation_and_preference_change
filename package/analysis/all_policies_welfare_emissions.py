@@ -492,7 +492,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
     del pairwise_outcomes_complied[('Adoption_subsidy', 'Adoption_subsidy_used')]
     del pairwise_outcomes_complied[('Adoption_subsidy',  'Electricity_subsidy')]
-    #del pairwise_outcomes_complied[('Carbon_price','Electricity_subsidy') ]
+    del pairwise_outcomes_complied[('Carbon_price','Electricity_subsidy') ]
 
     print(pairwise_outcomes_complied)
     #BAU
@@ -531,12 +531,13 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     createFolder(file_name)
 
     save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
+    save_object(base_params, file_name + "/Data", "base_params")
 
     plt.show()
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025", "results/endog_pair_12_09_32__24_03_2025", "results/endog_pair_12_08_29__24_03_2025"],
+        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025", "results/endog_pair_12_09_32__24_03_2025", "results/endog_pair_12_08_29__24_03_2025", "results/endog_pair_12_11_19__24_03_2025"],
         fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
         fileNames_single_policies = "results/endog_single_00_16_15__21_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )
