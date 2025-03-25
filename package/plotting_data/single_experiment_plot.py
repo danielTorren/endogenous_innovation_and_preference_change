@@ -744,7 +744,16 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
     data_sold = data[:, 1] + data[:, 2]  # Assuming sold is the sum of two columns
 
     # First Y-axis (left side) - New sales out of population
-    ax1.scatter(x, data_new/count, label="New sales out of population", color="tab:blue")
+    # Calculate rolling 12-month sum for new sales
+    window_size = 12  # Assuming each time step is 1 month
+    rolling_new = np.convolve(data_new, np.ones(window_size), mode='valid')
+
+    # Adjust x-axis accordingly (since rolling reduces size)
+    x_rolling = x[window_size - 1:]
+
+    # Plot yearly new sales per population
+    ax1.scatter(x_rolling, rolling_new / count, label="Yearly new sales / Population", color="tab:blue")
+
     ax1.set_xlabel("Time")
     ax1.set_ylabel("New sales / Population", color="tab:blue")
     ax1.tick_params(axis='y', labelcolor="tab:blue")
@@ -752,7 +761,14 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
 
     # Second Y-axis (right side) - New sales out of sold
     ax2 = ax1.twinx()  # Create a second y-axis
-    ax2.scatter(x, data_new/data_sold, label="New sales out of sold", color="tab:red")
+    
+    # Calculate rolling 12-month sums
+    rolling_new = np.convolve(data_new, np.ones(window_size), mode='valid')
+    rolling_sold = np.convolve(data_sold, np.ones(window_size), mode='valid')
+
+    # Plot yearly new sales per total sold
+    ax2.scatter(x_rolling, rolling_new / rolling_sold, label="Yearly new sales / Sold", color="tab:red")
+
     ax2.set_ylabel("New sales / Sold", color="tab:red")
     ax2.tick_params(axis='y', labelcolor="tab:red")
 
@@ -975,7 +991,7 @@ def plot_profit_margins_by_type(base_params, firm_manager,time_series,  fileName
 
 
     ax.set_xlabel("Time")
-    ax.set_ylabel("Profit margin (P-C)/C, 12-month rolling window")
+    ax.set_ylabel("Profit margin (P-C)/P, 12-month rolling window")
     ax.grid(True)
 
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
@@ -1294,4 +1310,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_19_17_07__19_03_2025")
+    main("results/single_experiment_13_14_29__25_03_2025")

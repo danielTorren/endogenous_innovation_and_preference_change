@@ -119,12 +119,13 @@ def main(
     policy_pairs = generate_unique_policy_pairs(policy_list_all, dont_work_list)
     
     #( 'Electricity_subsidy', 'Adoption_subsidy_used'),  
-    policy_pairs = [
+    #policy_pairs = [
         #( 'Adoption_subsidy_used','Adoption_subsidy'), 
         #( 'Electricity_subsidy', 'Adoption_subsidy'),
-        ('Electricity_subsidy', 'Carbon_price' ) 
-    ]
+    #    ('Electricity_subsidy', 'Carbon_price' ) 
+    #]
     print("policy_pairs", policy_pairs)
+
     #print(policy_pairs[:5])
     #print(policy_pairs[5:8])
     #print(policy_pairs[8:])

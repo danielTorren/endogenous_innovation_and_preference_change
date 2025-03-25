@@ -387,7 +387,7 @@ class Firm_Manager:
                 if prod_cost == 0:
                     profit_margin = np.inf
                 else:
-                    profit_margin = (car.price - prod_cost)/prod_cost
+                    profit_margin = (car.price - prod_cost)/car.price 
                 
                 profit_margin_EV.append(profit_margin)
             else:
@@ -396,7 +396,7 @@ class Firm_Manager:
                 if prod_cost == 0:
                     profit_margin = np.inf
                 else:
-                    profit_margin = (car.price - prod_cost)/prod_cost
+                    profit_margin = (car.price - prod_cost)/car.price 
                 profit_margin_ICE.append(profit_margin)
 
         return profit_margin_ICE, profit_margin_EV

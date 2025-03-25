@@ -40,13 +40,13 @@ if __name__ == "__main__":
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 0,
+    "duration_future": 144,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
     "seed_inputs": 22,
-    "ev_research_start_time":60,
-    "ev_production_start_time": 60,
+    "ev_research_start_time":0,
+    "ev_production_start_time": 0,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 108,
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     "parameters_scenarios":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": 0.5
+            "Grid_emissions_intensity": 0.9
     },
     "parameters_policies":{
         "States":{
@@ -70,18 +70,18 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.1,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
-            "Adoption_subsidy":10000,
+            "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,
             "Research_subsidy":1000000
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 12,
+        "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.0021,
+        "delta": 0.002,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -142,9 +142,9 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.221, 
-        "b_chi": 2.2873,
-        "SW_network_density": 0.01,
+        "a_chi": 1.1968, 
+        "b_chi": 2.6805,
+        "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
         "WTP_E_sd": 39160.31118,
@@ -157,9 +157,9 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.4e-4,
+        "kappa": 2.2e-4,
         "U_segments_init": 0,
-        "W_calibration":1e10,
+        "W_calibration":1e5,
         "min_W": 1e-10,
         "r": 0.00407412378,
         "mu": 1,
