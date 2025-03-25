@@ -109,7 +109,7 @@ class SecondHandMerchant:
 
         normalized_first_hand_quality = first_hand_quality / first_hand_quality_max 
         normalized_first_hand_efficiency = first_hand_efficiency / first_hand_efficiency_max 
-        normalized_first_hand_B = first_hand_B / first_hand_B_max
+        normalized_first_hand_B = first_hand_B/first_hand_B_max
 
         normalized_second_hand_quality = second_hand_quality  / first_hand_quality_max 
         normalized_second_hand_efficiency = second_hand_efficiency / first_hand_efficiency_max
@@ -121,7 +121,6 @@ class SecondHandMerchant:
         diff_B = normalized_second_hand_B[:, np.newaxis] - normalized_first_hand_B
 
         distances = np.sqrt(diff_quality ** 2 + diff_efficiency ** 2 + diff_B ** 2)
-
 
         # Find the closest first-hand car for each second-hand car
         closest_idxs = np.argmin(distances, axis=1)
@@ -179,8 +178,6 @@ class SecondHandMerchant:
 
             # Keep only the remaining cars (i.e., exclude the removed ones)
             self.cars_on_sale = self.cars_on_sale[num_cars_to_remove:]
-
-        
         
     def add_to_stock(self,vehicle):
         #add new car to stock
@@ -215,7 +212,6 @@ class SecondHandMerchant:
             if self.t_second_hand_cars > self.burn_in_second_hand_market:
                 car.L_a_t += 1
                 car.second_hand_counter += 1#UPDATE THE STEPS ITS BEEN HERE
-        
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
             else:#EV
@@ -236,7 +232,9 @@ class SecondHandMerchant:
 
         if self.cars_on_sale and self.t_second_hand_cars > self.burn_in_second_hand_market:
             self.update_stock_contents()
-
+        
+        print("age remvoed", np.mean(self.age_second_hand_car_removed), np.median(self.age_second_hand_car_removed))
+        
         self.profit = self.income - self.spent
 
         return self.cars_on_sale
