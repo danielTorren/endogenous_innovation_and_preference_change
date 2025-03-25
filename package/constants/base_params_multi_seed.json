@@ -1,7 +1,7 @@
 {
     "seed_repetitions": 64,
     "duration_burn_in_research": 0,
-    "duration_burn_in": 240,
+    "duration_burn_in": 180,
     "duration_calibration": 276,
     "duration_future": 144,
     "save_timeseries_data_state": 1,
@@ -23,7 +23,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -33,7 +33,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.3,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
@@ -103,7 +103,7 @@
         "max_cars_prod": 10
     },
     "parameters_social_network":{
-        "num_individuals":3000,
+        "num_individuals":5000,
         "chi_max": 0.9,
         "a_chi": 1.1968, 
         "b_chi": 2.6805,
