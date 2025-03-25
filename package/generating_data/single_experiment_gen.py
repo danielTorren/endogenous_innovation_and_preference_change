@@ -102,7 +102,7 @@ if __name__ == "__main__":
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 0,
+        "min_Cost": 5000,
         "max_Cost": 58150
     }, 
     "parameters_EV":{
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 0,
+        "min_Cost": 5000,
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.2e-4,
+        "kappa": 1.8e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
