@@ -8,8 +8,8 @@
     "compression_factor_state": 1,
     "seed": 5,
     "seed_inputs": 22,
-    "ev_research_start_time":60,
-    "ev_production_start_time": 60,
+    "ev_research_start_time":0,
+    "ev_production_start_time": 0,
     "EV_rebate_state": 1,
     "parameters_rebate_calibration":{
         "start_time": 108,
@@ -19,7 +19,7 @@
     "parameters_scenarios":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": 0.5
+            "Grid_emissions_intensity": 0.9
     },
     "parameters_policies":{
         "States":{
