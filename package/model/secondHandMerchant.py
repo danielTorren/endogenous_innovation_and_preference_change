@@ -233,8 +233,7 @@ class SecondHandMerchant:
         if self.cars_on_sale and self.t_second_hand_cars > self.burn_in_second_hand_market:
             self.update_stock_contents()
         
-        print("age remvoed", np.mean(self.age_second_hand_car_removed), np.median(self.age_second_hand_car_removed))
-        
+
         self.profit = self.income - self.spent
 
         return self.cars_on_sale
