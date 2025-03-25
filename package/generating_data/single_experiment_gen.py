@@ -81,7 +81,7 @@ if __name__ == "__main__":
         }
     },
     "parameters_second_hand":{
-        "age_limit_second_hand": 36,
+        "age_limit_second_hand": 12,
         "max_num_cars_prop": 0.3,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
@@ -91,7 +91,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 3,
-        "rho":[1,0,0],
+        "rho":[1,0.4,0],
         "production_emissions":10000,
         "delta": 0.002,
         "delta_P": 0.0116,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0,0,0.5],
+        "rho":[1,0.4,0,0.5],
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1.8e-4,
+        "kappa": 1.5e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
@@ -167,7 +167,6 @@ if __name__ == "__main__":
         "zeta":0.29697
     }
 }
-    
     fileName = main(base_params=base_params)
     print("SIMULATION FINISHED")
 
