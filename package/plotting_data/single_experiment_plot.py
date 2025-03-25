@@ -731,6 +731,9 @@ def plot_history_count_buy_lines(base_params, social_network, fileName, dpi=300,
     save_and_show(fig, fileName, "count_buy_lines", dpi)
 
 
+
+
+
 def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300, annotation_height_prop=[0.5, 0.5, 0.5]):
     fig, ax1 = plt.subplots(figsize=(6, 6))
 
@@ -742,6 +745,7 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
     count = base_params["parameters_social_network"]["num_individuals"]
     data_new = data[:, 1]
     data_sold = data[:, 1] + data[:, 2]  # Assuming sold is the sum of two columns
+
 
     # First Y-axis (left side) - New sales out of population
     # Calculate rolling 12-month sum for new sales
@@ -766,6 +770,8 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
     rolling_new = np.convolve(data_new, np.ones(window_size), mode='valid')
     rolling_sold = np.convolve(data_sold, np.ones(window_size), mode='valid')
 
+    print("rolling_new", rolling_new)
+    print("rolling_sold",rolling_sold)
     # Plot yearly new sales per total sold
     ax2.scatter(x_rolling, rolling_new / rolling_sold, label="Yearly new sales / Sold", color="tab:red")
 
@@ -777,6 +783,7 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
 
     fig.tight_layout()  # Adjust layout to prevent overlap
     save_and_show(fig, fileName, "count_buy_prop", dpi)
+    plt.show()
 
 
 def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
@@ -1261,6 +1268,8 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
+    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
+
     plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
@@ -1291,7 +1300,7 @@ def main(fileName, dpi=300):
     
     #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
-    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
+    
     plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
 
     plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
