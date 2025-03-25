@@ -1,3 +1,4 @@
+from cProfile import label
 from matplotlib.lines import lineStyles
 import numpy as np
 import matplotlib.pyplot as plt
@@ -270,9 +271,9 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data,history_past_ne
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5), sharex=True)
 
     # First subplot: Mean and 95% CI with real data
-    ax1.plot(time_steps_real, real_data, label="California Data", color='orange', linestyle="dotted")
-    ax1.plot(time_steps, mean_values, label='Mean', color='blue')
-    ax1.plot(time_steps, median_values, label="Median", color='red', linestyle="dashed")
+    ax1.plot(time_steps_real, real_data, label="California EV Adoption", color='orange', linestyle="dotted")
+    ax1.plot(time_steps, mean_values, label='Mean, EV Adoption', color='blue')
+    #ax1.plot(time_steps, median_values, label="Median", color='red', linestyle="dashed")
     median_values
     ax1.fill_between(
         time_steps,
@@ -280,11 +281,11 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data,history_past_ne
         mean_values + ci_range,
         color='blue',
         alpha=0.3,
-        label='95% Confidence Interval'
+        label='95% Confidence Interval, EV Adoption'
     )
 
-    ax1.plot(time_steps, data_buy_mean, label='Mean, EV sales', color='green')
-    ax1.plot(time_steps, data_buy_median, label="Median, EV sales", color='yellow', linestyle="dashed")
+    ax1.plot(time_steps, data_buy_mean, label='Mean, EV Sales', color='green')
+    #ax1.plot(time_steps, data_buy_median, label="Median, EV sales", color='yellow', linestyle="dashed")
     median_values
     ax1.fill_between(
         time_steps,
@@ -292,7 +293,7 @@ def plot_ev_uptake_single(real_data, base_params, fileName, data,history_past_ne
         data_buy_mean + ci_range_buy,
         color='green',
         alpha=0.3,
-        label='95% Confidence Interval, EV sales'
+        label='95% Confidence Interval, EV Sales'
     )
 
     # Second subplot: Individual traces with real data
@@ -556,7 +557,7 @@ def plot_history_mean_price_multiple_seeds(
     annotation_height_prop = 0.5
 ):
     """
-    Plots the mean and 95% confidence interval for prices (new and second-hand cars) in the first subplot,
+    Plots the mean and 95% confidence interval for prices (new and Used cars) in the first subplot,
     starting from the end of the burn-in period.
 
     Args:
@@ -569,23 +570,23 @@ def plot_history_mean_price_multiple_seeds(
     # Extract burn-in step
     burn_in_step = base_params["duration_burn_in"]
 
-    # Extract new and second-hand prices, excluding burn-in period
+    # Extract new and Used prices, excluding burn-in period
     mean_new_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 0,0]  # Mean prices for new cars
-    mean_second_hand_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for second-hand cars
+    mean_second_hand_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 1,0]  # Mean prices for Used cars
     mean_new_EV = history_mean_price_ICE_EV[:, burn_in_step:, 0,1]  # Mean prices for new cars
-    mean_second_hand_EV = history_mean_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for second-hand cars
+    mean_second_hand_EV = history_mean_price_ICE_EV[:, burn_in_step:, 1, 1]  # Mean prices for Used cars
 
     #25th
     lower_new_ICE = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 0,0], axis=0)  # Mean prices for new cars
-    lower_second_hand_ICE = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 1,0], axis=0)  # Mean prices for second-hand cars
+    lower_second_hand_ICE = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 1,0], axis=0)  # Mean prices for Used cars
     lower_new_EV = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 0,1], axis=0)  # Mean prices for new cars
-    lower_second_hand_EV = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 1, 1], axis=0)  # Mean prices for second-hand cars
+    lower_second_hand_EV = np.mean(history_lower_price_ICE_EV[:, burn_in_step:, 1, 1], axis=0)  # Mean prices for Used cars
 
     #75th
     upper_new_ICE = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 0,0], axis=0)  # Mean prices for new cars
-    upper_second_hand_ICE = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 1,0], axis=0)  # Mean prices for second-hand cars
+    upper_second_hand_ICE = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 1,0], axis=0)  # Mean prices for Used cars
     upper_new_EV = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 0,1], axis=0)  # Mean prices for new cars
-    upper_second_hand_EV = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 1, 1], axis=0)  # Mean prices for second-hand cars
+    upper_second_hand_EV = np.mean(history_upper_price_ICE_EV[:, burn_in_step:, 1, 1], axis=0)  # Mean prices for Used cars
 
 
     # Time steps after burn-in
@@ -611,18 +612,18 @@ def plot_history_mean_price_multiple_seeds(
 
     #PLOT QUATILES
     #25th
-    ax1.plot(time_steps, lower_new_ICE, color="blue", linestyle = "dotted")
-    ax1.plot(time_steps, lower_second_hand_ICE, color="blue", linestyle = "dotted")
-    ax1.plot(time_steps, lower_new_EV, color="green", linestyle = "dotted")
-    ax1.plot(time_steps, lower_second_hand_EV, color="green", linestyle = "dotted")
+    ax1.plot(time_steps, lower_new_ICE, color="blue", linestyle = "dotted", label = "25th %, New ICE")
+    ax1.plot(time_steps, lower_second_hand_ICE, color="blue", linestyle = "dotted", label = "25th %, Used ICE")
+    ax1.plot(time_steps, lower_new_EV, color="green", linestyle = "dotted", label = "25th %, New EV")
+    ax1.plot(time_steps, lower_second_hand_EV, color="green", linestyle = "dotted", label = "25th %, Used EV")
 
     #75th
-    ax1.plot(time_steps, upper_new_ICE, color="blue", linestyle = "dotted")
-    ax1.plot(time_steps, upper_second_hand_ICE, color="blue", linestyle = "dotted")
-    ax1.plot(time_steps, upper_new_EV, color="green", linestyle = "dotted")
-    ax1.plot(time_steps, upper_second_hand_EV, color="green", linestyle = "dotted")
+    ax1.plot(time_steps, upper_new_ICE, color="blue", linestyle = "dotted", label = "75th %, New EV")
+    ax1.plot(time_steps, upper_second_hand_ICE, color="blue", linestyle = "dotted", label = "75th %, Used ICE")
+    ax1.plot(time_steps, upper_new_EV, color="green", linestyle = "dotted", label = "75th %, New EV")
+    ax1.plot(time_steps, upper_second_hand_EV, color="green", linestyle = "dotted", label = "75th %, Used EV")
 
-    # Plot individual traces (faded lines) for new and second-hand car prices
+    # Plot individual traces (faded lines) for new and Used car prices
     #for seed_new, seed_second_hand in zip(mean_new_ICE, mean_second_hand_ICE):
     #    ax1.plot(time_steps, seed_new, color='gray', alpha=0.3, linewidth=0.8)
     #    ax1.plot(time_steps, seed_second_hand, color='gray', alpha=0.3, linewidth=0.8, linestyle = "dashed")
@@ -643,15 +644,15 @@ def plot_history_mean_price_multiple_seeds(
         label="New Car 95% Confidence Interval ICE"
     )
 
-    # Plot Mean and 95% CI for Second-hand Car Prices
-    ax1.plot(time_steps, overall_mean_second_hand_ICE, label="Second-hand Car Mean Price ICE", color="blue", linestyle = "dashed")
+    # Plot Mean and 95% CI for Used Car Prices
+    ax1.plot(time_steps, overall_mean_second_hand_ICE, label="Used Car Mean Price ICE", color="blue", linestyle = "dashed")
     ax1.fill_between(
         time_steps,
         overall_mean_second_hand_ICE - ci_second_hand_ICE,
         overall_mean_second_hand_ICE + ci_second_hand_ICE,
         color="blue",
         alpha=0.2,
-        label="Second-hand Car 95% Confidence Interval ICE"
+        label="Used Car 95% Confidence Interval ICE"
     )
 
     #EV
@@ -666,15 +667,15 @@ def plot_history_mean_price_multiple_seeds(
         label="New Car 95% Confidence Interval EV"
     )
 
-    # Plot Mean and 95% CI for Second-hand Car Prices
-    ax1.plot(time_steps, overall_mean_second_hand_EV, label="Second-hand Car Mean Price EV", color="green", linestyle = "dashed")
+    # Plot Mean and 95% CI for Used Car Prices
+    ax1.plot(time_steps, overall_mean_second_hand_EV, label="Used Car Mean Price EV", color="green", linestyle = "dashed")
     ax1.fill_between(
         time_steps,
         overall_mean_second_hand_EV - ci_second_hand_EV,
         overall_mean_second_hand_EV + ci_second_hand_EV,
         color="green",
         alpha=0.2,
-        label="Second-hand Car 95% Confidence Interval EV"
+        label="Used Car 95% Confidence Interval EV"
     )
 
     # Format the plot
@@ -704,7 +705,7 @@ def plot_history_mean_profit_margin_multiple_seeds(
     annotation_height_prop = 0.5
 ):
     """
-    Plots the mean and 95% confidence interval for prices (new and second-hand cars) in the first subplot,
+    Plots the mean and 95% confidence interval for prices (new and Used cars) in the first subplot,
     starting from the end of the burn-in period.
 
     Args:
@@ -717,7 +718,7 @@ def plot_history_mean_profit_margin_multiple_seeds(
     # Extract burn-in step
     burn_in_step = base_params["duration_burn_in"]
 
-    # Extract new and second-hand prices, excluding burn-in period
+    # Extract new and Used prices, excluding burn-in period
 
     mean_new_ICE = history_mean_profit_margins_ICE[:, burn_in_step:]  # Mean prices for new cars
     mean_new_EV = history_mean_profit_margins_EV[:, burn_in_step:]  # Mean prices for new cars
@@ -738,7 +739,7 @@ def plot_history_mean_profit_margin_multiple_seeds(
     # Create the figure
     fig, ax1 = plt.subplots(1, 1, figsize=(8, 5))
 
-    # Plot individual traces (faded lines) for new and second-hand car prices
+    # Plot individual traces (faded lines) for new and Used car prices
     #for seed_new in mean_new_ICE:
     #    ax1.plot(time_steps, seed_new, color='blue', alpha=0.3, linewidth=0.8)
 
@@ -1003,4 +1004,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_16_26_30__25_03_2025")
+    main("results/multi_seed_single_16_31_53__25_03_2025")
