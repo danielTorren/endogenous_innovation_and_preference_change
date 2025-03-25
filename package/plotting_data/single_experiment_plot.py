@@ -783,7 +783,6 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
 
     fig.tight_layout()  # Adjust layout to prevent overlap
     save_and_show(fig, fileName, "count_buy_prop", dpi)
-    plt.show()
 
 
 def plot_history_mean_price_by_type(base_params, social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):

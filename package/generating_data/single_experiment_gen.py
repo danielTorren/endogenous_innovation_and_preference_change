@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 144,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 12,
-        "max_num_cars_prop": 0.3,
+        "max_num_cars_prop": 0.05,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
     },
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0.5,0],
         "production_emissions":10000,
-        "delta": 0.002,
+        "delta": 0.0012,
         "delta_P": 0.0116,
         "transportType": 2,
         "mean_Price": 39290,
@@ -151,7 +151,7 @@ if __name__ == "__main__":
         "nu": 1174,
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
-        "prob_switch_car":0.083,
+        "prob_switch_car":0.0415,
         "proportion_zero_target": 0.005,
         "income_mu":11.225,
         "income_sigma":0.927

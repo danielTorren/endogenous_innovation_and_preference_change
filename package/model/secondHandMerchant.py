@@ -178,7 +178,7 @@ class SecondHandMerchant:
 
             # Keep only the remaining cars (i.e., exclude the removed ones)
             self.cars_on_sale = self.cars_on_sale[num_cars_to_remove:]
-        
+
     def add_to_stock(self,vehicle):
         #add new car to stock
         vehicle.price = vehicle.price_second_hand_merchant
