@@ -115,7 +115,7 @@
         "gamma_epsilon": 1e-5,
         "nu_epsilon": 1e-5,
         "prob_switch_car":0.083,
-        "proportion_zero_target": 0.005,
+        "proportion_zero_target": 0.99,
         "income_mu":11.225,
         "income_sigma":0.927
     },
