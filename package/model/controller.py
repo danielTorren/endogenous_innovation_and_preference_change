@@ -383,7 +383,7 @@ class Controller:
         Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
         B = self.parameters_ICE["fuel_tank"]
 
-        print("min kappa", 1/(P - C_mean))
+        #print("min kappa", 1/(P - C_mean))
         # Calculate the components of the equation
         term1 = np.log(W * (kappa * (P - C_mean) - 1))* (1 / kappa)
         term2 = P + gamma * E
