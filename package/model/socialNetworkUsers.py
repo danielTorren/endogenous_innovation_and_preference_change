@@ -684,7 +684,7 @@ class Social_Network:
         return vehicle_dict_vecs
 
 ##############################################################################################################################################################
-    def generate_utilities_new(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
         # New cars (unchanged)
         NC_utilities = self.vectorised_calculate_utility_new_cars(
             self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, 
@@ -723,7 +723,7 @@ class Social_Network:
         
         return utilities_matrix, car_options
 
-    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+    def generate_utilities_old(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
 
 
         # Generate utilities
