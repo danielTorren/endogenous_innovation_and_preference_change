@@ -1,0 +1,5 @@
+{
+    "property_varied": "mean_Price",
+    "subdict": "parameters_ICE",
+    "property_list": [40000, 50000, 60000, 70000, 80000, 90000]
+}
