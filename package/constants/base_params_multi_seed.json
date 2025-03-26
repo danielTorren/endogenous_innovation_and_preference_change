@@ -105,8 +105,8 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.5, 
-        "b_chi": 2.3,
+        "a_chi": 3, 
+        "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
