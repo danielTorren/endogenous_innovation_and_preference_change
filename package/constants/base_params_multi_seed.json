@@ -59,14 +59,14 @@
         "delta": 0.0022,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 39290,
+        "mean_Price": 50000,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 5000,
-        "max_Cost": 58150
+        "min_Cost": 10000,
+        "max_Cost": 70000
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
@@ -81,8 +81,8 @@
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 5000,
-        "max_Cost": 58150
+        "min_Cost": 10000,
+        "max_Cost": 70000
     },
     "parameters_firm_manager": {
         "J": 16,
@@ -105,8 +105,8 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 0.8, 
-        "b_chi": 1.183,
+        "a_chi": 1.2, 
+        "b_chi": 2.3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -120,7 +120,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1.5e-4,
+        "kappa": 1e-3,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
