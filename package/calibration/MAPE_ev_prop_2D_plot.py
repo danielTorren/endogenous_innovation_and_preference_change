@@ -280,7 +280,7 @@ def main(fileName, dpi=300):
         #serial_data = load_object(fileName + "/Data", "data_flat_ev_prop")
         base_params = load_object(fileName + "/Data", "base_params")
         data_array_ev_prop = load_object(fileName + "/Data", "data_array_ev_prop")
-        data_array_price_range = load_object(fileName + "/Data", "data_price_range_arr")
+        #data_array_price_range = load_object(fileName + "/Data", "data_price_range_arr")
         vary_1 = load_object(fileName + "/Data", "vary_1")
         vary_2 = load_object(fileName + "/Data", "vary_2")
     except FileNotFoundError:
@@ -295,26 +295,25 @@ def main(fileName, dpi=300):
     #print("EV_stock_prop_2016_22",len(EV_stock_prop_2016_22))
     # Plot heatmaps for different metrics
 
-    plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi)
+    #plot_price_heatmap(base_params, data_array_price_range, vary_1, vary_2, fileName, dpi)
 
-    plt.show()
     # Plot EV uptake heatmap
     plot_ev_uptake_heatmap(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
     # Plot EV uptake contour plot
     plot_ev_uptake_contour(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
 
-    plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
-    plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_mape_vectorized, "mape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_smape, "smape", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_mse, "mse", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_metric_heatmap(calc_rmse, "rmse", base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
     # Plot best parameters from all metrics
-    plot_best_parameters_all_metrics(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
+    #plot_best_parameters_all_metrics(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName, dpi)
 
-    plot_ev_stock_all_combinations(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName)
+    #plot_ev_stock_all_combinations(base_params, EV_stock_prop_2016_22, data_array_ev_prop, vary_1, vary_2, fileName)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/MAPE_ev_2D_08_59_43__26_03_2025")
+    main("results/MAPE_ev_2D_09_43_55__26_03_2025")
