@@ -2,6 +2,6 @@
     "property_varied": "b_chi",
     "subdict":"parameters_social_network",
     "min": 1.5,
-    "max": 2,
+    "max": 2.5,
     "reps": 4
 }     
