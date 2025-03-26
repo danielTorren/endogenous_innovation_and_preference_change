@@ -166,6 +166,19 @@ class SecondHandMerchant:
         if len(self.cars_on_sale) > self.max_num_cars:
             # Calculate how many cars to remove
             num_cars_to_remove = len(self.cars_on_sale) - self.max_num_cars
+            # Randomly select cars to remove
+            cars_to_remove = self.random_state.choice(
+                self.cars_on_sale, num_cars_to_remove, replace=False
+            )
+            # Add ages of removed cars
+            self.age_second_hand_car_removed.extend(vehicle.L_a_t for vehicle in cars_to_remove)
+            # Use list comprehension to filter out the cars to remove
+            self.cars_on_sale = [car for car in self.cars_on_sale if car not in cars_to_remove] 
+        """
+        #REMOVE EXCESS CARS
+        if len(self.cars_on_sale) > self.max_num_cars:
+            # Calculate how many cars to remove
+            num_cars_to_remove = len(self.cars_on_sale) - self.max_num_cars
 
             # Sort cars by age in descending order (oldest first)
             self.cars_on_sale.sort(key=lambda car: car.L_a_t, reverse=True)
@@ -178,7 +191,8 @@ class SecondHandMerchant:
 
             # Keep only the remaining cars (i.e., exclude the removed ones)
             self.cars_on_sale = self.cars_on_sale[num_cars_to_remove:]
-
+        """
+        
     def add_to_stock(self,vehicle):
         #add new car to stock
         vehicle.price = vehicle.price_second_hand_merchant
