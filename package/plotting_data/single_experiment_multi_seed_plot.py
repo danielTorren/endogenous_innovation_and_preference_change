@@ -966,7 +966,7 @@ def main(fileName, dpi=300):
                         "Total Utility", 
                         "history_total_utility",
                         annotation_height_prop = [0.2, 0.2, 0.2])
-                        
+
     plot_data_across_seeds(base_params, fileName,history_total_profit_arr, 
                         "Total Profit Over Time", 
                         "Time Step, months", 
@@ -1008,4 +1008,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_17_40_25__26_03_2025")
+    main("results/multi_seed_single_17_45_24__26_03_2025")
