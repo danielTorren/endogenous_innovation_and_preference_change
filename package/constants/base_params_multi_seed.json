@@ -59,13 +59,13 @@
         "delta": 0.00175,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 40000,
+        "mean_Price": 60000,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 5000,
+        "min_Cost": 0,
         "max_Cost": 70000
     }, 
     "parameters_EV":{
@@ -81,7 +81,7 @@
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 5000,
+        "min_Cost": 0,
         "max_Cost": 70000
     },
     "parameters_firm_manager": {
