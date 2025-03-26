@@ -80,6 +80,6 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_MAPE_2D.json",
-        VARY_LOAD_1 ="package/constants/vary_single_beta_segments_MAPE.json", 
-        VARY_LOAD_2 ="package/constants/vary_single_gamma_segments_MAPE.json",
+        VARY_LOAD_1 ="package/constants/vary_single_beta_a_innov_MAPE.json", 
+        VARY_LOAD_2 ="package/constants/vary_single_beta_b_innov_MAPE.json",
         )
