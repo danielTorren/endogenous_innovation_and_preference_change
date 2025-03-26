@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 0,
+    "duration_future": 144,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -93,17 +93,17 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0.5,0],
         "production_emissions":10000,
-        "delta": 0.002,
+        "delta": 0.0022,
         "delta_P": 0.0116,
         "transportType": 2,
-        "mean_Price": 39290,
+        "mean_Price": 50000,
         "min_Efficiency": 0.79,
         "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 0,#5000,
-        "max_Cost": 58150
+        "min_Cost": 10000,
+        "max_Cost": 70000
     }, 
     "parameters_EV":{
         "prop_explore": 0.1,
@@ -118,11 +118,11 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 0,#5000,
-        "max_Cost": 58150
+        "min_Cost": 10000,
+        "max_Cost": 70000
     },
     "parameters_firm_manager": {
-        "J": 16,
+        "J": 20,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
@@ -142,8 +142,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.1968, 
-        "b_chi": 2.6805,
+        "a_chi": 3, 
+        "b_chi": 3,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1.5e-4,
+        "kappa": 1e-3,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 0
+    RUN_PLOT = 1
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)

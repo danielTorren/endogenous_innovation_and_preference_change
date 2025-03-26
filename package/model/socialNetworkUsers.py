@@ -477,7 +477,24 @@ class Social_Network:
         return offer_prices
 
 ########################################################################################################
-    
+    def generate_individual_masks(self, num_individuals, num_second_hand_cars):
+        """
+        Creates a mask where each individual sees a random subset of up to 320 second-hand cars.
+        Returns: (num_individuals, num_second_hand_cars) boolean array
+        """
+        mask = np.zeros((num_individuals, num_second_hand_cars), dtype=bool)
+        
+        for i in range(num_individuals):
+            # Randomly select up to 320 indices (without replacement)
+            selected_indices = self.random_state.choice(
+                num_second_hand_cars,
+                size=min(320, num_second_hand_cars),  # Ensure we don't exceed available cars
+                replace=False
+            )
+            mask[i, selected_indices] = True  # Enable only these cars
+        
+        return mask
+
     def gen_mask(self, available_and_current_vehicles_list, consider_ev_vec):
         # Generate individual masks based on vehicle type and user conditions
         # Create a boolean vector where True indicates that a vehicle is NOT an EV (non-EV)
@@ -667,8 +684,46 @@ class Social_Network:
         return vehicle_dict_vecs
 
 ##############################################################################################################################################################
-
     def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+        # New cars (unchanged)
+        NC_utilities = self.vectorised_calculate_utility_new_cars(
+            self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, 
+            second_hand_merchant_offer_price, d_vec, nu_vec
+        )
+        
+        car_options = self.new_cars.copy()
+        total_columns = NC_utilities.shape[1]
+        
+        if self.second_hand_cars:
+            num_second_hand = len(self.second_hand_cars)
+            num_individuals = len(beta_vec)
+            
+            # Generate per-individual masks (each gets up to 320 cars)
+            sh_mask = self.generate_individual_masks(num_individuals, num_second_hand)
+            
+            # Calculate utilities for ALL second-hand cars (we'll mask later)
+            SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_second_hand(self.second_hand_cars)
+            SH_utilities = self.vectorised_calculate_utility_second_hand_cars(
+                SH_vehicle_dict_vecs, beta_vec, gamma_vec, 
+                second_hand_merchant_offer_price, d_vec, nu_vec
+            )
+            
+            # Apply mask: set non-selected cars to -inf utility
+            SH_utilities[~sh_mask] = -np.inf
+            
+            total_columns += SH_utilities.shape[1]
+            car_options += self.second_hand_cars
+        
+        # Combine matrices
+        utilities_matrix = np.full((len(beta_vec), total_columns), -np.inf)
+        utilities_matrix[:, :NC_utilities.shape[1]] = NC_utilities
+        
+        if self.second_hand_cars:
+            utilities_matrix[:, NC_utilities.shape[1]:] = SH_utilities
+        
+        return utilities_matrix, car_options
+
+    def generate_utilities_old(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
 
 
         # Generate utilities
