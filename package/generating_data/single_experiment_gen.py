@@ -41,7 +41,7 @@ if __name__ == "__main__":
     "duration_burn_in": 180,
     "duration_calibration": 276,
     "duration_future": 0,
-    "save_timeseries_data_state": 0,
+    "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
     "seed_inputs": 22,
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 5000,
+        "min_Cost": 0,#5000,
         "max_Cost": 58150
     }, 
     "parameters_EV":{
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 5000,
+        "min_Cost": 0,#5000,
         "max_Cost": 58150
     },
     "parameters_firm_manager": {
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     """
     Will also plot stuff at the same time for convieniency
     """
-    RUN_PLOT = 1
+    RUN_PLOT = 0
     print("fileName",fileName)
     if RUN_PLOT:
         plotting_main(fileName = fileName)
