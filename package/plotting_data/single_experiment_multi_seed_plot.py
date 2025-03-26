@@ -938,7 +938,7 @@ def main(fileName, dpi=300):
     #                "Time Step, months", 
     #                "Total Emissions, kgCO2", 
     #                "history_total_driving_emissions_and_index")
-
+    """
     plot_data_across_seeds(base_params, fileName,history_driving_emissions_arr, 
                         "Total Driving Emissions Over Time", 
                         "Time Step, months", 
@@ -966,6 +966,16 @@ def main(fileName, dpi=300):
                         "Total Utility", 
                         "history_total_utility",
                         annotation_height_prop = [0.2, 0.2, 0.2])
+                        
+    plot_data_across_seeds(base_params, fileName,history_total_profit_arr, 
+                        "Total Profit Over Time", 
+                        "Time Step, months", 
+                        "Total Profit, $", 
+                        "history_total_profit",
+                        annotation_height_prop = [0.2, 0.8, 0.8]
+    )
+
+    """
 
     plot_data_across_seeds(base_params, fileName,history_market_concentration_arr, 
                         "Market Concentration Over Time", 
@@ -974,13 +984,7 @@ def main(fileName, dpi=300):
                         "history_market_concentration",
                         annotation_height_prop = [0.8, 0.8, 0.8])
 
-    plot_data_across_seeds(base_params, fileName,history_total_profit_arr, 
-                        "Total Profit Over Time", 
-                        "Time Step, months", 
-                        "Total Profit, $", 
-                        "history_total_profit",
-                        annotation_height_prop = [0.2, 0.8, 0.8]
-    )
+
 
     plot_data_across_seeds(base_params, fileName,history_mean_car_age_arr, 
                         "Mean car age Over Time", 
@@ -1004,4 +1008,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/multi_seed_single_17_32_19__26_03_2025")
+    main("results/multi_seed_single_17_40_25__26_03_2025")
