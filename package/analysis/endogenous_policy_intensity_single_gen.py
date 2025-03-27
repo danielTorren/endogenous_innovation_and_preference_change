@@ -113,9 +113,24 @@ def optimize_policy_intensity_BO(base_params, controller_files, policy_name, tar
           f"E_D = {mean_emissions_cumulative_driving}, E_P = {mean_emissions_cumulative_production}, "
           f"U = {mean_utility_cumulative}, Profit = {mean_profit_cumulative}")
 
-    return best_intensity, mean_ev_uptake, sd_ev_uptake, mean_total_cost, mean_net_cost, \
-           mean_emissions_cumulative, mean_emissions_cumulative_driving, mean_emissions_cumulative_production, \
-           mean_utility_cumulative, mean_profit_cumulative
+    return (
+            best_intensity,
+            mean_ev_uptake, 
+            sd_ev_uptake, 
+            mean_total_cost, 
+            mean_net_cost, 
+            mean_emissions_cumulative, 
+            mean_emissions_cumulative_driving, 
+            mean_emissions_cumulative_production, 
+            mean_utility_cumulative, 
+            mean_profit_cumulative,
+            EV_uptake_arr,
+            net_cost_arr,
+            emissions_cumulative_driving_arr,
+            emissions_cumulative_production_arr,
+            utility_cumulative_arr,
+            profit_cumulative_arr
+    )
 
 ####################################################
 
@@ -173,7 +188,24 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
     policy_outcomes = {}
 
     for policy_name in policy_list:
-        best_intensity, mean_ev_uptake, sd_ev_uptake , mean_total_cost, mean_net_cost, mean_emissions_cumulative,  mean_emissions_cumulative_driving, mean_emissions_cumulative_production, mean_utility_cumulative, mean_profit_cumulative = optimize_policy_intensity_BO(
+        (
+            best_intensity,
+            mean_ev_uptake, 
+            sd_ev_uptake, 
+            mean_total_cost, 
+            mean_net_cost, 
+            mean_emissions_cumulative, 
+            mean_emissions_cumulative_driving, 
+            mean_emissions_cumulative_production, 
+            mean_utility_cumulative, 
+            mean_profit_cumulative,
+            ev_uptake,
+            net_cost,
+            emissions_cumulative_driving,
+            emissions_cumulative_production,
+            utility_cumulative,
+            profit_cumulative 
+        ) = optimize_policy_intensity_BO(
             base_params, controller_files, policy_name, target_ev_uptake=target_ev_uptake,
             bounds=bounds_dict[policy_name], n_calls=n_calls, noise = noise
         )
@@ -188,7 +220,13 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
             "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
             "mean_utility_cumulative": mean_utility_cumulative, 
-            "mean_profit_cumulative": mean_profit_cumulative
+            "mean_profit_cumulative": mean_profit_cumulative,
+            "ev_uptake": ev_uptake,
+            "net_cost": net_cost,
+            "emissions_cumulative_driving": emissions_cumulative_driving,
+            "emissions_cumulative_production": emissions_cumulative_production,
+            "utility_cumulative": utility_cumulative,
+            "profit_cumulative": profit_cumulative
         }
 
     save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
