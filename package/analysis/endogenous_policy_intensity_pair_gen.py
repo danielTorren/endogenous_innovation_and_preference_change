@@ -169,8 +169,8 @@ def main(
     #print(policy_pairs[5:8])
     #print(policy_pairs[8:])
     
-    policy_pairs = policy_pairs[:12]
-    #policy_pairs = policy_pairs[12:]
+    #policy_pairs = policy_pairs[:12]
+    policy_pairs = policy_pairs[12:]
 
     #policy_pairs = policy_pairs[:5]
     #policy_pairs = policy_pairs[5:8]
