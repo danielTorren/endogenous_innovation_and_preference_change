@@ -179,7 +179,7 @@ if __name__ == "__main__":
     
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_2D_gen.json",
-        repetitions=5, 
+        repetitions=16, 
         policy_pairs=policy_pairs,
         bounds_LOAD="package/analysis/policy_bounds_vary_policy_2D_gen.json",
     )
