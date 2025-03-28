@@ -4,6 +4,7 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 from package.resources.utility import load_object, createFolder
 from matplotlib.patches import Patch
+from matplotlib.collections import PathCollection
 from matplotlib.path import Path
 
 # Define all possible measures and their indices
@@ -121,7 +122,7 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
                 
                 # Dotted outline
                 ax_top.scatter(emissions[i,j], cost[i,j], 
-                              s=scale, marker=full_circle_marker(), 
+                              s=350, marker=full_circle_marker(), 
                               facecolor='none', edgecolor='black', 
                               linewidth=1.0, alpha=1, linestyle='dashed', zorder=2)
                 
@@ -160,22 +161,41 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
                                 color=policy_colors[policy2], edgecolor="black",
                                 alpha=opacity, zorder=2)
     
-    # --- BAU point
-
+    # --- BAU point with proper error bars ---
     bau_net_cost = (outcomes_BAU["mean_net_cost"])*1e-9
-    bau_utility= outcomes_BAU["mean_utility_cumulative"]*12*1e-9
+    bau_utility = outcomes_BAU["mean_utility_cumulative"]*12*1e-9
     bau_emission = outcomes_BAU["mean_emissions_cumulative"] * 1e-9
 
-    bau_emission_err = 1.96 * np.std(outcomes_BAU["ev_uptake"]) / np.sqrt(n_seeds) * 1e-9
+    # Calculate standard errors (make sure these keys exist in your outcomes_BAU dictionary)
+    print(outcomes_BAU)
+    quit()
+    bau_emission_err = 1.96 * np.std(outcomes_BAU["emissions_cumulative"]) / np.sqrt(n_seeds) * 1e-9
     bau_utility_err = 1.96 * np.std(outcomes_BAU["utility_cumulative"]) / np.sqrt(n_seeds) * 12 * 1e-9
     bau_net_cost_err = 1.96 * np.std(outcomes_BAU["net_cost"]) / np.sqrt(n_seeds) * 1e-9
-    
-    print()
-    ax_top.scatter(bau_emission, bau_net_cost, color='black', marker='o', s=scale, edgecolor='black')
-    ax_bottom.scatter(bau_emission, bau_utility, color='black', marker='o', s=scale, edgecolor='black')
-    # Error bars
-    ax_bottom.plot(bau_emission_err, bau_net_cost_err, color='gray', alpha=opacity*0.5, zorder=1)
-    ax_bottom.plot(bau_emission_err, bau_utility_err, color='gray', alpha=opacity*0.5, zorder=1)
+
+    # Plot BAU points
+    bau_marker_size = 350  # Same as other markers
+    ax_top.scatter(bau_emission, bau_net_cost, color='black', marker='o', s=bau_marker_size, 
+                edgecolor='black', zorder=3, label='BAU')
+    ax_bottom.scatter(bau_emission, bau_utility, color='black', marker='o', s=bau_marker_size, 
+                    edgecolor='black', zorder=3, label='BAU')
+
+    # Plot error bars (matching your existing style)
+    # Top panel (Cost vs Emissions)
+    ax_top.plot([bau_emission - bau_emission_err, bau_emission + bau_emission_err],
+                [bau_net_cost, bau_net_cost],
+                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
+    ax_top.plot([bau_emission, bau_emission],
+                [bau_net_cost - bau_net_cost_err, bau_net_cost + bau_net_cost_err],
+                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
+
+    # Bottom panel (Utility vs Emissions)
+    ax_bottom.plot([bau_emission - bau_emission_err, bau_emission + bau_emission_err],
+                [bau_utility, bau_utility],
+                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
+    ax_bottom.plot([bau_emission, bau_emission],
+                [bau_utility - bau_utility_err, bau_utility + bau_utility_err],
+                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
     
     # --- Formatting ---
     # Top panel
@@ -188,28 +208,57 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     ax_bottom.grid(alpha=0.3)
 
     
-    # Create comprehensive legend
-    legend_elements = [
-        Patch(facecolor=policy_colors[policy], edgecolor='black',
-             label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f}-{policy_ranges[policy]['max']:.2f})")
-        for policy in all_policies
-    ]
-    legend_elements.extend([
-        Patch(facecolor='gray', edgecolor='gray', alpha=0.5,
-             label='95% Confidence Interval'),
-    ])
-    legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    # --- Create custom legend elements with intensity indicators ---
+    legend_elements = []
     
-    # Place legend in bottom right of lower plot
-    ax_bottom.legend(
-        handles=legend_elements, 
+    # Add policy color patches
+    for policy in all_policies:
+        legend_elements.append(
+            Patch(facecolor=policy_colors[policy], edgecolor='black',
+                 label=f"{policy.replace('_', ' ')}")
+        )
+    
+    # Add intensity indicator half-circles
+    scale = 350  # Base size matching your plot
+    low_size = scale * 0.3  # Small size for low intensity
+    high_size = scale * 1.0  # Large size for high intensity
+    
+    # Create proxy artists for the intensity indicators
+    low_intensity_proxy = plt.scatter([], [], s=low_size, 
+                                    marker=half_circle_marker(0, 180),
+                                    facecolor='gray', edgecolor='black')
+    high_intensity_proxy = plt.scatter([], [], s=high_size, 
+                                     marker=half_circle_marker(0, 180),
+                                     facecolor='gray', edgecolor='black')
+    
+    legend_elements.extend([
+        low_intensity_proxy,
+        plt.Line2D([0], [0], marker='', color='w', label='Low intensity',
+                  markerfacecolor='w', markersize=0),
+        high_intensity_proxy,
+        plt.Line2D([0], [0], marker='', color='w', label='High intensity',
+                  markerfacecolor='w', markersize=0),
+        Patch(facecolor='gray', edgecolor='gray', alpha=0.5,
+             label='95% CI'),
+        Patch(facecolor='black', edgecolor='black',
+             label='Business as Usual')
+    ])
+    
+    # Place legend in bottom right
+    leg = ax_bottom.legend(
+        handles=legend_elements,
         loc='lower right',
-        bbox_to_anchor=(1.0, 0.0),  # Anchors to bottom right corner
-        ncol=1,  # Single column for vertical layout
-        fontsize=10,
-        framealpha=1  # Make legend background opaque
+        fontsize=9,
+        framealpha=1,
+        handletextpad=1.5,
+        borderpad=1
     )
-
+    
+    # Adjust legend layout
+    for handle in leg.legendHandles:
+        if isinstance(handle, PathCollection):  # The half-circle markers
+            handle.set_sizes([30])  # Standardize legend marker size
+    
     plt.tight_layout()
     
     # Save
@@ -243,5 +292,5 @@ def main(file_name, fileName_BAU):
 if __name__ == "__main__":
     main(
         file_name="results/vary_two_policies_gen_19_45_01__27_03_2025",
-        fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
+        fileName_BAU="results/BAU_runs_16_54_04__28_03_2025",
         )
