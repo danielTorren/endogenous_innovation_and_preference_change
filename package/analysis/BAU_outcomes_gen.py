@@ -42,7 +42,13 @@ def main(
         "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
         "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
         "mean_utility_cumulative": mean_utility_cumulative, 
-        "mean_profit_cumulative": mean_profit_cumulative
+        "mean_profit_cumulative": mean_profit_cumulative,
+        "ev_uptake": EV_uptake_arr,
+        "net_cost": net_cost_arr,
+        "emissions_cumulative_driving": emissions_cumulative_driving_arr,
+        "emissions_cumulative_production": emissions_cumulative_production_arr,
+        "utility_cumulative": utility_cumulative_arr,
+        "profit_cumulative": profit_cumulative_arr
     }
 
     print("outcomes", outcomes)
