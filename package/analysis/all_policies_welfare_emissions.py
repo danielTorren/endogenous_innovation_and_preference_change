@@ -64,7 +64,7 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
                 welfare = (entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
                         if measure == "mean_utility_cumulative" else entry[measure] * 1e-9)
                 intensity = entry["optimized_intensity"]
-                policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], intensity)
+                policy_ranges[policy]["min"] = 0
                 policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], intensity)
                 policy_points[policy].append((emissions, welfare, intensity))
                 plotted_points_single.append((emissions, welfare, policy, intensity))
@@ -77,6 +77,7 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
 
     plotted_points = []
     for (policy1, policy2), data in pairwise_outcomes_complied.items():
+        print("pairwise_outcomes_complied",(policy1, policy2) )
                 # Filter again for uptake bounds
         mean_uptake = np.array([entry["mean_ev_uptake"] for entry in data])
         mask = (mean_uptake >= min_val) & (mean_uptake <= max_val)
@@ -88,9 +89,9 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
                        if measure == "mean_utility_cumulative" else entry[measure] * 1e-9)
             intensity1 = entry["policy1_value"]
             intensity2 = entry["policy2_value"]
-            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], intensity1)
+            policy_ranges[policy1]["min"] = 0
             policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], intensity1)
-            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], intensity2)
+            policy_ranges[policy2]["min"] = 0
             policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], intensity2)
 
             plotted_points.append((emissions, welfare, policy1, policy2, intensity1, intensity2))
@@ -125,6 +126,7 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
     all_colors1 = np.array(all_colors1)
     all_colors2 = np.array(all_colors2)
 
+    """
     # --- Pareto frontier detection
     frontier_idx = []
     if measure in ["mean_utility_cumulative", "mean_profit_cumulative"]:
@@ -181,6 +183,7 @@ def plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied,
 
         lc = LineCollection(segments, colors=colors, linewidths=3, zorder=3)
         ax.add_collection(lc)
+    """
 
     # --- BAU point
     bau_welfare = (outcomes_BAU["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
@@ -360,9 +363,9 @@ def plot_ev_uptake_std(pairwise_outcomes_complied, file_name,
             std = entry["sd_ev_uptake"]
             intensity1 = entry["policy1_value"]
             intensity2 = entry["policy2_value"]
-            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], intensity1)
+            policy_ranges[policy1]["min"] = 0
             policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], intensity1)
-            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], intensity2)
+            policy_ranges[policy2]["min"] = 0
             policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], intensity2)
             plotted_points.append((std, policy1, policy2, intensity1, intensity2))
 
@@ -408,7 +411,6 @@ def plot_ev_uptake_std(pairwise_outcomes_complied, file_name,
 
     save_path = f'{file_name}/Plots/ev_uptake_std.png'
     plt.savefig(save_path, dpi=dpi)
-
 
 
 def plot_ev_uptake_vs_std(pairwise_outcomes_complied, file_name,
@@ -508,18 +510,11 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     else:
         for fileName in fileNames:
             pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
-
-
             pairwise_outcomes_complied.update(pairwise_outcomes)
 
-    del pairwise_outcomes_complied[('Adoption_subsidy', 'Adoption_subsidy_used')]
-    del pairwise_outcomes_complied[('Adoption_subsidy',  'Electricity_subsidy')]
-    del pairwise_outcomes_complied[('Carbon_price','Electricity_subsidy') ]
 
-    print(pairwise_outcomes_complied)
-    #BAU
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
-    
+    """
     min_ev_uptake = 0
     max_ev_uptake = 1
 
@@ -533,22 +528,19 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     plot_ev_uptake_vs_std(pairwise_outcomes_complied, file_name,
                           outcomes_BAU, single_policy_outcomes, dpi=600)
     
-
+    """
     #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
     #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
     #plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, fileName,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
     #plt.show()
 
-    min_ev_uptake = 0.945
-    max_ev_uptake = 0.955
+    min_ev_uptake = 0.948
+    max_ev_uptake = 0.952
 
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, file_name,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_utility_cumulative","Utility", dpi=300)
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, file_name,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_profit_cumulative","Profit",  dpi=300)
     plot_welfare_component_vs_emissions(base_params, pairwise_outcomes_complied, file_name,  min_ev_uptake , max_ev_uptake,  outcomes_BAU, single_policy_outcomes,"mean_net_cost", "Net Cost", dpi=300)
     
-
-
-
 
     save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
     save_object(base_params, file_name + "/Data", "base_params")
@@ -557,7 +549,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_20_29_40__23_03_2025", "results/endog_pair_20_31_14__23_03_2025", "results/endog_pair_20_32_50__23_03_2025", "results/endog_pair_12_09_32__24_03_2025", "results/endog_pair_12_08_29__24_03_2025", "results/endog_pair_12_11_19__24_03_2025"],
+        fileNames=["results/endog_pair_21_21_24__27_03_2025","results/endog_pair_20_09_20__27_03_2025"],
         fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
         fileNames_single_policies = "results/endog_single_00_16_15__21_03_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

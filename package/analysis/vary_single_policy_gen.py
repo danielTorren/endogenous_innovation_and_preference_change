@@ -45,7 +45,6 @@ def single_policy_simulation(params, controller_load):
     return [data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative]
 
 
-
 def grid_search_policy_with_seeds(grid_scenarios, controller_files):
     """
     Perform parallel execution of all policy scenarios and seeds,

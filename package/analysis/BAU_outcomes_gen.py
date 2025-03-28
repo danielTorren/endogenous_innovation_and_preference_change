@@ -43,6 +43,8 @@ def main(
         "mean_profit_cumulative": mean_profit_cumulative
     }
 
+    print("outcomes", outcomes)
+
     save_object(outcomes, file_name + "/Data", "outcomes")#
 
     shutil.rmtree(Path(file_name) / "Calibration_runs", ignore_errors=True)

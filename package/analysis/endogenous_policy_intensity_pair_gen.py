@@ -163,14 +163,16 @@ def main(
         #( 'Electricity_subsidy', 'Adoption_subsidy'),
     #    ('Electricity_subsidy', 'Carbon_price' ) 
     #]
-    print("policy_pairs", policy_pairs)
+    #print("policy_pairs", policy_pairs)
 
     #print(policy_pairs[:5])
     #print(policy_pairs[5:8])
     #print(policy_pairs[8:])
     
-    #policy_pairs = policy_pairs[:12]
-    policy_pairs = policy_pairs[12:]
+    policy_pairs = policy_pairs[:12]
+    print(policy_pairs)
+    quit()
+    #policy_pairs = policy_pairs[12:]
 
     #policy_pairs = policy_pairs[:5]
     #policy_pairs = policy_pairs[5:8]
