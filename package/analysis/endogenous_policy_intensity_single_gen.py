@@ -226,8 +226,10 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             "emissions_cumulative_driving": emissions_cumulative_driving,
             "emissions_cumulative_production": emissions_cumulative_production,
             "utility_cumulative": utility_cumulative,
-            "profit_cumulative": profit_cumulative
+            "profit_cumulative": profit_cumulative,
+            "confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
         }
+
 
     save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
 

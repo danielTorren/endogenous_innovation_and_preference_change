@@ -23,6 +23,7 @@ def main(
 
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
+    confidence_interval = 1.96 * np.std(EV_uptake_arr) / np.sqrt(len(EV_uptake_arr))
     mean_total_cost = np.mean(total_cost_arr)
     mean_net_cost = np.mean(net_cost_arr)
     mean_emissions_cumulative = np.mean(emissions_cumulative_arr)
@@ -34,6 +35,7 @@ def main(
     outcomes = {
         "mean_ev_uptake": mean_ev_uptake,
         "sd_ev_uptake": sd_ev_uptake,
+        "confidence_interval": confidence_interval,
         "mean_total_cost": mean_total_cost,
         "mean_net_cost": mean_net_cost, 
         "mean_emissions_cumulative": mean_emissions_cumulative, 

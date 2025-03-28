@@ -6,13 +6,6 @@ from package.resources.utility import load_object, createFolder
 from matplotlib.patches import Patch
 from matplotlib.path import Path
 
-
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-from matplotlib.path import Path
-from package.resources.utility import createFolder
-
 # Define all possible measures and their indices
 MEASURES = {
     "EV_Uptake": 0,
@@ -54,7 +47,7 @@ def scale_marker_size(value, policy, policy_ranges):
 def calculate_opacity_old(ev_uptake, min_ev_uptake, max_ev_uptake):
     return np.clip((ev_uptake - min_ev_uptake) / (max_ev_uptake - min_ev_uptake), 0, 1.0)
 
-def calculate_opacity(ev_uptake, min_ev_uptake=0.9, max_ev_uptake=0.95):
+def calculate_opacity_other(ev_uptake, min_ev_uptake=0.9, max_ev_uptake=0.95):
     """
     Calculate opacity that reaches 1 at max_ev_uptake (default 0.95)
     and stays at 1 for all higher values.
@@ -63,6 +56,23 @@ def calculate_opacity(ev_uptake, min_ev_uptake=0.9, max_ev_uptake=0.95):
         return 1.0
     return np.clip((ev_uptake - min_ev_uptake) / (max_ev_uptake - min_ev_uptake), 0, 1)
 
+
+def calculate_opacity(ev_uptake, peak_ev=0.95, width=0.05):
+    """
+    Opacity peaks at `peak_ev` (default 0.95) and decreases linearly 
+    as EV uptake moves away from this value.
+    
+    Args:
+        ev_uptake (float): Current EV uptake value (0-1).
+        peak_ev (float): EV uptake value where opacity is maximum (default 0.95).
+        width (float): Controls how quickly opacity falls off (default ±0.05).
+    
+    Returns:
+        float: Opacity between 0 and 1.
+    """
+    distance = np.abs(ev_uptake - peak_ev)
+    opacity = 1 - (distance / width)
+    return np.clip(opacity, 0, 1)
 
 # Example usage:
 # generate_all_measure_plots(data_array, policy_pairs, "results/output", policy_info_dict)
@@ -466,11 +476,270 @@ def generate_all_measure_plots(data_array, policy_pairs, file_name, policy_info_
         )
         print("DONE: ", x_name, y_name)
 
-def main(file_name):
+def plot_3d_policy_comparison(data_array, policy_pairs, file_name, policy_info_dict, 
+                            min_ev_uptake=0.9, max_ev_uptake=1.0, dpi=300):
+    """
+    Creates a 3D scatter plot comparing utility, emissions, and net policy cost.
+    
+    Parameters:
+    - data_array: Array of shape (num_policy_pairs, p1_steps, p2_steps, seeds, outputs)
+    - policy_pairs: List of (policy1, policy2) tuples
+    - file_name: Base directory for saving plots
+    - policy_info_dict: Dictionary containing policy bounds
+    - min/max_ev_uptake: EV uptake range for filtering points
+    - dpi: Resolution for saved figures
+    """
+    # Create figure
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Get measure indices
+    utility_idx = MEASURES["Cumulative_Utility"]
+    cost_idx = MEASURES["Net_Policy_Cost"]
+    emissions_idx = MEASURES["Cumulative_Emissions"]
+    ev_idx = MEASURES["EV_Uptake"]
+    
+    # Color setup
+    color_map = plt.get_cmap('Set1', 10)
+    all_policies = sorted(list(set([p for pair in policy_pairs for p in pair])))
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
+    
+    # Process each policy pair
+    for pair_idx, (policy1, policy2) in enumerate(policy_pairs):
+        # Get data for this pair
+        pair_data = data_array[pair_idx]  # p1_steps × p2_steps × seeds × outputs
+        
+        # Calculate means across seeds
+        utility = np.mean(pair_data[:, :, :, utility_idx], axis=2) * 12 * 1e-9  # Convert to $bn/year
+        cost = np.mean(pair_data[:, :, :, cost_idx], axis=2) * 1e-9  # Convert to $bn
+        emissions = np.mean(pair_data[:, :, :, emissions_idx], axis=2) * 1e-6  # Convert to MTCO2
+        ev = np.mean(pair_data[:, :, :, ev_idx], axis=2)
+        
+        # Get policy intensities
+        p1_intensities = np.linspace(policy_info_dict['bounds_dict'][policy1][0],policy_info_dict['bounds_dict'][policy1][1],data_array.shape[1])
+        p2_intensities = np.linspace(policy_info_dict['bounds_dict'][policy2][0], policy_info_dict['bounds_dict'][policy2][1], data_array.shape[2])
+        
+        # Plot each combination
+        for i in range(len(p1_intensities)):
+            for j in range(len(p2_intensities)):
+                if not (min_ev_uptake <= ev[i,j] <= max_ev_uptake):
+                    continue
+                
+                # Calculate marker properties
+                opacity = calculate_opacity(ev[i,j], min_ev_uptake, max_ev_uptake)
+                size = 100 + 500 * (ev[i,j] - min_ev_uptake)/(max_ev_uptake - min_ev_uptake)
+                
+                # Plot point with composite color
+                ax.scatter(
+                    cost[i,j], emissions[i,j], utility[i,j],
+                    s=size,
+                    c=policy_colors[policy1],
+                    marker='o',
+                    alpha=opacity,
+                    edgecolors=[policy_colors[policy2]],
+                    linewidths=2
+                )
+    
+    # Labels and title
+    ax.set_xlabel('Net Policy Cost ($bn)', labelpad=10)
+    ax.set_ylabel('Cumulative Emissions (MTCO2)', labelpad=10)
+    ax.set_zlabel('Cumulative Utility ($bn/year)', labelpad=10)
+    ax.set_title('Policy Trade-offs: Cost vs Emissions vs Utility', pad=20)
+    
+    # Create legend
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+             label=f"{policy.replace('_', ' ')}")
+        for policy in all_policies
+    ]
+    ax.legend(handles=legend_elements, loc='upper right')
+    
+    # Adjust view
+    ax.view_init(elev=20, azim=-45)
+    
+    # Save and show
+    createFolder(f"{file_name}/Plots/3D_policy_comparison")
+    plt.tight_layout()
+    plt.savefig(f"{file_name}/Plots/3D_policy_comparison/cost_emissions_utility.png", dpi=dpi)
+    plt.show()
+
+
+def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, policy_info_dict,
+                           min_ev_uptake=0.9, max_ev_uptake=1.0, dpi=300):
+    """
+    Creates a 2-panel figure showing:
+    - Top: Net Policy Cost vs Emissions
+    - Bottom: Utility vs Emissions
+    Maintains all original visual encoding (marker sizes, opacity, legend)
+    """
+    # Create figure with two subplots sharing x-axis
+    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(7, 10), 
+                                          sharex=True,
+                                          gridspec_kw={'height_ratios': [1, 1.2]})
+    
+    # Get measure indices
+    emissions_idx = MEASURES["Cumulative_Emissions"]
+    utility_idx = MEASURES["Cumulative_Utility"]
+    cost_idx = MEASURES["Net_Policy_Cost"]
+    ev_idx = MEASURES["EV_Uptake"]
+    
+    # Color setup
+    color_map = plt.get_cmap('Set1', 10)
+    all_policies = sorted(list(set([p for pair in policy_pairs for p in pair])))
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
+    
+    # Calculate policy ranges
+    policy_ranges = {}
+    for policy in all_policies:
+        p_min, p_max = policy_info_dict['bounds_dict'][policy]
+        policy_ranges[policy] = {"min": p_min, "max": p_max}
+    
+    # Process each policy pair
+    for pair_idx, (policy1, policy2) in enumerate(policy_pairs):
+        # Get data for this pair
+        pair_data = data_array[pair_idx]
+        
+        # Calculate means and 95% CIs
+        emissions = np.mean(pair_data[:, :, :, emissions_idx], axis=2) * 1e-9  # MTCO2
+        utility = np.mean(pair_data[:, :, :, utility_idx], axis=2) * 12 * 1e-9  # $bn/year
+        cost = np.mean(pair_data[:, :, :, cost_idx], axis=2) * 1e-9  # $bn
+        ev = np.mean(pair_data[:, :, :, ev_idx], axis=2)
+        
+        # Calculate errors (95% CI)
+        n_seeds = pair_data.shape[2]
+        emissions_err = 1.96 * np.std(pair_data[:, :, :, emissions_idx], axis=2) / np.sqrt(n_seeds) * 1e-9
+        utility_err = 1.96 * np.std(pair_data[:, :, :, utility_idx], axis=2) / np.sqrt(n_seeds) * 12 * 1e-9
+        cost_err = 1.96 * np.std(pair_data[:, :, :, cost_idx], axis=2) / np.sqrt(n_seeds) * 1e-9
+        
+        # Get policy intensities
+        p1_intensities = np.linspace(policy_ranges[policy1]["min"],
+                                    policy_ranges[policy1]["max"],
+                                    data_array.shape[1])
+        p2_intensities = np.linspace(policy_ranges[policy2]["min"],
+                                    policy_ranges[policy2]["max"],
+                                    data_array.shape[2])
+        
+        # Plot each combination
+        for i in range(len(p1_intensities)):
+            for j in range(len(p2_intensities)):
+                if not (min_ev_uptake <= ev[i,j] <= max_ev_uptake):
+                    continue
+                
+                # Calculate visual properties
+                opacity = 1
+                size1 = scale_marker_size(p1_intensities[i], policy1, policy_ranges)
+                size2 = scale_marker_size(p2_intensities[j], policy2, policy_ranges)
+                
+                # --- Top Panel: Cost vs Emissions ---
+                # Error bars
+                ax_top.plot([emissions[i,j] - emissions_err[i,j], emissions[i,j] + emissions_err[i,j]], 
+                           [cost[i,j], cost[i,j]], 
+                           color='gray', alpha=opacity*0.5, zorder=1)
+                ax_top.plot([emissions[i,j], emissions[i,j]], 
+                           [cost[i,j] - cost_err[i,j], cost[i,j] + cost_err[i,j]], 
+                           color='gray', alpha=opacity*0.5, zorder=1)
+                
+                # Dotted outline
+                ax_top.scatter(emissions[i,j], cost[i,j], 
+                              s=350, marker=full_circle_marker(), 
+                              facecolor='none', edgecolor='black', 
+                              linewidth=1.0, alpha=1, linestyle='dashed')
+                
+                # Half-circle markers
+                ax_top.scatter(emissions[i,j], cost[i,j],
+                              s=size1, marker=half_circle_marker(0, 180),
+                              color=policy_colors[policy1], edgecolor="black",
+                              alpha=opacity, zorder=2)
+                ax_top.scatter(emissions[i,j], cost[i,j],
+                              s=size2, marker=half_circle_marker(180, 360),
+                              color=policy_colors[policy2], edgecolor="black",
+                              alpha=opacity, zorder=2)
+                
+                # --- Bottom Panel: Utility vs Emissions ---
+                # Error bars
+                ax_bottom.plot([emissions[i,j] - emissions_err[i,j], emissions[i,j] + emissions_err[i,j]], 
+                              [utility[i,j], utility[i,j]], 
+                              color='gray', alpha=opacity*0.5, zorder=1)
+                ax_bottom.plot([emissions[i,j], emissions[i,j]], 
+                              [utility[i,j] - utility_err[i,j], utility[i,j] + utility_err[i,j]], 
+                              color='gray', alpha=opacity*0.5, zorder=1)
+                
+                # Dotted outline
+                ax_bottom.scatter(emissions[i,j], utility[i,j], 
+                                s=350, marker=full_circle_marker(), 
+                                facecolor='none', edgecolor='black', 
+                                linewidth=1.0, alpha=1, linestyle='dashed')
+                
+                # Half-circle markers
+                ax_bottom.scatter(emissions[i,j], utility[i,j],
+                                s=size1, marker=half_circle_marker(0, 180),
+                                color=policy_colors[policy1], edgecolor="black",
+                                alpha=opacity, zorder=2)
+                ax_bottom.scatter(emissions[i,j], utility[i,j],
+                                s=size2, marker=half_circle_marker(180, 360),
+                                color=policy_colors[policy2], edgecolor="black",
+                                alpha=opacity, zorder=2)
+    
+    # --- BAU point
+    bau_net_cost = outcomes_BAU["mean_net_cost"]* 1e-9
+    bau_utility= outcomes_BAU["mean_utility_cumulative"] *12* 1e-9
+
+    bau_emissions = outcomes_BAU["mean_emissions_cumulative"] * 1e-9
+    ax_bottom.scatter(bau_emissions, bau_net_cost, color='black', marker='o', s=350, edgecolor='black', label="Business as Usual (BAU)")
+    ax_top.scatter(bau_emissions, bau_utility, color='black', marker='o', s=350, edgecolor='black')
+
+    # --- Formatting ---
+    # Top panel
+    ax_top.set_ylabel('Net Policy Cost ($bn)', fontsize=12)
+    ax_top.grid(alpha=0.3)
+    #ax_top.set_title('Policy Cost vs Emissions', pad=15, fontsize=14)
+    
+    # Bottom panel
+    ax_bottom.set_xlabel('Cumulative Emissions (MTCO2)', fontsize=12)
+    ax_bottom.set_ylabel('Cumulative Utility ($bn/year)', fontsize=12)
+    ax_bottom.grid(alpha=0.3)
+    #ax_bottom.set_title('Utility vs Emissions', pad=15, fontsize=14)
+    
+    # Create comprehensive legend
+    legend_elements = [
+        Patch(facecolor=policy_colors[policy], edgecolor='black',
+             label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f}-{policy_ranges[policy]['max']:.2f})")
+        for policy in all_policies
+    ]
+    legend_elements.extend([
+        Patch(facecolor='gray', edgecolor='gray', alpha=0.5,
+             label='95% Confidence Interval'),
+    ])
+    legend_elements.append(Patch(facecolor='black', edgecolor='black', label="Business as Usual (BAU)"))
+    
+    # Place legend in bottom right of lower plot
+    ax_bottom.legend(
+        handles=legend_elements, 
+        loc='lower right',
+        bbox_to_anchor=(1.0, 0.0),  # Anchors to bottom right corner
+        ncol=1,  # Single column for vertical layout
+        fontsize=10,
+        framealpha=1  # Make legend background opaque
+    )
+
+    plt.tight_layout()
+    
+    # Save
+    createFolder(f"{file_name}/Plots/emissions_tradeoffs")
+    plt.savefig(
+        f"{file_name}/Plots/emissions_tradeoffs/cost_utility_vs_emissions.png",
+        dpi=dpi,
+        bbox_inches='tight'
+    )
+    plt.show()
+
+def main(file_name, fileName_BAU):
     # Load data
     data_array = load_object(file_name + "/Data", "data_array")
     policy_pairs = load_object(file_name + "/Data", "policy_pairs")
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
+    outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
+    
     """
     # Create plots
     plot_policy_pair_effects(
@@ -490,15 +759,38 @@ def main(file_name):
         group_size=5,  # Number of policy pairs per figure
         dpi=300
     )
-    """
+    plot_3d_policy_comparison(
+        data_array=data_array,
+        policy_pairs=policy_pairs,
+        file_name=file_name,
+        policy_info_dict=policy_info_dict,
+        min_ev_uptake=0.948,
+        max_ev_uptake=1.0,
+        dpi=300
+    )
 
     #generate_all_measure_plots(data_array, policy_pairs, file_name, policy_info_dict,
     #                            min_ev_uptake=0.9, max_ev_uptake=1, dpi=300)
     
     generate_all_measure_plots(data_array, policy_pairs, file_name, policy_info_dict,
                                 min_ev_uptake=0.948, max_ev_uptake=1, dpi=300, opacity_state = False)
-    
+        
+    """
+
+    plot_emissions_tradeoffs(
+        outcomes_BAU,
+        data_array=data_array,
+        policy_pairs=policy_pairs,
+        file_name=file_name,
+        policy_info_dict=policy_info_dict,
+        min_ev_uptake=0.94,  # Your preferred EV uptake range
+        max_ev_uptake=0.96,
+        dpi=300
+    )
     plt.show()
 
 if __name__ == "__main__":
-    main(file_name="results/vary_two_policies_gen_19_45_01__27_03_2025")
+    main(
+        file_name="results/vary_two_policies_gen_19_45_01__27_03_2025",
+        fileName_BAU="results/BAU_runs_11_18_33__23_03_2025",
+        )
