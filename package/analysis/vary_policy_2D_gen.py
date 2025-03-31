@@ -54,7 +54,7 @@ def two_policy_simulation(params, controller_load):
     data = load_in_controller(controller_load, params)
     return [data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), 
             data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, 
-            data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative,, 
+            data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, 
             data.firm_manager.profit_cumulative]
 
 def grid_search_two_policies_with_seeds(grid_scenarios, controller_files):
