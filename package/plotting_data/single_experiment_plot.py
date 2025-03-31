@@ -1,3 +1,4 @@
+from cProfile import label
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -80,8 +81,18 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 def plot_total_utility(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(time_series, social_network.history_total_utility[base_params["duration_burn_in"]:], marker='o')
+    ax.legend()
     format_plot(ax, "Total Utility Over Time", "Time Step", "Total Utility", legend=False)
     save_and_show(fig, fileName, "total_utility", dpi)
+
+def plot_total_utility_per_capita(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(time_series, np.asarray(social_network.history_total_utility[base_params["duration_burn_in"]:])/social_network.num_individuals, marker='o')
+    ax.plot(time_series, social_network.history_total_utility_bottom[base_params["duration_burn_in"]:], label= "Poorest 50%")
+    ax.plot(time_series, social_network.history_total_utility_top[base_params["duration_burn_in"]:], label= "Richest 10%")
+    ax.legend()
+    format_plot(ax, "Utility per Capita Over Time", "Time Step", "Total Utility", legend=False)
+    save_and_show(fig, fileName, "total_utility_per_capita", dpi)
 
 def plot_carbon_price(base_params,controller, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -104,6 +115,7 @@ def plot_ev_consider_adoption_rate(base_params,social_network, time_series, file
     ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
+
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
@@ -120,9 +132,18 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     print(init_real, len(EV_stock_prop_2010_23) * 12)
     time_yearly = np.arange(init_real, init_real + len(EV_stock_prop_2010_23) * 12, 12)
 
+    # Calculate real-world EV adoption rate from stock increase
+    ev_stock_diff = np.diff(EV_stock_prop_2010_23)
+    ev_stock_growth_rate = ev_stock_diff / (1 - EV_stock_prop_2010_23[:-1])  # ΔEV / Δtotal_stock
+    ev_stock_growth_rate = np.clip(ev_stock_growth_rate, 0, 1)  # Keep it clean, avoid >1 due to noise
+
+    # Plot real adoption rate (new EVs as % of new stock)
+    ax.plot(time_yearly[1:], ev_stock_growth_rate, label="Implied Real EV Sales Share", linestyle=":", color="purple")
     ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
+    ax.plot(time_series, social_network.history_ev_adoption_rate_top[base_params["duration_burn_in"]:], label = "Adopt Rich", color = "orange")
+    ax.plot(time_series, social_network.history_ev_adoption_rate_bottom[base_params["duration_burn_in"]:], label = "Adopt Poor", color = "black")
     #ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars monthly", color = "grey", linestyle = "--")
     
     # Extract the relevant data after burn-in period
@@ -275,7 +296,7 @@ def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, 
     ev_min = [np.min(values) if values else np.nan for values in ev_history]
     ev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ev_history]
 
-    #print(len(ice_means), len(ice_means ), len(ev_means))
+
     #quit()
     # Plot ICE data
     ax.plot(time_series, ice_means[base_params["duration_burn_in"]:], label=f"ICE {attribute_name}", color="blue")
@@ -653,8 +674,6 @@ def plot_history_car_age( base_params,social_network,time_series, fileName, dpi,
 
 def plot_calibration_data(base_params, controller, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, axes = plt.subplots(ncols = 3,figsize=(10, 6))
-    #print(social_network.history_second_hand_bought)
-    #quit()
 
     axes[0].plot((controller.gas_price_california_vec[base_params["duration_burn_in"]:]))
     axes[1].plot((controller.electricity_price_vec[base_params["duration_burn_in"]:]))
@@ -770,8 +789,7 @@ def plot_history_count_buy_ratio(base_params, social_network, fileName, dpi=300,
     rolling_new = np.convolve(data_new, np.ones(window_size), mode='valid')
     rolling_sold = np.convolve(data_sold, np.ones(window_size), mode='valid')
 
-    print("rolling_new", rolling_new)
-    print("rolling_sold",rolling_sold)
+
     # Plot yearly new sales per total sold
     ax2.scatter(x_rolling, rolling_new / rolling_sold, label="Yearly new sales / Sold", color="tab:red")
 
@@ -1084,8 +1102,7 @@ def plot_battery(base_params, firm_manager,social_network,time_series,  fileName
     range_used_max = [np.max(values) if not np.isnan(values).all() else np.nan for values in range_used]
     range_used_min = [np.min(values) if not np.isnan(values).all() else np.nan for values in range_used]
     range_used_confidence_intervals = [1.96 * sem(values) if values.size > 0 and not np.isnan(values).all() else 0 for values in range_used]
-    #print(len(ice_means), len(ice_means ), len(ev_means))
-    #quit()
+
     # Plot ICE data
     fig, axes = plt.subplots(nrows=2, ncols=2,figsize=(10, 6))
 
@@ -1188,8 +1205,7 @@ def plot_price_history(base_params,firm_manager, time_series, fileName, dpi=300,
 
 def plot_car_sale_prop(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
-    #print(social_network.history_second_hand_bought)
-    #quit()
+
     ax.plot(time_series, social_network.history_second_hand_bought[base_params["duration_burn_in"]:],label = "second hand",  marker='o')
     ax.plot(time_series, social_network.history_new_car_bought[base_params["duration_burn_in"]:],label = "new cars",  marker='o')
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
@@ -1267,9 +1283,14 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
-
     plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
+
+    #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
+    plot_total_utility_per_capita(base_params,social_network, time_series, fileName, dpi)
+
+    plt.show()
+
+    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
@@ -1303,7 +1324,7 @@ def main(fileName, dpi=300):
     plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
 
     plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
-    #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
+
 
     #plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
     #
@@ -1318,4 +1339,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_13_14_29__25_03_2025")
+    main("results/single_experiment_15_32_23__31_03_2025")

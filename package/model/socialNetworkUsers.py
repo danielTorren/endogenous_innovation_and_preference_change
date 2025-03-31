@@ -46,13 +46,19 @@ class Social_Network:
         
         #self.max_utility_list = []
 
-        self.beta_median = np.median(self.beta_vec )
-        self.gamma_median = np.median(self.gamma_vec )
+
 
 
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
+
+        self.beta_median = np.median(self.beta_vec )
+        self.beta_rich = np.percentile(self.beta_vec, 90)
+        self.num_poor = self.num_individuals*0.5
+        self.num_rich = self.num_individuals*0.1
+
+        self.gamma_median = np.median(self.gamma_vec)
 
         self.emissions_cumulative = 0
         self.emissions_cumulative_production = 0
@@ -415,6 +421,7 @@ class Social_Network:
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow_history.append(self.emissions_flow)
+
 
         return user_vehicle_list
 
@@ -855,6 +862,8 @@ class Social_Network:
         self.total_production_emissions_ICE = 0
         self.total_production_emissions_EV = 0
         self.total_utility = 0
+        self.total_utility_bottom = 0
+        self.total_utility_top = 0
         self.total_distance_travelled = 0
         self.total_distance_travelled_ICE = 0
         self.ICE_users = 0 
@@ -943,6 +952,12 @@ class Social_Network:
             self.EV_users += 1
             
         self.total_utility +=  utility
+        if self.beta_vec[person_index] < self.beta_median:
+            self.total_utility_bottom += utility
+        
+        if self.beta_vec[person_index] > self.beta_rich:
+            self.total_utility_top += utility
+
         self.total_distance_travelled += driven_distance
             
         if isinstance(vehicle_chosen, PersonalCar):
@@ -962,9 +977,13 @@ class Social_Network:
         self.history_production_emissions_EV = []
         self.history_total_emissions = []
         self.history_total_utility = []
+        self.history_total_utility_bottom = []
+        self.history_total_utility_top = []
         self.history_total_distance_driven = []
         self.history_total_distance_driven_ICE = []
         self.history_ev_adoption_rate = []
+        self.history_ev_adoption_rate_top = []
+        self.history_ev_adoption_rate_bottom = []
         self.history_consider_ev_rate = []
         self.history_consider_ev = []
         self.history_ICE_users = []
@@ -1149,9 +1168,17 @@ class Social_Network:
         self.history_production_emissions_EV.append(self.total_production_emissions_EV)
         self.history_total_emissions.append(self.total_production_emissions + self.total_driving_emissions)
         self.history_total_utility.append(self.total_utility)
+        self.history_total_utility_bottom.append(self.total_utility_bottom/self.num_poor)
+        self.history_total_utility_top.append(self.total_utility_top/self.num_rich)
         self.history_total_distance_driven.append(self.total_distance_travelled)
         self.history_total_distance_driven_ICE.append(self.total_distance_travelled_ICE)
         self.history_ev_adoption_rate.append(np.mean(self.ev_adoption_vec))
+
+        ev_adoption_rate_top = np.mean([i for i, j in zip(self.ev_adoption_vec, self.beta_vec) if j > self.beta_rich])
+        ev_adoption_rate_bottom = np.mean([i for i, j in zip(self.ev_adoption_vec, self.beta_vec) if j < self.beta_median])
+        self.history_ev_adoption_rate_top.append(ev_adoption_rate_top)
+        self.history_ev_adoption_rate_bottom.append(ev_adoption_rate_bottom)
+
         self.history_consider_ev_rate.append(np.mean(self.consider_ev_vec))
         self.history_consider_ev.append(self.consider_ev_vec)
         self.history_ICE_users.append(self.ICE_users)
@@ -1290,8 +1317,6 @@ class Social_Network:
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
         self.update_EV_stock()
-
-        #print("median profit", np.median(self.max_utility_list), np.mean(self.max_utility_list))
         
         self.t_social_network +=1
         

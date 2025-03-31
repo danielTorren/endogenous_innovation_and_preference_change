@@ -10,7 +10,7 @@ from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
 from scipy.stats import lognorm
-
+from copy import deepcopy
 class Controller:
     def __init__(self, parameters_controller):
 
@@ -134,6 +134,8 @@ class Controller:
         self.duration_calibration = parameters_controller["duration_calibration"] 
         self.duration_future = parameters_controller["duration_future"] 
         self.duration_burn_in_firms = parameters_controller["duration_burn_in_research"] 
+
+        self.t_2030 = self.duration_burn_in + self.duration_calibration + 6*12#1/1/20230
 
         if self.duration_future > 0: 
             self.full_run_state = True
@@ -810,6 +812,10 @@ class Controller:
     def update_social_network(self):
         # Update social network based on firm preferences
         consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration)
+        
+        if self.t_controller == self.t_2030:
+            self.utility_cum_2030 = deepcopy(self.social_network.utility_cumulative)
+        
         return consider_ev_vec, new_bought_vehicles
 
     def get_second_hand_cars(self):

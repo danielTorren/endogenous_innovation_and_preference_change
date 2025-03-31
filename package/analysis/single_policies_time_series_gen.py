@@ -119,8 +119,6 @@ def main(
     ##########################################################################################
 
     base_params = load_object(fileName + "/Data", "base_params")
-    if "duration_calibration" not in base_params:
-    base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
 
     base_params["parameters_policies"]["States"] = {#JUST TO BE SURE
         "Carbon_price": 0,
@@ -238,7 +236,7 @@ def main(
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endogenous_policy_intensity_18_17_27__06_03_2025"],
+        fileNames=["results/endog_single_09_09_57__27_03_2025"],
         min_val = 0.945,
         max_val = 0.955
     )

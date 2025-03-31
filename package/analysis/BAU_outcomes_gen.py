@@ -52,9 +52,8 @@ def main(
         "profit_cumulative": profit_cumulative_arr
     }
 
-    print("outcomes", outcomes)
 
-    save_object(outcomes, file_name + "/Data", "outcomes")#
+    save_object(outcomes, file_name + "/Data", "outcomes")
 
     shutil.rmtree(Path(file_name) / "Calibration_runs", ignore_errors=True)
 

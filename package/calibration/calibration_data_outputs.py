@@ -38,14 +38,19 @@ def load_in_output_data():
     #UP TO 2022 TO MATCH THE PRICING DATA!
     merged_data_filtered = merged_data[(merged_data['Data Year'] >= 2010) & (merged_data['Data Year'] <= 2023)]
 
-    print("merged_data_filtered", merged_data_filtered)
+    EV_sales = pd.read_excel("package/calibration_data/EV_Sales.xlsx") 
 
-    return merged_data_filtered['EV Prop'].to_numpy()
+
+    return merged_data_filtered['EV Prop'].to_numpy(), EV_sales["Sales_Prop"].to_numpy()
 
 if __name__ == "__main__":
-    EV_Prop = load_in_output_data()
+    EV_Prop, EV_Sales_Prop = load_in_output_data()
+
+    print( EV_Prop, EV_Sales_Prop)
+    
     calibration_data_output = {}
 
     calibration_data_output["EV Prop"] = EV_Prop
+    calibration_data_output["EV Sales Prop"] = EV_Sales_Prop
     
     save_object(calibration_data_output, "package/calibration_data", "calibration_data_output")

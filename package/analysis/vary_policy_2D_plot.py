@@ -167,8 +167,7 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     bau_emission = outcomes_BAU["mean_emissions_cumulative"] * 1e-9
 
     # Calculate standard errors (make sure these keys exist in your outcomes_BAU dictionary)
-    print(outcomes_BAU)
-    quit()
+
     bau_emission_err = 1.96 * np.std(outcomes_BAU["emissions_cumulative"]) / np.sqrt(n_seeds) * 1e-9
     bau_utility_err = 1.96 * np.std(outcomes_BAU["utility_cumulative"]) / np.sqrt(n_seeds) * 12 * 1e-9
     bau_net_cost_err = 1.96 * np.std(outcomes_BAU["net_cost"]) / np.sqrt(n_seeds) * 1e-9
@@ -292,5 +291,5 @@ def main(file_name, fileName_BAU):
 if __name__ == "__main__":
     main(
         file_name="results/vary_two_policies_gen_19_45_01__27_03_2025",
-        fileName_BAU="results/BAU_runs_16_54_04__28_03_2025",
+        fileName_BAU="results/BAU_runs_17_10_10__28_03_2025",
         )
