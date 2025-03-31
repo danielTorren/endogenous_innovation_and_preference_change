@@ -32,7 +32,7 @@ def single_policy_simulation(params, controller_file):
     """
     controller = load(controller_file)  # Load fresh controller
     data = load_in_controller(controller, params)
-    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.firm_manager.profit_cumulative
+    return data.calc_EV_prop(), data.calc_total_policy_distortion(), data.calc_net_policy_distortion(), data.social_network.emissions_cumulative, data.social_network.emissions_cumulative_driving, data.social_network.emissions_cumulative_production, data.social_network.utility_cumulative, data.utility_cum_2030, data.firm_manager.profit_cumulative
 
 
 def single_policy_with_seeds(params, controller_files):
@@ -46,9 +46,9 @@ def single_policy_with_seeds(params, controller_files):
         for i in range(len(controller_files))
     )
 
-    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = zip(*res)
+    EV_uptake_arr, total_cost_arr, net_cost_arr,emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, utility_cumulative_30_arr, profit_cumulative_arr = zip(*res)
     
-    return np.asarray(EV_uptake_arr), np.asarray(total_cost_arr), np.asarray(net_cost_arr), np.asarray(emissions_cumulative_arr), np.asarray(emissions_cumulative_driving_arr), np.asarray(emissions_cumulative_production_arr), np.asarray(utility_cumulative_arr), np.asarray(profit_cumulative_arr)
+    return np.asarray(EV_uptake_arr), np.asarray(total_cost_arr), np.asarray(net_cost_arr), np.asarray(emissions_cumulative_arr), np.asarray(emissions_cumulative_driving_arr), np.asarray(emissions_cumulative_production_arr), np.asarray(utility_cumulative_arr), np.asarray(utility_cumulative_30_arr), np.asarray(profit_cumulative_arr)
 
 
 ########################################################
@@ -96,7 +96,7 @@ def optimize_policy_intensity_BO(base_params, controller_files, policy_name, tar
     params_final = update_policy_intensity(params_final, policy_name, best_intensity)
 
     EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, \
-    emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(params_final, controller_files)
+    emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(params_final, controller_files)
 
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
@@ -106,6 +106,7 @@ def optimize_policy_intensity_BO(base_params, controller_files, policy_name, tar
     mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)
     mean_emissions_cumulative_production = np.mean(emissions_cumulative_production_arr)
     mean_utility_cumulative = np.mean(utility_cumulative_arr)
+    mean_utility_cumulative_30 = np.mean(utility_cumulative_30_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
     print(f"Optimized {policy_name}: Intensity = {best_intensity}, EV uptake = {mean_ev_uptake}, STD EV uptake = {sd_ev_uptake}, "
@@ -123,6 +124,7 @@ def optimize_policy_intensity_BO(base_params, controller_files, policy_name, tar
             mean_emissions_cumulative_driving, 
             mean_emissions_cumulative_production, 
             mean_utility_cumulative, 
+            mean_utility_cumulative_30, 
             mean_profit_cumulative,
             EV_uptake_arr,
             net_cost_arr,
@@ -198,6 +200,7 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             mean_emissions_cumulative_driving, 
             mean_emissions_cumulative_production, 
             mean_utility_cumulative, 
+            mean_utility_cumulative_30, 
             mean_profit_cumulative,
             ev_uptake,
             net_cost,
@@ -220,6 +223,7 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
             "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
             "mean_utility_cumulative": mean_utility_cumulative, 
+            "mean_utility_cumulative_30": mean_utility_cumulative_30, 
             "mean_profit_cumulative": mean_profit_cumulative,
             "ev_uptake": ev_uptake,
             "net_cost": net_cost,
@@ -229,7 +233,6 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             "profit_cumulative": profit_cumulative,
             "confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
         }
-
 
     save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
 
@@ -272,12 +275,10 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_endog_single_gen.json",
         policy_list=[
             "Carbon_price",
-            #"Electricity_subsidy",
             "Adoption_subsidy",
-            #"Adoption_subsidy_used",
             "Production_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=30,
+        n_calls=5,
         noise=0.05
     )

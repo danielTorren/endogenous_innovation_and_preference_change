@@ -415,6 +415,7 @@ class Social_Network:
             
             utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
             self.utility_cumulative += utility
+            
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)

@@ -117,8 +117,6 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies =  load_object(fileName + "/Data", "policy_outcomes")
 
-    del outputs['Adoption_subsidy_used']
-    del top_policies ['Adoption_subsidy_used']
 
     plot_policy_results_cum(
         fileName,
@@ -192,6 +190,8 @@ def main(fileName):
         "history_total_utility"
     )
 
+    """
+
     plot_policy_results(
         fileName,
         outputs_BAU,
@@ -212,6 +212,7 @@ def main(fileName):
         "Total Utility - Bottom", 
         "history_total_utility_bottom"
     )
+    """
 
     plot_policy_results(
         fileName,
@@ -239,4 +240,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/endog_single_09_09_57__27_03_2025")
+    main("results/optimal_single_policy_time_series_16_53_10__31_03_2025")
