@@ -44,11 +44,6 @@ class Social_Network:
 
         self.history_prop_EV = []
         
-        #self.max_utility_list = []
-
-
-
-
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)

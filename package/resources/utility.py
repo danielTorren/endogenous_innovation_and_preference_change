@@ -205,7 +205,7 @@ def params_list_with_seed(base_params):
     for seed in range(1, seed_repetitions + 1):
         base_params_copy = deepcopy(base_params)
         base_params_copy["seed"] = seed
-        base_params_copy["seed_inputs"] = seed + 66
+        #base_params_copy["seed_inputs"] = seed + 66
         base_params_list.append( base_params_copy)
 
     return base_params_list
