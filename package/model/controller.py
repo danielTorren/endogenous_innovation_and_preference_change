@@ -812,12 +812,12 @@ class Controller:
         # Update social network based on firm preferences
         consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration)
 
-        if self.t_controller > (self.duration_burn_in + self.duration_calibration):
-            print(self.t_controller, self.t_2030)
+        #if self.t_controller > (self.duration_burn_in + self.duration_calibration):
+        #    print(self.t_controller, self.t_2030)
         if self.t_controller == self.t_2030:
             
             self.utility_cum_2030 = deepcopy(self.social_network.utility_cumulative)
-            print("YO", self.utility_cum_2030)        
+        #    print("YO", self.utility_cum_2030)        
 
         return consider_ev_vec, new_bought_vehicles
 
