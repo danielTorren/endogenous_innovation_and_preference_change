@@ -155,31 +155,8 @@ def main(
     with open(BOUNDS_LOAD) as f:
         bounds_dict = json.load(f)
 
-    #policy_pairs = generate_unique_policy_pairs(policy_list_all, dont_work_list)
     policy_pairs = generate_all_policy_pairs(policy_list_all)
-    #( 'Electricity_subsidy', 'Adoption_subsidy_used'),  
-    #policy_pairs = [
-        #( 'Adoption_subsidy_used','Adoption_subsidy'), 
-        #( 'Electricity_subsidy', 'Adoption_subsidy'),
-    #    ('Electricity_subsidy', 'Carbon_price' ) 
-    #]
-    #print("policy_pairs", policy_pairs)
 
-    #print(policy_pairs[:5])
-    #print(policy_pairs[5:8])
-    #print(policy_pairs[8:])
-    
-    policy_pairs = policy_pairs[:12]
-    print(policy_pairs)
-    quit()
-    #policy_pairs = policy_pairs[12:]
-
-    #policy_pairs = policy_pairs[:5]
-    #policy_pairs = policy_pairs[5:8]
-    #policy_pairs = policy_pairs[8:]
-    #print("policy_pairs", policy_pairs)
-    #quit()
-    #quit()
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
 
     ###################################################################################################################
@@ -237,7 +214,7 @@ if __name__ == "__main__":
             "Adoption_subsidy_used",
         ],
         target_ev_uptake=0.95,
-        n_steps_for_sweep=3,
-        n_calls=40,
+        n_steps_for_sweep=10,
+        n_calls=10,
         noise=0.05
     )
