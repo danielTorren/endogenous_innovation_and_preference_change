@@ -38,7 +38,9 @@ def single_policy_simulation(params, controller_file):
         data.social_network.history_production_cost_EV, 
         data.firm_manager.history_mean_profit_margins_ICE,
         data.firm_manager.history_mean_profit_margins_EV,
-        data.history_policy_net_cost
+        data.history_policy_net_cost,
+        data.social_network.history_total_utility_top,
+        data.social_network.history_total_utility_bottom,
     )
 
 def single_policy_with_seeds(params, controller_files):
@@ -72,7 +74,9 @@ def single_policy_with_seeds(params, controller_files):
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV,
-        history_policy_net_cost
+        history_policy_net_cost,
+        history_total_utility_top, 
+        history_total_utility_bottom, 
     ) = zip(*res)
 
         # Return results as arrays where applicable
@@ -97,7 +101,9 @@ def single_policy_with_seeds(params, controller_files):
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV,
-        np.asarray(history_policy_net_cost)
+        np.asarray(history_policy_net_cost),
+        np.asarray(history_total_utility_top), 
+        np.asarray(history_total_utility_bottom) 
     )
 
 
@@ -160,7 +166,9 @@ def main(
     history_production_cost_EV, 
     history_mean_profit_margins_ICE,
     history_mean_profit_margins_EV,
-    history_policy_net_cost
+    history_policy_net_cost,
+    history_total_utility_top_arr, 
+    history_total_utility_bottom_arr
     ) = single_policy_with_seeds(base_params, controller_files)
 
     outputs_BAU = {
@@ -174,7 +182,9 @@ def main(
             "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
             "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
             "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_policy_net_cost": history_policy_net_cost
+            "history_policy_net_cost": history_policy_net_cost,
+            "history_total_utility_top": history_total_utility_top_arr,
+            "history_total_utility_bottom": history_total_utility_bottom_arr,
     }
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
     print("DONE BAU")
@@ -211,7 +221,9 @@ def main(
         history_production_cost_EV, 
         history_mean_profit_margins_ICE,
         history_mean_profit_margins_EV,
-        history_policy_net_cost
+        history_policy_net_cost,
+        history_total_utility_top_arr, 
+        history_total_utility_bottom_arr
         ) = single_policy_with_seeds(params_policy, controller_files)
 
         outputs[policy1] = {
@@ -224,7 +236,9 @@ def main(
             "history_total_profit": history_total_profit_arr,
             "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
             "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-            "history_policy_net_cost": history_policy_net_cost
+            "history_policy_net_cost": history_policy_net_cost,
+            "history_total_utility_top": history_total_utility_top_arr,
+            "history_total_utility_bottom": history_total_utility_bottom_arr,
         }
 
     save_object(outputs, root_folder + "/Data", "outputs")

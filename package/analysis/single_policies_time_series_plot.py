@@ -198,6 +198,27 @@ def main(fileName):
         outputs, 
         top_policies,
         "Time Step, months", 
+        "Total Utility - Top", 
+        "history_total_utility_top"
+    )
+
+
+    plot_policy_results(
+        fileName,
+        outputs_BAU,
+        outputs, 
+        top_policies,
+        "Time Step, months", 
+        "Total Utility - Bottom", 
+        "history_total_utility_bottom"
+    )
+
+    plot_policy_results(
+        fileName,
+        outputs_BAU,
+        outputs, 
+        top_policies,
+        "Time Step, months", 
         "Market Concentration, HHI", 
         "history_market_concentration"
     )
