@@ -190,7 +190,6 @@ def main(fileName):
         "history_total_utility"
     )
 
-    """
 
     plot_policy_results(
         fileName,
@@ -212,7 +211,7 @@ def main(fileName):
         "Total Utility - Bottom", 
         "history_total_utility_bottom"
     )
-    """
+
 
     plot_policy_results(
         fileName,
@@ -240,4 +239,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/optimal_single_policy_time_series_16_53_10__31_03_2025")
+    main("results/optimal_single_policy_time_series_16_58_18__31_03_2025")
