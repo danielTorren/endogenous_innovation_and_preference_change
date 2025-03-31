@@ -67,7 +67,8 @@ def main(fileName_load,
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
-
+    print(top_policies)
+    quit()
     ##########################################################################################
 
     base_params = load_object(fileName_load + "/Data", "base_params")
@@ -202,7 +203,7 @@ def main(fileName_load,
 
 if __name__ == "__main__":
     main(
-        fileName_load="results/all_policies_16_41_47__24_03_2025",
+        fileName_load="results/vary_two_policies_gen_19_45_01__27_03_2025",
         min_ev_uptake = 0.945,
         max_ev_uptake = 0.955
     )

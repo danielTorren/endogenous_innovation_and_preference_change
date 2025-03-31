@@ -61,7 +61,7 @@ def objective_function(intensity_level, base_params, controller_files, policy_na
     sim_params = deepcopy(base_params)  # Deep copy to reset every time
     sim_params = update_policy_intensity(sim_params, policy_name, intensity_level)
 
-    EV_uptake_arr, _, _, _, _, _, _, _ = single_policy_with_seeds(sim_params, controller_files)
+    EV_uptake_arr, _, _, _, _, _, _, _, _ = single_policy_with_seeds(sim_params, controller_files)
     mean_ev_uptake = np.mean(EV_uptake_arr)
     error = abs(target_ev_uptake - mean_ev_uptake)
 
