@@ -152,10 +152,6 @@ def main(
         "Adoption_subsidy_used",
         "Production_subsidy",
     ],
-    dont_work_list = [
-        "Electricity_subsidy",
-        "Adoption_subsidy_used",
-    ],
     target_ev_uptake=0.95,
     n_steps_for_sweep=5,
     n_calls=40, 
@@ -228,12 +224,8 @@ if __name__ == "__main__":
             "Adoption_subsidy_used",
             "Production_subsidy",
         ],
-        dont_work_list = [
-            "Electricity_subsidy",
-            "Adoption_subsidy_used"
-        ],
         target_ev_uptake=0.95,
         n_steps_for_sweep=5,
-        n_calls=10,
+        n_calls=20,
         noise=0.05
     )

@@ -1,9 +1,9 @@
 {
     "bounds_dict":{
-        "Carbon_price": [0.03, 0.5751],
-        "Electricity_subsidy": [0, 1],
-        "Adoption_subsidy": [2000, 38328],
-        "Adoption_subsidy_used": [2000, 38328],
-        "Production_subsidy": [2000, 36535]
+        "Carbon_price": [0.01, 1.0159],
+        "Electricity_subsidy": [0.01, 1],
+        "Adoption_subsidy": [1000, 38200],
+        "Adoption_subsidy_used": [1000, 38200],
+        "Production_subsidy": [1000, 40000]
     }
 }
