@@ -187,11 +187,11 @@ def main(fileName_load,
     #quit()
     ##########################################################################################
 
-    base_params = load_object(fileName_load + "/Data", "base_params")
-    if "duration_calibration" not in base_params:
-        base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
+    base_params_calibration = load_object(fileName_load + "/Data", "base_params")
+    if "duration_calibration" not in base_params_calibration:
+        base_params_calibration["duration_calibration"] = base_params_calibration["duration_no_carbon_price"]
 
-    base_params["parameters_policies"]["States"] = {
+    base_params_calibration["parameters_policies"]["States"] = {
         "Carbon_price": 0,
         "Targeted_research_subsidy": 0,
         "Electricity_subsidy": 0,
@@ -201,7 +201,7 @@ def main(fileName_load,
         "Research_subsidy": 0
     }
 
-    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "2D_low_intensity_policies")
+    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params_calibration, "2D_low_intensity_policies")
     print("DONE calibration")
     #
     #NOW SAVE
