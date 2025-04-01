@@ -988,7 +988,7 @@ def main(file_name, fileName_BAU):
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
    
-    plot_emissions_tradeoffs_low(
+    plot_emissions_tradeoffs(
         outcomes_BAU = outcomes_BAU,
         data_array=data_array,
         policy_pairs=policy_pairs,

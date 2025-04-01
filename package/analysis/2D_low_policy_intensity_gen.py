@@ -188,7 +188,7 @@ def main(fileName_load,
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
-    base_params_calibration["duration_future"] = 312#2050#144#SET UP FUTURE
+    base_params_calibration["duration_future"] = 564#2050#144#SET UP FUTURE
 
     if "duration_calibration" not in base_params_calibration:
         base_params_calibration["duration_calibration"] = base_params_calibration["duration_no_carbon_price"]
