@@ -312,10 +312,10 @@ if __name__ == "__main__":
         BOUNDS_LOAD="package/analysis/policy_bounds_endog_single_gen.json",
         policy_list=[
             "Carbon_price",
-            "Adoption_subsidy",
+            #"Adoption_subsidy",
             "Production_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=10,
+        n_calls=20,
         noise=0.05
     )
