@@ -67,9 +67,7 @@ def objective_function(intensity_level, base_params, controller_files, policy_na
 
     return error
 
-
-
-def optimize_policy_intensity_BO(base_params, controller_files, policy_name, target_ev_uptake, bounds, n_calls, noise):
+def optimize_policy_intensity_BO(base_params_BO, controller_files, policy_name, target_ev_uptake, bounds, n_calls, noise):
     """
     Optimizes the intensity of a policy to reach the target EV uptake using Bayesian Optimization.
     """
@@ -78,7 +76,7 @@ def optimize_policy_intensity_BO(base_params, controller_files, policy_name, tar
     print("search_space", search_space)
 
     result = gp_minimize(
-        lambda x: objective_function(x[0], base_params, controller_files, policy_name, target_ev_uptake),
+        lambda x: objective_function(x[0], base_params_BO, controller_files, policy_name, target_ev_uptake),
         search_space,
         n_calls=n_calls,
         noise=noise,
@@ -92,7 +90,7 @@ def optimize_policy_intensity_BO(base_params, controller_files, policy_name, tar
     print(f"Policy {policy_name}, best intensity: {best_intensity}")
 
     # Run simulation with optimized intensity to get final results
-    params_final = deepcopy(base_params)
+    params_final = deepcopy(base_params_BO)
     params_final = update_policy_intensity(params_final, policy_name, best_intensity)
 
     EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, \
@@ -313,9 +311,9 @@ if __name__ == "__main__":
         policy_list=[
             "Carbon_price",
             #"Adoption_subsidy",
-            "Production_subsidy"
+            #"Production_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=20,
+        n_calls=10,
         noise=0.05
     )

@@ -1,13 +1,25 @@
 import json
 import numpy as np
-from package.analysis.endogenous_policy_intensity_single_gen import optimize_policy_intensity_BO, set_up_calibration_runs, update_policy_intensity
+from package.analysis.endogenous_policy_intensity_single_gen import optimize_policy_intensity_BO, set_up_calibration_runs
 from package.resources.utility import (
     save_object, 
 )
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from copy import deepcopy
-import itertools
+
+def update_policy_intensity(params, policy_name, intensity_level):
+    """
+    Update the policy intensity in the parameter dictionary.
+    """
+    params["parameters_policies"]["States"][policy_name] = 1
+
+    if policy_name == "Carbon_price":
+        params["parameters_policies"]["Values"][policy_name]["Carbon_price"] = intensity_level
+    else:
+        params["parameters_policies"]["Values"][policy_name] = intensity_level
+
+    return params
 
 def generate_unique_policy_pairs(policy_list_all, dont_work_list):
     """
@@ -68,7 +80,7 @@ def policy_pair_sweep(
     print(bounds_dict)
     p1_min, p1_max = bounds_dict[policy1_name]
     epsilon = p1_max*0.15
-    p1_values = np.linspace(p1_min +  epsilon, p1_max -  epsilon, n_steps)
+    p1_values = np.linspace(p1_min + epsilon, p1_max - epsilon, n_steps)
     results_for_pair = []
     
     for p1_val in p1_values:
@@ -98,7 +110,7 @@ def policy_pair_sweep(
             utility_cumulative,
             profit_cumulative 
         ) = optimize_policy_intensity_BO(
-            base_params, 
+            params_for_this_run, 
             controller_files, 
             policy2_name, 
             target_ev_uptake=target_ev_uptake,
@@ -159,7 +171,9 @@ def main(
         bounds_dict = json.load(f)
 
     policy_pairs = generate_all_policy_pairs(policy_list_all)
-
+    print(policy_pairs)
+    quit()
+    
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
 
     ###################################################################################################################
@@ -171,8 +185,10 @@ def main(
     
     for (policy1_name, policy2_name) in policy_pairs:
         print(f"\n=== Optimizing Pair: ({policy1_name}, {policy2_name}) ===")
+        
+        policy_base_params = deepcopy(base_params)
         results = policy_pair_sweep(
-            base_params,
+            policy_base_params,
             controller_files,
             policy1_name,
             policy2_name,

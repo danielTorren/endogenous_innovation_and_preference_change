@@ -33,7 +33,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.0,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
