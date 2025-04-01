@@ -113,8 +113,7 @@ def main(fileName):
     outputs_BAU = load_object(fileName + "/Data", "outputs_BAU")
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
-    print( outputs )
-    quit()
+
     plot_policy_results_cum(
         fileName,
         outputs_BAU,
@@ -211,4 +210,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/low_intensity_policies_10_46_57__01_04_2025")
+    main("results/2D_low_intensity_policies_11_41_15__01_04_2025")

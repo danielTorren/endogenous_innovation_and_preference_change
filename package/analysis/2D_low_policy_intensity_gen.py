@@ -136,23 +136,21 @@ def calc_low_intensities_from_array(data_array, policy_pairs, policy_info_dict, 
         for i in range(pair_data.shape[0]):
             for j in range(pair_data.shape[1]):
                 mean_ev = ev_uptake[i, j]
-                if not (min_val <= mean_ev <= max_val):
-                    continue
+                if  (min_val <= mean_ev <= max_val):
+                    # Normalize both intensities
+                    p1_norm = (p1_vals[i] - p1_min) / (p1_max - p1_min)
+                    p2_norm = (p2_vals[j] - p2_min) / (p2_max - p2_min)
+                    max_intensity = max(p1_norm, p2_norm)
 
-                # Normalize both intensities
-                p1_norm = (p1_vals[i] - p1_min) / (p1_max - p1_min + 1e-8)
-                p2_norm = (p2_vals[j] - p2_min) / (p2_max - p2_min + 1e-8)
-                max_intensity = max(p1_norm, p2_norm)
-
-                if max_intensity < min_max_norm:
-                    min_max_norm = max_intensity
-                    best_entry = {
-                        "policy1": policy1,
-                        "policy2": policy2,
-                        "policy1_value": p1_vals[i],
-                        "policy2_value": p2_vals[j],
-                        "mean_ev_uptake": mean_ev
-                    }
+                    if max_intensity < min_max_norm:
+                        min_max_norm = max_intensity
+                        best_entry = {
+                            "policy1": policy1,
+                            "policy2": policy2,
+                            "policy1_value": p1_vals[i],
+                            "policy2_value": p2_vals[j],
+                            "mean_ev_uptake": mean_ev
+                        }
 
         if best_entry:
             best_entries[(policy1, policy2)] = best_entry
