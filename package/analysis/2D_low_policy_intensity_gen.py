@@ -201,7 +201,7 @@ def main(fileName_load,
         "Research_subsidy": 0
     }
 
-    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "low_intensity_policies")
+    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params, "2D_low_intensity_policies")
     print("DONE calibration")
     #
     #NOW SAVE
@@ -212,7 +212,8 @@ def main(fileName_load,
     ###########################################################################################
 
     base_params["save_timeseries_data_state"] = 1
-
+    print(base_params)
+    quit()
     #RESET TO B SURE
     #RUN BAU
     (

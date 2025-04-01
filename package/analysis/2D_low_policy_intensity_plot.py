@@ -110,13 +110,11 @@ def plot_policy_results_cum(fileName, outputs_BAU, outputs, top_policies, x_labe
 
 def main(fileName):
     base_params = load_object(fileName + "/Data", "base_params")
-    if "duration_calibration" not in base_params:
-        base_params["duration_calibration"] = base_params["duration_no_carbon_price"]
-
     outputs_BAU = load_object(fileName + "/Data", "outputs_BAU")
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
-
+    print( outputs )
+    quit()
     plot_policy_results_cum(
         fileName,
         outputs_BAU,
@@ -213,4 +211,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/low_intensity_policies_16_58_40__24_03_2025")
+    main("results/low_intensity_policies_10_46_57__01_04_2025")
