@@ -10,7 +10,7 @@
     "seed_inputs": 22,
     "ev_research_start_time":0,
     "ev_production_start_time": 0,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -23,7 +23,7 @@
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
+            "Carbon_price": 1,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -33,7 +33,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.5,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,

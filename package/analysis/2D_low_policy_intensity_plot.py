@@ -18,9 +18,13 @@ def plot_combined_figures(base_params, fileName, output,save_name, dpi=300):
     history_mean_car_age_arr = output["history_mean_car_age"]#np.asarray(load_object(fileName + "/Data", "history_mean_car_age"))
     history_past_new_bought_vehicles_prop_ev = output["history_past_new_bought_vehicles_prop_ev"]#load_object(fileName + "/Data", "history_past_new_bought_vehicles_prop_ev")
     
-    
+    history_total_emissions_arr = output["history_total_emissions"]
+    history_driving_emissions_arr = output["history_driving_emissions"]
+    history_production_emissions_arr = output["history_production_emissions"]
+
     # Create a 2x2 figure
-    fig, axs = plt.subplots(2, 2, figsize=(17, 10), sharex=True)
+    fig, axs = plt.subplots(3, 2, figsize=(17, 14), sharex=True)
+
     
     # Plot 1: EV Uptake (top-left)
     ax1 = axs[0, 0]
@@ -36,21 +40,64 @@ def plot_combined_figures(base_params, fileName, output,save_name, dpi=300):
                     history_upper_percentile_price_ICE_EV_arr, ax2,
                     annotation_height_prop=[0.45, 0.45, 0.45])
     
-    # Plot 3: Market Concentration (bottom-left)
-    ax3 = axs[1, 0]
-    plot_market_concentration(base_params, history_market_concentration_arr, ax3,
-                              annotation_height_prop=[0.7, 0.7, 0.7])
-    
-    # Plot 4: Mean Car Age (bottom-right)
-    ax4 = axs[1, 1]
+    # Plot 3: Mean Car Age (bottom-right)
+    ax4 = axs[1, 0]
     plot_mean_car_age(base_params, history_mean_car_age_arr, ax4,
                       annotation_height_prop=[0.3, 0.3, 0.3])
     
+    # Plot 4: Market Concentration (bottom-left)
+    plot_total_emissions(base_params, history_total_emissions_arr, axs[1, 1],
+                    annotation_height_prop=[0.45, 0.45, 0.45])
+
+    plot_emissions_produce(base_params, history_production_emissions_arr, axs[2, 0],
+                    annotation_height_prop=[0.45, 0.45, 0.45])
+    plot_emissions_drive(base_params, history_driving_emissions_arr, axs[2, 1],
+                    annotation_height_prop=[0.45, 0.45, 0.45])
+
     # Adjust layout
     plt.tight_layout()
     
     # Save the combined figure
     plt.savefig(f"{fileName}/combined_plots_{save_name}.png", dpi=dpi)
+
+def plot_total_emissions(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
+    data_after_burn_in = data[:, :]
+    time_steps = np.arange(data_after_burn_in.shape[1])
+    
+    mean_values = np.mean(data_after_burn_in, axis=0)
+    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)
+    
+    ax.plot(time_steps, mean_values, label='Total Emissions', color='gray')
+    ax.fill_between(time_steps, mean_values - ci_range, mean_values + ci_range, color='gray', alpha=0.3)
+    
+    ax.set_ylabel("Total Emissions, kgCO2")
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
+
+def plot_emissions_produce(base_params, production_data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
+    time_steps = np.arange(production_data.shape[1])
+    
+    mean_production = np.mean(production_data, axis=0)
+    ci_production = sem(production_data, axis=0) * t.ppf(0.975, df=production_data.shape[0] - 1)
+    
+    ax.plot(time_steps, mean_production, color='teal')
+    ax.fill_between(time_steps, mean_production - ci_production, mean_production + ci_production, color='teal', alpha=0.3)
+
+    ax.set_xlabel("Time Step, months")
+    ax.set_ylabel("Poduction Emissions, kgCO2")
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
+
+def plot_emissions_drive(base_params, driving_data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
+    time_steps = np.arange(driving_data.shape[1])
+    
+    mean_driving = np.mean(driving_data, axis=0)
+    ci_driving = sem(driving_data, axis=0) * t.ppf(0.975, df=driving_data.shape[0] - 1)
+    
+    ax.plot(time_steps, mean_driving, color='brown')
+    ax.fill_between(time_steps, mean_driving - ci_driving, mean_driving + ci_driving, color='brown', alpha=0.3)
+
+    ax.set_xlabel("Time Step, months")
+    ax.set_ylabel("Driving Emissions, kgCO2")
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
 # Helper functions for each subplot
 def plot_ev_uptake(base_params, data, history_past_new_bought_vehicles_prop_ev, ax, 
@@ -92,7 +139,7 @@ def plot_ev_uptake(base_params, data, history_past_new_bought_vehicles_prop_ev, 
     #ax.set_xlabel("Time Step, months")
     ax.set_ylabel("Proportion of EVs")
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(loc = "upper left")
+    ax.legend(loc = "lower right")
 
 def plot_mean_price(base_params, history_mean_price_ICE_EV, history_median_price_ICE_EV, 
                     history_lower_price_ICE_EV, history_upper_price_ICE_EV, ax,
@@ -436,31 +483,6 @@ def plot_mean_price_old(base_params, history_mean_price_ICE_EV, history_median_p
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(fontsize="small")
 
-def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
-    """Plot market concentration on the provided axes."""
-    data_after_burn_in = data[:, :]
-    time_steps = np.arange(0, data_after_burn_in.shape[1])
-    
-    mean_values = np.mean(data_after_burn_in, axis=0)
-    #median_values = np.median(data_after_burn_in, axis=0)
-    ci_range = sem(data_after_burn_in, axis=0) * t.ppf(0.975, df=data_after_burn_in.shape[0] - 1)
-    
-    ax.plot(time_steps, mean_values, label='Mean', color='purple')
-    #ax.plot(time_steps, median_values, label='Median', color='red', linestyle="--")
-    ax.fill_between(
-        time_steps,
-        mean_values - ci_range,
-        mean_values + ci_range,
-        color='purple',
-        alpha=0.3,
-        label='95% Confidence Interval'
-    )
-    
-    ax.set_xlabel("Time Step, months")
-    ax.set_ylabel("Market Concentration, HHI")
-    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(loc = "upper left")
-
 def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
     """Plot mean car age on the provided axes."""
     data_after_burn_in = data[:, :]
@@ -481,10 +503,8 @@ def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0
         label='95% Confidence Interval'
     )
     
-    ax.set_xlabel("Time Step, months")
     ax.set_ylabel("Car Age, months")
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(loc = "upper left")
 
 
 # Make sure to reuse the original add_vertical_lines function
@@ -623,9 +643,6 @@ def main(fileName):
     plot_combined_figures(base_params, fileName, outputs[('Carbon_price', 'Adoption_subsidy_used')],"c_a", dpi=300)
     plot_combined_figures(base_params, fileName, outputs[('Electricity_subsidy', 'Production_subsidy')],"e_p", dpi=300)
 
-    plt.show()
-    quit()
-
     plot_policy_results_cum(
         fileName,
         outputs_BAU,
@@ -636,7 +653,6 @@ def main(fileName):
         "history_total_emissions"
     )
 
-
     plot_policy_results(
         fileName,
         outputs_BAU,
@@ -646,7 +662,6 @@ def main(fileName):
         "Net cost, $", 
         "history_policy_net_cost"
     )
-
 
     plot_policy_results_ev(
         base_params,
@@ -722,4 +737,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/2D_low_intensity_policies_17_01_06__01_04_2025")
+    main("results/2D_low_intensity_policies_17_34_40__01_04_2025")

@@ -411,6 +411,41 @@ class Controller:
     def manage_calibration(self):
 
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+
+        total_duration = self.duration_calibration + self.duration_future
+        self.calibration_rebate_time_series = np.zeros(total_duration)
+        self.calibration_used_rebate_time_series = np.zeros(total_duration)
+
+        start = self.parameters_rebate_calibration["start_time"]
+        full_rebate = self.parameters_rebate_calibration["rebate"]
+        full_used_rebate = self.parameters_rebate_calibration["used_rebate"]
+
+        if self.parameters_controller["EV_rebate_state"]:
+            # Apply full rebate up to hard cutoff (duration_calibration + absolute_2035)
+            cutoff = min(self.duration_calibration + self.absolute_2035, total_duration)
+            self.calibration_rebate_time_series[start:cutoff] = full_rebate
+            self.calibration_used_rebate_time_series[start:cutoff] = full_used_rebate
+
+        else:
+            # Apply full rebate during calibration
+            end_cal = self.duration_calibration
+            self.calibration_rebate_time_series[start:end_cal] = full_rebate
+            self.calibration_used_rebate_time_series[start:end_cal] = full_used_rebate
+
+            # Linearly fade out rebate for 24 months *or until cutoff*, whichever is sooner
+            fade_start = end_cal
+            fade_end = min(end_cal + 24, self.duration_calibration + self.absolute_2035, total_duration)
+            fade_duration = fade_end - fade_start
+
+            if fade_duration > 0:
+                linear_weights = np.linspace(1, 0, fade_duration)
+                self.calibration_rebate_time_series[fade_start:fade_end] = full_rebate * linear_weights
+                self.calibration_used_rebate_time_series[fade_start:fade_end] = full_used_rebate * linear_weights
+
+
+    def manage_calibration_old(self):
+
+        self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
         self.calibration_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future)
@@ -425,6 +460,7 @@ class Controller:
         else:
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["used_rebate"]
+
 
     #############################################################################################################################
     #DEAL WITH SCENARIOS
