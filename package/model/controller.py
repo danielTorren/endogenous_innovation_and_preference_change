@@ -411,12 +411,17 @@ class Controller:
     def manage_calibration(self):
 
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
+        
         self.calibration_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future )
         self.calibration_used_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future)
         
         if self.parameters_controller["EV_rebate_state"]:#CONTROLLS WHETHER OR NOT THE REBATE POLICY APPLIED DURING FUTURE
-            self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
-            self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
+            if self.duration_future > self.absolute_2035:
+                self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration + self.absolute_2035] = self.parameters_rebate_calibration["rebate"]
+                self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration + self.absolute_2035] = self.parameters_rebate_calibration["used_rebate"]
+            else:
+                self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["rebate"]
+                self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:] = self.parameters_rebate_calibration["used_rebate"]
         else:
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["used_rebate"]
@@ -508,7 +513,7 @@ class Controller:
             self.Used_adoption_subsidy = 0
         if self.duration_future > self.absolute_2035:
             used_rebate_time_series_future =  np.asarray([self.Used_adoption_subsidy]*self.absolute_2035)
-            self.used_rebate_time_series_future = np.concatenate((used_rebate_time_series_future, np.asarray([30000]*(self.duration_future - self.absolute_2035))), axis=None)
+            self.used_rebate_time_series_future = np.concatenate((used_rebate_time_series_future, np.asarray([10000]*(self.duration_future - self.absolute_2035))), axis=None)
         else:
             self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
         

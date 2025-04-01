@@ -186,6 +186,7 @@ def main(fileName_load,
         min_ev_uptake,
         max_ev_uptake
     )
+
     keys = [('Carbon_price', 'Electricity_subsidy'), ('Carbon_price', 'Adoption_subsidy_used'), ('Electricity_subsidy', 'Production_subsidy')]
     top_policies = {key: top_policies_full[key] for key in keys}
 
@@ -272,6 +273,7 @@ def main(fileName_load,
 
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
     print("DONE BAU")
+
     ##############################################################################################################################
 
     print("TOTAL RUNS", len(top_policies)*base_params["seed_repetitions"])
