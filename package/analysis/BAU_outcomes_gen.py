@@ -19,39 +19,38 @@ def main(
     controller_files, base_params, file_name = set_up_calibration_runs(base_params, "BAU_runs")
 
     ###################################################################################################################
-    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr, profit_cumulative_arr = single_policy_with_seeds(base_params, controller_files)
-
+    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(base_params, controller_files)
+    
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
-    confidence_interval = 1.96 * np.std(EV_uptake_arr) / np.sqrt(len(EV_uptake_arr))
     mean_total_cost = np.mean(total_cost_arr)
     mean_net_cost = np.mean(net_cost_arr)
     mean_emissions_cumulative = np.mean(emissions_cumulative_arr)
     mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)
     mean_emissions_cumulative_production = np.mean(emissions_cumulative_production_arr)
     mean_utility_cumulative = np.mean(utility_cumulative_arr)
+    mean_utility_cumulative_30 = np.mean(utility_cumulative_30_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
     outcomes = {
-        "mean_ev_uptake": mean_ev_uptake,
+        "mean_EV_uptake": mean_ev_uptake,
         "sd_ev_uptake": sd_ev_uptake,
-        "confidence_interval": confidence_interval,
         "mean_total_cost": mean_total_cost,
         "mean_net_cost": mean_net_cost, 
         "mean_emissions_cumulative": mean_emissions_cumulative, 
         "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
         "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
         "mean_utility_cumulative": mean_utility_cumulative, 
+        "mean_utility_cumulative_30": mean_utility_cumulative_30, 
         "mean_profit_cumulative": mean_profit_cumulative,
         "ev_uptake": EV_uptake_arr,
         "net_cost": net_cost_arr,
-        "emissions_cumulative": emissions_cumulative_arr,
         "emissions_cumulative_driving": emissions_cumulative_driving_arr,
         "emissions_cumulative_production": emissions_cumulative_production_arr,
         "utility_cumulative": utility_cumulative_arr,
-        "profit_cumulative": profit_cumulative_arr
+        "profit_cumulative": profit_cumulative_arr,
+        "confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
-
 
     save_object(outcomes, file_name + "/Data", "outcomes")
 

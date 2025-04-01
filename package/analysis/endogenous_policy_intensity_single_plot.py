@@ -22,9 +22,17 @@ def main(fileName):
 
     #base_params = load_object(fileName + "/Data", "base_params")
     policy_outcomes = load_object(fileName + "/Data", "policy_outcomes")
-    #runs_data = load_object(fileName + "/Data", "runs_data")
-    print("policy_outcomes", policy_outcomes)
+    # Get the keys up to and including 'mean_profit_cumulative'
+    all_keys = list(policy_outcomes["Carbon_price"].keys())
+    cutoff_index = all_keys.index("mean_profit_cumulative") + 1
+    selected_keys = all_keys[:cutoff_index]
 
+    # Loop through each policy and print the selected outcomes
+    for policy_name, outcomes in policy_outcomes.items():
+        print(f"\nPolicy: {policy_name}")
+        for key in selected_keys:
+            print(f"  {key}: {outcomes.get(key)}")
+    quit()
     # Apply the function to the data
     policy_outcomes = divide_by_billion(policy_outcomes)
 
@@ -32,5 +40,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/endog_single_09_09_57__27_03_2025"
+        fileName="results/endog_single_17_38_02__31_03_2025"
     )
