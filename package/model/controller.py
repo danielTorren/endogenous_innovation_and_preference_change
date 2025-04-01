@@ -501,13 +501,14 @@ class Controller:
         else:
             self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
 
+        #USED 
         if self.Adoption_subsidy_used_state:
             self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]
         else:
             self.Used_adoption_subsidy = 0
         if self.duration_future > self.absolute_2035:
             used_rebate_time_series_future =  np.asarray([self.Used_adoption_subsidy]*self.absolute_2035)
-            self.used_rebate_time_series_future = np.concatenate((used_rebate_time_series_future, np.asarray([0]*(self.duration_future - self.absolute_2035))), axis=None)
+            self.used_rebate_time_series_future = np.concatenate((used_rebate_time_series_future, np.asarray([30000]*(self.duration_future - self.absolute_2035))), axis=None)
         else:
             self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
         
