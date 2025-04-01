@@ -14,7 +14,7 @@ from copy import deepcopy
 class Controller:
     def __init__(self, parameters_controller):
 
-        self.absolute_2035 = 156
+        self.absolute_2035 = 144
         self.unpack_controller_parameters(parameters_controller)
         
         self.parameters_EV["delta"] = self.parameters_ICE["delta"] 
@@ -483,27 +483,44 @@ class Controller:
             self.Electricity_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Electricity_subsidy"]
         else:
             self.Electricity_subsidy = 0
-        self.electricity_price_subsidy_time_series_future = np.asarray([self.Electricity_subsidy]*self.duration_future)
+        if self.duration_future > self.absolute_2035:
+            electricity_price_subsidy_time_series_future = np.asarray([self.Electricity_subsidy]*self.absolute_2035)
+            self.electricity_price_subsidy_time_series_future = np.concatenate((electricity_price_subsidy_time_series_future, np.asarray([0]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.electricity_price_subsidy_time_series_future = np.asarray([self.Electricity_subsidy]*self.duration_future)
 
         # Adoption subsidy calculation
         if self.Adoption_subsidy_state:
             self.Adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy"]
         else:
             self.Adoption_subsidy = 0
-        self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
+        
+        if self.duration_future > self.absolute_2035:
+            rebate_time_series_future =  np.asarray([self.Adoption_subsidy]*self.absolute_2035)
+            self.rebate_time_series_future = np.concatenate((rebate_time_series_future, np.asarray([0]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
 
         if self.Adoption_subsidy_used_state:
             self.Used_adoption_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Adoption_subsidy_used"]
         else:
             self.Used_adoption_subsidy = 0
-        self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
-
+        if self.duration_future > self.absolute_2035:
+            used_rebate_time_series_future =  np.asarray([self.Used_adoption_subsidy]*self.absolute_2035)
+            self.used_rebate_time_series_future = np.concatenate((used_rebate_time_series_future, np.asarray([0]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.used_rebate_time_series_future = np.asarray([self.Used_adoption_subsidy]*self.duration_future)
+        
         # Production_subsidy calculation
         if self.Production_subsidy_state:
             self.Production_subsidy = self.parameters_controller["parameters_policies"]["Values"]["Production_subsidy"]
         else:
             self.Production_subsidy = 0
-        self.production_subsidy_time_series_future = np.asarray([self.Production_subsidy]*self.duration_future)
+        if self.duration_future > self.absolute_2035:
+            production_subsidy_time_series_future =  np.asarray([self.Production_subsidy]*self.absolute_2035)
+            self.production_subsidy_time_series_future = np.concatenate((production_subsidy_time_series_future, np.asarray([0]*(self.duration_future - self.absolute_2035))), axis=None)
+        else:
+            self.production_subsidy_time_series_future = np.asarray([self.Production_subsidy]*self.duration_future)
 
 
     #############################################################################################################################
@@ -521,7 +538,7 @@ class Controller:
     def calculate_price_at_time(self, t):
         if self.future_carbon_price_policy > 0 and self.duration_future > 0:
             if t > (self.duration_burn_in + self.duration_calibration + self.absolute_2035):
-                return self.future_carbon_price_policy
+                return 0#self.future_carbon_price_policy
             elif t >= (self.duration_burn_in + self.duration_calibration):
                 relative_time = t - (self.duration_burn_in  + self.duration_calibration)
                 return self.calculate_growth(
