@@ -1,7 +1,7 @@
 {
     "bounds_dict":{
-        "Carbon_price": [0.57, 0.58],
-        "Adoption_subsidy": [38000, 40000],
-        "Production_subsidy": [35000, 37000]
+        "Carbon_price": [0.57, 0.7],
+        "Adoption_subsidy": [38000, 50000],
+        "Production_subsidy": [35000, 50000]
     }
 }
