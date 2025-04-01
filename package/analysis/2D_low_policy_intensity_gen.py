@@ -149,13 +149,15 @@ def calc_low_intensities_from_array(data_array, policy_pairs, policy_info_dict, 
                             "policy2": policy2,
                             "policy1_value": p1_vals[i],
                             "policy2_value": p2_vals[j],
-                            "mean_ev_uptake": mean_ev
+                            "mean_ev_uptake": mean_ev,
+                            "policy1_value_relative": p1_norm,
+                            "policy2_value_relative": p2_norm,
                         }
 
         if best_entry:
             best_entries[(policy1, policy2)] = best_entry
             print(f"{policy1}-{policy2} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
-
+            print(best_entry['policy1_value_relative'], best_entry['policy1_value_relative'])
     return best_entries
 
 
