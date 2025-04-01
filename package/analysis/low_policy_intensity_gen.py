@@ -203,7 +203,7 @@ def main(fileName_load,
 
 if __name__ == "__main__":
     main(
-        fileName_load="results/vary_two_policies_gen_19_45_01__27_03_2025",
+        fileName_load="results/endog_pair_10_19_13__01_04_2025",
         min_ev_uptake = 0.945,
         max_ev_uptake = 0.955
     )
