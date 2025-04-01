@@ -8,7 +8,113 @@ from package.resources.utility import (
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from copy import deepcopy
-from package.analysis.top_ten_gen import single_policy_with_seeds
+from package.resources.run import load_in_controller
+from joblib import Parallel, delayed, load
+import multiprocessing
+
+# Define all possible measures and their indices
+MEASURES = {
+    "EV_Uptake": 0,
+    "Policy_Distortion": 1,
+    "Net_Policy_Cost": 2,
+    "Cumulative_Emissions": 3,
+    "Driving_Emissions": 4,
+    "Production_Emissions": 5,
+    "Cumulative_Utility": 6,
+    "Cumulative_Profit": 7
+}
+
+scale = 350
+epsilon = 0
+
+def single_policy_simulation(params, controller_file):
+    """
+    Run a single simulation and return EV uptake and policy distortion.
+    """
+    controller = load(controller_file)  # Load fresh controller
+    data = load_in_controller(controller, params)
+    return (
+        data.social_network.history_driving_emissions,#Emmissions flow
+        data.social_network.history_production_emissions,#Emmissions flow
+        data.social_network.history_total_emissions,#Emmissions flow
+        data.social_network.history_prop_EV, 
+        data.social_network.history_car_age, 
+        data.social_network.history_lower_percentile_price_ICE_EV,
+        data.social_network.history_upper_percentile_price_ICE_EV,
+        data.social_network.history_mean_price_ICE_EV,
+        data.social_network.history_median_price_ICE_EV, 
+        data.social_network.history_total_utility,
+        data.firm_manager.history_market_concentration,
+        data.firm_manager.history_total_profit, 
+        data.social_network.history_quality_ICE, 
+        data.social_network.history_quality_EV, 
+        data.social_network.history_efficiency_ICE, 
+        data.social_network.history_efficiency_EV, 
+        data.social_network.history_production_cost_ICE, 
+        data.social_network.history_production_cost_EV, 
+        data.firm_manager.history_mean_profit_margins_ICE,
+        data.firm_manager.history_mean_profit_margins_EV,
+        data.history_policy_net_cost
+    )
+
+def single_policy_with_seeds(params, controller_files):
+    """
+    Run policy scenarios using pre-saved controllers for consistency.
+    """
+    num_cores = multiprocessing.cpu_count()
+    res = Parallel(n_jobs=num_cores, verbose=0)(
+        delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
+        for i in range(len(controller_files))
+    )
+    
+    (
+        history_driving_emissions_arr,#Emmissions flow
+        history_production_emissions_arr,
+        history_total_emissions,#Emmissions flow
+        history_prop_EV, 
+        history_car_age, 
+        history_lower_percentile_price_ICE_EV,
+        history_upper_percentile_price_ICE_EV,
+        history_mean_price_ICE_EV,
+        history_median_price_ICE_EV, 
+        history_total_utility, 
+        history_market_concentration,
+        history_total_profit, 
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV,
+        history_policy_net_cost
+    ) = zip(*res)
+
+        # Return results as arrays where applicable
+    return (
+        np.asarray(history_driving_emissions_arr),#Emmissions flow
+        np.asarray(history_production_emissions_arr),
+        np.asarray(history_total_emissions),#Emmissions flow
+        np.asarray(history_prop_EV), 
+        np.asarray(history_car_age), 
+        np.asarray(history_lower_percentile_price_ICE_EV),
+        np.asarray(history_upper_percentile_price_ICE_EV),
+        np.asarray(history_mean_price_ICE_EV),
+        np.asarray(history_median_price_ICE_EV), 
+        np.asarray(history_total_utility), 
+        np.asarray(history_market_concentration),
+        np.asarray(history_total_profit),
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV,
+        np.asarray(history_policy_net_cost)
+    )
 
 def calc_low_intensities_from_array(data_array, policy_pairs, policy_info_dict, min_val, max_val):
     best_entries = {}
@@ -67,16 +173,18 @@ def main(fileName_load,
     policy_pairs = load_object(fileName_load + "/Data", "policy_pairs")
     policy_info_dict = load_object(fileName_load + "/Data", "policy_info_dict")
 
-    top_policies = calc_low_intensities_from_array(
+    top_policies_full = calc_low_intensities_from_array(
         data_array,
         policy_pairs,
         policy_info_dict,
         min_ev_uptake,
         max_ev_uptake
     )
+    keys = [('Carbon_price', 'Electricity_subsidy'), ('Carbon_price', 'Adoption_subsidy_used'), ('Electricity_subsidy', 'Production_subsidy')]
+    top_policies = {key: top_policies_full[key] for key in keys}
 
-    print(top_policies)
-    quit()
+    print(list(top_policies.keys()))
+    #quit()
     ##########################################################################################
 
     base_params = load_object(fileName_load + "/Data", "base_params")
