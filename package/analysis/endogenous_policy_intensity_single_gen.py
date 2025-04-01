@@ -205,7 +205,6 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
     policy_outcomes["BAU"] = {
-        "optimized_intensity": best_intensity,
         "mean_EV_uptake": mean_ev_uptake,
         "sd_ev_uptake": sd_ev_uptake,
         "mean_total_cost": mean_total_cost,
