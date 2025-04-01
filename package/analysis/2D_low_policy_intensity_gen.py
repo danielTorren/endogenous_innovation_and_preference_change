@@ -184,10 +184,12 @@ def main(fileName_load,
     top_policies = {key: top_policies_full[key] for key in keys}
 
     print(list(top_policies.keys()))
-    #quit()
+
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
+    base_params_calibration["duration_future"] = 144#SET UP FUTURE
+
     if "duration_calibration" not in base_params_calibration:
         base_params_calibration["duration_calibration"] = base_params_calibration["duration_no_carbon_price"]
 
@@ -213,7 +215,7 @@ def main(fileName_load,
 
     base_params["save_timeseries_data_state"] = 1
     print(base_params)
-    quit()
+
     #RESET TO B SURE
     #RUN BAU
     (
