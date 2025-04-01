@@ -54,6 +54,15 @@ def main(
 
     save_object(outcomes, file_name + "/Data", "outcomes")
 
+    all_keys = list(outcomes.keys())
+    cutoff_index = all_keys.index("mean_profit_cumulative") + 1
+    selected_keys = all_keys[:cutoff_index]
+
+    # Loop through each policy and print the selected outcomes
+    for key in selected_keys:
+        print(f"  {key}: {outcomes.get(key)}")
+
+
     shutil.rmtree(Path(file_name) / "Calibration_runs", ignore_errors=True)
 
     return "Done"
