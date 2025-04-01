@@ -20,7 +20,7 @@
     },
     "ev_research_start_time": 96,
     "ev_production_start_time": 96,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 120,
         "rebate": 10000,

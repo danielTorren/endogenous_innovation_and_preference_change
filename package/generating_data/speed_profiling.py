@@ -24,7 +24,7 @@ if __name__ == '__main__':
     "seed_inputs": 22,
     "ev_research_start_time":60,
     "ev_production_start_time": 60,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,

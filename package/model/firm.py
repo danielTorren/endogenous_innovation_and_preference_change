@@ -851,7 +851,7 @@ class Firm:
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
         #update cars to sell   
-        if self.random_state.rand() < self.prob_change_production:
+        if (self.random_state.rand() < self.prob_change_production):
             #print("production", self.firm_id)
             self.cars_on_sale = self.choose_cars_segments()
             self.production_change_bool = 1
@@ -878,7 +878,7 @@ class Firm:
         self.maxU_vec = nu_UMax_vec
 
         #update cars to sell   
-        if self.random_state.rand() < self.prob_change_production:
+        if (self.random_state.rand() < self.prob_change_production):
             self.cars_on_sale = self.choose_cars_segments()
           
         self.update_memory_timer()

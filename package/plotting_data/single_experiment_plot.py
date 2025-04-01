@@ -1288,8 +1288,6 @@ def main(fileName, dpi=300):
     #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
     plot_total_utility_per_capita(base_params,social_network, time_series, fileName, dpi)
 
-    plt.show()
-
     plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
 
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
