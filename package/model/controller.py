@@ -434,7 +434,7 @@ class Controller:
 
             # Linearly fade out rebate for 24 months *or until cutoff*, whichever is sooner
             fade_start = end_cal
-            fade_end = min(end_cal + 24, self.duration_calibration + self.absolute_2035, total_duration)
+            fade_end = min(end_cal + 60, self.duration_calibration + self.absolute_2035, total_duration)
             fade_duration = fade_end - fade_start
 
             if fade_duration > 0:
