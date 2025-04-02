@@ -161,10 +161,10 @@ if __name__ == "__main__":
         repetitions=100,
         policy_list = [
             "Carbon_price",
-            "Electricity_subsidy",
-            "Adoption_subsidy",
-            "Adoption_subsidy_used",
-            "Production_subsidy"
+            #"Electricity_subsidy",
+            #"Adoption_subsidy",
+            #"Adoption_subsidy_used",
+            #"Production_subsidy"
         ],
         bounds_LOAD="package/analysis/policy_bounds_vary_single_policy_gen.json",
     )
