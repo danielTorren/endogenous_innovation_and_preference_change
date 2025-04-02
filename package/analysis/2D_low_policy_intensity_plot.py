@@ -2,8 +2,115 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
 from package.resources.utility import load_object
+from matplotlib.lines import Line2D  # Add this at the top of your file if not already imported
+
+
 
 ########################################################################################################################
+def plot_combined_policy_figures(base_params, fileName, outputs, top_policies, save_name="combined_policy", dpi=300):
+    fig, axs = plt.subplots(3, 2, figsize=(17, 14), sharex=True)
+    time_steps = np.arange(base_params["duration_future"] - 1)
+    start = base_params["duration_burn_in"] + base_params["duration_calibration"] 
+    # Colors for consistent styling
+    colors = plt.cm.tab20(np.linspace(0, 1, len(outputs)))
+
+    # --- 1. EV Uptake
+    ax1 = axs[0, 0]
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
+        data = output["history_prop_EV"][:, start:]
+
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+
+        ax1.plot(time_steps, mean, label=label, color=colors[idx])
+        ax1.fill_between(time_steps, mean - ci, mean + ci, color=colors[idx], alpha=0.2)
+
+    ax1.set_ylabel("EV Adoption")
+    add_vertical_lines(ax1, base_params, annotation_height_prop=[0.45, 0.45, 0.45])
+    
+    # --- 2. Mean EV Prices (only)
+    ax2 = axs[0, 1]
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
+        mean_price = output["history_mean_price_ICE_EV_arr"]
+        mean_new_EV = mean_price[:, :, 0, 1]
+        mean_used_EV = mean_price[:, :, 1, 1]
+
+        mean_new, ci_new = np.nanmean(mean_new_EV, axis=0), sem(mean_new_EV, axis=0, nan_policy='omit') * t.ppf(0.975, df=mean_new_EV.shape[0] - 1)
+        mean_used, ci_used = np.nanmean(mean_used_EV, axis=0), sem(mean_used_EV, axis=0, nan_policy='omit') * t.ppf(0.975, df=mean_used_EV.shape[0] - 1)
+
+        ax2.plot(time_steps, mean_new, color=colors[idx])
+        ax2.fill_between(time_steps, mean_new - ci_new, mean_new + ci_new, color=colors[idx], alpha=0.2)
+
+        ax2.plot(time_steps, mean_used, color=colors[idx], linestyle="--")
+        ax2.fill_between(time_steps, mean_used - ci_used, mean_used + ci_used, color=colors[idx], alpha=0.2)
+
+    ax2.set_ylabel("EV Price ($)")
+    # Add after plotting all the policy lines in ax2
+    custom_legend = [
+        Line2D([0], [0], color="black", linestyle='-', label='New'),
+        Line2D([0], [0], color="black", linestyle='--', label='Used')
+    ]
+    ax2.legend(handles=custom_legend, loc='upper right', fontsize="small")
+    add_vertical_lines(ax2, base_params, annotation_height_prop=[0.8, 0.45, 0.45])
+
+    # --- 3. Mean Car Age
+    ax3 = axs[1, 0]
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        data = output["history_mean_car_age"][:, :]
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+        ax3.plot(time_steps, mean, color=colors[idx])
+        ax3.fill_between(time_steps, mean - ci, mean + ci, color=colors[idx], alpha=0.2)
+    ax3.set_ylabel("Car Age (months)")
+    add_vertical_lines(ax3, base_params, annotation_height_prop=[0.8, 0.3, 0.3])
+
+    # --- 4. Production Emissions
+    ax4 = axs[1, 1]
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        data = output["history_total_emissions"][:, :]
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+        ax4.plot(time_steps, mean, color=colors[idx])
+        ax4.fill_between(time_steps, mean - ci, mean + ci, color=colors[idx], alpha=0.2)
+    ax4.set_ylabel("Total Emissions (kgCO2)")
+    ax4.set_xlabel("Time Step (months)")
+    add_vertical_lines(ax4, base_params, annotation_height_prop=[0.6, 0.45, 0.45])
+    # --- 5. Production Emissions
+    ax5 = axs[2, 0]
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        data = output["history_production_emissions"][:, :]
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+        ax5.plot(time_steps, mean, color=colors[idx])
+        ax5.fill_between(time_steps, mean - ci, mean + ci, color=colors[idx], alpha=0.2)
+    ax5.set_ylabel("Production Emissions (kgCO2)")
+    ax5.set_xlabel("Time Step (months)")
+    add_vertical_lines(ax5, base_params, annotation_height_prop=[0.6, 0.45, 0.45])
+
+    # --- 6. Driving Emissions
+    ax6 = axs[2, 1]
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
+        data = output["history_driving_emissions"][:, :]
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+        ax6.plot(time_steps, mean, color=colors[idx], label = label)
+        ax6.fill_between(time_steps, mean - ci, mean + ci, color=colors[idx], alpha=0.2)
+    ax6.set_ylabel("Driving Emissions (kgCO2)")
+    ax6.set_xlabel("Time Step (months)")
+    add_vertical_lines(ax6, base_params, annotation_height_prop=[0.45, 0.45, 0.45])
+    ax6.legend(fontsize="x-small")
+
+    plt.tight_layout()
+    plt.savefig(f"{fileName}/Plots/combined_policy_dashboard_{save_name}.png", dpi=dpi)
+    print("Saved combined policy dashboard:", f"{fileName}/Plots/combined_policy_dashboard_{save_name}.png")
+
+
+
+
+##############################################################################################################################################
 
 def plot_combined_figures(base_params, fileName, output,save_name, dpi=300):
     #FOR SPECIFIC POLICY COMBO
@@ -525,11 +632,11 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
     ax.axvline(ev_sale_start_time, color="black", linestyle=':')
     ax.annotate("Policy end", xy=(ev_sale_start_time, annotation_height_0),
                 rotation=90, verticalalignment='center', horizontalalignment='right',
-                fontsize=12, color='black')
+                fontsize=8, color='black')
 
         
 ##########################################################################################################################
-def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300):
+def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300, annotation_height_prop=[0.3, 0.3, 0.2]):
     
     start = base_params["duration_burn_in"] + base_params["duration_calibration"] - 1#-1 is because i cant keep track of tiem correnctly
     time_steps = np.arange(base_params["duration_future"])
@@ -557,13 +664,14 @@ def plot_policy_results_ev(base_params, fileName, outputs_BAU, outputs, top_poli
     ax.set_ylabel(y_label)
     #ax.set_title(title)
     ax.legend(loc='best', fontsize='small')
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     plt.tight_layout()
     save_path = f'{fileName}/Plots/{prop_name}.png'
     plt.savefig(save_path, dpi=dpi)
     print("Done", prop_name)
 
 
-def plot_policy_results(fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300):
+def plot_policy_results(base_params, fileName, outputs_BAU, outputs, top_policies, x_label, y_label, prop_name, dpi=300, annotation_height_prop=[0.3, 0.3, 0.2]):
 
     time_steps = np.arange(outputs_BAU[prop_name].shape[1])
     fig, ax = plt.subplots(figsize=(12, 7))
@@ -590,6 +698,7 @@ def plot_policy_results(fileName, outputs_BAU, outputs, top_policies, x_label, y
     ax.set_ylabel(y_label)
     #ax.set_title(title)
     ax.legend(loc='best', fontsize='small')
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     plt.tight_layout()
     save_path = f'{fileName}/Plots/{prop_name}.png'
     plt.savefig(save_path, dpi=dpi)
@@ -639,6 +748,9 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
 
+    plot_combined_policy_figures(base_params, fileName, outputs, top_policies, save_name="combined_policy", dpi=300)
+    plt.show()
+    quit()
     plot_combined_figures(base_params, fileName, outputs[('Carbon_price', 'Electricity_subsidy')], "c_e", dpi=300)
     plot_combined_figures(base_params, fileName, outputs[('Carbon_price', 'Adoption_subsidy_used')],"c_a", dpi=300)
     plot_combined_figures(base_params, fileName, outputs[('Electricity_subsidy', 'Production_subsidy')],"e_p", dpi=300)
@@ -654,6 +766,7 @@ def main(fileName):
     )
 
     plot_policy_results(
+        base_params,
         fileName,
         outputs_BAU,
         outputs, 
@@ -675,6 +788,7 @@ def main(fileName):
     )
 
     plot_policy_results(
+        base_params,
         fileName, 
         outputs_BAU,
         outputs,
@@ -685,6 +799,7 @@ def main(fileName):
     )
 
     plot_policy_results(
+        base_params,
         fileName,
         outputs_BAU,
         outputs, 
@@ -695,6 +810,7 @@ def main(fileName):
         )
     
     plot_policy_results(
+        base_params,
         fileName,
         outputs_BAU,
         outputs, 
@@ -705,6 +821,7 @@ def main(fileName):
     )
 
     plot_policy_results(
+        base_params,
         fileName,
         outputs_BAU,
         outputs, 
@@ -715,6 +832,7 @@ def main(fileName):
     )
 
     plot_policy_results(
+        base_params,
         fileName,
         outputs_BAU,
         outputs, 
@@ -725,6 +843,7 @@ def main(fileName):
     )
 
     plot_policy_results(
+        base_params,
         fileName,
         outputs_BAU,
         outputs, 
@@ -737,4 +856,4 @@ def main(fileName):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/2D_low_intensity_policies_17_34_40__01_04_2025")
+    main("results/2D_low_intensity_policies_11_52_46__02_04_2025")
