@@ -112,7 +112,7 @@ def plot_ev_uptake(real_data, EV_sales_prop_2020_23, base_params, data, history_
     ax.plot(time_steps_real_sales,EV_sales_prop_2020_23, label="California EV Sales", color='black', linestyle="dotted")
 
     #ax.set_xlabel("Time Step, months")
-    ax.set_ylabel("Proportion of EVs")
+    ax.set_ylabel("EV Adoption Proportion")
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(loc = "upper left")
 

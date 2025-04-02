@@ -503,7 +503,7 @@ class Controller:
         
         if self.duration_future > self.absolute_2035:
             rebate_time_series_future =  np.asarray([self.Adoption_subsidy]*self.absolute_2035)
-            self.rebate_time_series_future = np.concatenate((rebate_time_series_future, np.asarray([10000]*(self.duration_future - self.absolute_2035))), axis=None)
+            self.rebate_time_series_future = np.concatenate((rebate_time_series_future, np.asarray([0]*(self.duration_future - self.absolute_2035))), axis=None)
         else:
             self.rebate_time_series_future = np.asarray([self.Adoption_subsidy]*self.duration_future)
 
