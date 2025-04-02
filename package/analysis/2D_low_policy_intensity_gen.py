@@ -187,9 +187,9 @@ def main(fileName_load,
         max_ev_uptake
     )
 
-    keys = [('Carbon_price', 'Electricity_subsidy'), ('Carbon_price', 'Adoption_subsidy_used'), ('Electricity_subsidy', 'Production_subsidy')]
-    top_policies = {key: top_policies_full[key] for key in keys}
-
+    #keys = [('Carbon_price', 'Electricity_subsidy'), ('Carbon_price', 'Adoption_subsidy_used'), ('Electricity_subsidy', 'Production_subsidy')]
+    #top_policies = {key: top_policies_full[key] for key in keys}
+    top_policies = top_policies_full
     print(list(top_policies.keys()))
 
     ##########################################################################################
@@ -348,7 +348,7 @@ def main(fileName_load,
 
 if __name__ == "__main__":
     main(
-        fileName_load="results/vary_two_policies_gen_23_53_57__31_03_2025",
+        fileName_load="results/vary_two_policies_gen_00_12_09__02_04_2025",
         min_ev_uptake = 0.945,
-        max_ev_uptake = 1
+        max_ev_uptake = 0.955
     )
