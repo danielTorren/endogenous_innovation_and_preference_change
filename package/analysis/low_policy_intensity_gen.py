@@ -182,8 +182,10 @@ def main(fileName_load,
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
-    del top_policies[("Adoption_subsidy","Carbon_price")]
+    #del top_policies[("Adoption_subsidy","Carbon_price")]
+    top_policies = top_policies[("Adoption_subsidy","Carbon_price")]
     print("top_policies", list(top_policies.keys()))
+    
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
