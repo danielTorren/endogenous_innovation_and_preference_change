@@ -3,7 +3,7 @@
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 0,
+    "duration_future": 312,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -19,7 +19,7 @@
     "parameters_scenarios":{
             "Gas_price": 1,
             "Electricity_price": 1,
-            "Grid_emissions_intensity": 0.9
+            "Grid_emissions_intensity": 0.0
     },
     "parameters_policies":{
         "States":{
@@ -33,7 +33,7 @@
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.330,
+                "Carbon_price": 0.0,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,

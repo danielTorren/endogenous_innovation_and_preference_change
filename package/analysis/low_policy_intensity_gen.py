@@ -234,7 +234,7 @@ def main(fileName_load,
 
     ###########################################################################################
 
-    base_params["parameters_scenarios"]["Grid_emissions_intensity"] = 1
+    #base_params["parameters_scenarios"]["Grid_emissions_intensity"] = 1
     base_params["save_timeseries_data_state"] = 1
 
     #RESET TO B SURE

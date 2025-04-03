@@ -814,7 +814,9 @@ class Controller:
         self.electricity_emissions_intensity = self.electricity_emissions_intensity_vec[self.t_controller]
         
         
-
+        if self.t_controller == 500:
+            print(self.electricity_emissions_intensity)
+            quit()
         #pre tax
         self.electricity_price_subsidy_prop = self.electricity_price_subsidy_time_series[self.t_controller]
         self.electricity_price_subsidy_dollars = self.electricity_price_vec[self.t_controller]*self.electricity_price_subsidy_prop
