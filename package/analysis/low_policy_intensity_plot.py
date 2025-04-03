@@ -261,7 +261,7 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
     ax1.plot(time_steps, bau_ev_mean, color='black', label='BAU', linewidth=2)
     ax1.fill_between(time_steps, bau_ev_mean - bau_ev_ci, bau_ev_mean + bau_ev_ci, color='black', alpha=0.2)
 
-    bau_ev = outputs_BAU["history_ev_adoption_rate_bottom"][:, start:]
+    bau_ev = outputs_BAU["history_ev_adoption_rate_bottom"]
     bau_ev_mean = np.mean(bau_ev, axis=0)
     bau_ev_ci = sem(bau_ev, axis=0) * t.ppf(0.975, df=bau_ev.shape[0] - 1)
     ax1.plot(time_steps, bau_ev_mean, color='black', label='BAU - Poor', linewidth=2, linestyle = "--")
@@ -279,14 +279,13 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         color2 = policy_colors[policy2]
         marker_shape = policy_markers[policy2]
 
-        ax1.plot(time_steps, mean, label=label, color=color1, marker=marker_shape, markevery=32,
+        ax1.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
         markerfacecolor=color2, markeredgecolor=color2, markersize=4)
         ax1.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
         # POOR
-        print( output["history_ev_adoption_rate_bottom"])
-        quit()
-        data = output["history_ev_adoption_rate_bottom"][:, start:]
+
+        data = output["history_ev_adoption_rate_bottom"]
         mean = np.mean(data, axis=0)
         ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
 
@@ -294,14 +293,14 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         color2 = policy_colors[policy2]
         marker_shape = policy_markers[policy2]
 
-        ax1.plot(time_steps, mean, label=label, color=color1, marker=marker_shape, markevery=32,
+        ax1.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
         markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle = "--")
         ax1.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
     #ax1.legend(fontsize="x-small")
     ax1.set_ylabel("EV Adoption Proportion")
-    poor_line = plt.Line2D([0], [0], color="grey", alpha=1, linestyle='--', label='Bottom 50% $\beta$')
-    ax1.legend(handles=poor_line, loc='lower right', fontsize=9)
+    poor_line = plt.Line2D([0], [0], color="grey", alpha=1, linestyle='--', label=r'Bottom 50% $\beta$')
+    ax1.legend(handles=[poor_line], loc='lower right', fontsize=9)
 
     add_vertical_lines(ax1, base_params, annotation_height_prop=[0.5, 0.45, 0.45])
     
@@ -477,10 +476,16 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
 
-    #plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
-    plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
+    top_policies[('Carbon_price', 'Adoption_subsidy_used')] = top_policies.pop(('Adoption_subsidy_used', 'Carbon_price'))
+    outputs[('Carbon_price', 'Adoption_subsidy_used')] = outputs.pop(('Adoption_subsidy_used', 'Carbon_price'))
+
+    top_policies[('Carbon_price', 'Adoption_subsidy')] = top_policies.pop(('Adoption_subsidy', 'Carbon_price'))
+    outputs[('Carbon_price', 'Adoption_subsidy')] = outputs.pop(('Adoption_subsidy', 'Carbon_price'))
+
+    plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
+    #plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
     plt.show()
     
 
 if __name__ == "__main__":
-    main(fileName = "results/2D_low_intensity_policies_11_52_46__02_04_2025")
+    main(fileName = "results/2D_low_intensity_policies_16_18_25__03_04_2025")

@@ -224,7 +224,7 @@ def main(fileName_load,
         "Research_subsidy": 0
     }
 
-    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params_calibration, "2D_low_intensity_policies")
+    controller_files, base_params, root_folder  = set_up_calibration_runs(base_params_calibration, "pair_low_intensity_policies")
     print("DONE calibration")
     #
     #NOW SAVE
