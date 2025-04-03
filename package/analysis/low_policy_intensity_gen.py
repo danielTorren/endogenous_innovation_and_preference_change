@@ -289,6 +289,9 @@ def main(fileName_load,
         params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
         params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
+
+        print(params_policy)
+        quit()
         (
             history_driving_emissions_arr,#Emmissions flow
             history_production_emissions_arr,
