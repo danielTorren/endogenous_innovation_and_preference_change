@@ -215,7 +215,6 @@ def main(fileName_load,
     ###########################################################################################
 
     base_params["save_timeseries_data_state"] = 1
-    print(base_params)
 
     #RESET TO B SURE
     #RUN BAU
@@ -347,7 +346,6 @@ def main(fileName_load,
     #######################################################################################################
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
-
 
 if __name__ == "__main__":
     main(

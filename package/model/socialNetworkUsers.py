@@ -546,6 +546,10 @@ class Social_Network:
             # Calculate the probability of choosing each vehicle              
             sum_U_kappa = np.sum(individual_specific_util_kappa)
             #print("sum_U_kappa", sum_U_kappa)
+            if not np.isfinite(sum_U_kappa):
+                print(self.t_social_network)
+                print("⚠️ Warning: Unstable utility sum", sum_U_kappa)
+                print("individual_specific_util_kappa:", individual_specific_util_kappa)
 
             probability_choose = individual_specific_util_kappa / sum_U_kappa
 
