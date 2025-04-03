@@ -915,12 +915,12 @@ class Controller:
             self.second_hand_merchant.set_up_time_series_second_hand_car()
             self.social_network.set_up_time_series_social_network()
             self.firm_manager.set_up_time_series_firm_manager()
-            self.manage_saves()
+            #self.manage_saves()
 
             for firm in self.firm_manager.firms_list:
                 firm.save_timeseries_data_state = 1
                 firm.set_up_time_series_firm()
-                firm.save_timeseries_data_firm()
+                #firm.save_timeseries_data_firm()
 
         #RESET COUNTERS FOR POLICY
         self.social_network.emissions_cumulative = 0
