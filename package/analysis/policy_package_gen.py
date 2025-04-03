@@ -7,7 +7,7 @@ from skopt.utils import use_named_args
 from package.resources.utility import save_object
 from package.analysis.endogenous_policy_intensity_single_gen import (
     set_up_calibration_runs,
-    evaluate_policy_outcomes_with_seeds
+    single_policy_with_seeds
 )
 
 
@@ -31,10 +31,10 @@ def custom_cost_function(ev_uptake, emissions):
     return emissions * 1e-9  # Scale emissions to MTCO2
 
 
-def simulate_policy_scenario(params, controller_files):
-    results = evaluate_policy_outcomes_with_seeds(params, controller_files)
-    mean_ev_uptake = results["mean_ev_uptake"]
-    mean_emissions = results["mean_emissions_cumulative"]
+def simulate_policy_scenario(sim_params, controller_files):
+    EV_uptake_arr, _, _, emissions_cumulative_arr, _, _, _, _, _ = single_policy_with_seeds(sim_params, controller_files)
+    mean_ev_uptake = np.mean(EV_uptake_arr)
+    mean_emissions = np.mean(emissions_cumulative_arr)
     return mean_ev_uptake, mean_emissions
 
 
@@ -74,6 +74,7 @@ def optimize_three_policies_BO(base_params, controller_files, policy_names, boun
     best_combo = dict(zip(policy_names, best_values))
 
     return {
+        "policy_names": policy_names,
         "best_intensities": best_combo,
         "best_cost": best_cost,
         "result": result
