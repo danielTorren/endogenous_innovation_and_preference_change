@@ -105,14 +105,16 @@ def main(
     # Run Bayesian Optimization
     result = optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, emissions_BAU,utility_BAU,n_calls=n_calls)
 
-    # Save results
-    save_object(result, file_name + "/Data", "triple_policy_optimization_result")
-    save_object(policy_names, file_name + "/Data", "optimized_policy_names")
-
     print("\n✅ Optimization Complete")
     print("Best Policy Intensities:", result["best_intensities"])
     print("Final Cost:", result["best_cost"])
     print("Results saved in:", file_name)
+
+
+    # Save results
+    save_object(result, file_name + "/Data", "triple_policy_optimization_result")
+    save_object(policy_names, file_name + "/Data", "optimized_policy_names")
+
 
 
 if __name__ == "__main__":
