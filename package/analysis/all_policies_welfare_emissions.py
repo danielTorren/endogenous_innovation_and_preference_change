@@ -189,7 +189,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
     plot_emissions_tradeoffs_from_outcomes(base_params, pairwise_outcomes_complied, outcomes_BAU,
                                             file_name,
-                                            min_ev_uptake=0.9, max_ev_uptake=1.0, dpi=300)
+                                            min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300)
     
     save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
     save_object(base_params, file_name + "/Data", "base_params")
