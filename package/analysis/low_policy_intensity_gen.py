@@ -168,7 +168,7 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
         if best_entry:
             sorted_key = tuple(sorted((best_entry["original_order"])))
             best_entries[sorted_key] = best_entry
-            print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
+            #print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
             
     return best_entries
 
@@ -183,7 +183,7 @@ def main(fileName_load,
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
     del top_policies[("Adoption_subsidy","Carbon_price")]
-
+    print("top_policies", list(top_policies.keys()))
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
