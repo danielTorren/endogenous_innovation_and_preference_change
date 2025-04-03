@@ -120,7 +120,7 @@ def extract_policy_values(data):
         print("runs: ",len(sorted(list(set(policy_values[policy_name])))))
 
         policy_values[policy_name] = sorted(list(set(policy_values[policy_name])))
-    #quit()
+    
     return policy_values
 
 def main(

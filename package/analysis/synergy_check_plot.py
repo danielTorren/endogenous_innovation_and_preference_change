@@ -71,7 +71,7 @@ def plot_synergy_scatter(synergy_data):
         cbar = plt.colorbar(scatter, ax=ax)
         #cbar.set_label("Synergy")
     #print(axes)
-    #quit()
+    
 
     axes[0].set_ylabel(f"{policy2} Intensity")
     #plt.tight_layout()

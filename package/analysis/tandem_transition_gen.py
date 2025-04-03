@@ -46,7 +46,7 @@ def single_policy_simulation(params, controller_load):
     Run a single simulation and return EV uptake and policy distortion.
     """
     #print("value policy", params["parameters_policies"]["Values"]["Carbon_price"])
-    #quit()
+    
     data = load_in_controller(controller_load, params)
     EV_uptake = data.calc_EV_prop()
     policy_distortion = data.calc_total_policy_distortion()

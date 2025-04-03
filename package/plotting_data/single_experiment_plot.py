@@ -297,7 +297,7 @@ def plot_attribute(ax, attribute_name, attr_names, base_params, social_network, 
     ev_confidence_intervals = [1.96 * sem(values) if values else 0 for values in ev_history]
 
 
-    #quit()
+    
     # Plot ICE data
     ax.plot(time_series, ice_means[base_params["duration_burn_in"]:], label=f"ICE {attribute_name}", color="blue")
     ax.plot(time_series, ice_max[base_params["duration_burn_in"]:], color="blue", linestyle = "--")
@@ -1293,7 +1293,7 @@ def main(fileName, dpi=300):
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
     plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
     #plt.show()
-    #quit()
+    
     #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
 

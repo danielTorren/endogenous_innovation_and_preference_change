@@ -35,7 +35,7 @@ def main(fileName):
                 print(f"  {key}: {(outcomes.get(key))*12}")
             else:
                 print(f"  {key}: {outcomes.get(key)}")
-    quit()
+
     # Apply the function to the data
     policy_outcomes = divide_by_billion(policy_outcomes)
 

@@ -67,7 +67,7 @@ def main(file_path):
 
     conditioned_posterior = posterior.condition(x=real_data.unsqueeze(0))
     samples = conditioned_posterior.sample((100000,))
-    quit()
+
 
 
     samples = posterior.sample((100000,), x=real_data.unsqueeze(0))
