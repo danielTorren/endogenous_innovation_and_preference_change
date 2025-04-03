@@ -168,8 +168,8 @@ def main(
 
     policy_pairs = generate_all_policy_pairs(policy_list_all)
 
-    policy_pairs = policy_pairs[:10]
-    #policy_pairs = policy_pairs[10:]
+    #policy_pairs = policy_pairs[:10]
+    policy_pairs = policy_pairs[10:]
     
     print(policy_pairs)
 
