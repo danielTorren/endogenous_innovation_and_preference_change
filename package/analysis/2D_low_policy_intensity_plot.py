@@ -242,7 +242,6 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
 
-    plot_combined_policy_figures(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
     plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
     plt.show()
     

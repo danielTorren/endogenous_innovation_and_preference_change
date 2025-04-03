@@ -270,7 +270,6 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     )
     plt.show()
 
-
 def calc_low_intensities_from_array(data_array, policy_pairs, policy_info_dict, min_val, max_val):
     best_entries = {}
 
@@ -314,7 +313,6 @@ def calc_low_intensities_from_array(data_array, policy_pairs, policy_info_dict, 
             print(f"{policy1}-{policy2} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
             print(best_entry['policy1_value_relative'], best_entry['policy2_value_relative'])
     return best_entries
-
 
 def plot_emissions_tradeoffs_low(outcomes_BAU, data_array, policy_pairs, file_name, policy_info_dict,
                              min_ev_uptake=0.9, max_ev_uptake=1.0, dpi=300):
