@@ -211,7 +211,7 @@ def main(fileName_load,
 
     ###########################################################################################
 
-    base_params["save_timeseries_data_state"] = 1
+    base_params["save_timeseries_data_state"] = 0
     print(base_params)
 
     #RESET TO B SURE
