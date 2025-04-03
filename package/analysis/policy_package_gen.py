@@ -13,7 +13,6 @@ from package.analysis.endogenous_policy_intensity_single_gen import (
 emissions_BAU = 0.12e9
 utility_BAU = 87e9
 
-
 def update_policy_intensity(params, policy_name, intensity_level):
     params["parameters_policies"]["States"][policy_name] = 1
     if policy_name == "Carbon_price":
