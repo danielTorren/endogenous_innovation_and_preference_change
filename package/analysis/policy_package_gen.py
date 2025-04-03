@@ -109,7 +109,7 @@ def main(
     controller_files, base_params, file_name = set_up_calibration_runs(base_params, "triple_policy_BO")
 
     # Run Bayesian Optimization
-    result = optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, emissions_BAU,utility_BAU,n_calls=n_calls)
+    result = optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict,n_calls=n_calls)
 
     print("\n✅ Optimization Complete")
     print("Best Policy Intensities:", result["best_intensities"])
