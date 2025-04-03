@@ -183,7 +183,7 @@ def main(fileName_load,
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
     #del top_policies[("Adoption_subsidy","Carbon_price")]
-    top_policies = top_policies[("Adoption_subsidy","Carbon_price")]
+    top_policies = {("Adoption_subsidy","Carbon_price"): top_policies[("Adoption_subsidy","Carbon_price")]}
     print("top_policies", list(top_policies.keys()))
     
     ##########################################################################################
