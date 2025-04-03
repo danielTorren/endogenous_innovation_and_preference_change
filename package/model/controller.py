@@ -933,7 +933,7 @@ class Controller:
         self.gas_price_california_vec = np.concatenate((self.pre_future_gas_price_california_vec, self.gas_price_series_future), axis=None) 
         self.electricity_price_vec =  np.concatenate((self.pre_future_electricity_price_vec, self.electricity_price_series_future ), axis=None) 
         self.electricity_emissions_intensity_vec = np.concatenate((self.pre_future_electricity_emissions_intensity_vec, self.grid_emissions_intensity_series_future ), axis=None) 
-        print(self.grid_emissions_intensity_series_future)
+        print(self.pre_future_electricity_emissions_intensity_vec, self.grid_emissions_intensity_series_future)
         quit()
         self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.rebate_time_series_future), axis=None) 
         self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.used_rebate_time_series_future), axis=None) 
