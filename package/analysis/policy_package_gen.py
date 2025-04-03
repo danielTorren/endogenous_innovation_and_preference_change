@@ -30,6 +30,7 @@ def custom_cost_function(ev_uptake, emissions, utility, emissions_BAU,utility_BA
         return 1e6 + abs(ev_uptake - 0.95) * 1e5
     emissions_ratio = (emissions/ emissions_BAU)
     utility_ratio = (utility_BAU/utility)
+    print(emissions_ratio,utility_ratio)
     return 0.3*emissions_ratio + 0.7*utility_ratio
 
 
