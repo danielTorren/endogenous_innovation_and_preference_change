@@ -167,6 +167,10 @@ def main(
         bounds_dict = json.load(f)
 
     policy_pairs = generate_all_policy_pairs(policy_list_all)
+
+    policy_pairs = policy_pairs[:10]
+    #policy_pairs = policy_pairs[10:]
+    
     print(policy_pairs)
 
     
@@ -226,6 +230,6 @@ if __name__ == "__main__":
         ],
         target_ev_uptake=0.95,
         n_steps_for_sweep=10,
-        n_calls=15,
+        n_calls=20,
         noise=0.05
     )
