@@ -168,7 +168,7 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
         if best_entry:
             sorted_key = tuple(sorted((best_entry["original_order"])))
             best_entries[sorted_key] = best_entry
-            print(f"{policy1}-{policy2} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
+            print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
             
     return best_entries
 
