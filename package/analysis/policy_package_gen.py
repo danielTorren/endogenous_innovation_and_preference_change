@@ -20,7 +20,7 @@ def update_policy_intensity(params, policy_name, intensity_level):
     return params
 
 
-def custom_cost_function(ev_uptake, emissions):
+def custom_cost_function(ev_uptake, emissions, utility, emissions_BAU,utility_BAU):
     """
     Step cost:
     - Huge penalty if EV uptake is outside 0.945–0.955
@@ -28,7 +28,9 @@ def custom_cost_function(ev_uptake, emissions):
     """
     if ev_uptake < 0.945 or ev_uptake > 0.955:
         return 1e6 + abs(ev_uptake - 0.95) * 1e5
-    return emissions * 1e-9  # Scale emissions to MTCO2
+    emissions_ratio = (emissions/ emissions_BAU)
+    utility_ratio = (utility_BAU/utility)
+    return 0.3*emissions_ratio + 0.7*utility_ratio
 
 
 def simulate_policy_scenario(sim_params, controller_files):
@@ -65,6 +67,7 @@ def optimize_three_policies_BO(base_params, controller_files, policy_names, boun
         objective,
         dimensions=dimensions,
         n_calls=n_calls,
+        n_initial_points=8, # 8–10 random samples before modeling
         random_state=42,
         acq_func="EI"
     )
