@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import load_object
 
-def plot_policy_intensity_effects_means_95(title_dict, data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300):
+def plot_policy_intensity_effects_means_95(height, title_dict, data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300):
     """
     Plots the effects of different policy intensities on specified measures with 95% confidence intervals.
 
@@ -18,7 +18,7 @@ def plot_policy_intensity_effects_means_95(title_dict, data_array, policy_list, 
     num_policies = len(policy_list)
     num_measures = len(selected_measures)
 
-    fig, axes = plt.subplots(num_measures, num_policies, figsize=(10, 15), sharey="row", sharex="col")
+    fig, axes = plt.subplots(num_measures, num_policies, figsize=(10, height), sharey="row", sharex="col")
 
     # Ensure axes is a 2D array for consistency
     if num_measures == 1:
@@ -119,8 +119,32 @@ def main(file_name):
         "Cumulative Profit"
     ]
 
-    plot_policy_intensity_effects_means_95(title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    plot_policy_intensity_effects_means_95(15, title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
     
+    selected_measures = [
+        "EV Uptake",
+        "Net Policy Cost",
+        #"Cumulative Emissions",
+        #"Driving Emissions",
+        #"Production Emissions",
+        "Cumulative Utility",
+        "Cumulative Profit"
+    ]
+    plot_policy_intensity_effects_means_95(8.5, title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    
+    selected_measures = [
+        #"EV Uptake",
+        #"Net Policy Cost",
+        "Cumulative Emissions",
+        "Driving Emissions",
+        "Production Emissions",
+        #"Cumulative Utility",
+        #"Cumulative Profit"
+    ]
+    plot_policy_intensity_effects_means_95(6.4,title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    
+
+
     plt.show()
 if __name__ == "__main__":
     main(file_name="results/vary_single_policy_gen_21_35_31__01_04_2025")#vary_single_policy_gen_16_43_02__06_03_2025
