@@ -31,7 +31,10 @@ def main(fileName):
     for policy_name, outcomes in policy_outcomes.items():
         print(f"\nPolicy: {policy_name}")
         for key in selected_keys:
-            print(f"  {key}: {outcomes.get(key)}")
+            if key in ["mean_utility_cumulative","mean_utility_cumulative_30"]:
+                print(f"  {key}: {(outcomes.get(key))*12}")
+            else:
+                print(f"  {key}: {outcomes.get(key)}")
     quit()
     # Apply the function to the data
     policy_outcomes = divide_by_billion(policy_outcomes)

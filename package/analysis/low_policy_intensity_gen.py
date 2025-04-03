@@ -42,7 +42,9 @@ def single_policy_simulation(params, controller_file):
         data.firm_manager.history_mean_profit_margins_EV,
         data.social_network.history_mean_car_age,
         data.firm_manager.history_past_new_bought_vehicles_prop_ev,
-        data.history_policy_net_cost
+        data.history_policy_net_cost,
+        data.social_network.history_total_utility_bottom,
+        data.social_network.history_ev_adoption_rate_bottom
     )
 
 def single_policy_with_seeds(params, controller_files):
@@ -78,7 +80,9 @@ def single_policy_with_seeds(params, controller_files):
         history_mean_profit_margins_EV,
         history_mean_car_age,
         history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost
+        history_policy_net_cost,
+        history_total_utility_bottom,
+        history_ev_adoption_rate_bottom
     ) = zip(*res)
 
         # Return results as arrays where applicable
@@ -105,7 +109,9 @@ def single_policy_with_seeds(params, controller_files):
         history_mean_profit_margins_EV,
         np.asarray(history_mean_car_age),
         np.asarray(history_past_new_bought_vehicles_prop_ev),
-        np.asarray(history_policy_net_cost)
+        np.asarray(history_policy_net_cost),
+        np.asarray(history_total_utility_bottom),
+        np.asarray(history_ev_adoption_rate_bottom)
     )
 
 def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
@@ -231,7 +237,10 @@ def main(fileName_load,
         history_mean_profit_margins_EV,
         history_mean_car_age,
         history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost
+        history_policy_net_cost,
+        history_total_utility_bottom,
+        history_ev_adoption_rate_bottom
+
     ) = single_policy_with_seeds(base_params, controller_files)
 
     outputs_BAU = {
@@ -251,7 +260,9 @@ def main(fileName_load,
             "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
             "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
             "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev 
+            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
+            "history_total_utility_bottom": history_total_utility_bottom,
+            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
     }
 
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
@@ -297,7 +308,9 @@ def main(fileName_load,
             history_mean_profit_margins_EV,
             history_mean_car_age,
             history_past_new_bought_vehicles_prop_ev,
-            history_policy_net_cost
+            history_policy_net_cost,
+            history_total_utility_bottom,
+            history_ev_adoption_rate_bottom
         ) = single_policy_with_seeds(params_policy, controller_files)
 
         outputs[(policy1, policy2)] = {
@@ -317,7 +330,9 @@ def main(fileName_load,
             "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
             "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
             "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev 
+            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
+            "history_total_utility_bottom": history_total_utility_bottom,
+            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
         }
 
     save_object(outputs, root_folder + "/Data", "outputs")
