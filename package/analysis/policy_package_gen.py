@@ -10,6 +10,9 @@ from package.analysis.endogenous_policy_intensity_single_gen import (
     single_policy_with_seeds
 )
 
+emissions_BAU = 0.12e9
+utility_BAU = 87e9
+
 
 def update_policy_intensity(params, policy_name, intensity_level):
     params["parameters_policies"]["States"][policy_name] = 1
@@ -20,12 +23,15 @@ def update_policy_intensity(params, policy_name, intensity_level):
     return params
 
 
-def custom_cost_function(ev_uptake, emissions, utility, emissions_BAU,utility_BAU):
+def custom_cost_function(ev_uptake, emissions, utility):
     """
     Step cost:
     - Huge penalty if EV uptake is outside 0.945–0.955
     - Reward low emissions otherwise
     """
+    global emissions_BAU
+    global utility_BAU
+
     if ev_uptake < 0.945 or ev_uptake > 0.955:
         return 1e6 + abs(ev_uptake - 0.95) * 1e5
     emissions_ratio = (emissions/ emissions_BAU)
@@ -41,7 +47,7 @@ def simulate_policy_scenario(sim_params, controller_files):
     return mean_ev_uptake, mean_emissions
 
 
-def optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, emissions_BAU,utility_BAU,n_calls=30):
+def optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, n_calls=30):
     # Define search space
     dimensions = [
         Real(bounds_dict[p][0], bounds_dict[p][1], name=p)
@@ -60,7 +66,7 @@ def optimize_three_policies_BO(base_params, controller_files, policy_names, boun
             print(f"[ERROR] Simulation failed: {e}")
             return 1e10
 
-        cost = custom_cost_function(ev_uptake, emissions, emissions_BAU,utility_BAU)
+        cost = custom_cost_function(ev_uptake, emissions)
         print(f"[TEST] {params_dict} -> Uptake: {ev_uptake:.4f}, Emissions: {emissions:.2e}, Cost: {cost:.2f}")
         return cost
 
@@ -123,7 +129,5 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json",
         policy_names=["Carbon_price", "Adoption_subsidy_used", "Production_subsidy"],
-        n_calls=30,
-        emissions_BAU = 0.12e9,
-        utility_BAU = 87e9
+        n_calls=30
     )
