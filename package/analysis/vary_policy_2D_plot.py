@@ -200,15 +200,14 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     
     # --- Formatting ---
     # Top panel
-    ax_top.set_ylabel('Net Policy Cost ($bn)', fontsize=12)
+    ax_top.set_ylabel('Net Cost, bn $', fontsize=12)
     ax_top.grid(alpha=0.3)
     
     # Bottom panel
-    ax_bottom.set_xlabel('Cumulative Emissions (MTCO2)', fontsize=12)
-    ax_bottom.set_ylabel('Cumulative Utility ($bn)', fontsize=12)
+    ax_bottom.set_xlabel('Emissions, MTCO2', fontsize=12)
+    ax_bottom.set_ylabel('Utility, bn $', fontsize=12)
     ax_bottom.grid(alpha=0.3)
 
-    
     # --- Create custom legend elements with intensity indicators ---
     legend_elements = []
     
@@ -216,7 +215,7 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     for policy in all_policies:
         legend_elements.append(
             Patch(facecolor=policy_colors[policy], edgecolor='black',
-                 label=f"{policy.replace('_', ' ')}")
+                 label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
         )
     
     # Add intensity indicator half-circles
@@ -224,23 +223,23 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     low_size = scale * 0.3  # Small size for low intensity
     high_size = scale * 1.0  # Large size for high intensity
     
-    # Create proxy artists for the intensity indicators
-    low_intensity_proxy = plt.scatter([], [], s=low_size, 
-                                    marker=half_circle_marker(0, 180),
-                                    facecolor='gray', edgecolor='black')
-    high_intensity_proxy = plt.scatter([], [], s=high_size, 
-                                     marker=half_circle_marker(0, 180),
-                                     facecolor='gray', edgecolor='black')
-    
+    # Create proxies with Line2D using your Path as marker
+    low_intensity_proxy = plt.Line2D([0], [0],
+        marker=half_circle_marker(0, 180),
+        markersize=np.sqrt(low_size / np.pi),  # Convert area (scatter size) to marker radius
+        color='gray', markerfacecolor='gray', markeredgecolor='black', linestyle='None', label='Low intensity'
+    )
+
+    high_intensity_proxy = plt.Line2D([0], [0],
+        marker=half_circle_marker(0, 180),
+        markersize=np.sqrt(high_size / np.pi),
+        color='gray', markerfacecolor='gray', markeredgecolor='black', linestyle='None', label='High intensity'
+    )
+        
     legend_elements.extend([
         low_intensity_proxy,
-        plt.Line2D([0], [0], marker='', color='w', label='Low intensity',
-                  markerfacecolor='w', markersize=0),
         high_intensity_proxy,
-        plt.Line2D([0], [0], marker='', color='w', label='High intensity',
-                  markerfacecolor='w', markersize=0),
-        Patch(facecolor='gray', edgecolor='gray', alpha=0.5,
-             label='95% CI'),
+        plt.Line2D([0], [0], color="grey", alpha=0.5, linestyle='-', label='95% Confidence Interval'),
         Patch(facecolor='black', edgecolor='black',
              label='Business as Usual')
     ])
@@ -265,496 +264,12 @@ def plot_emissions_tradeoffs(outcomes_BAU, data_array, policy_pairs, file_name, 
     # Save
     createFolder(f"{file_name}/Plots/emissions_tradeoffs")
     plt.savefig(
-        f"{file_name}/Plots/emissions_tradeoffs/cost_utility_vs_emissions.png",
+        f"{file_name}/Plots/emissions_tradeoffs/cost_utility_vs_emissions_{min_ev_uptake}_{max_ev_uptake}.png",
         dpi=dpi,
         bbox_inches='tight'
     )
     plt.show()
 
-def plot_emissions_tradeoffs_contour(outcomes_BAU, data_array, policy_pairs, file_name, policy_info_dict,
-                           min_ev_uptake=0.9, max_ev_uptake=1.0, dpi=300):
-    """
-    Creates a 2-panel figure showing:
-    - Top: Net Policy Cost vs Emissions
-    - Bottom: Utility vs Emissions
-    Maintains all original visual encoding (marker sizes, opacity, legend)
-    """
-    # Create figure with two subplots sharing x-axis
-    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(7, 10), 
-                                          sharex=True,
-                                          gridspec_kw={'height_ratios': [1, 1.2]})
-    
-    # Get measure indices
-    emissions_idx = MEASURES["Cumulative_Emissions"]
-    utility_idx = MEASURES["Cumulative_Utility"]
-    cost_idx = MEASURES["Net_Policy_Cost"]
-    ev_idx = MEASURES["EV_Uptake"]
-    
-    # Color setup
-    color_map = plt.get_cmap('Set1', 10)
-    all_policies = sorted(list(set([p for pair in policy_pairs for p in pair])))
-    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
-    
-    # Calculate policy ranges
-    policy_ranges = {}
-    for policy in all_policies:
-        p_min, p_max = policy_info_dict['bounds_dict'][policy]
-        policy_ranges[policy] = {"min": p_min, "max": p_max}
-
-    all_emissions = []
-    all_costs = []
-    all_utilities = []
-    all_ev_uptake = []
-
-
-    # Process each policy pair
-    for pair_idx, (policy1, policy2) in enumerate(policy_pairs):
-        # Get data for this pair
-        pair_data = data_array[pair_idx]
-        
-        # Calculate means and 95% CIs
-        emissions = np.mean(pair_data[:, :, :, emissions_idx], axis=2) * 1e-9  # MTCO2
-        utility = np.mean(pair_data[:, :, :, utility_idx], axis=2) * 12 * 1e-9  # $bn/year
-        cost = np.mean(pair_data[:, :, :, cost_idx], axis=2) * 1e-9  # $bn
-        ev = np.mean(pair_data[:, :, :, ev_idx], axis=2)
-        
-        # Flatten and collect for unified contour plot
-        all_emissions.extend(emissions.flatten())
-        all_costs.extend(cost.flatten())
-        all_utilities.extend(utility.flatten())
-        all_ev_uptake.extend(ev.flatten())
-
-        # Calculate errors (95% CI)
-        n_seeds = pair_data.shape[2]
-        emissions_err = 1.96 * np.std(pair_data[:, :, :, emissions_idx], axis=2) / np.sqrt(n_seeds) * 1e-9
-        utility_err = 1.96 * np.std(pair_data[:, :, :, utility_idx], axis=2) / np.sqrt(n_seeds) * 12 * 1e-9
-        cost_err = 1.96 * np.std(pair_data[:, :, :, cost_idx], axis=2) / np.sqrt(n_seeds) * 1e-9
-        
-        # Get policy intensities
-        p1_intensities = np.linspace(policy_ranges[policy1]["min"],
-                                    policy_ranges[policy1]["max"],
-                                    data_array.shape[1])
-        p2_intensities = np.linspace(policy_ranges[policy2]["min"],
-                                    policy_ranges[policy2]["max"],
-                                    data_array.shape[2])
-    
-
-
-
-        # Plot each combination
-        for i in range(len(p1_intensities)):
-            for j in range(len(p2_intensities)):
-                if not (min_ev_uptake <= ev[i,j] <= max_ev_uptake):
-                    continue
-                
-                # Calculate visual properties
-                opacity = 1
-                size1 = scale_marker_size(p1_intensities[i], policy1, policy_ranges)
-                size2 = scale_marker_size(p2_intensities[j], policy2, policy_ranges)
-                
-                # --- Top Panel: Cost vs Emissions ---
-                # Error bars
-                ax_top.plot([emissions[i,j] - emissions_err[i,j], emissions[i,j] + emissions_err[i,j]], 
-                           [cost[i,j], cost[i,j]], 
-                           color='gray', alpha=opacity*0.5, zorder=1)
-                ax_top.plot([emissions[i,j], emissions[i,j]], 
-                           [cost[i,j] - cost_err[i,j], cost[i,j] + cost_err[i,j]], 
-                           color='gray', alpha=opacity*0.5, zorder=1)
-                
-                # Dotted outline
-                ax_top.scatter(emissions[i,j], cost[i,j], 
-                              s=350, marker=full_circle_marker(), 
-                              facecolor='none', edgecolor='black', 
-                              linewidth=1.0, alpha=1, linestyle='dashed', zorder=2)
-                
-                # Half-circle markers
-                ax_top.scatter(emissions[i,j], cost[i,j],
-                              s=size1, marker=half_circle_marker(0, 180),
-                              color=policy_colors[policy1], edgecolor="black",
-                              alpha=opacity, zorder=2)
-                ax_top.scatter(emissions[i,j], cost[i,j],
-                              s=size2, marker=half_circle_marker(180, 360),
-                              color=policy_colors[policy2], edgecolor="black",
-                              alpha=opacity, zorder=2)
-                
-                # --- Bottom Panel: Utility vs Emissions ---
-                # Error bars
-                ax_bottom.plot([emissions[i,j] - emissions_err[i,j], emissions[i,j] + emissions_err[i,j]], 
-                              [utility[i,j], utility[i,j]], 
-                              color='gray', alpha=opacity*0.5, zorder=1)
-                ax_bottom.plot([emissions[i,j], emissions[i,j]], 
-                              [utility[i,j] - utility_err[i,j], utility[i,j] + utility_err[i,j]], 
-                              color='gray', alpha=opacity*0.5, zorder=1)
-                
-                # Dotted outline
-                ax_bottom.scatter(emissions[i,j], utility[i,j], 
-                                s=350, marker=full_circle_marker(), 
-                                facecolor='none', edgecolor='black', 
-                                linewidth=1.0, alpha=1, linestyle='dashed')
-                
-                # Half-circle markers
-                ax_bottom.scatter(emissions[i,j], utility[i,j],
-                                s=size1, marker=half_circle_marker(0, 180),
-                                color=policy_colors[policy1], edgecolor="black",
-                                alpha=opacity, zorder=2)
-                ax_bottom.scatter(emissions[i,j], utility[i,j],
-                                s=size2, marker=half_circle_marker(180, 360),
-                                color=policy_colors[policy2], edgecolor="black",
-                                alpha=opacity, zorder=2)
-    
-
-    ##############################################################################################
-    from scipy.spatial import ConvexHull
-    from matplotlib.path import Path
-    import numpy.ma as ma
-    from scipy.interpolate import griddata
-
-    # Convert lists to numpy arrays
-    all_emissions = np.array(all_emissions)
-    all_costs = np.array(all_costs)
-    all_utilities = np.array(all_utilities)
-    all_ev_uptake = np.array(all_ev_uptake)
-
-    # Interpolation grid
-    xi = np.linspace(all_emissions.min(), all_emissions.max(), 300)
-    yi_cost = np.linspace(all_costs.min(), all_costs.max(), 300)
-    yi_util = np.linspace(all_utilities.min(), all_utilities.max(), 300)
-    grid_x1, grid_y1 = np.meshgrid(xi, yi_cost)
-    grid_x2, grid_y2 = np.meshgrid(xi, yi_util)
-
-    # Interpolate
-    grid_ev_cost = griddata((all_emissions, all_costs), all_ev_uptake,
-                            (grid_x1, grid_y1), method='linear')
-    grid_ev_util = griddata((all_emissions, all_utilities), all_ev_uptake,
-                            (grid_x2, grid_y2), method='linear')
-
-    # Mask values outside [min_ev_uptake, max_ev_uptake]
-    grid_ev_cost = np.clip(grid_ev_cost, min_ev_uptake, max_ev_uptake)
-    grid_ev_util = np.clip(grid_ev_util, min_ev_uptake, max_ev_uptake)
-
-    # Create convex hulls and masks
-    pts_cost = np.column_stack((all_emissions, all_costs))
-    pts_util = np.column_stack((all_emissions, all_utilities))
-
-    hull_cost = ConvexHull(pts_cost)
-    hull_util = ConvexHull(pts_util)
-
-    path_cost = Path(pts_cost[hull_cost.vertices])
-    path_util = Path(pts_util[hull_util.vertices])
-
-    mask_cost = ~path_cost.contains_points(np.c_[grid_x1.ravel(), grid_y1.ravel()]).reshape(grid_x1.shape)
-    mask_util = ~path_util.contains_points(np.c_[grid_x2.ravel(), grid_y2.ravel()]).reshape(grid_x2.shape)
-
-    # Apply mask
-    grid_ev_cost = ma.masked_where(mask_cost, grid_ev_cost)
-    grid_ev_util = ma.masked_where(mask_util, grid_ev_util)
-
-    cmap="cividis"
-
-    # Plot contours
-    cf_top = ax_top.contourf(grid_x1, grid_y1, grid_ev_cost,
-                            levels=np.linspace(min_ev_uptake, max_ev_uptake, 100),
-                            cmap=cmap, alpha=0.6, zorder=0)
-
-    cf_bottom = ax_bottom.contourf(grid_x2, grid_y2, grid_ev_util,
-                                levels=np.linspace(min_ev_uptake, max_ev_uptake, 100),
-                                cmap=cmap, alpha=0.6, zorder=0)
-
-    ############################################################################################
-
-    # --- BAU point with proper error bars ---
-    bau_net_cost = (outcomes_BAU["mean_net_cost"])*1e-9
-    bau_utility = outcomes_BAU["mean_utility_cumulative"]*12*1e-9
-    bau_emission = outcomes_BAU["mean_emissions_cumulative"] * 1e-9
-
-    # Calculate standard errors (make sure these keys exist in your outcomes_BAU dictionary)
-
-    bau_emission_err = 1.96 * np.std(outcomes_BAU["emissions_cumulative"]) / np.sqrt(n_seeds) * 1e-9
-    bau_utility_err = 1.96 * np.std(outcomes_BAU["utility_cumulative"]) / np.sqrt(n_seeds) * 12 * 1e-9
-    bau_net_cost_err = 1.96 * np.std(outcomes_BAU["net_cost"]) / np.sqrt(n_seeds) * 1e-9
-
-    # Plot BAU points
-    bau_marker_size = 350  # Same as other markers
-    ax_top.scatter(bau_emission, bau_net_cost, color='black', marker='o', s=bau_marker_size, 
-                edgecolor='black', zorder=3, label='BAU')
-    ax_bottom.scatter(bau_emission, bau_utility, color='black', marker='o', s=bau_marker_size, 
-                    edgecolor='black', zorder=3, label='BAU')
-
-    # Plot error bars (matching your existing style)
-    # Top panel (Cost vs Emissions)
-    ax_top.plot([bau_emission - bau_emission_err, bau_emission + bau_emission_err],
-                [bau_net_cost, bau_net_cost],
-                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
-    ax_top.plot([bau_emission, bau_emission],
-                [bau_net_cost - bau_net_cost_err, bau_net_cost + bau_net_cost_err],
-                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
-
-    # Bottom panel (Utility vs Emissions)
-    ax_bottom.plot([bau_emission - bau_emission_err, bau_emission + bau_emission_err],
-                [bau_utility, bau_utility],
-                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
-    ax_bottom.plot([bau_emission, bau_emission],
-                [bau_utility - bau_utility_err, bau_utility + bau_utility_err],
-                color='gray', alpha=0.5, zorder=2, linewidth=1.5)
-    
-    # --- Formatting ---
-    # Top panel
-    ax_top.set_ylabel('Net Policy Cost ($bn)', fontsize=12)
-    ax_top.grid(alpha=0.3)
-    
-    # Bottom panel
-    ax_bottom.set_xlabel('Cumulative Emissions (MTCO2)', fontsize=12)
-    ax_bottom.set_ylabel('Cumulative Utility ($bn)', fontsize=12)
-    ax_bottom.grid(alpha=0.3)
-
-    
-    # --- Create custom legend elements with intensity indicators ---
-    legend_elements = []
-    
-    # Add policy color patches
-    for policy in all_policies:
-        legend_elements.append(
-            Patch(facecolor=policy_colors[policy], edgecolor='black',
-                 label=f"{policy.replace('_', ' ')}")
-        )
-    
-    # Add intensity indicator half-circles
-    scale = 350  # Base size matching your plot
-    low_size = scale * 0.3  # Small size for low intensity
-    high_size = scale * 1.0  # Large size for high intensity
-    
-    # Create proxy artists for the intensity indicators
-    low_intensity_proxy = plt.scatter([], [], s=low_size, 
-                                    marker=half_circle_marker(0, 180),
-                                    facecolor='gray', edgecolor='black')
-    high_intensity_proxy = plt.scatter([], [], s=high_size, 
-                                     marker=half_circle_marker(0, 180),
-                                     facecolor='gray', edgecolor='black')
-    
-    legend_elements.extend([
-        low_intensity_proxy,
-        plt.Line2D([0], [0], marker='', color='w', label='Low intensity',
-                  markerfacecolor='w', markersize=0),
-        high_intensity_proxy,
-        plt.Line2D([0], [0], marker='', color='w', label='High intensity',
-                  markerfacecolor='w', markersize=0),
-        Patch(facecolor='gray', edgecolor='gray', alpha=0.5,
-             label='95% CI'),
-        Patch(facecolor='black', edgecolor='black',
-             label='Business as Usual')
-    ])
-    
-    # Place legend in bottom right
-    leg = ax_bottom.legend(
-        handles=legend_elements,
-        loc='lower right',
-        fontsize=9,
-        framealpha=1,
-        handletextpad=1.5,
-        borderpad=1
-    )
-    
-    # Adjust legend layout
-    for handle in leg.legendHandles:
-        if isinstance(handle, PathCollection):  # The half-circle markers
-            handle.set_sizes([30])  # Standardize legend marker size
-
-    # Shared colorbar for EV uptake
-    cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # adjust layout if needed
-    cbar = fig.colorbar(cf_bottom, cax=cbar_ax)
-    cbar.set_label('EV Uptake', fontsize=12)
-
-    plt.tight_layout()
-    
-    # Save
-    createFolder(f"{file_name}/Plots/emissions_tradeoffs")
-    plt.savefig(
-        f"{file_name}/Plots/emissions_tradeoffs/contour_cost_utility_vs_emissions_{min_ev_uptake}_{max_ev_uptake}.png",
-        dpi=dpi,
-        bbox_inches='tight'
-    )
-    plt.show()
-
-def plot_emissions_tradeoffs_contour_only(outcomes_BAU, data_array, policy_pairs, file_name, policy_info_dict,
-                           min_ev_uptake=0.9, max_ev_uptake=1.0, dpi=300):
-    """
-    Creates a 2-panel figure showing:
-    - Top: Net Policy Cost vs Emissions
-    - Bottom: Utility vs Emissions
-    Maintains all original visual encoding (marker sizes, opacity, legend)
-    """
-    # Create figure with two subplots sharing x-axis
-    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(7, 10), 
-                                          sharex=True,
-                                          gridspec_kw={'height_ratios': [1, 1.2]})
-    
-    # Get measure indices
-    emissions_idx = MEASURES["Cumulative_Emissions"]
-    utility_idx = MEASURES["Cumulative_Utility"]
-    cost_idx = MEASURES["Net_Policy_Cost"]
-    ev_idx = MEASURES["EV_Uptake"]
-    
-    # Color setup
-    color_map = plt.get_cmap('Set1', 10)
-    all_policies = sorted(list(set([p for pair in policy_pairs for p in pair])))
-    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
-    
-    # Calculate policy ranges
-    policy_ranges = {}
-    for policy in all_policies:
-        p_min, p_max = policy_info_dict['bounds_dict'][policy]
-        policy_ranges[policy] = {"min": p_min, "max": p_max}
-
-    all_emissions = []
-    all_costs = []
-    all_utilities = []
-    all_ev_uptake = []
-
-
-    # Process each policy pair
-    for pair_idx, (policy1, policy2) in enumerate(policy_pairs):
-        # Get data for this pair
-        pair_data = data_array[pair_idx]
-        
-        # Calculate means and 95% CIs
-        emissions = np.mean(pair_data[:, :, :, emissions_idx], axis=2) * 1e-9  # MTCO2
-        utility = np.mean(pair_data[:, :, :, utility_idx], axis=2) * 12 * 1e-9  # $bn/year
-        cost = np.mean(pair_data[:, :, :, cost_idx], axis=2) * 1e-9  # $bn
-        ev = np.mean(pair_data[:, :, :, ev_idx], axis=2)
-        
-        # Flatten and collect for unified contour plot
-        all_emissions.extend(emissions.flatten())
-        all_costs.extend(cost.flatten())
-        all_utilities.extend(utility.flatten())
-        all_ev_uptake.extend(ev.flatten())
-
-
-    ##############################################################################################
-    from scipy.spatial import ConvexHull
-    from matplotlib.path import Path
-    import numpy.ma as ma
-    from scipy.interpolate import griddata
-
-    # Convert lists to numpy arrays
-    all_emissions = np.array(all_emissions)
-    all_costs = np.array(all_costs)
-    all_utilities = np.array(all_utilities)
-    all_ev_uptake = np.array(all_ev_uptake)
-
-    # Interpolation grid
-    xi = np.linspace(all_emissions.min(), all_emissions.max(), 300)
-    yi_cost = np.linspace(all_costs.min(), all_costs.max(), 300)
-    yi_util = np.linspace(all_utilities.min(), all_utilities.max(), 300)
-    grid_x1, grid_y1 = np.meshgrid(xi, yi_cost)
-    grid_x2, grid_y2 = np.meshgrid(xi, yi_util)
-
-    # Interpolate
-    grid_ev_cost = griddata((all_emissions, all_costs), all_ev_uptake,
-                            (grid_x1, grid_y1), method='linear')
-    grid_ev_util = griddata((all_emissions, all_utilities), all_ev_uptake,
-                            (grid_x2, grid_y2), method='linear')
-
-    # Mask values outside [min_ev_uptake, max_ev_uptake]
-    grid_ev_cost = np.clip(grid_ev_cost, min_ev_uptake, max_ev_uptake)
-    grid_ev_util = np.clip(grid_ev_util, min_ev_uptake, max_ev_uptake)
-
-    # Create convex hulls and masks
-    pts_cost = np.column_stack((all_emissions, all_costs))
-    pts_util = np.column_stack((all_emissions, all_utilities))
-
-    hull_cost = ConvexHull(pts_cost)
-    hull_util = ConvexHull(pts_util)
-
-    path_cost = Path(pts_cost[hull_cost.vertices])
-    path_util = Path(pts_util[hull_util.vertices])
-
-    mask_cost = ~path_cost.contains_points(np.c_[grid_x1.ravel(), grid_y1.ravel()]).reshape(grid_x1.shape)
-    mask_util = ~path_util.contains_points(np.c_[grid_x2.ravel(), grid_y2.ravel()]).reshape(grid_x2.shape)
-
-    # Apply mask
-    grid_ev_cost = ma.masked_where(mask_cost, grid_ev_cost)
-    grid_ev_util = ma.masked_where(mask_util, grid_ev_util)
-
-    cmap="cividis"
-
-    # Plot contours
-    cf_top = ax_top.contourf(grid_x1, grid_y1, grid_ev_cost,
-                            levels=np.linspace(min_ev_uptake, max_ev_uptake, 100),
-                            cmap=cmap, alpha=0.6, zorder=0)
-
-    cf_bottom = ax_bottom.contourf(grid_x2, grid_y2, grid_ev_util,
-                                levels=np.linspace(min_ev_uptake, max_ev_uptake, 100),
-                                cmap=cmap, alpha=0.6, zorder=0)
-
-    # --- Formatting ---
-    # Top panel
-    ax_top.set_ylabel('Net Policy Cost ($bn)', fontsize=12)
-    ax_top.grid(alpha=0.3)
-    
-    # Bottom panel
-    ax_bottom.set_xlabel('Cumulative Emissions (MTCO2)', fontsize=12)
-    ax_bottom.set_ylabel('Cumulative Utility ($bn)', fontsize=12)
-    ax_bottom.grid(alpha=0.3)
-    
-    # --- Create custom legend elements with intensity indicators ---
-    legend_elements = []
-    
-    # Add intensity indicator half-circles
-    scale = 350  # Base size matching your plot
-    low_size = scale * 0.3  # Small size for low intensity
-    high_size = scale * 1.0  # Large size for high intensity
-    
-    # Create proxy artists for the intensity indicators
-    low_intensity_proxy = plt.scatter([], [], s=low_size, 
-                                    marker=half_circle_marker(0, 180),
-                                    facecolor='gray', edgecolor='black')
-    high_intensity_proxy = plt.scatter([], [], s=high_size, 
-                                     marker=half_circle_marker(0, 180),
-                                     facecolor='gray', edgecolor='black')
-    
-    legend_elements.extend([
-        low_intensity_proxy,
-        plt.Line2D([0], [0], marker='', color='w', label='Low intensity',
-                  markerfacecolor='w', markersize=0),
-        high_intensity_proxy,
-        plt.Line2D([0], [0], marker='', color='w', label='High intensity',
-                  markerfacecolor='w', markersize=0),
-        Patch(facecolor='gray', edgecolor='gray', alpha=0.5,
-             label='95% CI'),
-        Patch(facecolor='black', edgecolor='black',
-             label='Business as Usual')
-    ])
-    
-    # Place legend in bottom right
-    leg = ax_bottom.legend(
-        handles=legend_elements,
-        loc='lower right',
-        fontsize=9,
-        framealpha=1,
-        handletextpad=1.5,
-        borderpad=1
-    )
-    
-    # Adjust legend layout
-    for handle in leg.legendHandles:
-        if isinstance(handle, PathCollection):  # The half-circle markers
-            handle.set_sizes([30])  # Standardize legend marker size
-
-    # Shared colorbar for EV uptake
-    cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])  # adjust layout if needed
-    cbar = fig.colorbar(cf_bottom, cax=cbar_ax)
-    cbar.set_label('EV Uptake', fontsize=12)
-
-    plt.tight_layout()
-    
-    # Save
-    createFolder(f"{file_name}/Plots/emissions_tradeoffs")
-    plt.savefig(
-        f"{file_name}/Plots/emissions_tradeoffs/contour_only_cost_utility_vs_emissions_{min_ev_uptake}_{max_ev_uptake}.png",
-        dpi=dpi,
-        bbox_inches='tight'
-    )
-    plt.show()
 
 def calc_low_intensities_from_array(data_array, policy_pairs, policy_info_dict, min_val, max_val):
     best_entries = {}
@@ -997,7 +512,7 @@ def main(file_name, fileName_BAU):
         file_name=file_name,
         policy_info_dict=policy_info_dict,
         min_ev_uptake=0.945,  # Your preferred EV uptake range
-        max_ev_uptake=1,
+        max_ev_uptake=0.955,
         dpi=300
     )
     plt.show()

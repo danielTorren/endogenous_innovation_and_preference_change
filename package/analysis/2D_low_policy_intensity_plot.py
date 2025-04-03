@@ -22,8 +22,9 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
                 fontsize=8, color='black')
     
 ########################################################################################################################
-def plot_combined_policy_figures(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300):
-    fig, axs = plt.subplots(2, 2, figsize=(15, 8), sharex=True)
+
+def plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300):
+    fig, axs = plt.subplots(3, 2, figsize=(15, 12), sharex=True)
     time_steps = np.arange(base_params["duration_future"] - 1)
     start = base_params["duration_burn_in"] + base_params["duration_calibration"] 
 
@@ -36,7 +37,7 @@ def plot_combined_policy_figures(base_params, fileName, outputs, outputs_BAU, to
     policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
 
     # Choose some distinct markers to cycle through (if needed)
-    marker_list = ['o', 's', '^', 'v', 'D', 'X', '*', 'P', 'H', '1']  # distinct markers
+    marker_list = ['o']  # distinct markers
     policy_markers = {policy: marker_list[i % len(marker_list)] for i, policy in enumerate(all_policies)}
 
     # --- 1. EV Uptake
@@ -152,7 +153,7 @@ def plot_combined_policy_figures(base_params, fileName, outputs, outputs_BAU, to
 
 
     for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        data = output["history_mean_car_age"][:, :]
+        data = output["history_mean_car_age"]
         mean = np.mean(data, axis=0)
         ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
 
@@ -167,15 +168,73 @@ def plot_combined_policy_figures(base_params, fileName, outputs, outputs_BAU, to
     ax4.set_ylabel("Car Age, months")
     ax4.set_xlabel("Time Step, months")
     add_vertical_lines(ax4, base_params, annotation_height_prop=[0.5, 0.3, 0.3])
-   # Gather handles/labels from ax1 (or combine from others if needed)
+
+    # --- 5. Utility
+    ax5 = axs[2, 0]
+    
+    bau_emissions = outputs_BAU["history_total_utility"]*1e-9
+    bau_mean = np.mean(bau_emissions, axis=0)
+    bau_ci = sem(bau_emissions, axis=0) * t.ppf(0.975, df=bau_emissions.shape[0] - 1)
+    ax5.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
+    ax5.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
+
+
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
+        data = output["history_total_utility"]*1e-9
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+        marker_shape = policy_markers[policy2]
+
+        ax5.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
+        markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
+        ax5.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
+
+    ax5.set_ylabel("Utility, bn $")
+    ax5.set_xlabel("Time Step, months")
+    #ax3.legend(fontsize="x-small", loc = "lower right", ncols = 2)
+    add_vertical_lines(ax5, base_params, annotation_height_prop=[0.15, 0.45, 0.45])
+    
+    # --- 6. Net Cost
+    ax6 = axs[2, 1]
+    bau_age = outputs_BAU["history_policy_net_cost"]*1e-9
+    bau_mean = np.mean(bau_age, axis=0)
+    bau_ci = sem(bau_age, axis=0) * t.ppf(0.975, df=bau_age.shape[0] - 1)
+    ax6.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
+    ax6.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
+
+    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
+        data = output["history_policy_net_cost"]*1e-9
+        mean = np.mean(data, axis=0)
+        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
+
+        color1 = policy_colors[policy1]
+        color2 = policy_colors[policy2]
+        marker_shape = policy_markers[policy2]
+
+        ax6.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
+        markerfacecolor=color2, markeredgecolor=color2, markersize=4)
+        ax6.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
+
+    ax6.set_ylabel("Net Cost, bn $")
+    ax6.set_xlabel("Time Step, months")
+    add_vertical_lines(ax6, base_params, annotation_height_prop=[0.5, 0.3, 0.3])
+
+    ###########################################################################################
+
+    # Gather handles/labels from ax1 (or combine from others if needed)
     handles, labels = ax1.get_legend_handles_labels()
 
     # Create figure-wide legend below the subplots
     fig.legend(handles, labels, loc='lower center', ncol=3, fontsize=8, bbox_to_anchor=(0.5, 0.00))
 
-    plt.tight_layout(rect=[0.01, 0.08, 0.98, 1])  # Leaves space at the bottom
+    plt.tight_layout(rect=[0.01, 0.05, 0.98, 1])  # Leaves space at the bottom
     plt.subplots_adjust(wspace=0.15)  # increase spacing between columns
-    plt.savefig(f"{fileName}/Plots/combined_policy_dashboard.png", dpi=dpi)
+    plt.savefig(f"{fileName}/Plots/combined_policy_dashboard_with_utility_cost.png", dpi=dpi)
+
 
 def main(fileName):
     base_params = load_object(fileName + "/Data", "base_params")
@@ -184,6 +243,7 @@ def main(fileName):
     top_policies = load_object(fileName + "/Data", "top_policies")
 
     plot_combined_policy_figures(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
+    plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
     plt.show()
     
 

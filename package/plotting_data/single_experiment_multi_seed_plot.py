@@ -37,7 +37,7 @@ def plot_combined_figures(base_params, fileName, dpi=300):
     ax1 = axs[0, 0]
     plot_ev_uptake(EV_stock_prop_2010_23, EV_sales_prop_2020_23, base_params, history_prop_EV_arr, 
                    history_past_new_bought_vehicles_prop_ev, ax1, 
-                   annotation_height_prop=[0.45, 0.45, 0.45])
+                   annotation_height_prop=[0.9, 0.9, 0.9])
     
     # Plot 2: Mean Price (top-right)
     ax2 = axs[0, 1]
@@ -45,12 +45,12 @@ def plot_combined_figures(base_params, fileName, dpi=300):
                     history_median_price_ICE_EV_arr, 
                     history_lower_percentile_price_ICE_EV_arr,
                     history_upper_percentile_price_ICE_EV_arr, ax2,
-                    annotation_height_prop=[0.45, 0.45, 0.45])
+                    annotation_height_prop=[0.1, 0.1, 0.1])
     
     # Plot 3: Market Concentration (bottom-left)
     ax3 = axs[1, 0]
     plot_market_concentration(base_params, history_market_concentration_arr, ax3,
-                              annotation_height_prop=[0.7, 0.7, 0.7])
+                              annotation_height_prop=[0.3, 0.3, 0.3])
     
     # Plot 4: Mean Car Age (bottom-right)
     ax4 = axs[1, 1]
@@ -58,10 +58,11 @@ def plot_combined_figures(base_params, fileName, dpi=300):
                       annotation_height_prop=[0.3, 0.3, 0.3])
     
     # Adjust layout
-    plt.tight_layout()
-    
+    plt.tight_layout(rect=[0.01, 0.0, 0.98, 1])  # Leaves space at the bottom
+    plt.subplots_adjust(wspace=0.15)  # increase spacing between columns
     # Save the combined figure
     plt.savefig(f"{fileName}/combined_plots.png", dpi=dpi)
+    plt.savefig(f"{fileName}/combined_plots.eps", dpi=dpi)
     plt.show()
 
 # Helper functions for each subplot
@@ -112,7 +113,7 @@ def plot_ev_uptake(real_data, EV_sales_prop_2020_23, base_params, data, history_
     ax.plot(time_steps_real_sales,EV_sales_prop_2020_23, label="California EV Sales", color='black', linestyle="dotted")
 
     #ax.set_xlabel("Time Step, months")
-    ax.set_ylabel("EV Adoption Proportion")
+    ax.set_ylabel("EV Proportion")
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(loc = "upper left")
 
@@ -555,7 +556,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 # Example usage
 if __name__ == "__main__":
     
-    fileName = "results/multi_seed_single_19_03_31__01_04_2025"#multi_seed_single_00_03_21__27_03_2025"
+    fileName = "results/multi_seed_single_15_15_35__02_04_2025"#multi_seed_single_00_03_21__27_03_2025"
     base_params = load_object(fileName + "/Data", "base_params")
     
     plot_combined_figures(base_params, fileName)
