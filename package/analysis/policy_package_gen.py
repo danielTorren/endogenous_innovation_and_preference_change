@@ -40,7 +40,7 @@ def simulate_policy_scenario(sim_params, controller_files):
     return mean_ev_uptake, mean_emissions
 
 
-def optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, n_calls=30):
+def optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, emissions_BAU,utility_BAU,n_calls=30):
     # Define search space
     dimensions = [
         Real(bounds_dict[p][0], bounds_dict[p][1], name=p)
@@ -59,7 +59,7 @@ def optimize_three_policies_BO(base_params, controller_files, policy_names, boun
             print(f"[ERROR] Simulation failed: {e}")
             return 1e10
 
-        cost = custom_cost_function(ev_uptake, emissions)
+        cost = custom_cost_function(ev_uptake, emissions, emissions_BAU,utility_BAU)
         print(f"[TEST] {params_dict} -> Uptake: {ev_uptake:.4f}, Emissions: {emissions:.2e}, Cost: {cost:.2f}")
         return cost
 
@@ -88,7 +88,9 @@ def main(
     BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
     BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json",
     policy_names=["Carbon_price", "Adoption_subsidy", "Production_subsidy"],
-    n_calls=30
+    n_calls=30,
+    emissions_BAU = 1e9,
+    utility_BAU = 1e9
 ):
     # Load parameters
     with open(BASE_PARAMS_LOAD) as f:
@@ -101,7 +103,7 @@ def main(
     controller_files, base_params, file_name = set_up_calibration_runs(base_params, "triple_policy_BO")
 
     # Run Bayesian Optimization
-    result = optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, n_calls=n_calls)
+    result = optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, emissions_BAU,utility_BAU,n_calls=n_calls)
 
     # Save results
     save_object(result, file_name + "/Data", "triple_policy_optimization_result")
@@ -118,5 +120,7 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json",
         policy_names=["Carbon_price", "Adoption_subsidy_used", "Production_subsidy"],
-        n_calls=30
+        n_calls=30,
+        emissions_BAU = 0.12e9,
+        utility_BAU = 87e9
     )
