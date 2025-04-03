@@ -128,30 +128,28 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
         key = tuple(sorted((policy1, policy2)))
         if key not in merged_pairs:
             merged_pairs[key] = []
-        # Tag the order so we know which is policy1/policy2
+
         for entry in data:
             entry_copy = entry.copy()
             entry_copy["original_order"] = (policy1, policy2)
             merged_pairs[key].append(entry_copy)
 
-            # Update ranges correctly
-            p1, p2 = policy1, policy2
-            policy_ranges[p1]["min"] = min(policy_ranges[p1]["min"], entry["policy1_value"])
-            policy_ranges[p1]["max"] = max(policy_ranges[p1]["max"], entry["policy1_value"])
-            policy_ranges[p2]["min"] = min(policy_ranges[p2]["min"], entry["policy2_value"])
-            policy_ranges[p2]["max"] = max(policy_ranges[p2]["max"], entry["policy2_value"])
+            # Update ranges
+            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
+            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], entry["policy1_value"])
+            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], entry["policy2_value"])
+            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], entry["policy2_value"])
 
     best_entries = {}
 
     for (policyA, policyB), entries in merged_pairs.items():
         min_max_intensity = float('inf')
-        best_entry = None
+        best_entry_raw = None
 
         for entry in entries:
             if not (min_val <= entry["mean_ev_uptake"] <= max_val):
                 continue
 
-            # Resolve which policy is first and second in this entry
             p1, p2 = entry["original_order"]
             val1 = entry["policy1_value"]
             val2 = entry["policy2_value"]
@@ -163,14 +161,36 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
 
             if max_intensity < min_max_intensity:
                 min_max_intensity = max_intensity
-                best_entry = entry
+                best_entry_raw = entry
 
-        if best_entry:
-            sorted_key = tuple(sorted((best_entry["original_order"])))
-            best_entries[sorted_key] = best_entry
-            #print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
-            
+        if best_entry_raw:
+            # Reorder policy values to match (policyA, policyB)
+            p1, p2 = best_entry_raw["original_order"]
+            val1 = best_entry_raw["policy1_value"]
+            val2 = best_entry_raw["policy2_value"]
+
+            if (policyA, policyB) == (p1, p2):
+                best_entry = {
+                    "policy1_value": val1,
+                    "policy2_value": val2,
+                    "mean_ev_uptake": best_entry_raw["mean_ev_uptake"],
+                    "original_order": (policyA, policyB)
+                }
+            else:
+                # Flip values
+                best_entry = {
+                    "policy1_value": val2,
+                    "policy2_value": val1,
+                    "mean_ev_uptake": best_entry_raw["mean_ev_uptake"],
+                    "original_order": (policyA, policyB)
+                }
+
+            best_entries[(policyA, policyB)] = best_entry
+
+            print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
+
     return best_entries
+
 
 def main(fileName_load,
         min_ev_uptake = 0.945,
@@ -183,12 +203,12 @@ def main(fileName_load,
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
     #del top_policies[("Adoption_subsidy","Carbon_price")]
-    top_policies = {("Adoption_subsidy","Carbon_price"): top_policies[("Adoption_subsidy","Carbon_price")]}
-    print("top_policies", list(top_policies.keys()))
-    
+    #top_policies = {("Adoption_subsidy","Carbon_price"): top_policies[("Adoption_subsidy","Carbon_price")]}
+
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
+
     base_params_calibration["duration_future"] = 312#564#2050#144#SET UP FUTURE
 
     if "duration_calibration" not in base_params_calibration:
@@ -282,16 +302,14 @@ def main(fileName_load,
         policy1_value = welfare_data["policy1_value"]
         policy2_value = welfare_data["policy2_value"]
 
-        print(f"Running time series for {policy1} & {policy2}")
-
+        print(f"Running time series for {policy1},{policy1_value} & {policy2},{policy2_value}")
 
         params_policy = deepcopy(base_params)
         params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
         params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
 
-        print(params_policy)
-        quit()
+
         (
             history_driving_emissions_arr,#Emmissions flow
             history_production_emissions_arr,
