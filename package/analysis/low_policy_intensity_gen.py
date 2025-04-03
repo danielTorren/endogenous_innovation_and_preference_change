@@ -182,6 +182,7 @@ def main(fileName_load,
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
+    del top_policies[("Adoption_subsidy","Carbon_price")]
 
     ##########################################################################################
 
@@ -211,7 +212,7 @@ def main(fileName_load,
 
     ###########################################################################################
 
-    base_params["save_timeseries_data_state"] = 0
+    base_params["save_timeseries_data_state"] = 1
     print(base_params)
 
     #RESET TO B SURE
