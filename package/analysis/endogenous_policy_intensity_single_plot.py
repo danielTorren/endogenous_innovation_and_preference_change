@@ -35,7 +35,7 @@ def main(fileName):
                 print(f"  {key}: {(outcomes.get(key))*12}")
             else:
                 print(f"  {key}: {outcomes.get(key)}")
-
+    quit()
     # Apply the function to the data
     policy_outcomes = divide_by_billion(policy_outcomes)
 
@@ -43,5 +43,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/endog_single_12_34_35__03_04_2025"
+        fileName="results/endog_single_18_55_49__03_04_2025"
     )
