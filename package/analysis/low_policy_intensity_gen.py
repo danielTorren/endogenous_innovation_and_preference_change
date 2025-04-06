@@ -381,6 +381,6 @@ def main(fileNames,
 if __name__ == "__main__":
     main(
         fileNames=["results/endog_pair_20_53_20__04_04_2025","results/endog_pair_20_35_52__03_04_2025"],
-        min_ev_uptake = 0.945,
-        max_ev_uptake = 0.955
+        min_ev_uptake = 0.94,
+        max_ev_uptake = 0.96
     )
