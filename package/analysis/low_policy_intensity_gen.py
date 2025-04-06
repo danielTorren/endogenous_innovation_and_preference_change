@@ -192,12 +192,20 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
     return best_entries
 
 
-def main(fileName_load,
+def main(fileNames,
         min_ev_uptake = 0.945,
         max_ev_uptake = 0.955
         ):
 
     #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
+    if len(fileNames) == 1:
+        pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
+    else:
+        for fileName in fileNames:
+            pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
+            pairwise_outcomes_complied.update(pairwise_outcomes)
+
+    fileName_load = fileNames[0]
 
     pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
@@ -371,7 +379,7 @@ def main(fileName_load,
 
 if __name__ == "__main__":
     main(
-        fileName_load="results/endog_pair_00_11_36__02_04_2025",
+        fileName_load=["results/endog_pair_20_53_20__04_04_2025","results/endog_pair_20_35_52__03_04_2025"],
         min_ev_uptake = 0.945,
         max_ev_uptake = 0.955
     )
