@@ -197,6 +197,7 @@ def main(fileNames,
         max_ev_uptake = 0.955
         ):
 
+    pairwise_outcomes_complied = {}
     #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
     if len(fileNames) == 1:
         pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
