@@ -214,7 +214,7 @@ def generate_sensitivity_output_flat(params: dict):
         data.social_network.emissions_cumulative,
         data.calc_EV_prop(),
         data.firm_manager.total_profit,
-        data.firm_manager.HHI,
+        data.firm_manager.calc_last_step_HHI(),
         data.social_network.total_utility,
         np.mean(data.social_network.car_ages)
     )
