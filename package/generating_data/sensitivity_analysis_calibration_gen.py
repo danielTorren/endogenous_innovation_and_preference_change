@@ -156,7 +156,6 @@ def main(
         variable_parameters_dict, N_samples, AV_reps, calc_second_order
     )   
 
-    #SW
     params_list_sa  = stochastic_produce_param_list_SA(
         param_values, base_params, variable_parameters_dict
     )
@@ -228,8 +227,8 @@ def main(
 
 if __name__ == '__main__':
     fileName_Figure_6 = main(
-    N_samples = 16,#128,
-    BASE_PARAMS_LOAD = "package/constants/base_params_SA.json",
-    VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_SA.json",
-    calc_second_order = True
+        N_samples = 4,
+        BASE_PARAMS_LOAD = "package/constants/base_params_SA.json",
+        VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_SA.json",
+        calc_second_order = True
     )

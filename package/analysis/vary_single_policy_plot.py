@@ -18,7 +18,7 @@ def plot_policy_intensity_effects_means_95(height, title_dict, data_array, polic
     num_policies = len(policy_list)
     num_measures = len(selected_measures)
 
-    fig, axes = plt.subplots(num_measures, num_policies, figsize=(10, height), sharey="row", sharex="col")
+    fig, axes = plt.subplots(num_measures, num_policies, figsize=(12, height), sharey="row", sharex="col")
 
     # Ensure axes is a 2D array for consistency
     if num_measures == 1:
@@ -147,4 +147,4 @@ def main(file_name):
 
     plt.show()
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_18_32_15__03_04_2025")#vary_single_policy_gen_16_43_02__06_03_2025
+    main(file_name="results/vary_single_policy_gen_18_57_38__03_04_2025")#vary_single_policy_gen_18_32_15__03_04_2025")#vary_single_policy_gen_16_43_02__06_03_2025
