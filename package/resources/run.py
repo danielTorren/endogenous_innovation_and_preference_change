@@ -216,7 +216,7 @@ def generate_sensitivity_output_flat(params: dict):
         data.firm_manager.total_profit,
         data.firm_manager.calc_last_step_HHI(),
         data.social_network.utility_cumulative,
-        np.mean(data.social_network.car_ages)
+        data.social_network.calc_mean_car_age()
     )
 
 def parallel_run_sa(params_dict: list[dict]):
