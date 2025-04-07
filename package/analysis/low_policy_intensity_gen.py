@@ -114,7 +114,7 @@ def single_policy_with_seeds(params, controller_files):
         np.asarray(history_ev_adoption_rate_bottom)
     )
 
-def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
+def calc_low_intensities_old(pairwise_outcomes_complied, min_val, max_val):
     all_policies = set()
     for (policy1, policy2) in pairwise_outcomes_complied.keys():
         all_policies.update([policy1, policy2])
@@ -187,7 +187,57 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
 
             best_entries[(policyA, policyB)] = best_entry
 
-            print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
+            #print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
+
+    return best_entries
+
+def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
+    # Collect all policies and initialize min/max ranges
+    policy_ranges = {}
+
+    #print(len(list(pairwise_outcomes_complied.keys())))
+    #quit()
+    for (p1, p2), entries in pairwise_outcomes_complied.items():
+        for entry in entries:
+            for policy, key in zip((p1, p2), ("policy1_value", "policy2_value")):
+                policy_ranges.setdefault(policy, {"min": float('inf'), "max": float('-inf')})
+                policy_ranges[policy]["min"] = min(policy_ranges[policy]["min"], entry[key])
+                policy_ranges[policy]["max"] = max(policy_ranges[policy]["max"], entry[key])
+
+    # Merge symmetric pairs
+    merged = {}
+    for (p1, p2), entries in pairwise_outcomes_complied.items():
+        key = tuple(sorted((p1, p2)))
+        merged.setdefault(key, []).extend([entry | {"original_order": (p1, p2)} for entry in entries])
+
+    #print(list(merged.keys()), len(list(merged.keys())))
+
+    best_entries = {}
+    for (pa, pb), entries in merged.items():
+        best = None
+        min_intensity = float('inf')
+        for entry in entries:
+            if (min_val <= entry["mean_ev_uptake"] <= max_val):
+                p1, p2 = entry["original_order"]
+                v1 = entry["policy1_value"]
+                v2 = entry["policy2_value"]
+
+                norm1 = (v1 - policy_ranges[p1]["min"]) / (policy_ranges[p1]["max"] - policy_ranges[p1]["min"] or 1)
+                norm2 = (v2 - policy_ranges[p2]["min"]) / (policy_ranges[p2]["max"] - policy_ranges[p2]["min"] or 1)
+
+                if (m := max(norm1, norm2)) < min_intensity:
+                    min_intensity = m
+                    best = (v1, v2, entry["mean_ev_uptake"], entry["original_order"])
+
+            if best:
+                v1, v2, uptake, (orig_p1, orig_p2) = best
+                # Flip if needed to match key order
+                best_entries[(pa, pb)] = {
+                    "policy1_value": v1 if (pa, pb) == (orig_p1, orig_p2) else v2,
+                    "policy2_value": v2 if (pa, pb) == (orig_p1, orig_p2) else v1,
+                    "mean_ev_uptake": uptake,
+                    "original_order": (pa, pb)
+                }
 
     return best_entries
 
@@ -207,10 +257,12 @@ def main(fileNames,
             pairwise_outcomes_complied.update(pairwise_outcomes)
 
     fileName_load = fileNames[0]
-
-    pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
+    #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
+    #print("pairwise_outcomes_complied", list(pairwise_outcomes_complied.keys()), len( pairwise_outcomes_complied.keys()))
+    print("top_policies", list(top_policies.keys()), len( list(top_policies.keys())))
+    #quit()
     #del top_policies[("Adoption_subsidy","Carbon_price")]
     #top_policies = {("Adoption_subsidy","Carbon_price"): top_policies[("Adoption_subsidy","Carbon_price")]}
 
@@ -318,8 +370,6 @@ def main(fileNames,
         params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
         params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
-
-
         (
             history_driving_emissions_arr,#Emmissions flow
             history_production_emissions_arr,
@@ -382,5 +432,5 @@ if __name__ == "__main__":
     main(
         fileNames=["results/endog_pair_20_53_20__04_04_2025","results/endog_pair_20_35_52__03_04_2025"],
         min_ev_uptake = 0.94,
-        max_ev_uptake = 1
+        max_ev_uptake = 0.96#0.96
     )

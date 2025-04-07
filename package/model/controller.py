@@ -872,11 +872,12 @@ class Controller:
 
     def calc_EV_prop(self):
         EV_stock_prop = sum(1 if car.transportType == 3 else 0 for car in self.social_network.current_vehicles)/self.social_network.num_individuals#NEED FOR OPTIMISATION, measures the uptake EVS
+        #self.firm_manager.history_past_new_bought_vehicles_prop_ev
         return EV_stock_prop
     
     ################################################################################################
 
-    def next_step(self,):
+    def next_step(self):
 
         #print("TIME STEP", self.t_controller)
 
