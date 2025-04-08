@@ -12,34 +12,11 @@ def get_plot_data(
     Y_emissions_stock: npt.NDArray,
     calc_second_order: bool,
 ) -> tuple[dict, dict]:
-    """
-    Take the input results data from the sensitivity analysis  experiments for the four variables measures and now preform the analysis to give
-    the total, first (and second order) sobol index values for each parameter varied. Then get this into a nice format that can easily be plotted
-    with error bars.
-    Parameters
-    ----------
-    problem: dict
-        Outlines the number of variables to be varied, the names of these variables and the bounds that they take
-    Y_emissions: npt.NDArray
-        values for the Emissions = total network emissions/(N*M) at the end of the simulation run time. One entry for each
-        parameter set tested
-    calc_second_order: bool
-        Whether or not to conduct second order sobol sensitivity analysis, if set to False then only first and total order results will be
-        available. Setting to True increases the total number of runs for the sensitivity analysis but allows for the study of interdependancies
-        between parameters
-    Returns
-    -------
-    data_sa_dict_total: dict[dict]
-        dictionary containing dictionaries each with data regarding the total order sobol analysis results for each output measure
-    data_sa_dict_first: dict[dict]
-        dictionary containing dictionaries each with data regarding the first order sobol analysis results for each output measure
-    """
 
     Si_emissions_stock = analyze_results(problem,Y_emissions_stock,calc_second_order) 
 
     if calc_second_order:
         total_emissions_stock, first_emissions_stock, second_emissions_stock = Si_emissions_stock.to_df()
-
     else:
         total_emissions_stock, first_emissions_stock = Si_emissions_stock.to_df()
 
@@ -122,7 +99,16 @@ def analyze_results(
     """
     Perform sobol analysis on simulation results
     """
-    
+    #print(problem)
+
+    #print(Y_emissions_stock.shape, )
+    #print(calc_second_order)
+    #N_samples = 64
+
+    #expected_size = (2 * len(problem["names"]) + 2) * N_samples if calc_second_order else (len(problem["names"]) + 2) * N_samples
+    #print(f"Expected Y size: {expected_size}, Actual: {len(Y_emissions_stock)}")
+
+
     Si_emissions_stock = sobol.analyze(
         problem,
         Y_emissions_stock,
@@ -132,56 +118,60 @@ def analyze_results(
     
     return Si_emissions_stock
 
-
-def multi_scatter_seperate_total_sensitivity_analysis_plot_triple(
-    fileName, data_list, dict_list, names, N_samples, order, network_type_list,  latex_bool = False
+def multi_output_sensitivity_analysis_plot(
+    fileName, data_dict, output_keys, param_names, N_samples, order, latex_bool=False
 ):
     """
-    Create scatter chart of results.
+    Creates a horizontally stacked sensitivity analysis plot with each column as a different output variable.
+    Y-axis (parameter names) is shown for each subplot.
     """
+    num_outputs = len(output_keys)
+    fig, axes = plt.subplots(
+        nrows=1,
+        ncols=num_outputs,
+        figsize=(3.8 * num_outputs, 6),
+        sharey=True,
+        constrained_layout=True
+    )
 
-    fig, axes = plt.subplots(ncols=3, nrows=1, constrained_layout=True , sharey=True,figsize=(12, 6))#,#sharex=True# figsize=(14, 7) # len(list(data_dict.keys())))
-    
-    #plt.rc('ytick', labelsize=4) 
-    for i, ax in enumerate(axes.flat):
-        data_dict = data_list[i]
+    if num_outputs == 1:
+        axes = [axes]  # ensure iterable
+
+    for i, output in enumerate(output_keys):
+        ax = axes[i]
+        data = data_dict[output]["data"]
+        yerr = data_dict[output]["yerr"]
+        color = data_dict[output]["colour"]
+        title = data_dict[output]["title"]
+
         if order == "First":
-            ax.errorbar(
-                data_dict[dict_list[0]]["data"]["S1"].tolist(),
-                names,
-                xerr=data_dict[dict_list[0]]["yerr"]["S1"].tolist(),
-                fmt="o",
-                ecolor="k",
-                color=data_dict[dict_list[0]]["colour"],
-            )
+            x = data["S1"].tolist()
+            xerr = yerr["S1"].tolist()
         else:
-            ax.errorbar(
-                data_dict[dict_list[0]]["data"]["ST"].tolist(),
-                names,
-                xerr=data_dict[dict_list[0]]["yerr"]["ST"].tolist(),
-                fmt="o",
-                ecolor="k",
-                color=data_dict[dict_list[0]]["colour"],
-            )
-        ax.set_title(network_type_list[i])
-        ax.set_xlim(left=0)
+            x = data["ST"].tolist()
+            xerr = yerr["ST"].tolist()
 
-    fig.supxlabel(r"%s order Sobol index" % (order))
-    plt.tight_layout()
+        ax.errorbar(
+            x,
+            param_names,
+            xerr=xerr,
+            fmt="o",
+            ecolor="k",
+            color=color,
+        )
+
+        ax.set_title(title, fontsize=10)
+        ax.set_xlim(left=0)
+        ax.set_yticks(range(len(param_names)))
+        ax.set_yticklabels(param_names, fontsize=8)  # ✅ y-labels on every subplot
+        ax.grid(True, linestyle="--", alpha=0.4)
+
+    fig.supylabel("Parameter", fontsize=12)
+    fig.supxlabel(r"%s order Sobol index" % (order), fontsize=12)
 
     plotName = fileName + "/Prints"
-    f = (
-        plotName
-        + "/"
-        + "%s_%s_%s_multi_scatter_seperate_sensitivity_analysis_plot_triple.eps"
-        % (len(names), N_samples, order)
-    )
-    f_png = (
-        plotName
-        + "/"
-        + "%s_%s_%s_multi_scatter_seperate_sensitivity_analysis_plot_triple.png"
-        % (len(names), N_samples, order)
-    )
+    f = f"{plotName}/{len(param_names)}_{N_samples}_{order}_multi_output_sensitivity_plot_horizontal.eps"
+    f_png = f.replace(".eps", ".png")
     fig.savefig(f, dpi=300, format="eps")
     fig.savefig(f_png, dpi=300, format="png")
 
@@ -198,81 +188,169 @@ def replace_nan_with_interpolation(arr):
     
     return arr
 
-def main(
-    fileName = "results\SA_AV_reps_5_samples_15360_D_vars_13_N_samples_1024",
-    plot_outputs = ['emissions_stock'],
-    plot_dict= {
-        "emissions_stock": {"title": r"$E/NM$", "colour": "red", "linestyle": "--"},
-    },
-    titles= ["isnerttitle"],
-    latex_bool = 0
-    ) -> None: 
+import seaborn as sns
+import pandas as pd
 
-    problem = load_object(fileName + "/Data", "problem")
-
-    Y_emissions_stock_SW = load_object(fileName + "/Data", "Y_emissions_stock_SW")
-    Y_emissions_stock_SBM = load_object(fileName + "/Data", "Y_emissions_stock_SBM")
-    Y_emissions_stock_SF = load_object(fileName + "/Data", "Y_emissions_stock_BA")
+def plot_second_order_heatmap(
+    fileName: str,
+    second_order_df: pd.DataFrame,
+    param_names: list[str],
+    output_name: str,
+    cmap: str = "coolwarm",
+    vmin: float = 0.0,
+    vmax: float = 1.0,
+):
+    """
+    Plots a heatmap of second-order Sobol indices.
     
-    print("Amount of Data (Averaged over stochastic runs)", np.count_nonzero(Y_emissions_stock_SW), np.count_nonzero(Y_emissions_stock_SBM), np.count_nonzero(Y_emissions_stock_SF ))
-    print("Amount of Nans in Data", np.count_nonzero(np.isnan(Y_emissions_stock_SW)), np.count_nonzero(np.isnan(Y_emissions_stock_SBM)), np.count_nonzero(np.isnan(Y_emissions_stock_SF )))
+    Parameters
+    ----------
+    fileName : str
+        Root directory for saving the plot.
+    second_order_df : pd.DataFrame
+        DataFrame containing second-order Sobol indices as returned by SALib.
+    param_names : list
+        List of parameter names.
+    output_name : str
+        Name of the model output this analysis corresponds to.
+    cmap : str
+        Color map used in heatmap.
+    vmin : float
+        Minimum value for color scale.
+    vmax : float
+        Maximum value for color scale.
+    """
 
-    #There are sometimes be a few of nans in the data, interpolate the closest values to acount for this as dont want to throw away 150,000 + rusn for a few errors. Usually however this is not required.
-    Y_emissions_stock_SW = replace_nan_with_interpolation(Y_emissions_stock_SW)
-    Y_emissions_stock_SBM = replace_nan_with_interpolation(Y_emissions_stock_SBM)
-    Y_emissions_stock_SF = replace_nan_with_interpolation(Y_emissions_stock_SF)
+    # Clean the DataFrame to isolate just the values
+    S2_matrix = pd.DataFrame(
+        data=0.0,
+        index=param_names,
+        columns=param_names
+    )
 
-    N_samples = load_object(fileName + "/Data","N_samples" )
-    calc_second_order = load_object(fileName + "/Data", "calc_second_order")
+    # Populate with second-order values (it's a flat format: 'S2_ij')
+    for col in second_order_df.columns:
+        if col.startswith("S2_"):
+            i, j = col.replace("S2_", "").split(",")
+            i, j = int(i), int(j)
+            val = second_order_df[col].values[0]
+            S2_matrix.iloc[i, j] = val
+            S2_matrix.iloc[j, i] = val  # symmetrical
 
-    #variable_parameters_dict = load_object(fileName + "/Data", "variable_parameters_dict")
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(S2_matrix, annot=True, cmap=cmap, vmin=vmin, vmax=vmax, fmt=".2f", square=True,
+                cbar_kws={'label': 'Second-order Sobol index'})
+    plt.title(f"Second-order Sobol Indices: {output_name}", fontsize=14)
+    plt.tight_layout()
 
-    data_sa_dict_total_SW, data_sa_dict_first_SW, _ = get_plot_data(problem, Y_emissions_stock_SW,calc_second_order)
-    data_sa_dict_total_SBM, data_sa_dict_first_SBM, _ = get_plot_data(problem, Y_emissions_stock_SBM,calc_second_order)
-    data_sa_dict_total_SF, data_sa_dict_first_SF, _ = get_plot_data(problem, Y_emissions_stock_SF,calc_second_order)
+    save_path_eps = f"{fileName}/Prints/second_order_{output_name}.eps"
+    save_path_png = save_path_eps.replace(".eps", ".png")
 
-    data_sa_dict_first_SW = Merge_dict_SA(data_sa_dict_first_SW, plot_dict)
-    data_sa_dict_total_SW = Merge_dict_SA(data_sa_dict_total_SW, plot_dict)
+    plt.savefig(save_path_eps, format="eps", dpi=300)
+    plt.savefig(save_path_png, format="png", dpi=300)
 
-    data_sa_dict_first_SBM = Merge_dict_SA(data_sa_dict_first_SBM, plot_dict)
-    data_sa_dict_total_SBM = Merge_dict_SA(data_sa_dict_total_SBM, plot_dict)
 
-    data_sa_dict_first_SF = Merge_dict_SA(data_sa_dict_first_SF, plot_dict)
-    data_sa_dict_total_SF = Merge_dict_SA(data_sa_dict_total_SF, plot_dict)
+def main(
+    fileName="results/sensitivity_analysis_14_42_24__07_04_2025",
+    plot_outputs=['emissions_stock', 'ev_uptake', 'total_firm_profit', 'market_concentration', "utility", "car_age"],
+    plot_dict={
+        "emissions_stock": {"title": r"Cumulative Emissions, $E$", "colour": "red", "linestyle": "--"},
+        "ev_uptake": {"title": r"EV Adoption Proportion", "colour": "blue", "linestyle": "."},
+        "total_firm_profit": {"title": r"Firm Profit, $\$$", "colour": "orange", "linestyle": "-."},
+        "market_concentration": {"title": r"Market Concentration HHI", "colour": "green", "linestyle": "--"},
+        "utility": {"title": r"Utility, $\$$", "colour": "yellow", "linestyle": "--"},
+        "car_age": {"title": r"Mean Car Age", "colour": "purple", "linestyle": "."}
+    },
+    titles=["K_ICE", "K_EV", "delta", "lambda", "a_chi", "b_chi", "kappa", "mu", "r", "alpha"],
+    latex_bool=False
+):
+    # Load shared inputs
+    problem = load_object(fileName + "/Data", "problem")
+    problem["names"] = ["K_ICE", "K_EV", "delta", "lambda", "a_chi", "b_chi", "kappa", "mu", "r", "alpha"]
 
-    network_titles = ["Small-World", "Stochastic Block Model", "Scale-Free"]
-    data_list_first = [data_sa_dict_first_SW,  data_sa_dict_first_SBM, data_sa_dict_first_SF]
-    data_list_total = [data_sa_dict_total_SW,  data_sa_dict_total_SBM, data_sa_dict_total_SF]
+    N_samples = load_object(fileName + "/Data", "N_samples")
+    calc_second_order = bool(load_object(fileName + "/Data", "calc_second_order"))
 
-    multi_scatter_seperate_total_sensitivity_analysis_plot_triple(fileName, data_list_first, plot_outputs, titles, N_samples, "First", network_titles ,latex_bool = latex_bool)
-    multi_scatter_seperate_total_sensitivity_analysis_plot_triple(fileName, data_list_total, plot_outputs, titles, N_samples, "Total", network_titles ,latex_bool = latex_bool)
+    # Mapping from file keys to internal variable names
+    output_files = {
+        "emissions_stock": "Y_emissions_stock",
+        "ev_uptake": "Y_ev_uptake",
+        "total_firm_profit": "Y_total_firm_profit",
+        "market_concentration": "Y_market_concentration",
+        "utility": "Y_total_utility",
+        "car_age": "Y_mean_car_age"
+    }
+
+    data_sa_dict_total_all = {}
+    data_sa_dict_first_all = {}
+
+    # Loop through all desired outputs
+    for key in plot_outputs:
+        #print(f"\nProcessing output: {key}")
+        y_data = load_object(fileName + "/Data", output_files[key])
+        y_data = replace_nan_with_interpolation(y_data)
+
+        # Analyze
+        Si = analyze_results(problem, y_data, calc_second_order)
+
+        if calc_second_order:
+            total_df, first_df, second_df = Si.to_df()
+            plot_second_order_heatmap(
+                fileName=fileName,
+                second_order_df=second_df,
+                param_names=problem["names"],
+                output_name=key
+            )
+
+        if calc_second_order:
+            total_df, first_df, _ = Si.to_df()
+        else:
+            total_df, first_df = Si.to_df()
+
+        total_data, total_yerr = get_data_bar_chart(total_df)
+        first_data, first_yerr = get_data_bar_chart(first_df)
+
+        data_sa_dict_total_all[key] = {"data": total_data, "yerr": total_yerr}
+        data_sa_dict_first_all[key] = {"data": first_data, "yerr": first_yerr}
+
+    # Merge plot info
+    data_sa_dict_total_all = Merge_dict_SA(data_sa_dict_total_all, plot_dict)
+    data_sa_dict_first_all = Merge_dict_SA(data_sa_dict_first_all, plot_dict)
+
+    # Plot
+    multi_output_sensitivity_analysis_plot(
+        fileName, data_sa_dict_first_all, plot_outputs, titles, N_samples, "First", latex_bool
+    )
+    multi_output_sensitivity_analysis_plot(
+        fileName, data_sa_dict_total_all, plot_outputs, titles, N_samples, "Total", latex_bool
+    )
 
     plt.show()
-
 
 if __name__ == '__main__':
 
     plots = main(
-        fileName="results/sensitivity_analysis_20_46_11__26_08_2024",#sensitivity_analysis_SBM_11_21_11__30_01_2024
-        plot_outputs = ['emissions_stock', 'ev_uptake', 'total_firm_profit', 'market_concentration'],#,'emissions_flow','var',"emissions_change"
+        fileName="results/sensitivity_analysis_14_42_24__07_04_2025",
+        plot_outputs = ['emissions_stock', 'ev_uptake', 'total_firm_profit', 'market_concentration', "utility", "car_age"],#,'emissions_flow','var',"emissions_change"
         plot_dict = {
-            "emissions_stock": {"title": r"Cumulative emissions, $E$", "colour": "red", "linestyle": "--"},
-            "emissions_stock": {"title": r"Cumulative emissions, $E$", "colour": "blue", "linestyle": "."},
-            "emissions_stock": {"title": r"Cumulative emissions, $E$", "colour": "orange", "linestyle": "-."},
-            "emissions_stock": {"title": r"Cumulative emissions, $E$", "colour": "green", "linestyle": "--"},
+            "emissions_stock": {"title": r"Cumulative Emissions, $E$", "colour": "red", "linestyle": "--"},
+            "ev_uptake": {"title": r"EV Adoption Proportion", "colour": "blue", "linestyle": "."},
+            "total_firm_profit": {"title": r"Firm Profit, $\$$", "colour": "orange", "linestyle": "-."},
+            "market_concentration": {"title": r"Market Concentration HHI", "colour": "green", "linestyle": "--"},
+            "utility": {"title": r"Utility, $\$$", "colour": "yellow", "linestyle": "--"},
+            "car_age": {"title": r"Mean Car Age", "colour": "purple", "linestyle": "."}
         },
-        titles = [    
-            "Social suseptability, $\\phi$",
-            "Carbon tax, $\\tau$",
-            "Number of individuals, $N$",
-            "Number of sectors, $M$",
-            "Sector substitutability, $\\nu$",
-            "Low carbon substitutability, $\\sigma_{m}$",
-            "Confirmation bias, $\\theta$",
-            "Homophily state, $h$",
-            "Coherance state, $c$",
-            "Initial preference Beta, $a$ ",
-            "Initial preference Beta, $b$ ",
+        titles =[
+            "K_ICE",
+            "K_EV",
+            "delta",
+            "lambda",
+            "a_chi",
+            "b_chi",
+            "kappa",
+            "mu",
+            "r",
+            "alpha"
         ]
     )
 

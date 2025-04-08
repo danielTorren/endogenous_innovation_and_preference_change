@@ -231,6 +231,32 @@ def plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs
     # Create figure-wide legend below the subplots
     fig.legend(handles, labels, loc='lower center', ncol=3, fontsize=8, bbox_to_anchor=(0.5, 0.00))
 
+    #########################################################################
+    # Set x-axis ticks every 5 years starting at 2001, stopping at last year of data
+    start_year = 2024
+    tick_interval_years = 5
+    months_per_year = 12
+
+    # Determine last time step in months
+    max_time_step = max(
+        ax.get_lines()[0].get_xdata().max() for ax in [axs[1, 0], axs[1, 1]]
+    )
+    max_year = start_year + int(max_time_step // months_per_year)
+    # Build tick positions and labels
+    last_tick_year = max_year - (max_year - start_year) % tick_interval_years
+    tick_years = np.arange(start_year, last_tick_year + 1, tick_interval_years)
+
+    tick_positions = (tick_years - start_year) * months_per_year
+    tick_labels = [str(year) for year in tick_years]
+
+    # Apply to bottom row axes
+    for ax in axs[2]:
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels(tick_labels)
+        ax.set_xlabel("Year")
+
+    #########################################################################
+
     plt.tight_layout(rect=[0.01, 0.05, 0.98, 1])  # Leaves space at the bottom
     plt.subplots_adjust(wspace=0.15)  # increase spacing between columns
     plt.savefig(f"{fileName}/Plots/combined_policy_dashboard_with_utility_cost.png", dpi=dpi)

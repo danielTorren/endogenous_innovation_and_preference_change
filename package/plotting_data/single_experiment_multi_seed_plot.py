@@ -57,6 +57,39 @@ def plot_combined_figures(base_params, fileName, dpi=300):
     plot_mean_car_age(base_params, history_mean_car_age_arr, ax4,
                       annotation_height_prop=[0.3, 0.3, 0.3])
     
+    # Convert x-axis from months to years (starting at 2001)
+    max_time_step = max([
+        axs[1, 0].lines[0].get_xdata().max(),  # Example from market concentration
+        axs[1, 1].lines[0].get_xdata().max(),  # Example from mean car age
+    ])  # You can include others as needed
+
+    #########################################################################
+    # Set x-axis ticks every 5 years starting at 2001, stopping at last year of data
+    start_year = 2001
+    tick_interval_years = 5
+    months_per_year = 12
+
+    # Determine last time step in months
+    max_time_step = max(
+        ax.get_lines()[0].get_xdata().max() for ax in [axs[1, 0], axs[1, 1]]
+    )
+    max_year = start_year + int(max_time_step // months_per_year)
+    # Build tick positions and labels
+    last_tick_year = max_year - (max_year - start_year) % tick_interval_years
+    tick_years = np.arange(start_year, last_tick_year + 1, tick_interval_years)
+
+    tick_positions = (tick_years - start_year) * months_per_year
+    tick_labels = [str(year) for year in tick_years]
+
+    # Apply to bottom row axes
+    for ax in axs[1]:
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels(tick_labels)
+        ax.set_xlabel("Year")
+
+
+    #########################################################################
+
     # Adjust layout
     plt.tight_layout(rect=[0.01, 0.0, 0.98, 1])  # Leaves space at the bottom
     plt.subplots_adjust(wspace=0.15)  # increase spacing between columns
@@ -556,7 +589,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 # Example usage
 if __name__ == "__main__":
     
-    fileName = "results/multi_seed_single_18_27_16__03_04_2025"#multi_seed_single_00_03_21__27_03_2025"
+    fileName = "results/multi_seed_single_15_01_20__07_04_2025"#multi_seed_single_00_03_21__27_03_2025"
     base_params = load_object(fileName + "/Data", "base_params")
     
     plot_combined_figures(base_params, fileName)

@@ -805,7 +805,6 @@ class Controller:
             for firm in self.firm_manager.firms_list:
                 firm.ev_production_bool = True
 
-
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
         #update_prices_and_emmisions
