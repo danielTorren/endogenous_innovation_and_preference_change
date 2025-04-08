@@ -60,9 +60,9 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Electricity_subsidy": 0,
-            "Adoption_subsidy": 0,
+            "Adoption_subsidy": 1,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
             "Research_subsidy": 0
@@ -70,13 +70,13 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.5,
+                "Carbon_price": 0.0,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
-            "Adoption_subsidy":20000,
+            "Adoption_subsidy":38000,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":58150,
+            "Production_subsidy":38000,
             "Research_subsidy":1000000
         }
     },

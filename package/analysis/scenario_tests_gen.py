@@ -187,6 +187,7 @@ def main(
 if __name__ == "__main__":
     main(
     BASE_PARAMS_LOAD="package/constants/base_params_scenarios_2050_BAU.json",
-    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1] }, 
-    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [1, 1.5] } 
+    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1, 1.5] }, 
+    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [0.5, 1, 1.5] }, 
+    property_dict_3 = {"subdict": "parameters_scenarios","property_varied": "Grid_emissions_intensity", "property_list": [0.1,0.5, 1] } 
     )

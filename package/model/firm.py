@@ -760,7 +760,6 @@ class Firm:
                 vehicle_to_max_profit[vehicle] = {"profit": profit, "segment": segment}
         
         sorted_vehicles = sorted(vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True)
-        vehicles_selected_with_segment = [(x[0], x[1]["segment"]) for x in sorted_vehicles[:self.max_cars_prod]]
 
         vehicles_selected = [x[0] for x in sorted_vehicles[:self.max_cars_prod]]
 
