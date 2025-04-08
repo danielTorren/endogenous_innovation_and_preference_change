@@ -37,7 +37,7 @@
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.5,
-            "Adoption_subsidy":20000,
+            "Adoption_subsidy":18390.801,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":58150,
             "Research_subsidy":1000000
