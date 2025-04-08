@@ -844,7 +844,7 @@ class Controller:
         return consider_ev_vec, new_bought_vehicles
 
     def get_second_hand_cars(self):
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms)
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.rebate_calibration, self.rebate)
         cars_on_sale_second_hand = self.second_hand_merchant.cars_on_sale
 
         return cars_on_sale_second_hand

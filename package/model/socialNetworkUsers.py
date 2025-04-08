@@ -461,7 +461,8 @@ class Social_Network:
         closest_idxs = np.argmin(distances, axis=1)
 
         # Get the prices of the closest first-hand cars
-        closest_prices = first_hand_prices[closest_idxs]
+        #closest_prices = first_hand_prices[closest_idxs]
+        closest_prices = np.maximum(first_hand_prices[closest_idxs] - (self.rebate_calibration + self.rebate),0)
 
         # Adjust prices based on car age and depreciation
         adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages

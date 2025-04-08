@@ -126,7 +126,8 @@ class SecondHandMerchant:
         closest_idxs = np.argmin(distances, axis=1)
 
         # Get the prices of the closest first-hand cars
-        closest_prices = first_hand_prices[closest_idxs]
+        #closest_prices = first_hand_prices[closest_idxs]
+        closest_prices = np.maximum(first_hand_prices[closest_idxs] - (self.rebate_calibration + self.rebate),0)
 
         # Adjust prices based on car age and depreciation
         adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
@@ -232,7 +233,7 @@ class SecondHandMerchant:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, rebate_calibration,rebate):
         
         self.t_second_hand_cars += 1
 
@@ -240,6 +241,8 @@ class SecondHandMerchant:
         self.electricity_price = electricity_price
         self.electricity_emissions_intensity = electricity_emissions_intensity
         self.vehicles_on_sale = vehicles_on_sale
+        self.rebate_calibration = rebate_calibration
+        self.rebate = rebate
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []
