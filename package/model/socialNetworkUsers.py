@@ -1066,7 +1066,8 @@ class Social_Network:
         median_price_new = np.median([vehicle.price for vehicle in self.new_cars])
 
         prices_ICE = [vehicle.price for vehicle in self.new_cars if vehicle.transportType == 2]
-        prices_EV = [np.maximum(0, vehicle.price - (self.rebate_calibration + self.rebate))  for vehicle in self.new_cars if vehicle.transportType == 3]
+        #prices_EV = [np.maximum(0, vehicle.price - (self.rebate_calibration + self.rebate))  for vehicle in self.new_cars if vehicle.transportType == 3]
+        prices_EV = [vehicle.price  for vehicle in self.new_cars if vehicle.transportType == 3]
 
         if prices_ICE:
             mean_price_new_ICE = np.mean(prices_ICE)
@@ -1092,7 +1093,8 @@ class Social_Network:
 
         if self.second_hand_cars:
             prices_second_hand_ICE = [vehicle.price for vehicle in self.second_hand_cars if vehicle.transportType == 2]
-            prices_second_hand_EV = [np.maximum(0, vehicle.price - (self.used_rebate_calibration + self.used_rebate)) for vehicle in self.second_hand_cars if vehicle.transportType == 3]
+            #prices_second_hand_EV = [np.maximum(0, vehicle.price - (self.used_rebate_calibration + self.used_rebate)) for vehicle in self.second_hand_cars if vehicle.transportType == 3]
+            prices_second_hand_EV = [vehicle.price for vehicle in self.second_hand_cars if vehicle.transportType == 3]
 
             if prices_second_hand_ICE:
                 mean_price_second_hand_ICE = np.mean(prices_second_hand_ICE)
