@@ -172,7 +172,8 @@ def plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs
     # --- 5. Utility
     ax5 = axs[2, 0]
     
-    bau_emissions = outputs_BAU["history_total_utility"]*1e-9
+    outputs_BAU["history_total_utility_cum"] = np.cumsum(outputs_BAU["history_total_utility"], axis = 1)
+    bau_emissions = outputs_BAU["history_total_utility_cum"]*1e-9
     bau_mean = np.mean(bau_emissions, axis=0)
     bau_ci = sem(bau_emissions, axis=0) * t.ppf(0.975, df=bau_emissions.shape[0] - 1)
     ax5.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
@@ -181,7 +182,8 @@ def plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs
 
     for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
         label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
-        data = output["history_total_utility"]*1e-9
+        output["history_total_utility_cum"] = np.cumsum(output["history_total_utility"], axis = 1)
+        data = output["history_total_utility_cum"]*1e-9
         mean = np.mean(data, axis=0)
         ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
 
@@ -431,8 +433,8 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
 
     # --- 5. Utility
     ax5 = axs[2, 0]
-    
-    bau_emissions = outputs_BAU["history_total_utility"]*1e-9
+    outputs_BAU["history_total_utility_cum"] = np.cumsum(outputs_BAU["history_total_utility"], axis = 1)
+    bau_emissions = outputs_BAU["history_total_utility_cum"]*1e-9
     bau_mean = np.mean(bau_emissions, axis=0)
     bau_ci = sem(bau_emissions, axis=0) * t.ppf(0.975, df=bau_emissions.shape[0] - 1)
     ax5.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
@@ -440,7 +442,8 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
 
     for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
         label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
-        data = output["history_total_utility"]*1e-9
+        output["history_total_utility_cum"] = np.cumsum(output["history_total_utility"], axis = 1)
+        data = output["history_total_utility_cum"]*1e-9
         mean = np.mean(data, axis=0)
         ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
 

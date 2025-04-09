@@ -1,9 +1,9 @@
 import json
 import numpy as np
 from copy import deepcopy
+from itertools import product
 from skopt import gp_minimize
 from skopt.space import Real
-from skopt.utils import use_named_args
 from package.resources.utility import save_object
 from package.analysis.endogenous_policy_intensity_single_gen import (
     set_up_calibration_runs,
@@ -18,108 +18,147 @@ def update_policy_intensity(params, policy_name, intensity_level):
         params["parameters_policies"]["Values"][policy_name] = intensity_level
     return params
 
-
-def custom_cost_function(ev_uptake, policy_values, bounds_dict):
-    """
-    Objective: Minimize normalized sum of policy intensities,
-    while constraining EV uptake between 0.94 and 0.96.
-    """
-    # Check EV uptake constraint
-    if ev_uptake < 0.945 or ev_uptake > 0.955:
-        return 1e6 + abs(ev_uptake - 0.95) * 1e5  # large penalty for being out of range
-
-    # Normalize each policy intensity to [0, 1] relative to its bounds
-    normalized_intensities = []
-    for policy, value in policy_values.items():
-        min_bound, max_bound = bounds_dict[policy]
-        norm = (value - min_bound) / (max_bound - min_bound)
-        normalized_intensities.append(norm)
-
-    return sum(normalized_intensities)  # objective: minimize total normalized intensity
-
-
 def simulate_policy_scenario(sim_params, controller_files):
-    EV_uptake_arr, _, _, _, _, _, _, _, _ = single_policy_with_seeds(sim_params, controller_files)
-    mean_ev_uptake = np.mean(EV_uptake_arr)
-    return mean_ev_uptake
+    EV_uptake_arr, *_ = single_policy_with_seeds(sim_params, controller_files)
+    return np.mean(EV_uptake_arr)
 
 
-def optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict, n_calls=30):
-    # Define search space
-    dimensions = [
-        Real(bounds_dict[p][0], bounds_dict[p][1], name=p)
-        for p in policy_names
-    ]
+def optimize_endogenous_carbon_price(base_params, controller_files, elec_val, prod_val, bounds_dict, n_calls=15):
+    search_space = [Real(*bounds_dict["Carbon_price"], name="Carbon_price")]
 
-    @use_named_args(dimensions)
-    def objective(**params_dict):
+    def objective(carbon_price):
         params = deepcopy(base_params)
-        for policy, value in params_dict.items():
-            params = update_policy_intensity(params, policy, value)
+        params = update_policy_intensity(params, "Electricity_subsidy", elec_val)
+        params = update_policy_intensity(params, "Production_subsidy", prod_val)
+        params = update_policy_intensity(params, "Carbon_price", carbon_price[0])
 
-        try:
-            ev_uptake = simulate_policy_scenario(params, controller_files)
-        except Exception as e:
-            print(f"[ERROR] Simulation failed: {e}")
-            return 1e10
+        ev_uptake = simulate_policy_scenario(params, controller_files)
 
-        cost = custom_cost_function(ev_uptake, params_dict, bounds_dict)
-        print(f"[TEST] {params_dict} -> Uptake: {ev_uptake:.4f}, Cost: {cost:.4f}")
-        return cost
+        return abs(ev_uptake - 0.95)
 
-    result = gp_minimize(
-        objective,
-        dimensions=dimensions,
-        n_calls=n_calls,
-        n_initial_points=8, # 8–10 random samples before modeling
-        random_state=42,
-        acq_func="EI"
+    result = gp_minimize(objective, search_space, n_calls=n_calls, random_state=42, acq_func="EI")
+    best_carbon = result.x[0]
+
+    # Confirm final output
+    final_params = deepcopy(base_params)
+    final_params = update_policy_intensity(final_params, "Electricity_subsidy", elec_val)
+    final_params = update_policy_intensity(final_params, "Production_subsidy", prod_val)
+    final_params = update_policy_intensity(final_params, "Carbon_price", best_carbon)
+
+    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, \
+    emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(final_params, controller_files)
+
+    mean_ev_uptake = np.mean(EV_uptake_arr)
+    sd_ev_uptake = np.std(EV_uptake_arr)
+    mean_total_cost = np.mean(total_cost_arr)
+    mean_net_cost = np.mean(net_cost_arr)
+    mean_emissions_cumulative = np.mean(emissions_cumulative_arr)
+    mean_emissions_cumulative_driving = np.mean(emissions_cumulative_driving_arr)
+    mean_emissions_cumulative_production = np.mean(emissions_cumulative_production_arr)
+    mean_utility_cumulative = np.mean(utility_cumulative_arr)
+    mean_utility_cumulative_30 = np.mean(utility_cumulative_30_arr)
+    mean_profit_cumulative = np.mean(profit_cumulative_arr)
+
+    print(f"Intensities= {best_carbon , elec_val, prod_val}, EV uptake = {mean_ev_uptake}, STD EV uptake = {sd_ev_uptake}, "
+          f"Cost = {mean_total_cost}, Net cost = {mean_net_cost}, E = {mean_emissions_cumulative}, "
+          f"E_D = {mean_emissions_cumulative_driving}, E_P = {mean_emissions_cumulative_production}, "
+          f"U = {mean_utility_cumulative}, Profit = {mean_profit_cumulative}")
+
+    return (
+            [best_carbon , elec_val, prod_val],
+            mean_ev_uptake, 
+            sd_ev_uptake, 
+            mean_total_cost, 
+            mean_net_cost, 
+            mean_emissions_cumulative, 
+            mean_emissions_cumulative_driving, 
+            mean_emissions_cumulative_production, 
+            mean_utility_cumulative, 
+            mean_utility_cumulative_30, 
+            mean_profit_cumulative,
+            EV_uptake_arr,
+            net_cost_arr,
+            emissions_cumulative_driving_arr,
+            emissions_cumulative_production_arr,
+            utility_cumulative_arr,
+            profit_cumulative_arr
     )
 
-    best_values = result.x
-    best_cost = result.fun
-    best_combo = dict(zip(policy_names, best_values))
+def grid_search_with_endogenous_carbon(base_params, controller_files, bounds_dict, steps=6, n_calls=10):
+    elec_range = np.linspace(*bounds_dict["Electricity_subsidy"], steps)
+    prod_range = np.linspace(*bounds_dict["Production_subsidy"], steps)
 
-    return {
-        "policy_names": policy_names,
-        "best_intensities": best_combo,
-        "best_cost": best_cost,
-        "result": result
-    }
+    policy_outcomes = {}
+    for elec_val, prod_val in product(elec_range, prod_range):
 
+        (
+            best_intensities,
+            mean_ev_uptake, 
+            sd_ev_uptake, 
+            mean_total_cost, 
+            mean_net_cost, 
+            mean_emissions_cumulative, 
+            mean_emissions_cumulative_driving, 
+            mean_emissions_cumulative_production, 
+            mean_utility_cumulative, 
+            mean_utility_cumulative_30, 
+            mean_profit_cumulative,
+            ev_uptake,
+            net_cost,
+            emissions_cumulative_driving,
+            emissions_cumulative_production,
+            utility_cumulative,
+            profit_cumulative 
+        ) = optimize_endogenous_carbon_price(
+            base_params, controller_files, elec_val, prod_val, bounds_dict, n_calls=n_calls
+        )
+
+        policy_outcomes[(elec_val, prod_val)] = {
+            "optimized_intensity": best_intensities,
+            "mean_EV_uptake": mean_ev_uptake,
+            "sd_ev_uptake": sd_ev_uptake,
+            "mean_total_cost": mean_total_cost,
+            "mean_net_cost": mean_net_cost, 
+            "mean_emissions_cumulative": mean_emissions_cumulative, 
+            "mean_emissions_cumulative_driving": mean_emissions_cumulative_driving, 
+            "mean_emissions_cumulative_production": mean_emissions_cumulative_production, 
+            "mean_utility_cumulative": mean_utility_cumulative, 
+            "mean_utility_cumulative_30": mean_utility_cumulative_30, 
+            "mean_profit_cumulative": mean_profit_cumulative,
+            "ev_uptake": ev_uptake,
+            "net_cost": net_cost,
+            "emissions_cumulative_driving": emissions_cumulative_driving,
+            "emissions_cumulative_production": emissions_cumulative_production,
+            "utility_cumulative": utility_cumulative,
+            "profit_cumulative": profit_cumulative,
+            "confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(base_params["seed_repetitions"])
+        }
+
+    return policy_outcomes
 
 def main(
-    BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_pair_gen.json",
-    BOUNDS_LOAD="package/analysis/policy_bounds_vary_pair_policy_gen.json",
-    policy_names=["Carbon_price", "Adoption_subsidy", "Production_subsidy"],
-    n_calls=30
+    BASE_PARAMS_LOAD="package/constants/base_params_policy_package_gen.json",
+    BOUNDS_LOAD="package/analysis/policy_bounds_policy_package_gen.json",
+    n_calls=10,
+    steps=6
 ):
-    # Load parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
 
     with open(BOUNDS_LOAD) as f:
         bounds_dict = json.load(f)
+    print("Total runs:", base_params["seed_repetitions"]*n_calls*steps*steps)
+    controller_files, base_params, file_name = set_up_calibration_runs(base_params, "2d_grid_endogenous_third")
 
-    # Setup calibration and controller files
-    controller_files, base_params, file_name = set_up_calibration_runs(base_params, "triple_policy_BO")
+    policy_outcomes = grid_search_with_endogenous_carbon(base_params, controller_files, bounds_dict, steps,n_calls)
 
-    # Run Bayesian Optimization
-    result = optimize_three_policies_BO(base_params, controller_files, policy_names, bounds_dict,n_calls=n_calls)
-
-    print("\n✅ Optimization Complete")
-    print("Best Policy Intensities:", result["best_intensities"])
-    print("Final Cost:", result["best_cost"])
-    print("Results saved in:", file_name)
-
-    # Save results
-    save_object(result, file_name + "/Data", "triple_policy_optimization_result")
-    save_object(policy_names, file_name + "/Data", "optimized_policy_names")
+    save_object(policy_outcomes, file_name + "/Data", "policy_outcomes")
 
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_policy_package_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_policy_package_gen.json",
         policy_names=["Carbon_price", "Electricity_subsidy", "Production_subsidy"],
-        n_calls=30
+        n_calls=10,
+        steps = 4
     )
