@@ -1,5 +1,5 @@
 {
-    "seed_repetitions": 12,
+    "seed_repetitions": 64,
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
@@ -103,7 +103,7 @@
         "max_cars_prod": 10
     },
     "parameters_social_network":{
-        "num_individuals":500,
+        "num_individuals":3000,
         "chi_max": 0.9,
         "a_chi": 1.1968, 
         "b_chi": 2.6805,
