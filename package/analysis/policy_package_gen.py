@@ -158,7 +158,6 @@ if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_policy_package_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_policy_package_gen.json",
-        policy_names=["Carbon_price", "Electricity_subsidy", "Production_subsidy"],
         n_calls=10,
         steps = 4
     )
