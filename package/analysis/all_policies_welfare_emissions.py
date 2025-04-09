@@ -210,7 +210,6 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
             pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
             pairwise_outcomes_complied.update(pairwise_outcomes)
 
-
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
 
     min_ev_uptake = 0.94
