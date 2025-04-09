@@ -159,5 +159,5 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_policy_package_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_policy_package_gen.json",
         n_calls=10,
-        steps = 4
+        steps = 3
     )
