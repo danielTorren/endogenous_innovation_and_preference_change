@@ -18,14 +18,6 @@ def half_circle_marker(start, end, offset=-45):
     codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 2) + [Path.CLOSEPOLY]
     return Path(verts, codes)
 
-
-def full_circle_marker():
-    angles = np.linspace(0, 2 * np.pi, 100)
-    verts = np.column_stack([np.cos(angles), np.sin(angles)])
-    verts = np.vstack([verts, [verts[0]]])
-    codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 1)
-    return Path(verts, codes)
-
 # Intensity-to-marker-size scaling
 def scale_marker_size(value, policy, policy_ranges, scale_marker):
     min_val = policy_ranges[policy]["min"]
@@ -34,6 +26,15 @@ def scale_marker_size(value, policy, policy_ranges, scale_marker):
         return scale_marker  # Fixed size if no variation
     norm = (value - min_val) / (max_val - min_val)
     return np.maximum(0, norm * scale_marker)
+
+def full_circle_marker():
+    angles = np.linspace(0, 2 * np.pi, 100)
+    verts = np.column_stack([np.cos(angles), np.sin(angles)])
+    verts = np.vstack([verts, [verts[0]]])
+    codes = [Path.MOVETO] + [Path.LINETO] * (len(verts) - 1)
+    return Path(verts, codes)
+
+
 
 def plot_emissions_tradeoffs_from_outcomes(
         base_params, 

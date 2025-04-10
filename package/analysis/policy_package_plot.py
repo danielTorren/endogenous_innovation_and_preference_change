@@ -41,6 +41,12 @@ def plot_emissions_tradeoffs_from_triples(
     ):
     fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 12), sharex=True)
 
+    policy_bounds = {
+        "Carbon_price": [0, 0.5],
+        "Electricity_subsidy": [0.1, 0.5],
+        "Production_subsidy": [4000, 13000]
+    }
+
     policy_names = ["Carbon_price", "Electricity_subsidy", "Production_subsidy"]
     color_map = plt.get_cmap("Set1", len(policy_names))
     policy_colors = {policy: color_map(i) for i, policy in enumerate(policy_names)}
@@ -142,9 +148,10 @@ def  main(fileName, fileName_BAU):
         min_ev_uptake=0.94,
         max_ev_uptake=0.96
     )
+    plt.show()
 
 if __name__ == "__main__":
     main(
-        fileName="results/endog_pair_20_53_20__04_04_2025",
-        fileName_BAU="results/BAU_runs_17_09_42__06_04_2025"
+        fileName="results/2d_grid_endogenous_third_00_47_36__10_04_2025",
+        fileName_BAU="results/BAU_runs_12_22_12__10_04_2025"
     )
