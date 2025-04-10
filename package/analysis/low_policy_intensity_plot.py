@@ -15,7 +15,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 
     annotation_height_0 = y_min + annotation_height_prop[0]*(y_max - y_min)
     # Add vertical line with annotation
-    ev_sale_start_time = 144
+    ev_sale_start_time = 144 - 1
     ax.axvline(ev_sale_start_time, color="black", linestyle=':')
     ax.annotate("Policy end", xy=(ev_sale_start_time, annotation_height_0),
                 rotation=90, verticalalignment='center', horizontalalignment='right',
@@ -326,7 +326,7 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         ax1.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
     #ax1.legend(fontsize="x-small")
-    ax1.set_ylabel("EV Adoption Proportion")
+    ax1.set_ylabel("EV Adoption Proportion", fontsize=15)
     poor_line = plt.Line2D([0], [0], color="grey", alpha=1, linestyle='--', label=r'Bottom 50% $\beta$')
     ax1.legend(handles=[poor_line], loc='lower right', fontsize=9)
 
@@ -369,7 +369,7 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle="--")
         ax2.fill_between(time_steps, mean_used - ci_used, mean_used + ci_used, color=color1, alpha=0.2)
 
-    ax2.set_ylabel("EV Price, $")
+    ax2.set_ylabel("EV Price, $", fontsize=15)
     # Add after plotting all the policy lines in ax2
     custom_legend = [
         Line2D([0], [0], color="black", linestyle='-', label='New'),
@@ -402,7 +402,7 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
         ax3.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
-    ax3.set_ylabel("Total Emissions, MTCO2")
+    ax3.set_ylabel("Total Emissions, MTCO2", fontsize=15)
     #ax3.legend(fontsize="x-small", loc = "lower right", ncols = 2)
     add_vertical_lines(ax3, base_params, annotation_height_prop=[0.15, 0.45, 0.45])
     
@@ -428,7 +428,7 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         markerfacecolor=color2, markeredgecolor=color2, markersize=4)
         ax4.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
-    ax4.set_ylabel("Car Age, months")
+    ax4.set_ylabel("Car Age, months", fontsize=15)
     add_vertical_lines(ax4, base_params, annotation_height_prop=[0.5, 0.3, 0.3])
 
     # --- 5. Utility
@@ -455,8 +455,8 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
         ax5.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
-    ax5.set_ylabel("Utility, bn $")
-    ax5.set_xlabel("Time Step, months")
+    ax5.set_ylabel("Utility, bn $", fontsize=15)
+    ax5.set_xlabel("Time Step, months", fontsize=15)
     #ax3.legend(fontsize="x-small", loc = "lower right", ncols = 2)
     add_vertical_lines(ax5, base_params, annotation_height_prop=[0.15, 0.45, 0.45])
     
@@ -481,8 +481,8 @@ def plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, 
         markerfacecolor=color2, markeredgecolor=color2, markersize=4)
         ax6.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
 
-    ax6.set_ylabel("Net Cost, bn $")
-    ax6.set_xlabel("Time Step, months")
+    ax6.set_ylabel("Net Cost, bn $", fontsize=15)
+    ax6.set_xlabel("Time Step, months", fontsize=15)
     add_vertical_lines(ax6, base_params, annotation_height_prop=[0.5, 0.3, 0.3])
 
     ###########################################################################################
@@ -517,4 +517,4 @@ def main(fileName):
     
 
 if __name__ == "__main__":
-    main(fileName = "results/pair_low_intensity_policies_12_50_37__07_04_2025")#2D_low_intensity_policies_16_18_25__03_04_2025")
+    main(fileName = "results/pair_low_intensity_policies_14_58_29__10_04_2025")#pair_low_intensity_policies_12_50_37__07_04_2025")#2D_low_intensity_policies_16_18_25__03_04_2025")

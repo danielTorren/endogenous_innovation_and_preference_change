@@ -57,7 +57,7 @@ def plot_emissions_tradeoffs_from_outcomes(
 
     plotted_points = []
     scale_marker = 350
-
+    scale_small = 1
     ########################################################################################
 
     # --- Create zoom-in inset axes for the top plot
@@ -81,22 +81,22 @@ def plot_emissions_tradeoffs_from_outcomes(
     ##########################################################################################
 
     # --- Create zoom-in inset axes for the top plot
-    axins = inset_axes(ax_top, width="70%", height="45%", 
-                    bbox_to_anchor=(0.01, 0.52, 1, 1),
-                    bbox_transform=ax_top.transAxes,
+    axins2 = inset_axes(ax_bottom, width="30%", height="30%", 
+                    bbox_to_anchor=(0.15, 0.01, 1, 1),
+                    bbox_transform=ax_bottom.transAxes,
                     loc='lower left'
                     )
     
-    e_min = 0.125
-    e_max = 0.15#0.145
-    c_min = -0.08
-    c_max = 0.3
+    e_min2 = 0.131
+    e_max2 = 0.135
+    u_min = 72
+    u_max = 78
 
-    axins.set_xlim( e_min, e_max)
-    axins.set_ylim(c_min, c_max)
+    axins2.set_xlim(e_min2, e_max2)
+    axins2.set_ylim(u_min, u_max)
 
-    axins.set_xticks([])
-    axins.set_yticks([])
+    axins2.set_xticks([])
+    axins2.set_yticks([])
 
     ##########################################################################################
     
@@ -128,7 +128,10 @@ def plot_emissions_tradeoffs_from_outcomes(
     ax_top.scatter(bau_em, bau_cost, s=scale_marker, color='black', edgecolor='black', label="BAU")
     ax_bottom.scatter(bau_em, bau_ut, s=scale_marker, color='black', edgecolor='black')
     # Also plot BAU on the inset axes
-    #axins.scatter(bau_em, bau_cost, s=scale_marker*0.6, color='black', edgecolor='black')
+    if e_min <= bau_em <= e_max and c_min <= bau_cost <= c_max :
+        axins.scatter(bau_em, bau_cost, s=scale_marker*scale_small, color='black', edgecolor='black')
+    if e_min2 <= bau_em <= e_max2 and u_min <= bau_ut <= u_max :
+        axins2.scatter(bau_em, bau_ut, s=scale_marker*scale_small, color='black', edgecolor='black')
 
     for (policy1, policy2), results in pairwise_outcomes_complied.items():
         for entry in results:
@@ -168,9 +171,16 @@ def plot_emissions_tradeoffs_from_outcomes(
                 # --- Plot in inset axes if within zoom range
                 if e_min <= e <= e_max and c_min <= c <= c_max :
                     axins.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
-                    axins.scatter(e, c, s=scale_marker*0.6, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
-                    axins.scatter(e, c, s=size1*0.6, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
-                    axins.scatter(e, c, s=size2*0.6, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
+                    axins.scatter(e, c, s=scale_marker*scale_small, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
+                    axins.scatter(e, c, s=size1*scale_small, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
+                    axins.scatter(e, c, s=size2*scale_small, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
+
+                # --- Plot in inset axes if within zoom range
+                if e_min2 <= e <= e_max2 and u_min <= u <= u_max :
+                    axins2.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
+                    axins2.scatter(e, u, s=scale_marker*scale_small, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
+                    axins2.scatter(e, u, s=size1*scale_small, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
+                    axins2.scatter(e, u, s=size2*scale_small, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
 
                 # --- Bottom Panel: Utility vs Emissions
                 ax_bottom.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
@@ -207,7 +217,12 @@ def plot_emissions_tradeoffs_from_outcomes(
             # --- Plot in inset axes if within zoom range
             if e_min <= e <= e_max and c_min <= c <= c_max :
                 axins.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
-                axins.scatter(e, c, s=size*0.6, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
+                axins.scatter(e, c, s=size*scale_small, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
+            
+            # --- Plot in inset axes if within zoom range
+            if e_min2 <= e <= e_max2 and u_min <= u <= u_max :
+                axins2.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
+                axins2.scatter(e, u, s=size*scale_small, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
 
             # --- Bottom Panel: Utility vs Emissions
             ax_bottom.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
@@ -220,7 +235,9 @@ def plot_emissions_tradeoffs_from_outcomes(
     
     # Draw box in main plot showing zoom area
     from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    mark_inset(ax_top, axins, loc1=2, loc2=4, fc="none", ec="0.5")
+    mark_inset(ax_top, axins, loc1=3, loc2=4, fc="none", ec="0.5")
+    mark_inset(ax_bottom, axins2, loc1=2, loc2=3, fc="none", ec="0.5")
+
 
     # --- Labels
     ax_top.set_ylabel("Net Cost, bn $", fontsize=16)
