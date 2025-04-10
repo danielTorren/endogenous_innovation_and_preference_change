@@ -391,9 +391,7 @@ class Controller:
         term3 = -(nu*(B*omega)**zeta)
         term4 = D * ((1 + r) * (1 - delta) * (c + gamma * e)) / (omega * (r - delta - r * delta))
         beta_s = (1/(Q_mt**alpha))*(term1 + term2 + term3 + term4)
-        print("median beta", beta_s)
-        print("median gamma", gamma)
-        quit()
+
         return beta_s
 
     #####################################################################################################################################
