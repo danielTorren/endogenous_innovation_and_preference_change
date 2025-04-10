@@ -250,6 +250,7 @@ def main(fileNames,
     pairwise_outcomes_complied = {}
     #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
     if len(fileNames) == 1:
+        fileName = fileNames[0]
         pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
     else:
         for fileName in fileNames:
@@ -260,11 +261,8 @@ def main(fileNames,
     #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
-    #print("pairwise_outcomes_complied", list(pairwise_outcomes_complied.keys()), len( pairwise_outcomes_complied.keys()))
+    
     print("top_policies", list(top_policies.keys()), len( list(top_policies.keys())))
-    #quit()
-    #del top_policies[("Adoption_subsidy","Carbon_price")]
-    #top_policies = {("Adoption_subsidy","Carbon_price"): top_policies[("Adoption_subsidy","Carbon_price")]}
 
     ##########################################################################################
 
