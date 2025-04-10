@@ -240,13 +240,20 @@ def plot_emissions_tradeoffs_from_outcomes(
 
 
     # --- Labels
-    ax_top.set_ylabel("Net Cost, bn $", fontsize=16)
-    ax_bottom.set_ylabel("Utility, bn $", fontsize=16)
-    ax_bottom.set_xlabel("Emissions, MTCO2", fontsize=16)
+    ax_top.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)
+    ax_bottom.set_ylabel("Cumulative Utility, bn $", fontsize=16)
+    ax_bottom.set_xlabel("Cumulative Emissions, MTCO2", fontsize=16)
 
+    policy_titles = {
+        "Carbon_price": "Carbon Price",
+        "Electricity_subsidy": "Electricity Subsidy",
+        "Adoption_subsidy": "New Car Rebate",
+        "Adoption_subsidy_used": "Used Car Rebate",
+        "Production_subsidy": "Production Subsidy"
+    }
     # --- Legend
     legend_elements = [Patch(facecolor=policy_colors[policy], edgecolor='black',
-                 label=f"{policy.replace('_', ' ')} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+                 label=f"{policy_titles[policy]} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
                        for policy in all_policies]
 
     # Custom intensity markers

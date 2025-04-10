@@ -100,38 +100,52 @@ def single_policy_with_seeds(params, controller_files):
         np.asarray(history_policy_net_cost)
     )
 
-def produce_param_list(params: dict, property_dict_1, property_dict_2) -> list[dict]:
-    params_list = []
-    intensity_list = []
-    for i in property_dict_1["property_list"]:
-        print("i", i)
-        for j in  property_dict_2["property_list"]:
-            print("j",j)
-            params_updated = deepcopy(params)
-            params_updated[property_dict_1["subdict"]][property_dict_1["property_varied"]] = i
-            params_updated[property_dict_2["subdict"]][property_dict_2["property_varied"]] = j
-            params_list.append(params_updated)
-            intensity_list.append((i,j))
-    return params_list, intensity_list
+def produce_param_list(params: dict, *property_dicts) -> list[dict]:
+    """
+    Create parameter combinations for any number of property dictionaries.
+    """
+    def recursive_combinations(param_template, properties_left, current_values=()):
+        if not properties_left:
+            return [(deepcopy(param_template), current_values)]
+        
+        prop_dict = properties_left[0]
+        remaining = properties_left[1:]
+        results = []
+        
+        for value in prop_dict["property_list"]:
+            updated_params = deepcopy(param_template)
+            updated_params[prop_dict["subdict"]][prop_dict["property_varied"]] = value
+            new_values = current_values + (value,)
+            
+            if not remaining:
+                results.append((updated_params, new_values))
+            else:
+                results.extend(recursive_combinations(updated_params, remaining, new_values))
+        
+        return results
+    
+    combinations = recursive_combinations(params, property_dicts)
+    params_list, intensity_tuples = zip(*combinations)
+    
+    return list(params_list), list(intensity_tuples)
 
 def main(
     BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
-    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1]}, 
-    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [1, 1.5]} 
-        ):
+    *property_dicts
+    ):
     
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
     
-    params_list, intensity_list = produce_param_list(base_params, property_dict_1, property_dict_2)
-    print(len(params_list))
-    print(intensity_list)
+    params_list, intensity_list = produce_param_list(base_params, *property_dicts)
+    print(f"Parameter combinations: {len(params_list)}")
+    print(f"Intensity list: {intensity_list}")
 
-    print("TOTAL RUNS", len(params_list)*base_params["seed_repetitions"])
+    print(f"TOTAL RUNS: {len(params_list) * base_params['seed_repetitions']}")
 
     ###############################################################################################################################
 
-    controller_files, base_params, root_folder = set_up_calibration_runs(base_params, "sceanrio_tests_gen")
+    controller_files, base_params, root_folder = set_up_calibration_runs(base_params, "scenario_tests_gen")
     print("DONE calibration")
     
     ##############################################################################################################################
@@ -175,19 +189,41 @@ def main(
             "history_policy_net_cost": history_policy_net_cost
         }
 
+    # Save all property dictionaries
     save_object(outputs, root_folder + "/Data", "outputs")
     save_object(base_params, root_folder + "/Data", "base_params")
-    save_object(property_dict_1 , root_folder + "/Data", "property_dict_1")
-    save_object(property_dict_2 , root_folder + "/Data", "property_dict_2")
+    
+    for i, prop_dict in enumerate(property_dicts, 1):
+        save_object(prop_dict, root_folder + "/Data", f"property_dict_{i}")
 
     #######################################################################################################
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
 
 if __name__ == "__main__":
+    # Define the property dictionaries
+    property_dict_1 = {
+        "subdict": "parameters_scenarios",
+        "property_varied": "Gas_price", 
+        "property_list": [0.5, 1, 1.5]
+    }
+    
+    property_dict_2 = {
+        "subdict": "parameters_scenarios",
+        "property_varied": "Electricity_price", 
+        "property_list": [0.5, 1, 1.5]
+    }
+    
+    property_dict_3 = {
+        "subdict": "parameters_scenarios",
+        "property_varied": "Grid_emissions_intensity", 
+        "property_list": [0.1, 0.5, 1]
+    }
+    
+    # Call main with the property dictionaries as separate arguments
     main(
-    BASE_PARAMS_LOAD="package/constants/base_params_scenarios_2050_BAU.json",
-    property_dict_1 = {"subdict": "parameters_scenarios","property_varied": "Gas_price", "property_list": [0.5, 1, 1.5] }, 
-    property_dict_2 = {"subdict": "parameters_scenarios","property_varied": "Electricity_price", "property_list": [0.5, 1, 1.5] }, 
-    property_dict_3 = {"subdict": "parameters_scenarios","property_varied": "Grid_emissions_intensity", "property_list": [0.1,0.5, 1] } 
+        "package/constants/base_params_scenarios_2050_BAU.json",
+        property_dict_1,
+        property_dict_2,
+        property_dict_3
     )

@@ -114,89 +114,12 @@ def single_policy_with_seeds(params, controller_files):
         np.asarray(history_ev_adoption_rate_bottom)
     )
 
-def calc_low_intensities_old(pairwise_outcomes_complied, min_val, max_val):
-    all_policies = set()
-    for (policy1, policy2) in pairwise_outcomes_complied.keys():
-        all_policies.update([policy1, policy2])
-
-    # Init policy ranges
-    policy_ranges = {policy: {"min": float('inf'), "max": float('-inf')} for policy in all_policies}
-
-    # Build a merged dict with symmetric keys
-    merged_pairs = {}
-    for (policy1, policy2), data in pairwise_outcomes_complied.items():
-        key = tuple(sorted((policy1, policy2)))
-        if key not in merged_pairs:
-            merged_pairs[key] = []
-
-        for entry in data:
-            entry_copy = entry.copy()
-            entry_copy["original_order"] = (policy1, policy2)
-            merged_pairs[key].append(entry_copy)
-
-            # Update ranges
-            policy_ranges[policy1]["min"] = min(policy_ranges[policy1]["min"], entry["policy1_value"])
-            policy_ranges[policy1]["max"] = max(policy_ranges[policy1]["max"], entry["policy1_value"])
-            policy_ranges[policy2]["min"] = min(policy_ranges[policy2]["min"], entry["policy2_value"])
-            policy_ranges[policy2]["max"] = max(policy_ranges[policy2]["max"], entry["policy2_value"])
-
-    best_entries = {}
-
-    for (policyA, policyB), entries in merged_pairs.items():
-        min_max_intensity = float('inf')
-        best_entry_raw = None
-
-        for entry in entries:
-            if not (min_val <= entry["mean_ev_uptake"] <= max_val):
-                continue
-
-            p1, p2 = entry["original_order"]
-            val1 = entry["policy1_value"]
-            val2 = entry["policy2_value"]
-
-            norm1 = (val1 - policy_ranges[p1]["min"]) / (policy_ranges[p1]["max"] - policy_ranges[p1]["min"]) if policy_ranges[p1]["max"] > policy_ranges[p1]["min"] else 0
-            norm2 = (val2 - policy_ranges[p2]["min"]) / (policy_ranges[p2]["max"] - policy_ranges[p2]["min"]) if policy_ranges[p2]["max"] > policy_ranges[p2]["min"] else 0
-
-            max_intensity = max(norm1, norm2)
-
-            if max_intensity < min_max_intensity:
-                min_max_intensity = max_intensity
-                best_entry_raw = entry
-
-        if best_entry_raw:
-            # Reorder policy values to match (policyA, policyB)
-            p1, p2 = best_entry_raw["original_order"]
-            val1 = best_entry_raw["policy1_value"]
-            val2 = best_entry_raw["policy2_value"]
-
-            if (policyA, policyB) == (p1, p2):
-                best_entry = {
-                    "policy1_value": val1,
-                    "policy2_value": val2,
-                    "mean_ev_uptake": best_entry_raw["mean_ev_uptake"],
-                    "original_order": (policyA, policyB)
-                }
-            else:
-                # Flip values
-                best_entry = {
-                    "policy1_value": val2,
-                    "policy2_value": val1,
-                    "mean_ev_uptake": best_entry_raw["mean_ev_uptake"],
-                    "original_order": (policyA, policyB)
-                }
-
-            best_entries[(policyA, policyB)] = best_entry
-
-            #print(f"{policyA}-{policyB} -> ({best_entry['policy1_value']:.3f}, {best_entry['policy2_value']:.3f})  EV uptake: {best_entry['mean_ev_uptake']:.3f}")
-
-    return best_entries
 
 def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
     # Collect all policies and initialize min/max ranges
     policy_ranges = {}
 
-    #print(len(list(pairwise_outcomes_complied.keys())))
-    #quit()
+
     for (p1, p2), entries in pairwise_outcomes_complied.items():
         for entry in entries:
             for policy, key in zip((p1, p2), ("policy1_value", "policy2_value")):
@@ -263,7 +186,7 @@ def main(fileNames,
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
     
     print("top_policies", list(top_policies.keys()), len( list(top_policies.keys())))
-
+    quit()
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
