@@ -6,6 +6,7 @@ from matplotlib.path import Path
 import os
 from matplotlib.patches import Patch
 from matplotlib.collections import LineCollection
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from package.resources.utility import (
     createFolder, save_object, produce_name_datetime
 )
@@ -47,7 +48,7 @@ def plot_emissions_tradeoffs_from_outcomes(
         dpi=300
         ):
     
-    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 12), sharex=True)
+    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
     # --- Setup
     color_map = plt.get_cmap('Set1', 10)
     all_policies = sorted({p for pair in pairwise_outcomes_complied for p in pair})
@@ -57,8 +58,51 @@ def plot_emissions_tradeoffs_from_outcomes(
     plotted_points = []
     scale_marker = 350
 
-    # --- Gather data from pairs
+    ########################################################################################
 
+    # --- Create zoom-in inset axes for the top plot
+    axins = inset_axes(ax_top, width="70%", height="45%", 
+                    bbox_to_anchor=(0.01, 0.52, 1, 1),
+                    bbox_transform=ax_top.transAxes,
+                    loc='lower left'
+                    )
+    
+    e_min = 0.125
+    e_max = 0.15#0.145
+    c_min = -0.08
+    c_max = 0.3
+
+    axins.set_xlim( e_min, e_max)
+    axins.set_ylim(c_min, c_max)
+
+    axins.set_xticks([])
+    axins.set_yticks([])
+
+    ##########################################################################################
+
+    # --- Create zoom-in inset axes for the top plot
+    axins = inset_axes(ax_top, width="70%", height="45%", 
+                    bbox_to_anchor=(0.01, 0.52, 1, 1),
+                    bbox_transform=ax_top.transAxes,
+                    loc='lower left'
+                    )
+    
+    e_min = 0.125
+    e_max = 0.15#0.145
+    c_min = -0.08
+    c_max = 0.3
+
+    axins.set_xlim( e_min, e_max)
+    axins.set_ylim(c_min, c_max)
+
+    axins.set_xticks([])
+    axins.set_yticks([])
+
+    ##########################################################################################
+    
+    #axins.tick_params(axis='both', which='major', labelsize=8)
+
+    # --- Gather data from pairs
     for (policy1, policy2), results in pairwise_outcomes_complied.items():
         for entry in results:
             ev = entry["mean_ev_uptake"]
@@ -83,9 +127,12 @@ def plot_emissions_tradeoffs_from_outcomes(
 
     ax_top.scatter(bau_em, bau_cost, s=scale_marker, color='black', edgecolor='black', label="BAU")
     ax_bottom.scatter(bau_em, bau_ut, s=scale_marker, color='black', edgecolor='black')
+    # Also plot BAU on the inset axes
+    #axins.scatter(bau_em, bau_cost, s=scale_marker*0.6, color='black', edgecolor='black')
 
     for (policy1, policy2), results in pairwise_outcomes_complied.items():
         for entry in results:
+            print( (policy1, policy2),entry["mean_ev_uptake"])
             if (min_ev_uptake <= entry["mean_ev_uptake"] <= max_ev_uptake):
                 e = entry["mean_emissions_cumulative"] * 1e-9
                 u = entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
@@ -117,6 +164,13 @@ def plot_emissions_tradeoffs_from_outcomes(
                 ax_top.scatter(e, c, s=scale_marker, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle = "--", alpha = 0.5)
                 ax_top.scatter(e, c, s=size1, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
                 ax_top.scatter(e, c, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
+                
+                # --- Plot in inset axes if within zoom range
+                if e_min <= e <= e_max and c_min <= c <= c_max :
+                    axins.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
+                    axins.scatter(e, c, s=scale_marker*0.6, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
+                    axins.scatter(e, c, s=size1*0.6, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
+                    axins.scatter(e, c, s=size2*0.6, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
 
                 # --- Bottom Panel: Utility vs Emissions
                 ax_bottom.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
@@ -149,16 +203,29 @@ def plot_emissions_tradeoffs_from_outcomes(
             # --- Top Panel: Net Cost vs Emissions
             ax_top.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
             ax_top.scatter(e, c, s=size, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
+            
+            # --- Plot in inset axes if within zoom range
+            if e_min <= e <= e_max and c_min <= c <= c_max :
+                axins.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
+                axins.scatter(e, c, s=size*0.6, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
 
             # --- Bottom Panel: Utility vs Emissions
             ax_bottom.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
             ax_bottom.scatter(e, u, s=size, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
 
+    # --- Configure zoom area
+
+
+    #axins.set_title('Zoom', fontsize=10)
+    
+    # Draw box in main plot showing zoom area
+    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+    mark_inset(ax_top, axins, loc1=2, loc2=4, fc="none", ec="0.5")
 
     # --- Labels
-    ax_top.set_ylabel("Net Cost, bn $")
-    ax_bottom.set_ylabel("Utility, bn $")
-    ax_bottom.set_xlabel("Emissions, MTCO2")
+    ax_top.set_ylabel("Net Cost, bn $", fontsize=16)
+    ax_bottom.set_ylabel("Utility, bn $", fontsize=16)
+    ax_bottom.set_xlabel("Emissions, MTCO2", fontsize=16)
 
     # --- Legend
     legend_elements = [Patch(facecolor=policy_colors[policy], edgecolor='black',
@@ -166,7 +233,6 @@ def plot_emissions_tradeoffs_from_outcomes(
                        for policy in all_policies]
 
     # Custom intensity markers
-
     legend_elements += [Patch(facecolor='black', edgecolor='black', label='BAU')]
 
     low_proxy = plt.Line2D([0], [0], marker=half_circle_marker(0, 180),
@@ -180,7 +246,7 @@ def plot_emissions_tradeoffs_from_outcomes(
     confidence = plt.Line2D([0], [0], color="grey", alpha=0.5, linestyle='-', label='95% Confidence Interval')
     legend_elements += [confidence, low_proxy, high_proxy]
 
-    ax_bottom.legend(handles=legend_elements, loc='lower right', fontsize=9)
+    ax_bottom.legend(handles=legend_elements, loc='lower right', fontsize=10)
 
     # --- Save
     os.makedirs(f"{file_name}/Plots/emissions_tradeoffs", exist_ok=True)
@@ -190,16 +256,13 @@ def plot_emissions_tradeoffs_from_outcomes(
 
 def main(fileNames, fileName_BAU, fileNames_single_policies):
     #EDNOGENOSU SINGLE POLICY
-
     single_policy_outcomes = load_object(f"{fileNames_single_policies}/Data", "policy_outcomes")
 
     #PAIRS OF POLICY 
     fileName = fileNames[0]
     base_params = load_object(f"{fileName}/Data", "base_params")
     
-
     file_name = produce_name_datetime("all_policies")
-
     createFolder(file_name)
 
     pairwise_outcomes_complied = {}
@@ -216,7 +279,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     min_ev_uptake = 0.94
     max_ev_uptake = 0.96
 
-    plot_emissions_tradeoffs_from_outcomes(base_params, pairwise_outcomes_complied,single_policy_outcomes, outcomes_BAU,
+    plot_emissions_tradeoffs_from_outcomes(base_params, pairwise_outcomes_complied, single_policy_outcomes, outcomes_BAU,
                                             file_name,
                                             min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300)
 
@@ -228,7 +291,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_20_53_20__04_04_2025","results/endog_pair_20_35_52__03_04_2025"],
-        fileName_BAU="results/BAU_runs_17_09_42__06_04_2025",
-        fileNames_single_policies = "results/endog_single_18_55_49__03_04_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
+        fileNames=["results/endog_pair_13_13_45__09_04_2025"],
+        fileName_BAU="results/BAU_runs_12_22_12__10_04_2025",
+        fileNames_single_policies = "results/endog_single_10_43_00__09_04_2025"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
     )

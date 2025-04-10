@@ -60,11 +60,11 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
-            "Electricity_subsidy": 1,
+            "Carbon_price": 0,
+            "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
-            "Production_subsidy": 1,
+            "Production_subsidy": 0,
             "Research_subsidy": 0
         },
         "Values":{

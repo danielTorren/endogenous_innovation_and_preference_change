@@ -62,15 +62,15 @@ def plot_policy_intensity_effects_means_95(height, title_dict, data_array, polic
             plot_with_median(ax, intensities, mean_values, median_values, ci_values, measure)
 
             if i == 0:
-                ax.set_ylabel(title_dict[measure], fontsize=8)
+                ax.set_ylabel(title_dict[measure], fontsize=10)
             if j == 0:
-                ax.set_title(f"{policy.replace('_', ' ')}", fontsize=10)
+                ax.set_title(f"{policy.replace('_', ' ')}", fontsize=15)
 
-    fig.supxlabel('Policy Intensity', fontsize=12)
+    fig.supxlabel('Policy Intensity', fontsize=15)
 
     handles, labels = axes[0, 0].get_legend_handles_labels()
     # Create figure-wide legend below the subplots
-    fig.legend(handles, labels, loc='lower left', ncol=3, fontsize=8, bbox_to_anchor=(0.01, 0.005))
+    fig.legend(handles, labels, loc='lower left', ncol=3, bbox_to_anchor=(0.01, 0.005), fontsize=9)
     plt.tight_layout(rect=[0.01, 0.08, 0.98, 1])  # Leaves space at the bottom
 
     # Generate the string of indices for the selected measures

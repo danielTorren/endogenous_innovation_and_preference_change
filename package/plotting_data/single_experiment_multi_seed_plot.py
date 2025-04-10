@@ -112,7 +112,6 @@ def plot_ev_uptake(real_data, EV_sales_prop_2020_23, base_params, data, history_
 
     init_real_sales = 108 + 120 + 11  # STARTS AT APRIL of THE END OF 2010
     time_steps_real_sales = np.arange(init_real_sales, init_real_sales + len(EV_sales_prop_2020_23) * 12, 12)
-    print(time_steps_real_sales)
     
     mean_values = np.mean(data_after_burn_in, axis=0)
     #median_values = np.median(data_after_burn_in, axis=0)
@@ -146,9 +145,9 @@ def plot_ev_uptake(real_data, EV_sales_prop_2020_23, base_params, data, history_
     ax.plot(time_steps_real_sales,EV_sales_prop_2020_23, label="California EV Sales", color='black', linestyle="dotted")
 
     #ax.set_xlabel("Time Step, months")
-    ax.set_ylabel("EV Proportion")
+    ax.set_ylabel("EV Proportion", fontsize = 16)
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(loc = "upper left")
+    ax.legend(loc = "upper left", fontsize = 12)
 
 def plot_mean_price(base_params, history_mean_price_ICE_EV, history_median_price_ICE_EV, 
                     history_lower_price_ICE_EV, history_upper_price_ICE_EV, ax,
@@ -313,187 +312,11 @@ def plot_mean_price(base_params, history_mean_price_ICE_EV, history_median_price
     handles, labels = ax.get_legend_handles_labels()
     
     # Combine the legends - percentile items first
-    ax.legend(handles=legend_elements + handles, fontsize="small", ncol=1)
+    ax.legend(handles=legend_elements + handles, ncol=1, fontsize = 10)
     
-    ax.set_ylabel("Price, $")
+    ax.set_ylabel("Price, $", fontsize = 16)
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
 
-def plot_mean_price_old(base_params, history_mean_price_ICE_EV, history_median_price_ICE_EV, 
-                    history_lower_price_ICE_EV, history_upper_price_ICE_EV, ax,
-                    annotation_height_prop=[0.3, 0.3, 0.2]):
-    """Plot mean price on the provided axes."""
-    burn_in_step = base_params["duration_burn_in"]
-    
-    mean_new_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 0, 0]
-    mean_second_hand_ICE = history_mean_price_ICE_EV[:, burn_in_step:, 1, 0]
-    mean_new_EV = history_mean_price_ICE_EV[:, burn_in_step:, 0, 1]
-    mean_second_hand_EV = history_mean_price_ICE_EV[:, burn_in_step:, 1, 1]
-    
-    # Calculate mean and CI for lower (25th) and upper (75th) percentiles
-    lower_new_ICE = history_lower_price_ICE_EV[:, burn_in_step:, 0, 0]
-    lower_second_hand_ICE = history_lower_price_ICE_EV[:, burn_in_step:, 1, 0]
-    lower_new_EV = history_lower_price_ICE_EV[:, burn_in_step:, 0, 1]
-    lower_second_hand_EV = history_lower_price_ICE_EV[:, burn_in_step:, 1, 1]
-    
-    upper_new_ICE = history_upper_price_ICE_EV[:, burn_in_step:, 0, 0]
-    upper_second_hand_ICE = history_upper_price_ICE_EV[:, burn_in_step:, 1, 0]
-    upper_new_EV = history_upper_price_ICE_EV[:, burn_in_step:, 0, 1]
-    upper_second_hand_EV = history_upper_price_ICE_EV[:, burn_in_step:, 1, 1]
-    
-    time_steps = np.arange(0, mean_new_ICE.shape[1])
-    
-    # Calculate mean and CI for means
-    overall_mean_new_ICE = np.mean(mean_new_ICE, axis=0)
-    ci_new_ICE = t.ppf(0.975, df=mean_new_ICE.shape[0] - 1) * sem(mean_new_ICE, axis=0)
-    
-    overall_mean_second_hand_ICE = np.mean(mean_second_hand_ICE, axis=0)
-    ci_second_hand_ICE = t.ppf(0.975, df=mean_second_hand_ICE.shape[0] - 1) * sem(mean_second_hand_ICE, axis=0)
-    
-    overall_mean_new_EV = np.mean(mean_new_EV, axis=0)
-    ci_new_EV = t.ppf(0.975, df=mean_new_EV.shape[0] - 1) * sem(mean_new_EV, axis=0)
-    
-    overall_mean_second_hand_EV = np.mean(mean_second_hand_EV, axis=0)
-    ci_second_hand_EV = t.ppf(0.975, df=mean_second_hand_EV.shape[0] - 1) * sem(mean_second_hand_EV, axis=0)
-    
-    # Calculate mean and CI for 25th percentiles
-    overall_lower_new_ICE = np.mean(lower_new_ICE, axis=0)
-    ci_lower_new_ICE = t.ppf(0.975, df=lower_new_ICE.shape[0] - 1) * sem(lower_new_ICE, axis=0)
-    
-    overall_lower_second_hand_ICE = np.mean(lower_second_hand_ICE, axis=0)
-    ci_lower_second_hand_ICE = t.ppf(0.975, df=lower_second_hand_ICE.shape[0] - 1) * sem(lower_second_hand_ICE, axis=0)
-    
-    overall_lower_new_EV = np.mean(lower_new_EV, axis=0)
-    ci_lower_new_EV = t.ppf(0.975, df=lower_new_EV.shape[0] - 1) * sem(lower_new_EV, axis=0)
-    
-    overall_lower_second_hand_EV = np.mean(lower_second_hand_EV, axis=0)
-    ci_lower_second_hand_EV = t.ppf(0.975, df=lower_second_hand_EV.shape[0] - 1) * sem(lower_second_hand_EV, axis=0)
-    
-    # Calculate mean and CI for 75th percentiles
-    overall_upper_new_ICE = np.mean(upper_new_ICE, axis=0)
-    ci_upper_new_ICE = t.ppf(0.975, df=upper_new_ICE.shape[0] - 1) * sem(upper_new_ICE, axis=0)
-    
-    overall_upper_second_hand_ICE = np.mean(upper_second_hand_ICE, axis=0)
-    ci_upper_second_hand_ICE = t.ppf(0.975, df=upper_second_hand_ICE.shape[0] - 1) * sem(upper_second_hand_ICE, axis=0)
-    
-    overall_upper_new_EV = np.mean(upper_new_EV, axis=0)
-    ci_upper_new_EV = t.ppf(0.975, df=upper_new_EV.shape[0] - 1) * sem(upper_new_EV, axis=0)
-    
-    overall_upper_second_hand_EV = np.mean(upper_second_hand_EV, axis=0)
-    ci_upper_second_hand_EV = t.ppf(0.975, df=upper_second_hand_EV.shape[0] - 1) * sem(upper_second_hand_EV, axis=0)
-    
-    # Plot 25th percentiles with confidence intervals (using dash-dot line style)
-    ax.plot(time_steps, overall_lower_new_ICE, color="blue", linestyle=(0, (3, 1, 1, 1)), label="25th Percentile ICE")
-    ax.fill_between(
-        time_steps,
-        overall_lower_new_ICE - ci_lower_new_ICE,
-        overall_lower_new_ICE + ci_lower_new_ICE,
-        color="blue",
-        alpha=0.1
-    )
-    
-    ax.plot(time_steps, overall_lower_second_hand_ICE, color="blue", linestyle=(0, (3, 1, 1, 1)))
-    ax.fill_between(
-        time_steps,
-        overall_lower_second_hand_ICE - ci_lower_second_hand_ICE,
-        overall_lower_second_hand_ICE + ci_lower_second_hand_ICE,
-        color="blue",
-        alpha=0.1
-    )
-    
-    ax.plot(time_steps, overall_lower_new_EV, color="green", linestyle=(0, (3, 1, 1, 1)), label="25th Percentile EV")
-    ax.fill_between(
-        time_steps,
-        overall_lower_new_EV - ci_lower_new_EV,
-        overall_lower_new_EV + ci_lower_new_EV,
-        color="green",
-        alpha=0.1
-    )
-    
-    ax.plot(time_steps, overall_lower_second_hand_EV, color="green", linestyle=(0, (3, 1, 1, 1)))
-    ax.fill_between(
-        time_steps,
-        overall_lower_second_hand_EV - ci_lower_second_hand_EV,
-        overall_lower_second_hand_EV + ci_lower_second_hand_EV,
-        color="green",
-        alpha=0.1
-    )
-    
-    # Plot 75th percentiles with confidence intervals (using dotted line style)
-    ax.plot(time_steps, overall_upper_new_ICE, color="blue", linestyle="dotted", label="75th Percentile ICE")
-    ax.fill_between(
-        time_steps,
-        overall_upper_new_ICE - ci_upper_new_ICE,
-        overall_upper_new_ICE + ci_upper_new_ICE,
-        color="blue",
-        alpha=0.1
-    )
-    
-    ax.plot(time_steps, overall_upper_second_hand_ICE, color="blue", linestyle="dotted")
-    ax.fill_between(
-        time_steps,
-        overall_upper_second_hand_ICE - ci_upper_second_hand_ICE,
-        overall_upper_second_hand_ICE + ci_upper_second_hand_ICE,
-        color="blue",
-        alpha=0.1
-    )
-    
-    ax.plot(time_steps, overall_upper_new_EV, color="green", linestyle="dotted", label="75th Percentile EV")
-    ax.fill_between(
-        time_steps,
-        overall_upper_new_EV - ci_upper_new_EV,
-        overall_upper_new_EV + ci_upper_new_EV,
-        color="green",
-        alpha=0.1
-    )
-    
-    ax.plot(time_steps, overall_upper_second_hand_EV, color="green", linestyle="dotted")
-    ax.fill_between(
-        time_steps,
-        overall_upper_second_hand_EV - ci_upper_second_hand_EV,
-        overall_upper_second_hand_EV + ci_upper_second_hand_EV,
-        color="green",
-        alpha=0.1
-    )
-    
-    # Plot means and CIs for ICE
-    ax.plot(time_steps, overall_mean_new_ICE, label="New Car Mean Price ICE", color="blue")
-    ax.fill_between(
-        time_steps,
-        overall_mean_new_ICE - ci_new_ICE,
-        overall_mean_new_ICE + ci_new_ICE,
-        color="blue",
-        alpha=0.2
-    )
-    ax.plot(time_steps, overall_mean_second_hand_ICE, label="Used Car Mean Price ICE", color="blue", linestyle="dashed")
-    ax.fill_between(
-        time_steps,
-        overall_mean_second_hand_ICE - ci_second_hand_ICE,
-        overall_mean_second_hand_ICE + ci_second_hand_ICE,
-        color="blue",
-        alpha=0.2
-    )
-    
-    # Plot means and CIs for EV
-    ax.plot(time_steps, overall_mean_new_EV, label="New Car Mean Price EV", color="green")
-    ax.fill_between(
-        time_steps,
-        overall_mean_new_EV - ci_new_EV,
-        overall_mean_new_EV + ci_new_EV,
-        color="green",
-        alpha=0.2
-    )
-    ax.plot(time_steps, overall_mean_second_hand_EV, label="Used Car Mean Price EV", color="green", linestyle="dashed")
-    ax.fill_between(
-        time_steps,
-        overall_mean_second_hand_EV - ci_second_hand_EV,
-        overall_mean_second_hand_EV + ci_second_hand_EV,
-        color="green",
-        alpha=0.2
-    )
-    
-    ax.set_ylabel("Price, $")
-    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(fontsize="small")
 
 def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
     """Plot market concentration on the provided axes."""
@@ -516,10 +339,10 @@ def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8
         label='95% Confidence Interval'
     )
     
-    ax.set_xlabel("Time Step, months")
-    ax.set_ylabel("Market Concentration, HHI")
+    ax.set_xlabel("Time Step, months", fontsize = 16)
+    ax.set_ylabel("Market Concentration, HHI", fontsize = 16)
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(loc = "upper left")
+    ax.legend(loc = "upper left", fontsize = 12)
 
 def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
     """Plot mean car age on the provided axes."""
@@ -542,10 +365,10 @@ def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0
         label='95% Confidence Interval'
     )
     
-    ax.set_xlabel("Time Step, months")
-    ax.set_ylabel("Car Age, months")
+    ax.set_xlabel("Time Step, months", fontsize = 16)
+    ax.set_ylabel("Car Age, months", fontsize = 16)
     add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
-    ax.legend(loc = "upper left")
+    ax.legend(loc = "upper left", fontsize = 12)
 
 
 # Make sure to reuse the original add_vertical_lines function

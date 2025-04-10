@@ -8,7 +8,7 @@ def load_in_calibration_data():
     gasoline_Kgco2_per_MJ = gasoline_g_co2_per_MJ/1000
     kWr_per_MJ = 0.2777777778
     gasoline_Kgco2_per_Kilowatt_Hour = gasoline_Kgco2_per_MJ/kWr_per_MJ
-    
+
     #CPI
     CPI_california_df = pd.read_excel("package/calibration_data/CPI_california.xlsx") 
     CPI_california_df["Date"] = pd.to_datetime(CPI_california_df["Date"])
