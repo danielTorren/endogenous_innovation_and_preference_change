@@ -145,7 +145,7 @@ def main(
 
     ###############################################################################################################################
 
-    controller_files, base_params, root_folder = set_up_calibration_runs(base_params, "scenario_tests_gen")
+    controller_files, base_params, root_folder = set_up_calibration_runs(base_params, "scenario_gen")
     print("DONE calibration")
     
     ##############################################################################################################################
@@ -153,27 +153,31 @@ def main(
 
     for i, params_scenario in enumerate(params_list):
         (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr, 
-        history_car_age_arr, 
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr, 
-        history_total_utility_arr, 
-        history_market_concentration_arr,
-        history_total_profit_arr, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_policy_net_cost
+            history_driving_emissions_arr,#Emmissions flow
+            history_production_emissions_arr,
+            history_total_emissions_arr,#Emmissions flow
+            history_prop_EV_arr, 
+            history_car_age_arr, 
+            history_lower_percentile_price_ICE_EV_arr,
+            history_upper_percentile_price_ICE_EV_arr,
+            history_mean_price_ICE_EV_arr,
+            history_median_price_ICE_EV_arr, 
+            history_total_utility_arr, 
+            history_market_concentration_arr,
+            history_total_profit_arr, 
+            history_quality_ICE, 
+            history_quality_EV, 
+            history_efficiency_ICE, 
+            history_efficiency_EV, 
+            history_production_cost_ICE, 
+            history_production_cost_EV, 
+            history_mean_profit_margins_ICE,
+            history_mean_profit_margins_EV,
+            history_mean_car_age,
+            history_past_new_bought_vehicles_prop_ev,
+            history_policy_net_cost,
+            history_total_utility_bottom,
+            history_ev_adoption_rate_bottom
         ) = single_policy_with_seeds(params_scenario, controller_files)
 
         outputs[intensity_list[i]] = {
@@ -186,7 +190,16 @@ def main(
             "history_total_profit": history_total_profit_arr,
             "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
             "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-            "history_policy_net_cost": history_policy_net_cost
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+            "history_policy_net_cost": history_policy_net_cost,
+            "history_mean_car_age": history_mean_car_age,
+            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
+            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
+            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
+            "history_total_utility_bottom": history_total_utility_bottom,
+            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
         }
 
     # Save all property dictionaries
@@ -222,7 +235,7 @@ if __name__ == "__main__":
     
     # Call main with the property dictionaries as separate arguments
     main(
-        "package/constants/base_params_scenarios_2050_BAU.json",
+        "package/constants/base_params_scenarios.json",
         property_dict_1,
         property_dict_2,
         property_dict_3
