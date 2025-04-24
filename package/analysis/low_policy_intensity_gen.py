@@ -345,6 +345,130 @@ def main(fileNames,
     save_object(base_params, root_folder + "/Data", "base_params")
     print(f"All top 10 policies processed and saved in '{root_folder}'")
 
+    ######################################################################################################
+    #SINGLE POLICIES
+
+    #RUN THE CARBON TAX
+    base_params_carbon_tax = deepcopy(base_params)
+    base_params_carbon_tax["parameters_policies"]["States"]["Carbon_price"] = 1
+    base_params_carbon_tax["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] = 0.983
+    #RESET TO B SURE
+    #RUN BAU
+    (
+        history_driving_emissions_arr,#Emmissions flow
+        history_production_emissions_arr,
+        history_total_emissions_arr,#Emmissions flow
+        history_prop_EV_arr, 
+        history_car_age_arr, 
+        history_lower_percentile_price_ICE_EV_arr,
+        history_upper_percentile_price_ICE_EV_arr,
+        history_mean_price_ICE_EV_arr,
+        history_median_price_ICE_EV_arr, 
+        history_total_utility_arr, 
+        history_market_concentration_arr,
+        history_total_profit_arr, 
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV,
+        history_mean_car_age,
+        history_past_new_bought_vehicles_prop_ev,
+        history_policy_net_cost,
+        history_total_utility_bottom,
+        history_ev_adoption_rate_bottom
+
+    ) = single_policy_with_seeds(base_params_carbon_tax, controller_files)
+
+    outputs_carbon_tax= {
+            "history_driving_emissions": history_driving_emissions_arr,
+            "history_production_emissions": history_production_emissions_arr,
+            "history_total_emissions": history_total_emissions_arr,
+            "history_prop_EV": history_prop_EV_arr,
+            "history_total_utility": history_total_utility_arr,
+            "history_market_concentration": history_market_concentration_arr,
+            "history_total_profit": history_total_profit_arr,
+            "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
+            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+            "history_policy_net_cost": history_policy_net_cost,
+            "history_mean_car_age": history_mean_car_age,
+            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
+            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
+            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
+            "history_total_utility_bottom": history_total_utility_bottom,
+            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
+    }
+
+    save_object(outputs_carbon_tax, root_folder + "/Data", "outputs_carbon_tax")
+    print("DONE SINGLE CARBON TAX")
+
+
+    #RUN THE ADOPTION SUBSIDY
+    base_params_adoption_subsidy = deepcopy(base_params)
+    base_params_adoption_subsidy["parameters_policies"]["States"]["Adoption_subsidy"] = 1
+    base_params_adoption_subsidy["parameters_policies"]["Values"]["Adoption_subsidy"] = 36638.50
+    #RESET TO B SURE
+    #RUN BAU
+    (
+        history_driving_emissions_arr,#Emmissions flow
+        history_production_emissions_arr,
+        history_total_emissions_arr,#Emmissions flow
+        history_prop_EV_arr, 
+        history_car_age_arr, 
+        history_lower_percentile_price_ICE_EV_arr,
+        history_upper_percentile_price_ICE_EV_arr,
+        history_mean_price_ICE_EV_arr,
+        history_median_price_ICE_EV_arr, 
+        history_total_utility_arr, 
+        history_market_concentration_arr,
+        history_total_profit_arr, 
+        history_quality_ICE, 
+        history_quality_EV, 
+        history_efficiency_ICE, 
+        history_efficiency_EV, 
+        history_production_cost_ICE, 
+        history_production_cost_EV, 
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV,
+        history_mean_car_age,
+        history_past_new_bought_vehicles_prop_ev,
+        history_policy_net_cost,
+        history_total_utility_bottom,
+        history_ev_adoption_rate_bottom
+
+    ) = single_policy_with_seeds(base_params_adoption_subsidy, controller_files)
+
+    outputs_adoption_subsidy= {
+            "history_driving_emissions": history_driving_emissions_arr,
+            "history_production_emissions": history_production_emissions_arr,
+            "history_total_emissions": history_total_emissions_arr,
+            "history_prop_EV": history_prop_EV_arr,
+            "history_total_utility": history_total_utility_arr,
+            "history_market_concentration": history_market_concentration_arr,
+            "history_total_profit": history_total_profit_arr,
+            "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
+            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+            "history_policy_net_cost": history_policy_net_cost,
+            "history_mean_car_age": history_mean_car_age,
+            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
+            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
+            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
+            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
+            "history_total_utility_bottom": history_total_utility_bottom,
+            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
+    }
+
+    save_object(outputs_adoption_subsidy, root_folder + "/Data", "outputs_adoption_subsidy")
+    print("DONE SINGLE Adoption Subsidy")
+
     #######################################################################################################
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
