@@ -407,20 +407,20 @@ def plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_mana
     save_and_show(fig, fileName, "vehicle_prod_attribute_time_series_ICE_EV", dpi)
 
 def plot_preferences(social_network, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
-    fig, axes = plt.subplots(nrows=1,ncols=3,figsize=(12, 6))
-    axes[0].hist(social_network.beta_vec, bins=30, alpha=0.5, label=r'$\beta_i$ (Price sentivity)')
-    axes[1].hist(social_network.gamma_vec, bins=30, alpha=0.5, label=r'$\gamma_i$ (Environmental concern)')
-    axes[2].hist(social_network.chi_vec, bins=30, alpha=0.5, label=r'$\chi$ (EV Threshold)')
-    
-    axes[0].legend()
-    axes[1].legend()
-    axes[2].legend()
 
-    axes[0].set_ylabel("Frequency")
-    axes[0].set_xlabel("Value")
-    axes[1].set_xlabel("Value")
-    axes[2].set_xlabel("Value")
+    fig, axes = plt.subplots(nrows=2,ncols=2,figsize=(10, 8))
+    axes[0][0].hist(social_network.beta_vec, bins=30, alpha=0.5, label=r'Willingness-to-Pay Quality, $\beta_i$')
+    axes[0][1].hist(social_network.gamma_vec, bins=30, alpha=0.5, label=r'Willingness-to-Pay Emissions reduction, $\gamma_i$')
+    axes[1][0].hist(social_network.chi_vec, bins=30, alpha=0.5, label=r'EV Threshold, $\chi$')
+    axes[1][1].hist(social_network.d_vec, bins=6, alpha=0.5, label=r'Distance Driven, $D$')
 
+    axes[0][0].set_xlabel(r'Willingness-to-Pay Quality, $\beta_i$, \$')
+    axes[0][1].set_xlabel(r'Willingness-to-Pay Emissions reduction, $\gamma_i$, $\$/kgCO_2$')
+    axes[1][0].set_xlabel(r'EV Threshold, $\chi$')
+    axes[1][1].set_xlabel(r'Distance Driven, $D$ km/month')
+
+    axes[0][0].set_ylabel("Frequency")
+    axes[1][0].set_ylabel("Frequency")
     save_and_show(fig, fileName, "preferences", dpi)
 
 def plot_history_research_type(firm_manager, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
@@ -1283,35 +1283,35 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
+    #plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
 
     #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
-    plot_total_utility_per_capita(base_params,social_network, time_series, fileName, dpi)
+    #plot_total_utility_per_capita(base_params,social_network, time_series, fileName, dpi)
 
-    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
+    #plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
 
-    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
+    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    #plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
     #plt.show()
     
     #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
     #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
 
     #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
-    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+    #plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
     #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     
     
-    #plot_preferences(social_network, fileName, dpi)
+    plot_preferences(social_network, fileName, dpi)
     #plot_ev_stock(base_params, EV_stock_prop_2010_23, social_network, fileName, dpi)
     #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_23, dpi)
 
     #plot_history_prop_EV_research(base_params,firm_manager, fileName)
-    plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
+    #plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
     #plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
-    plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
-    plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
+    #plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
+    #plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
     #emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
     
     #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
@@ -1319,9 +1319,9 @@ def main(fileName, dpi=300):
     #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
     #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
     
-    plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
 
-    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
+    #plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
 
 
     #plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
@@ -1337,4 +1337,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_15_32_23__31_03_2025")
+    main("results/single_experiment_17_22_12__11_04_2025")

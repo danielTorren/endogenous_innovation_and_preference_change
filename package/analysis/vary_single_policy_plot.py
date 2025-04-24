@@ -2,34 +2,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import load_object
 
+
+policy_titles = {
+    "Carbon_price": "Carbon Price",
+    "Electricity_subsidy": "Electricity Subsidy",
+    "Adoption_subsidy": "New Car Rebate",
+    "Adoption_subsidy_used": "Used Car Rebate",
+    "Production_subsidy": "Production Subsidy"
+}
+
+
 def plot_policy_intensity_effects_means_95(height, title_dict, data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300):
     """
     Plots the effects of different policy intensities on specified measures with 95% confidence intervals.
-
-    Parameters:
-    - data_array: The array containing the simulation results.
-    - policy_list: List of policies to plot.
-    - file_name: Base file name for saving plots.
-    - policy_info_dict: Dictionary containing policy bounds and other information.
-    - measures_dict: Dictionary mapping measure names to their index in data_array.
-    - selected_measures: List of measures to plot (subset of keys from measures_dict).
-    - dpi: Dots per inch for the saved figures.
     """
     num_policies = len(policy_list)
     num_measures = len(selected_measures)
 
     fig, axes = plt.subplots(num_measures, num_policies, figsize=(12, height), sharey="row", sharex="col")
 
-    # Ensure axes is a 2D array for consistency
+    # Ensure axes is a 2D array
     if num_measures == 1:
         axes = np.expand_dims(axes, axis=0)
     if num_policies == 1:
         axes = np.expand_dims(axes, axis=1)
 
     def plot_with_median(ax, intensities, mean_values, median_values, ci_values, label):
-        ax.plot(intensities, mean_values, label=f'Mean')
+        ax.plot(intensities, mean_values, label='Mean')
         ax.fill_between(intensities, mean_values - ci_values, mean_values + ci_values, alpha=0.2, label="95% Confidence Interval")
-        #ax.plot(intensities, median_values, linestyle='dashed', label=f'Median {label}', color='red')
         ax.grid(alpha=0.3)
 
     for i, policy in enumerate(policy_list):
@@ -37,13 +37,19 @@ def plot_policy_intensity_effects_means_95(height, title_dict, data_array, polic
         min_val, max_val = policy_info_dict['bounds_dict'][policy]
         intensities = np.linspace(min_val, max_val, policy_data.shape[0])
 
+        # Define consistent tick positions across all measures for this policy
+        num_ticks = 3
+        xtick_positions = np.linspace(min_val, max_val, num_ticks)
+
         for j, measure in enumerate(selected_measures):
             measure_idx = measures_dict[measure]
             ax = axes[j, i]
+
+            # Select and optionally scale data
             if measure == "EV Uptake":
                 data_case = policy_data[:, :, measure_idx]
             else:
-                data_case = policy_data[:, :, measure_idx]*1e-9
+                data_case = policy_data[:, :, measure_idx] * 1e-9
 
             mean_values = np.mean(data_case, axis=1)
             median_values = np.median(data_case, axis=1)
@@ -51,32 +57,39 @@ def plot_policy_intensity_effects_means_95(height, title_dict, data_array, polic
             n = policy_data.shape[1]
             ci_values = 1.96 * std_values / np.sqrt(n)
 
+            # Optional scaling for Utility
             if measure == "Cumulative Utility":
-                mean_values *= 12 
-                median_values *= 12 
-                ci_values *= 12 
+                mean_values *= 12
+                median_values *= 12
+                ci_values *= 12
 
             if measure == "EV Uptake":
-                ax.axhline(0.95, linestyle='--', label = r"$95\%$ EV Adoption", c = "black")
+                ax.axhline(0.95, linestyle='--', label=r"$95\%$ EV Adoption", c="black")
 
             plot_with_median(ax, intensities, mean_values, median_values, ci_values, measure)
 
+            # Axis labels and titles
             if i == 0:
-                ax.set_ylabel(title_dict[measure], fontsize=10)
+                ax.set_ylabel(title_dict[measure], fontsize=9)
             if j == 0:
-                ax.set_title(f"{policy.replace('_', ' ')}", fontsize=15)
+                ax.set_title(policy_titles[policy], fontsize=15)
+
+            # Set consistent ticks for all columns
+            ax.set_xticks(xtick_positions)
+
+            if policy == "Carbon_price":
+                # Convert to $/tonne CO2 (from $/kg)
+                ax.set_xticklabels([f"{int(t * 1000)}" for t in xtick_positions])
 
     fig.supxlabel('Policy Intensity', fontsize=15)
 
+    # Shared legend
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    # Create figure-wide legend below the subplots
     fig.legend(handles, labels, loc='lower left', ncol=3, bbox_to_anchor=(0.01, 0.005), fontsize=9)
-    plt.tight_layout(rect=[0.01, 0.08, 0.98, 1])  # Leaves space at the bottom
 
-    # Generate the string of indices for the selected measures
+    plt.tight_layout(rect=[0.01, 0.01, 0.99, 1])  # Space for legend
+
     measure_indices_str = "".join(str(measures_dict[measure]) for measure in selected_measures)
-
-    plt.tight_layout()
     plt.savefig(f"{file_name}/Plots/policy_intensity_effects_means_{measure_indices_str}.png", dpi=dpi)
     plt.savefig(f"{file_name}/Plots/policy_intensity_effects_means_{measure_indices_str}.eps")
 
@@ -101,12 +114,12 @@ def main(file_name):
 
     title_dict = {
         "EV Uptake": "EV Adoption Proportion",
-        "Net Policy Cost":  "Net Cost, bn $",
-        "Cumulative Emissions": "Emissions, MTC02",
-        "Driving Emissions": "Emissions (Driving), MTC02",
-        "Production Emissions": "Emissions (Production), MTC02",
-        "Cumulative Utility": "Utility, bn $",
-        "Cumulative Profit": "Profit, bn $"
+        "Net Policy Cost":  "Cum. Net Cost, bn $",
+        "Cumulative Emissions": "Cum. Emissions, MTC02",
+        "Driving Emissions": "Cum. Emissions (Driving), MTC02",
+        "Production Emissions": "Cum. Emissions (Production), MTC02",
+        "Cumulative Utility": "Cum. Utility, bn $",
+        "Cumulative Profit": "Cum. Profit, bn $"
     }
 
     selected_measures = [

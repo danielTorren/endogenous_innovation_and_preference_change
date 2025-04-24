@@ -205,6 +205,6 @@ def main(fileName, fileName_BAU):
 
 if __name__ == "__main__":
     main(
-        fileName="results/2d_grid_endogenous_third_00_47_36__10_04_2025",
+        fileName="results/2d_grid_endogenous_third_13_03_38__10_04_2025",
         fileName_BAU="results/BAU_runs_12_22_12__10_04_2025"
     )

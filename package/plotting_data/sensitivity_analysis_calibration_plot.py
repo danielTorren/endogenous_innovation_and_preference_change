@@ -293,14 +293,14 @@ def main(
         # Analyze
         Si = analyze_results(problem, y_data, calc_second_order)
 
-        if calc_second_order:
-            total_df, first_df, second_df = Si.to_df()
-            plot_second_order_heatmap(
-                fileName=fileName,
-                second_order_df=second_df,
-                param_names=problem["names"],
-                output_name=key
-            )
+        #if calc_second_order:
+        #    total_df, first_df, second_df = Si.to_df()
+        #    plot_second_order_heatmap(
+        #        fileName=fileName,
+        #        second_order_df=second_df,
+        #        param_names=problem["names"],
+        #        output_name=key
+        #    )
 
         if calc_second_order:
             total_df, first_df, _ = Si.to_df()
@@ -330,7 +330,7 @@ def main(
 if __name__ == '__main__':
 
     plots = main(
-        fileName="results/sensitivity_analysis_14_42_24__07_04_2025",
+        fileName="results/sensitivity_analysis_12_20_12__08_04_2025",#sensitivity_analysis_14_42_24__07_04_2025",
         plot_outputs = ['emissions_stock', 'ev_uptake', 'total_firm_profit', 'market_concentration', "utility", "car_age"],#,'emissions_flow','var',"emissions_change"
         plot_dict = {
             "emissions_stock": {"title": r"Cumulative Emissions, $E$", "colour": "red", "linestyle": "--"},

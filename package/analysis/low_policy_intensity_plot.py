@@ -112,7 +112,7 @@ def plot_combined_policy_figures_with_utilty_flow_cost(base_params, fileName, ou
         markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle="--")
         ax2.fill_between(time_steps, mean_used - ci_used, mean_used + ci_used, color=color1, alpha=0.2)
 
-    ax2.set_ylabel("EV Price, $", fontsize = 16)
+    ax2.set_ylabel("EV Sale Price, $", fontsize = 16)
     # Add after plotting all the policy lines in ax2
     custom_legend = [
         Line2D([0], [0], color="black", linestyle='-', label='New'),
@@ -318,7 +318,7 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileNam
         ax1.fill_between(time_steps, sales_mean - sales_ci, sales_mean + sales_ci, color=color1, alpha=0.2)
 
     ax1.set_ylabel("EV Share", fontsize=16)
-    add_vertical_lines(ax1, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
+    add_vertical_lines(ax1, base_params, annotation_height_prop=[0.6, 0.2, 0.2])
 
     # --- Legend
     from matplotlib.lines import Line2D
@@ -326,7 +326,7 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileNam
         Line2D([0], [0], color='black', linestyle='-', linewidth=2, label='EV Adoption'),
         Line2D([0], [0], color='black', linestyle='--', linewidth=2, label='EV Sales')
     ]
-    ax1.legend(handles=custom_lines, loc='lower right', fontsize='small')
+    ax1.legend(handles=custom_lines, loc='lower right', fontsize='small', ncols = 2)
 
 
     # --- 2. EV Prices
@@ -352,7 +352,7 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileNam
             ax2.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
                      markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle=linestyle)
             ax2.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax2.set_ylabel("EV Price, $", fontsize=16)
+    ax2.set_ylabel("EV Sale Price, $", fontsize=16)
 
 
     custom_legend = [
@@ -367,10 +367,11 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileNam
     bau = outputs_BAU["history_total_emissions"] * 1e-9
     mean = np.mean(bau, axis=0)
     ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax3.plot(time_steps, mean, color='black', linewidth=2)
+    ax3.plot(time_steps, mean, color='black', linewidth=2, label = "BAU")
     ax3.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
 
     for (policy1, policy2), output in outputs.items():
+        label = f"{policy_titles[policy1]} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy_titles[policy2]} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
         data = output["history_total_emissions"] * 1e-9
         mean = np.mean(data, axis=0)
         ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
@@ -378,7 +379,7 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileNam
         color2 = policy_colors[policy2]
         marker = policy_markers[policy2]
         ax3.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4)
+                 markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
         ax3.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
     ax3.set_ylabel("Flow Emissions, MTCO2", fontsize=16)
     add_vertical_lines(ax3, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
@@ -488,6 +489,15 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileNam
     ax8.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)
     add_vertical_lines(ax8, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
 
+    ###########################################################################################
+
+    # Gather handles/labels from ax1 (or combine from others if needed)
+    handles, labels = ax3.get_legend_handles_labels()
+
+    # Create figure-wide legend below the subplots
+    fig.legend(handles, labels, loc='lower center', ncol=3, bbox_to_anchor=(0.5, 0.00), fontsize = 10)
+
+    ###########################################################################################
     # Apply year x-axis only to bottom row
     start_year = 2024
     tick_years = np.arange(start_year, start_year + (time_steps[-1] // 12) + 5, 5)

@@ -922,6 +922,8 @@ class Controller:
 
         #RESET COUNTERS FOR POLICY
         self.social_network.emissions_cumulative = 0
+        self.social_network.emissions_cumulative_driving = 0
+        self.social_network.emissions_cumulative_production = 0
         self.social_network.utility_cumulative = 0
         self.firm_manager.profit_cumulative = 0
 

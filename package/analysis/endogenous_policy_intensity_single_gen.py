@@ -93,8 +93,7 @@ def optimize_policy_intensity_BO(base_params_BO, controller_files, policy_name, 
     params_final = deepcopy(base_params_BO)
     params_final = update_policy_intensity(params_final, policy_name, best_intensity)
 
-    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, \
-    emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(params_final, controller_files)
+    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(params_final, controller_files)
 
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)

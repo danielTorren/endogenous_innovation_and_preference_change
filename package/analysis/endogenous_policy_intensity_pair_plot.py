@@ -8,7 +8,7 @@ from matplotlib.patches import Patch
 def plot_policy_outcomes(pairwise_outcomes_complied, file_name, min_val, max_val, x_measure, y_measure, outcomes_BAU, dpi=300):
     fig, ax = plt.subplots(figsize=(15, 8))
 
-    color_map = plt.get_cmap('Set3', 10)
+    color_map = plt.get_cmap('Set1', 10)
     all_policies = set()
     for (policy1, policy2) in pairwise_outcomes_complied.keys():
         all_policies.update([policy1, policy2])
@@ -117,7 +117,7 @@ def plot_all_measure_combinations(pairwise_outcomes_complied, file_name, min_val
 def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name, min_val, max_val, outcomes_BAU, dpi=300):
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    color_map = plt.get_cmap('Set3', 10)
+    color_map = plt.get_cmap('Set1', 10)
     all_policies = set()
     for (policy1, policy2) in pairwise_outcomes_complied.keys():
         all_policies.update([policy1, policy2])
@@ -231,7 +231,7 @@ def plot_welfare_vs_emissions(base_params, pairwise_outcomes_complied, file_name
 def plot_ev_uptake_all(base_params, pairwise_outcomes_complied, file_name, outcomes_BAU, dpi=300):
     fig, ax = plt.subplots(figsize=(12, 6))
 
-    color_map = plt.get_cmap('Set3', 10)
+    color_map = plt.get_cmap('Set1', 10)
     all_policies = set()
     for (policy1, policy2) in pairwise_outcomes_complied.keys():
         all_policies.update([policy1, policy2])

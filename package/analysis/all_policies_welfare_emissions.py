@@ -300,7 +300,7 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
     outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
 
-    pairwise_outcomes_complied = {k: v for k, v in pairwise_outcomes_complied.items() if set(k) == {"Electricity_subsidy", "Adoption_subsidy"}}
+    #pairwise_outcomes_complied = {k: v for k, v in pairwise_outcomes_complied.items() if set(k) == {"Electricity_subsidy", "Adoption_subsidy"}}
 
 
     min_ev_uptake = 0.94
