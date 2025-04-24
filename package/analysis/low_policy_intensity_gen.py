@@ -186,7 +186,7 @@ def main(fileNames,
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
     
     print("top_policies", list(top_policies.keys()), len( list(top_policies.keys())))
-    quit()
+
     ##########################################################################################
 
     base_params_calibration = load_object(fileName_load + "/Data", "base_params")
