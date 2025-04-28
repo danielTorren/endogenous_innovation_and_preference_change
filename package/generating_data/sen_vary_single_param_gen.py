@@ -30,8 +30,7 @@ def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD, root_folder):
     subdict = vary_single["subdict"]
     property_list = vary_single["property_list"]
 
-    fileName = os.path.join(root_folder, produce_name_datetime(property_varied))
-    print(f"Running for {property_varied}, saving in {fileName}")
+    fileName = produce_name_datetime("sen_vary_" + property_varied)
 
     # Create parameter list
     params_list = produce_param_list(base_params, property_list, subdict, property_varied)
@@ -56,17 +55,9 @@ def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD, root_folder):
     return fileName
 
 def main(BASE_PARAMS_LOAD, VARY_LOADS):
-    root_folder = "multi_param_run/"
-    createFolder(root_folder)
-
-    output_folders = []
 
     for vary_load in VARY_LOADS:
-        output_folder = run_single_variation(BASE_PARAMS_LOAD, vary_load, root_folder)
-        output_folders.append(output_folder)
-
-    print("All runs complete.")
-    return output_folders
+        run_single_variation(BASE_PARAMS_LOAD, vary_load)
 
 if __name__ == "__main__":
     results = main(
