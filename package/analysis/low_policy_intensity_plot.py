@@ -31,489 +31,6 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
     
 ########################################################################################################################
 
-def plot_combined_policy_figures_with_utilty_flow_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300):
-    fig, axs = plt.subplots(3, 2, figsize=(15, 12), sharex=True)
-    time_steps = np.arange(base_params["duration_future"] - 1)
-    start = base_params["duration_burn_in"] + base_params["duration_calibration"] 
-
-    # Get all unique policies from keys
-    policy_pairs = outputs.keys()
-    all_policies = sorted(list(set([p for pair in policy_pairs for p in pair])))
-
-    # Use Set1 for high-contrast distinct colors
-    color_map = plt.get_cmap('Set1', 10)
-    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
-
-    # Choose some distinct markers to cycle through (if needed)
-    marker_list = ['o']  # distinct markers
-    policy_markers = {policy: marker_list[i % len(marker_list)] for i, policy in enumerate(all_policies)}
-
-    # --- 1. EV Uptake
-    ax1 = axs[0, 0]
-    bau_ev = outputs_BAU["history_prop_EV"][:, start:]
-    bau_ev_mean = np.mean(bau_ev, axis=0)
-    bau_ev_ci = sem(bau_ev, axis=0) * t.ppf(0.975, df=bau_ev.shape[0] - 1)
-    ax1.plot(time_steps, bau_ev_mean, color='black', label='BAU', linewidth=2)
-    ax1.fill_between(time_steps, bau_ev_mean - bau_ev_ci, bau_ev_mean + bau_ev_ci, color='black', alpha=0.2)
-
-    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        #label = f"{policy_abbr.get(policy1, policy1)} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy_abbr.get(policy2, policy2)} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
-        #label = f"{policy1} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy2} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
-        data = output["history_prop_EV"][:, start:]
-
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker_shape = policy_markers[policy2]
-
-        ax1.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax1.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-
-    #ax1.legend(fontsize="x-small")
-    ax1.set_ylabel("EV Adoption Proportion", fontsize = 16)
-    add_vertical_lines(ax1, base_params, annotation_height_prop=[0.5, 0.45, 0.45])
-    
-    # --- 2. Mean EV Prices (only)
-    ax2 = axs[0, 1]
-    bau_price = outputs_BAU["history_mean_price_ICE_EV_arr"]
-    bau_new_EV = bau_price[:, :, 0, 1]
-    bau_used_EV = bau_price[:, :, 1, 1]
-
-    bau_new_mean = np.nanmean(bau_new_EV, axis=0)
-    bau_new_ci = sem(bau_new_EV, axis=0, nan_policy='omit') * t.ppf(0.975, df=bau_new_EV.shape[0] - 1)
-    ax2.plot(time_steps, bau_new_mean, color='black', linewidth=2)
-    ax2.fill_between(time_steps, bau_new_mean - bau_new_ci, bau_new_mean + bau_new_ci, color='black', alpha=0.2)
-
-    bau_used_mean = np.nanmean(bau_used_EV, axis=0)
-    bau_used_ci = sem(bau_used_EV, axis=0, nan_policy='omit') * t.ppf(0.975, df=bau_used_EV.shape[0] - 1)
-    ax2.plot(time_steps, bau_used_mean, color='black', linestyle='--', linewidth=2)
-    ax2.fill_between(time_steps, bau_used_mean - bau_used_ci, bau_used_mean + bau_used_ci, color='black', alpha=0.2)
-
-    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        mean_price = output["history_mean_price_ICE_EV_arr"]
-        new_EV = mean_price[:, :, 0, 1]
-        used_EV = mean_price[:, :, 1, 1]
-
-        mean_new, ci_new = np.nanmean(new_EV, axis=0), sem(new_EV, axis=0, nan_policy='omit') * t.ppf(0.975, df=new_EV.shape[0] - 1)
-        mean_used, ci_used = np.nanmean(used_EV, axis=0), sem(used_EV, axis=0, nan_policy='omit') * t.ppf(0.975, df=used_EV.shape[0] - 1)
-
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker_shape = policy_markers[policy2]
-
-        ax2.plot(time_steps, mean_new, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax2.fill_between(time_steps, mean_new - ci_new, mean_new + ci_new, color=color1, alpha=0.2)
-
-        ax2.plot(time_steps, mean_used, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle="--")
-        ax2.fill_between(time_steps, mean_used - ci_used, mean_used + ci_used, color=color1, alpha=0.2)
-
-    ax2.set_ylabel("EV Sale Price, $", fontsize = 16)
-    # Add after plotting all the policy lines in ax2
-    custom_legend = [
-        Line2D([0], [0], color="black", linestyle='-', label='New'),
-        Line2D([0], [0], color="black", linestyle='--', label='Used'),
-    ]
-    ax2.legend(handles=custom_legend, loc='lower right', fontsize="small", ncols = 2)
-    add_vertical_lines(ax2, base_params, annotation_height_prop=[0.88, 0.45, 0.45])
-
-    # --- 3. Production Emissions
-    ax3 = axs[1, 0]
-    
-    bau_emissions = np.cumsum(outputs_BAU["history_total_emissions"], axis = 1)*1e-9
-    bau_mean = np.mean(bau_emissions, axis=0)
-    bau_ci = sem(bau_emissions, axis=0) * t.ppf(0.975, df=bau_emissions.shape[0] - 1)
-    ax3.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
-    ax3.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
-
-
-    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        label = f"{policy_titles[policy1]} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy_titles[policy2]} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
-        data = np.cumsum(output["history_total_emissions"], axis = 1)*1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker_shape = policy_markers[policy2]
-
-        ax3.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
-        ax3.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-
-    ax3.set_ylabel("Cumulative Emissions, MTCO2", fontsize = 16)
-    #ax3.legend(fontsize="x-small", loc = "lower right", ncols = 2)
-    add_vertical_lines(ax3, base_params, annotation_height_prop=[0.15, 0.45, 0.45])
-    
-    # --- 4. Mean Car Age
-    ax4 = axs[1, 1]
-    bau_age = outputs_BAU["history_mean_car_age"]
-    bau_mean = np.mean(bau_age, axis=0)
-    bau_ci = sem(bau_age, axis=0) * t.ppf(0.975, df=bau_age.shape[0] - 1)
-    ax4.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
-    ax4.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
-
-    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        data = output["history_mean_car_age"]
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker_shape = policy_markers[policy2]
-
-        ax4.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax4.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-
-    ax4.set_ylabel("Car Age, months", fontsize = 16)
-    add_vertical_lines(ax4, base_params, annotation_height_prop=[0.5, 0.3, 0.3])
-
-    # --- 5. Utility
-    ax5 = axs[2, 0]
-    
-    bau_emissions = outputs_BAU["history_total_utility"]*1e-9
-    bau_mean = np.mean(bau_emissions, axis=0)
-    bau_ci = sem(bau_emissions, axis=0) * t.ppf(0.975, df=bau_emissions.shape[0] - 1)
-    ax5.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
-    ax5.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
-
-    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        data = output["history_total_utility"]*1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker_shape = policy_markers[policy2]
-
-        ax5.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
-        ax5.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-
-    ax5.set_ylabel("Flow Utility, bn $", fontsize = 16)
-    ax5.set_xlabel("Time Step, months", fontsize = 16)
-    #ax3.legend(fontsize="x-small", loc = "lower right", ncols = 2)
-    add_vertical_lines(ax5, base_params, annotation_height_prop=[0.15, 0.45, 0.45])
-    
-    # --- 6. Net Cost
-    ax6 = axs[2, 1]
-    bau_age = outputs_BAU["history_policy_net_cost"]*1e-9
-    bau_mean = np.mean(bau_age, axis=0)
-    bau_ci = sem(bau_age, axis=0) * t.ppf(0.975, df=bau_age.shape[0] - 1)
-    ax6.plot(time_steps, bau_mean, color='black', label='BAU', linewidth=2)
-    ax6.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
-
-    for idx, ((policy1, policy2), output) in enumerate(outputs.items()):
-        data = output["history_policy_net_cost"]*1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker_shape = policy_markers[policy2]
-
-        ax6.plot(time_steps, mean, color=color1, marker=marker_shape, markevery=32,
-        markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax6.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-
-    ax6.set_ylabel("Cumulative Net Cost, bn $", fontsize = 16)
-    ax6.set_xlabel("Time Step, months", fontsize = 16)
-    add_vertical_lines(ax6, base_params, annotation_height_prop=[0.5, 0.3, 0.3])
-
-    ###########################################################################################
-
-    # Gather handles/labels from ax1 (or combine from others if needed)
-    handles, labels = ax3.get_legend_handles_labels()
-
-    # Create figure-wide legend below the subplots
-    fig.legend(handles, labels, loc='lower center', ncol=3, bbox_to_anchor=(0.5, 0.00), fontsize = 10)
-
-    #########################################################################
-    # Set x-axis ticks every 5 years starting at 2001, stopping at last year of data
-    start_year = 2024
-    tick_interval_years = 5
-    months_per_year = 12
-
-    # Determine last time step in months
-    max_time_step = max(
-        ax.get_lines()[0].get_xdata().max() for ax in [axs[1, 0], axs[1, 1]]
-    )
-    max_year = start_year + int(max_time_step // months_per_year)
-    # Build tick positions and labels
-    last_tick_year = max_year - (max_year - start_year) % tick_interval_years
-    tick_years = np.arange(start_year, last_tick_year + 1, tick_interval_years)
-
-    tick_positions = (tick_years - start_year) * months_per_year
-    tick_labels = [str(year) for year in tick_years]
-
-    # Apply to bottom row axes
-    for ax in axs[2]:
-        ax.set_xticks(tick_positions)
-        ax.set_xticklabels(tick_labels)
-        ax.set_xlabel("Year", fontsize = 16)
-
-    #########################################################################
-
-    plt.tight_layout(rect=[0.01, 0.051, 0.98, 1])  # Leaves space at the bottom
-    plt.subplots_adjust(wspace=0.15)  # increase spacing between columns
-    plt.savefig(f"{fileName}/Plots/combined_policy_dashboard_with_utility_flow_cost.png", dpi=dpi)
-
-
-def plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300):
-
-    fig, axs = plt.subplots(4, 2, figsize=(15, 16), sharex=True)
-    time_steps = np.arange(base_params["duration_future"] - 1)
-    start = base_params["duration_burn_in"] + base_params["duration_calibration"] 
-
-    policy_pairs = outputs.keys()
-    all_policies = sorted(list(set([p for pair in policy_pairs for p in pair])))
-
-    color_map = plt.get_cmap('Set1', 10)
-    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
-
-    marker_list = ['o']
-    policy_markers = {policy: marker_list[i % len(marker_list)] for i, policy in enumerate(all_policies)}
-
-    # --- 1. EV Uptake 
-    ax1 = axs[0, 0]
-
-    # --- BAU EV adoption (solid)
-    bau_ev = outputs_BAU["history_prop_EV"][:, start:]
-    bau_mean = np.nanmean(bau_ev, axis=0)
-    bau_ci = sem(bau_ev, axis=0) * t.ppf(0.975, df=bau_ev.shape[0] - 1)
-    ax1.plot(time_steps, bau_mean, color='black', label='BAU - EV Adoption', linewidth=2)
-    ax1.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.2)
-
-    # --- BAU EV sales (dashed)
-    bau_sales = outputs_BAU["history_past_new_bought_vehicles_prop_ev"]
-    bau_sales_mean = np.nanmean(bau_sales, axis=0)
-    bau_sales_ci = sem(bau_sales, axis=0) * t.ppf(0.975, df=bau_sales.shape[0] - 1)
-    ax1.plot(time_steps, bau_sales_mean, color='black', linestyle='--', label='BAU - EV Sales', linewidth=2)
-    ax1.fill_between(time_steps, bau_sales_mean - bau_sales_ci, bau_sales_mean + bau_sales_ci, color='black', alpha=0.2)
-
-    # --- Policy curves
-    for (policy1, policy2), output in outputs.items():
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-
-        # EV Adoption (solid)
-        ev_data = output["history_prop_EV"][:, start:]
-        ev_mean = np.nanmean(ev_data, axis=0)
-        ev_ci = sem(ev_data, axis=0) * t.ppf(0.975, df=ev_data.shape[0] - 1)
-        ax1.plot(time_steps, ev_mean, color=color1, marker=marker, markevery=32,
-                markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax1.fill_between(time_steps, ev_mean - ev_ci, ev_mean + ev_ci, color=color1, alpha=0.2)
-
-        # EV Sales (dashed)
-        sales_data = output["history_past_new_bought_vehicles_prop_ev"]
-        sales_mean = np.nanmean(sales_data, axis=0)
-        sales_ci = sem(sales_data, axis=0) * t.ppf(0.975, df=sales_data.shape[0] - 1)
-        ax1.plot(time_steps, sales_mean,color=color1, marker=marker, markevery=32,
-                markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle='--')
-        ax1.fill_between(time_steps, sales_mean - sales_ci, sales_mean + sales_ci, color=color1, alpha=0.2)
-
-    ax1.set_ylabel("EV Share", fontsize=16)
-    add_vertical_lines(ax1, base_params, annotation_height_prop=[0.6, 0.2, 0.2])
-
-    # --- Legend
-    from matplotlib.lines import Line2D
-    custom_lines = [
-        Line2D([0], [0], color='black', linestyle='-', linewidth=2, label='EV Adoption'),
-        Line2D([0], [0], color='black', linestyle='--', linewidth=2, label='EV Sales')
-    ]
-    ax1.legend(handles=custom_lines, loc='lower right', fontsize='small', ncols = 2)
-
-
-    # --- 2. EV Prices
-    ax2 = axs[0, 1]
-    bau_price = outputs_BAU["history_mean_price_ICE_EV_arr"]
-    bau_new = bau_price[:, :, 0, 1]
-    bau_used = bau_price[:, :, 1, 1]
-    for dataset, linestyle in [(bau_new, '-'), (bau_used, '--')]:
-        mean = np.nanmean(dataset, axis=0)
-        ci = sem(dataset, axis=0, nan_policy='omit') * t.ppf(0.975, df=dataset.shape[0] - 1)
-        ax2.plot(time_steps, mean, color='black', linestyle=linestyle, linewidth=2)
-        ax2.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        prices = output["history_mean_price_ICE_EV_arr"]
-        new, used = prices[:, :, 0, 1], prices[:, :, 1, 1]
-        for data, linestyle in [(new, '-'), (used, '--')]:
-            mean = np.nanmean(data, axis=0)
-            ci = sem(data, axis=0, nan_policy='omit') * t.ppf(0.975, df=data.shape[0] - 1)
-            color1 = policy_colors[policy1]
-            color2 = policy_colors[policy2]
-            marker = policy_markers[policy2]
-            ax2.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                     markerfacecolor=color2, markeredgecolor=color2, markersize=4, linestyle=linestyle)
-            ax2.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax2.set_ylabel("EV Sale Price, $", fontsize=16)
-
-
-    custom_legend = [
-        Line2D([0], [0], color="black", linestyle='-', label='New'),
-        Line2D([0], [0], color="black", linestyle='--', label='Used'),
-    ]
-    ax2.legend(handles=custom_legend, loc='lower right', fontsize="small", ncols = 2)
-    add_vertical_lines(ax2, base_params, annotation_height_prop=[0.9, 0.2, 0.2])
-
-    # --- 3. Flow Emissions
-    ax3 = axs[1, 0]
-    bau = outputs_BAU["history_total_emissions"] * 1e-9
-    mean = np.mean(bau, axis=0)
-    ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax3.plot(time_steps, mean, color='black', linewidth=2, label = "BAU")
-    ax3.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        label = f"{policy_titles[policy1]} ({round(top_policies[(policy1, policy2)]['policy1_value'], 2)}), {policy_titles[policy2]} ({round(top_policies[(policy1, policy2)]['policy2_value'], 2)})"
-        data = output["history_total_emissions"] * 1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-        ax3.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4, label = label)
-        ax3.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax3.set_ylabel("Flow Emissions, MTCO2", fontsize=16)
-    add_vertical_lines(ax3, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
-
-    # --- 4. Cumulative Emissions
-    ax4 = axs[1, 1]
-    bau = np.cumsum(outputs_BAU["history_total_emissions"], axis=1) * 1e-9
-    mean = np.mean(bau, axis=0)
-    ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax4.plot(time_steps, mean, color='black', linewidth=2)
-    ax4.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        data = np.cumsum(output["history_total_emissions"], axis=1) * 1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-        ax4.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax4.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax4.set_ylabel("Cumulative Emissions, MTCO2", fontsize=16)
-    add_vertical_lines(ax4, base_params, annotation_height_prop=[0.55, 0.2, 0.2])
-
-    # --- 5. Flow Utility
-    ax5 = axs[2, 0]
-    bau = outputs_BAU["history_total_utility"] * 1e-9
-    mean = np.mean(bau, axis=0)
-    ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax5.plot(time_steps, mean, color='black', linewidth=2)
-    ax5.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        data = output["history_total_utility"] * 1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-        ax5.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax5.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax5.set_ylabel("Flow Utility, bn $", fontsize=16)
-    add_vertical_lines(ax5, base_params, annotation_height_prop=[0.2, 0.2, 0.2])
-
-    # --- 6. Cumulative Utility
-    ax6 = axs[2, 1]
-    bau = np.cumsum(outputs_BAU["history_total_utility"], axis=1) * 1e-9
-    mean = np.mean(bau, axis=0)
-    ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax6.plot(time_steps, mean, color='black', linewidth=2)
-    ax6.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        data = np.cumsum(output["history_total_utility"], axis=1) * 1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-        ax6.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax6.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax6.set_ylabel("Cumulative Utility, bn $", fontsize=16)
-    add_vertical_lines(ax6, base_params, annotation_height_prop=[0.2, 0.2, 0.2])
-
-    # --- 7. Car Age
-    ax7 = axs[3, 0]
-    bau = outputs_BAU["history_mean_car_age"]
-    mean = np.mean(bau, axis=0)
-    ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax7.plot(time_steps, mean, color='black', linewidth=2)
-    ax7.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        data = output["history_mean_car_age"]
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-        ax7.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax7.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax7.set_ylabel("Car Age, months", fontsize=16)
-    add_vertical_lines(ax7, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
-
-    # --- 8. Net Cost
-    ax8 = axs[3, 1]
-    bau = outputs_BAU["history_policy_net_cost"] * 1e-9
-    mean = np.mean(bau, axis=0)
-    ci = sem(bau, axis=0) * t.ppf(0.975, df=bau.shape[0] - 1)
-    ax8.plot(time_steps, mean, color='black', linewidth=2)
-    ax8.fill_between(time_steps, mean - ci, mean + ci, color='black', alpha=0.2)
-
-    for (policy1, policy2), output in outputs.items():
-        data = output["history_policy_net_cost"] * 1e-9
-        mean = np.mean(data, axis=0)
-        ci = sem(data, axis=0) * t.ppf(0.975, df=data.shape[0] - 1)
-        color1 = policy_colors[policy1]
-        color2 = policy_colors[policy2]
-        marker = policy_markers[policy2]
-        ax8.plot(time_steps, mean, color=color1, marker=marker, markevery=32,
-                 markerfacecolor=color2, markeredgecolor=color2, markersize=4)
-        ax8.fill_between(time_steps, mean - ci, mean + ci, color=color1, alpha=0.2)
-    ax8.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)
-    add_vertical_lines(ax8, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
-
-    ###########################################################################################
-
-    # Gather handles/labels from ax1 (or combine from others if needed)
-    handles, labels = ax3.get_legend_handles_labels()
-
-    # Create figure-wide legend below the subplots
-    fig.legend(handles, labels, loc='lower center', ncol=3, bbox_to_anchor=(0.5, 0.00), fontsize = 10)
-
-    ###########################################################################################
-    # Apply year x-axis only to bottom row
-    start_year = 2024
-    tick_years = np.arange(start_year, start_year + (time_steps[-1] // 12) + 5, 5)
-    tick_positions = (tick_years - start_year) * 12
-    tick_labels = [str(year) for year in tick_years]
-
-    for ax in axs[3]:
-        ax.set_xticks(tick_positions)
-        ax.set_xticklabels(tick_labels)
-        ax.set_xlabel("Year", fontsize=16)
-
-    fig.tight_layout(rect=[0.01, 0.051, 0.98, 1])
-    fig.subplots_adjust(wspace=0.15)
-    fig.savefig(f"{fileName}/Plots/combined_policy_dashboard_with_utility_flow_cost_both.png", dpi=dpi)
-
-
 def flip_policy_pair(data_dict, key1, key2):
     old_key = (key1, key2)
     new_key = (key2, key1)
@@ -529,6 +46,213 @@ def flip_policy_pair(data_dict, key1, key2):
             }
         data_dict[new_key] = value
 
+def plot_combined_policy_figures_with_utilty_flow_cost_both(
+    base_params,
+    fileName,
+    outputs,
+    outputs_BAU,
+    top_policies,
+    output_carbon_tax,
+    output_adoption_subsidy,
+    dpi=300
+):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from scipy.stats import sem, t
+    from matplotlib.lines import Line2D
+
+    fig, axs = plt.subplots(4, 2, figsize=(15, 16), sharex=True)
+    time_steps = np.arange(base_params["duration_future"] - 1)
+    start = base_params["duration_burn_in"] + base_params["duration_calibration"]
+
+    policy_titles = {
+        "Carbon_price": "Carbon Price",
+        "Electricity_subsidy": "Electricity Subsidy",
+        "Adoption_subsidy": "New Car Rebate",
+        "Adoption_subsidy_used": "Used Car Rebate",
+        "Production_subsidy": "Production Subsidy"
+    }
+
+    # Add single policy outputs into outputs and top_policies
+    outputs[("Carbon_price",)] = output_carbon_tax
+    outputs[("Adoption_subsidy",)] = output_adoption_subsidy
+
+    top_policies[("Carbon_price",)] = {
+        "policy1_value": 0.983,
+        "policy2_value": None,
+        "mean_ev_uptake": np.mean(output_carbon_tax["history_prop_EV"][:, -1]),
+        "original_order": ("Carbon_price",)
+    }
+    top_policies[("Adoption_subsidy",)] = {
+        "policy1_value": 36638.50,
+        "policy2_value": None,
+        "mean_ev_uptake": np.mean(output_adoption_subsidy["history_prop_EV"][:, -1]),
+        "original_order": ("Adoption_subsidy",)
+    }
+
+    all_policies = sorted(set(p for k in outputs.keys() for p in k))
+    color_map = plt.get_cmap('Set1', 10)
+    policy_colors = {p: color_map(i) for i, p in enumerate(all_policies)}
+    marker_list = ['o', 's', '^', 'D', 'v']
+    policy_markers = {p: marker_list[i % len(marker_list)] for i, p in enumerate(all_policies)}
+
+    def label_from_key(key):
+        if len(key) == 1:
+            p = key[0]
+            return f"{policy_titles.get(p, p)} ({round(top_policies[key]['policy1_value'], 2)})"
+        else:
+            p1, p2 = key
+            return f"{policy_titles.get(p1, p1)} ({round(top_policies[key]['policy1_value'], 2)}), " \
+                   f"{policy_titles.get(p2, p2)} ({round(top_policies[key]['policy2_value'], 2)})"
+
+    def plot_line_with_ci(ax, data, color_line, color_marker, marker, linestyle='-', label=None):
+        mean = np.nanmean(data, axis=0)
+        ci = sem(data, axis=0, nan_policy='omit') * t.ppf(0.975, df=data.shape[0] - 1)
+        ax.plot(time_steps, mean, color=color_line, marker='o', markevery=32,
+                markerfacecolor=color_marker, markeredgecolor=color_marker, markersize=4,
+                linestyle=linestyle, label=label)
+        ax.fill_between(time_steps, mean - ci, mean + ci, color=color_line, alpha=0.2)
+
+    def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotation_height_prop=[0.2, 0.2, 0.2]):
+        y_min, y_max = ax.get_ylim()
+        annotation_height_0 = y_min + annotation_height_prop[0] * (y_max - y_min)
+        ev_sale_start_time = 144 - 1
+        ax.axvline(ev_sale_start_time, color=color, linestyle=':')
+        ax.annotate("Policy end", xy=(ev_sale_start_time, annotation_height_0),
+                    rotation=90, verticalalignment='center', horizontalalignment='right',
+                    fontsize=8, color=color)
+
+    # --- EV Share: Adoption and Sales
+    ax1 = axs[0, 0]
+    plot_line_with_ci(ax1, outputs_BAU["history_prop_EV"][:, start:], 'black', 'black', 'o', '-', 'BAU - EV Adoption')
+    plot_line_with_ci(ax1, outputs_BAU["history_past_new_bought_vehicles_prop_ev"], 'black', 'black', 'o', '--', 'BAU - EV Sales')
+
+    for key, output in outputs.items():
+        if len(key) == 1:
+            color = color_marker = policy_colors[key[0]]
+            marker = policy_markers[key[0]]
+        else:
+            color = policy_colors[key[0]]
+            color_marker = policy_colors[key[1]]
+            marker = policy_markers[key[1]]
+
+        label = label_from_key(key)
+        plot_line_with_ci(ax1, output["history_prop_EV"][:, start:], color, color_marker, marker, '-', None)
+        plot_line_with_ci(ax1, output["history_past_new_bought_vehicles_prop_ev"], color, color_marker, marker, '--', label)
+
+    ax1.set_ylabel("EV Share", fontsize=16)
+    add_vertical_lines(ax1, base_params, annotation_height_prop=[0.6, 0.2, 0.2])
+    # --- Legend
+    custom_lines = [
+        Line2D([0], [0], color='black', linestyle='-', linewidth=2, label='EV Adoption'),
+        Line2D([0], [0], color='black', linestyle='--', linewidth=2, label='EV Sales')
+    ]
+    ax1.legend(handles=custom_lines, loc='lower right', fontsize='small', ncols = 2)
+
+    # --- EV Price: New and Used
+    ax2 = axs[0, 1]
+    for i, label_txt, linestyle in [(0, 'New', '-'), (1, 'Used', '--')]:
+        plot_line_with_ci(ax2, outputs_BAU["history_mean_price_ICE_EV_arr"][:, :, i, 1],
+                          'black', 'black', 'o', linestyle, f"BAU - {label_txt}")
+
+    for key, output in outputs.items():
+        if len(key) == 1:
+            color = color_marker = policy_colors[key[0]]
+        else:
+            color = policy_colors[key[0]]
+            color_marker = policy_colors[key[1]]
+
+        for i, linestyle in [(0, '-'), (1, '--')]:
+            plot_line_with_ci(ax2, output["history_mean_price_ICE_EV_arr"][:, :, i, 1],
+                              color, color_marker, marker, linestyle)
+
+    ax2.set_ylabel("EV Sale Price, $", fontsize=16)
+    custom_legend = [
+        Line2D([0], [0], color="black", linestyle='-', label='New'),
+        Line2D([0], [0], color="black", linestyle='--', label='Used'),
+    ]
+    ax2.legend(handles=custom_legend, loc='lower right', fontsize="small", ncols = 2)
+    add_vertical_lines(ax2, base_params, annotation_height_prop=[0.9, 0.2, 0.2])
+
+    # --- Flow and Cumulative Emissions
+    for idx, (ax, label, transform) in enumerate(zip(
+        [axs[1, 0], axs[1, 1]],
+        ["Flow Emissions, MTCO2", "Cumulative Emissions, MTCO2"],
+        [lambda x: x * 1e-9, lambda x: np.cumsum(x, axis=1) * 1e-9])):
+        plot_line_with_ci(ax, transform(outputs_BAU["history_total_emissions"]),
+                          'black', 'black', 'o', '-', 'BAU')
+        for key, output in outputs.items():
+            if len(key) == 1:
+                color = color_marker = policy_colors[key[0]]
+                marker = policy_markers[key[0]]
+            else:
+                color = policy_colors[key[0]]
+                color_marker = policy_colors[key[1]]
+                marker = policy_markers[key[1]]
+            label_txt = label_from_key(key) if idx == 0 else None
+            plot_line_with_ci(ax, transform(output["history_total_emissions"]),
+                              color, color_marker, marker, '-', label_txt)
+        ax.set_ylabel(label, fontsize=16)
+        add_vertical_lines(ax, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
+
+    # --- Flow and Cumulative Utility
+    for idx, (ax, key_name, transform, label) in enumerate(zip(
+        [axs[2, 0], axs[2, 1]],
+        ["history_total_utility", "history_total_utility"],
+        [lambda x: x * 1e-9, lambda x: np.cumsum(x, axis=1) * 1e-9],
+        ["Flow Utility, bn $", "Cumulative Utility, bn $"])):
+        plot_line_with_ci(ax, transform(outputs_BAU[key_name]), 'black', 'black', 'o', '-', 'BAU')
+        for key, output in outputs.items():
+            if len(key) == 1:
+                color = color_marker = policy_colors[key[0]]
+                marker = policy_markers[key[0]]
+            else:
+                color = policy_colors[key[0]]
+                color_marker = policy_colors[key[1]]
+                marker = policy_markers[key[1]]
+            label_txt = label_from_key(key) if idx == 0 else None
+            plot_line_with_ci(ax, transform(output[key_name]),
+                              color, color_marker, marker, '-', label_txt)
+        ax.set_ylabel(label, fontsize=16)
+        add_vertical_lines(ax, base_params, annotation_height_prop=[0.2, 0.2, 0.2])
+
+    # --- Car Age and Net Cost
+    for idx, (ax, key_name, label, scale) in enumerate(zip(
+        [axs[3, 0], axs[3, 1]],
+        ["history_mean_car_age", "history_policy_net_cost"],
+        ["Car Age, months", "Cumulative Net Cost, bn $"],
+        [1, 1e-9])):
+        plot_line_with_ci(ax, outputs_BAU[key_name] * scale, 'black', 'black', 'o', '-', 'BAU')
+        for key, output in outputs.items():
+            if len(key) == 1:
+                color = color_marker = policy_colors[key[0]]
+                marker = policy_markers[key[0]]
+            else:
+                color = policy_colors[key[0]]
+                color_marker = policy_colors[key[1]]
+                marker = policy_markers[key[1]]
+            label_txt = label_from_key(key) if idx == 1 else None
+            plot_line_with_ci(ax, output[key_name] * scale, color, color_marker, marker, '-', label_txt)
+        ax.set_ylabel(label, fontsize=16)
+        add_vertical_lines(ax, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
+
+    # Legend and formatting
+    handles, labels = axs[1, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='lower center', ncol=3, bbox_to_anchor=(0.5, 0.00), fontsize=10)
+
+    # X-axis labels
+    start_year = 2024
+    tick_years = np.arange(start_year, start_year + (time_steps[-1] // 12) + 5, 5)
+    tick_positions = (tick_years - start_year) * 12
+    for ax in axs[3]:
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels([str(year) for year in tick_years])
+        ax.set_xlabel("Year", fontsize=16)
+
+    fig.tight_layout(rect=[0.01, 0.051, 0.98, 1])
+    fig.subplots_adjust(wspace=0.15)
+    fig.savefig(f"{fileName}/Plots/combined_policy_dashboard_with_utility_flow_cost_both.png", dpi=dpi)
+
 
 def main(fileName):
     base_params = load_object(fileName + "/Data", "base_params")
@@ -536,24 +260,35 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     top_policies = load_object(fileName + "/Data", "top_policies")
 
+    # Flip ordering for consistency if needed
     flip_policy_pair(top_policies, 'Adoption_subsidy_used', 'Carbon_price')
     flip_policy_pair(outputs, 'Adoption_subsidy_used', 'Carbon_price')
-
     flip_policy_pair(top_policies, 'Adoption_subsidy', 'Carbon_price')
     flip_policy_pair(outputs, 'Adoption_subsidy', 'Carbon_price')
 
-    #outputs = {k: v for k, v in outputs.items() if set(k) == {"Electricity_subsidy", "Adoption_subsidy"}}
-    #print(list(outputs.keys()))
-    #print((outputs[('Adoption_subsidy', 'Adoption_subsidy_used')]["history_past_new_bought_vehicles_prop_ev"]).shape)
-    #quit()
-    
+    # Load single policy results
+    outputs_carbon_tax = load_object(fileName + "/Data", "outputs_carbon_tax")
+    outputs_adoption_subsidy = load_object(fileName + "/Data", "outputs_adoption_subsidy")
 
-    #plot_combined_policy_figures_with_utilty_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
-    #plot_combined_policy_figures_with_utilty_flow_cost(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
-    plot_combined_policy_figures_with_utilty_flow_cost_both(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
-    #plot_combined_policy_figures_with_utilty_cost_bottom(base_params, fileName, outputs, outputs_BAU, top_policies, dpi=300)
+    # Add to outputs using tuple keys
+    outputs[("Carbon_price",)] = outputs_carbon_tax
+    outputs[("Adoption_subsidy",)] = outputs_adoption_subsidy
+
+    # Plot
+    plot_combined_policy_figures_with_utilty_flow_cost_both(
+        base_params,
+        fileName,
+        outputs,
+        outputs_BAU,
+        top_policies,
+        outputs_carbon_tax,
+        outputs_adoption_subsidy,
+        dpi=300
+    )
+
     plt.show()
+
     
 
 if __name__ == "__main__":
-    main(fileName = "results/pair_low_intensity_policies_14_58_29__10_04_2025")
+    main(fileName = "results/pair_low_intensity_policies_19_31_05__24_04_2025")
