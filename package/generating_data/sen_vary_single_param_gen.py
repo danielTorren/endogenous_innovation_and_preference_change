@@ -48,8 +48,8 @@ def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD, root_folder):
     # Save
     createFolder(fileName)
     save_object(data_array_ev_prop , fileName + "/Data", "data_array_ev_prop")
-    save_object(data_array_price , fileName + "/Data", "data_array_price")
-    save_object(data_array_margins, fileName + "/Data", "data_array_margins")
+    #save_object(data_array_price , fileName + "/Data", "data_array_price")
+    #save_object(data_array_margins, fileName + "/Data", "data_array_margins")
     save_object(base_params, fileName + "/Data", "base_params")
     save_object(vary_single , fileName + "/Data", "vary_single")
 
