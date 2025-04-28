@@ -56,7 +56,7 @@ def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD, root_folder):
     return fileName
 
 def main(BASE_PARAMS_LOAD, VARY_LOADS):
-    root_folder = "results/multi_param_run"
+    root_folder = "multi_param_run/"
     createFolder(root_folder)
 
     output_folders = []
