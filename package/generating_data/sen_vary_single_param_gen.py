@@ -16,7 +16,7 @@ def produce_param_list(params: dict, property_list: list, subdict, property: str
         params_list.extend(seeds_base_params_list)
     return params_list
 
-def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD, root_folder):
+def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD):
     # Load parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
