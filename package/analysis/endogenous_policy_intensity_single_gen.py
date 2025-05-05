@@ -312,6 +312,6 @@ if __name__ == "__main__":
             "Adoption_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=15,
+        n_calls=10,
         noise=0.05
     )
