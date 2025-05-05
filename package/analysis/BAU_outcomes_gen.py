@@ -20,6 +20,7 @@ def main(
     controller_files, base_params, file_name = set_up_calibration_runs(base_params, "BAU_runs")
 
     ###################################################################################################################
+    #BAU 
     EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(base_params, controller_files)
     
     mean_ev_uptake = np.mean(EV_uptake_arr)
@@ -44,12 +45,12 @@ def main(
         "mean_utility_cumulative": mean_utility_cumulative, 
         "mean_utility_cumulative_30": mean_utility_cumulative_30, 
         "mean_profit_cumulative": mean_profit_cumulative,
-        "ev_uptake": EV_uptake_arr,
-        "net_cost": net_cost_arr,
-        "emissions_cumulative_driving": emissions_cumulative_driving_arr,
-        "emissions_cumulative_production": emissions_cumulative_production_arr,
-        "utility_cumulative": utility_cumulative_arr,
-        "profit_cumulative": profit_cumulative_arr,
+        #"ev_uptake": EV_uptake_arr,
+        #"net_cost": net_cost_arr,
+        #"emissions_cumulative_driving": emissions_cumulative_driving_arr,
+        #"emissions_cumulative_production": emissions_cumulative_production_arr,
+        #"utility_cumulative": utility_cumulative_arr,
+        #"profit_cumulative": profit_cumulative_arr,
         #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
 
@@ -58,11 +59,12 @@ def main(
     all_keys = list(outcomes.keys())
     for key in all_keys:
         print(f"  {key}: {outcomes.get(key)}")
+    
     ###################################################################################################################
     #CARBON TAX 
     base_params_carbon_tax = deepcopy(base_params)
     base_params_carbon_tax["parameters_policies"]["States"]["Carbon_price"] = 1
-    base_params_carbon_tax["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] = 0.983
+    base_params_carbon_tax["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] = 0.910
 
     EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(base_params_carbon_tax, controller_files)
     
@@ -88,12 +90,12 @@ def main(
         "mean_utility_cumulative": mean_utility_cumulative, 
         "mean_utility_cumulative_30": mean_utility_cumulative_30, 
         "mean_profit_cumulative": mean_profit_cumulative,
-        "ev_uptake": EV_uptake_arr,
-        "net_cost": net_cost_arr,
-        "emissions_cumulative_driving": emissions_cumulative_driving_arr,
-        "emissions_cumulative_production": emissions_cumulative_production_arr,
-        "utility_cumulative": utility_cumulative_arr,
-        "profit_cumulative": profit_cumulative_arr,
+        #"ev_uptake": EV_uptake_arr,
+        #"net_cost": net_cost_arr,
+        #"emissions_cumulative_driving": emissions_cumulative_driving_arr,
+        #"emissions_cumulative_production": emissions_cumulative_production_arr,
+        #"utility_cumulative": utility_cumulative_arr,
+        #"profit_cumulative": profit_cumulative_arr,
         #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
 
@@ -101,13 +103,14 @@ def main(
     all_keys = list(outcomes.keys())
     for key in all_keys:
         print(f"  {key}: {outcomes.get(key)}")
+    
     ###################################################################################################################
     #ADOTPION SUBSIDY
     base_params_adoption_subsidy = deepcopy(base_params)
     base_params_adoption_subsidy["parameters_policies"]["States"]["Adoption_subsidy"] = 1
-    base_params_adoption_subsidy["parameters_policies"]["Values"]["Adoption_subsidy"] = 36638.50
+    base_params_adoption_subsidy["parameters_policies"]["Values"]["Adoption_subsidy"] = 36875.57
 
-    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(base_params, controller_files)
+    EV_uptake_arr, total_cost_arr, net_cost_arr, emissions_cumulative_arr, emissions_cumulative_driving_arr, emissions_cumulative_production_arr, utility_cumulative_arr,utility_cumulative_30_arr, profit_cumulative_arr = single_policy_with_seeds(base_params_adoption_subsidy, controller_files)
     
     mean_ev_uptake = np.mean(EV_uptake_arr)
     sd_ev_uptake = np.std(EV_uptake_arr)
@@ -131,12 +134,12 @@ def main(
         "mean_utility_cumulative": mean_utility_cumulative, 
         "mean_utility_cumulative_30": mean_utility_cumulative_30, 
         "mean_profit_cumulative": mean_profit_cumulative,
-        "ev_uptake": EV_uptake_arr,
-        "net_cost": net_cost_arr,
-        "emissions_cumulative_driving": emissions_cumulative_driving_arr,
-        "emissions_cumulative_production": emissions_cumulative_production_arr,
-        "utility_cumulative": utility_cumulative_arr,
-        "profit_cumulative": profit_cumulative_arr,
+        #"ev_uptake": EV_uptake_arr,
+        #"net_cost": net_cost_arr,
+        #"emissions_cumulative_driving": emissions_cumulative_driving_arr,
+        #"emissions_cumulative_production": emissions_cumulative_production_arr,
+        #"utility_cumulative": utility_cumulative_arr,
+        #"profit_cumulative": profit_cumulative_arr,
         #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
 

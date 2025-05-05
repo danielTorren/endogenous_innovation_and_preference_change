@@ -61,11 +61,15 @@ if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single.json",
         VARY_LOADS=[
-            "package/constants/vary_single_a_innov.json",
+            "package/constants/vary_single_alpha.json",
+            "package/constants/vary_single_r.json",
+            "package/constants/vary_single_mu.json",
             "package/constants/vary_single_kappa.json",
-            "package/constants/vary_single_landscape_K.json",
+            "package/constants/vary_single_b_innov.json",
+            "package/constants/vary_single_a_innov.json",
             "package/constants/vary_single_lambda.json",
             "package/constants/vary_single_delta.json",
-            "package/constants/vary_single_mu.json",
+            "package/constants/vary_single_landscape_K_EV.json",
+            "package/constants/vary_single_landscape_K_ICE.json",
         ]
     )
