@@ -78,13 +78,13 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
     outputs[("Adoption_subsidy",)] = output_adoption_subsidy
 
     top_policies[("Carbon_price",)] = {
-        "policy1_value": 0.983,
+        "policy1_value": 0.910,
         "policy2_value": None,
         "mean_ev_uptake": np.mean(output_carbon_tax["history_prop_EV"][:, -1]),
         "original_order": ("Carbon_price",)
     }
     top_policies[("Adoption_subsidy",)] = {
-        "policy1_value": 36638.50,
+        "policy1_value": 36875.57,
         "policy2_value": None,
         "mean_ev_uptake": np.mean(output_adoption_subsidy["history_prop_EV"][:, -1]),
         "original_order": ("Adoption_subsidy",)
@@ -291,4 +291,4 @@ def main(fileName):
     
 
 if __name__ == "__main__":
-    main(fileName = "results/pair_low_intensity_policies_19_31_05__24_04_2025")
+    main(fileName = "results/pair_low_intensity_policies_12_56_32__05_05_2025")

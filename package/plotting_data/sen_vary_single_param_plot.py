@@ -6,22 +6,25 @@ from scipy import stats
 from package.resources.utility import load_object
 
 def load_ev_data(folder):
-    base_params = load_object(os.path.join(folder, "Data"), "base_params")
-    ev_prop = load_object(os.path.join(folder, "Data"), "data_array_ev_prop")
-    vary_single = load_object(os.path.join(folder, "Data"), "vary_single")
+    print(folder)
+
+    base_params = load_object(folder +  "/Data", "base_params")
+    ev_prop = load_object(folder +  "/Data", "data_array_ev_prop")
+    vary_single = load_object(folder +  "/Data", "vary_single")
     property_list = vary_single["property_list"]
     property_name = vary_single["property_varied"]
     return base_params, ev_prop, property_list, property_name
 
 def plot_multi_ev_prop_grid(folders, real_data, base_params, dpi=300):
     num_vars = len(folders)
-    n_rows = 3
+    n_rows = 5
     n_cols = 2
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(10, 8), sharex=True)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(10, 12), sharex=True)
 
     axes_flat = axes.flatten()
 
+    EV_K_FLAG = 1
     for idx, (ax, folder) in enumerate(zip(axes_flat, folders)):
 
         # Plot real-world data (assume starts after burn-in + offset)
@@ -39,6 +42,15 @@ def plot_multi_ev_prop_grid(folders, real_data, base_params, dpi=300):
         time_series = np.arange(ev_prop.shape[2])
 
         colors = plt.cm.viridis(np.linspace(0, 1, num_deltas))  # Color map for different deltas
+            # Plot mean line
+        if property_name == "K":
+            if EV_K_FLAG: 
+                property_label = "K_EV"
+                EV_K_FLAG = 0
+            else:
+                property_label = "K_ICE"
+        else:
+            property_label = property_name
 
         for i in range(num_deltas):
             data_after_burn_in = ev_prop[i, :, burn_in:]
@@ -48,8 +60,9 @@ def plot_multi_ev_prop_grid(folders, real_data, base_params, dpi=300):
             sem_data = stats.sem(data_after_burn_in, axis=0)
             ci_range = sem_data * stats.t.ppf(0.975, num_seeds - 1)  # 95% CI
 
-            # Plot mean line
-            ax.plot(time_series[burn_in:], mean_data, label=f'{property_name} = {property_list[i]:.1e}', color=colors[i])
+
+
+            ax.plot(time_series[burn_in:], mean_data, label=f'{property_label} = {property_list[i]:.1e}', color=colors[i])
 
             # Plot confidence interval
             ax.fill_between(time_series[burn_in:], mean_data - ci_range, mean_data + ci_range,
@@ -70,27 +83,29 @@ def plot_multi_ev_prop_grid(folders, real_data, base_params, dpi=300):
         ax.legend(fontsize=8, loc =  "upper left")
 
     # Set labels only on appropriate plots
-    for i in range(n_cols):
-        axes[2, i].set_xlabel("Time Step")
-    for i in range(n_rows):
-        axes[i, 0].set_ylabel("EV Uptake Proportion")
+    fig.supxlabel("Time Step")
+    fig.supylabel("EV Uptake Proportion")
 
     plt.tight_layout()
-    for folder in enumerate(zip(axes_flat, folders)):
-        plt.savefig("results/ev_prop_grid_combined.png", dpi=dpi)
+    for folder in  folders:
+        plt.savefig(folder + "/Plots/ev_prop_grid_combined.png", dpi=dpi)
     plt.show()
 
 def main():
     real_data = load_object("package/calibration_data", "calibration_data_output")["EV Prop"]
-    base_params = load_object("results/sen_vary_a_chi_14_01_26__28_04_2025/Data", "base_params")
+    base_params = load_object("results/sen_vary_alpha_13_20_04__05_05_2025/Data", "base_params")
 
     folders = [
-        "results/sen_vary_a_chi_14_01_26__28_04_2025",
-        "results/sen_vary_kappa_14_07_19__28_04_2025",
-        "results/sen_vary_K_14_13_37__28_04_2025",
-        "results/sen_vary_lambda_14_19_50__28_04_2025",
-        "results/sen_vary_delta_14_26_21__28_04_2025",
-        "results/sen_vary_mu_14_32_36__28_04_2025"
+        "results/sen_vary_alpha_13_20_04__05_05_2025",
+        "results/sen_vary_r_13_25_18__05_05_2025",
+        "results/sen_vary_mu_13_30_29__05_05_2025",
+        "results/sen_vary_kappa_13_35_44__05_05_2025",
+        "results/sen_vary_b_chi_13_41_06__05_05_2025",
+        "results/sen_vary_a_chi_13_46_27__05_05_2025",
+        "results/sen_vary_lambda_13_51_43__05_05_2025",
+        "results/sen_vary_delta_13_57_04__05_05_2025",
+        "results/sen_vary_K_14_02_20__05_05_2025",
+        "results/sen_vary_K_14_07_40__05_05_2025"
     ]
 
     plot_multi_ev_prop_grid(folders, real_data, base_params)
