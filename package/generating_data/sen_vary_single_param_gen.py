@@ -41,8 +41,8 @@ def run_single_variation(BASE_PARAMS_LOAD, VARY_LOAD):
 
     # Reshape
     data_array_ev_prop = data_flat_ev_prop.reshape(len(property_list), seed_repetitions, len(data_flat_ev_prop[0]))
-    data_array_price = data_flat_price.reshape(len(property_list), seed_repetitions, len(data_flat_price[0]), 2, 2)
-    data_array_margins = data_flat_margins.reshape(len(property_list), seed_repetitions, len(data_flat_ev_prop[0]))
+    #data_array_price = data_flat_price.reshape(len(property_list), seed_repetitions, len(data_flat_price[0]), 2, 2)
+    #data_array_margins = data_flat_margins.reshape(len(property_list), seed_repetitions, len(data_flat_ev_prop[0]))
 
     # Save
     createFolder(fileName)

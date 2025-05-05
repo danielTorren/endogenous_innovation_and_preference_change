@@ -57,6 +57,7 @@ def main(
     save_object(outcomes_BAU, file_name + "/Data", "outcomes")
     
     all_keys = list(outcomes_BAU.keys())
+    print("BAU")
     for key in all_keys:
         print(f"  {key}: {outcomes_BAU.get(key)}")
     

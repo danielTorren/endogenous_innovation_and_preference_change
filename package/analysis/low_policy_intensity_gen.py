@@ -351,7 +351,7 @@ def main(fileNames,
     #RUN THE CARBON TAX
     base_params_carbon_tax = deepcopy(base_params)
     base_params_carbon_tax["parameters_policies"]["States"]["Carbon_price"] = 1
-    base_params_carbon_tax["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] = 0.983
+    base_params_carbon_tax["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] = 0.910
     #RESET TO B SURE
     #RUN BAU
     (
@@ -412,7 +412,7 @@ def main(fileNames,
     #RUN THE ADOPTION SUBSIDY
     base_params_adoption_subsidy = deepcopy(base_params)
     base_params_adoption_subsidy["parameters_policies"]["States"]["Adoption_subsidy"] = 1
-    base_params_adoption_subsidy["parameters_policies"]["Values"]["Adoption_subsidy"] = 36638.50
+    base_params_adoption_subsidy["parameters_policies"]["Values"]["Adoption_subsidy"] = 36875.57
     #RESET TO B SURE
     #RUN BAU
     (
