@@ -34,7 +34,7 @@ def main(
     mean_utility_cumulative_30 = np.mean(utility_cumulative_30_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
-    outcomes = {
+    outcomes_BAU = {
         "mean_EV_uptake": mean_ev_uptake,
         "sd_ev_uptake": sd_ev_uptake,
         "mean_total_cost": mean_total_cost,
@@ -54,11 +54,11 @@ def main(
         #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
 
-    save_object(outcomes, file_name + "/Data", "outcomes")
+    save_object(outcomes_BAU, file_name + "/Data", "outcomes")
     
-    all_keys = list(outcomes.keys())
+    all_keys = list(outcomes_BAU.keys())
     for key in all_keys:
-        print(f"  {key}: {outcomes.get(key)}")
+        print(f"  {key}: {outcomes_BAU.get(key)}")
     
     ###################################################################################################################
     #CARBON TAX 
@@ -79,7 +79,7 @@ def main(
     mean_utility_cumulative_30 = np.mean(utility_cumulative_30_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
-    outcomes = {
+    outcomes_carbon_tax = {
         "mean_EV_uptake": mean_ev_uptake,
         "sd_ev_uptake": sd_ev_uptake,
         "mean_total_cost": mean_total_cost,
@@ -99,10 +99,10 @@ def main(
         #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
 
-    save_object(outcomes, file_name + "/Data", "outcomes_carbon_tax")
-    all_keys = list(outcomes.keys())
+    save_object(outcomes_carbon_tax, file_name + "/Data", "outcomes_carbon_tax")
+    all_keys = list(outcomes_carbon_tax.keys())
     for key in all_keys:
-        print(f"  {key}: {outcomes.get(key)}")
+        print(f"  {key}: {outcomes_carbon_tax.get(key)}")
     
     ###################################################################################################################
     #ADOTPION SUBSIDY
@@ -123,7 +123,7 @@ def main(
     mean_utility_cumulative_30 = np.mean(utility_cumulative_30_arr)
     mean_profit_cumulative = np.mean(profit_cumulative_arr)
 
-    outcomes = {
+    outcomes_adoption_subsidy = {
         "mean_EV_uptake": mean_ev_uptake,
         "sd_ev_uptake": sd_ev_uptake,
         "mean_total_cost": mean_total_cost,
@@ -142,8 +142,11 @@ def main(
         #"profit_cumulative": profit_cumulative_arr,
         #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
     }
-
-    save_object(outcomes, file_name + "/Data", "outcomes_adoption_subsidy")
+    all_keys = list(outcomes_adoption_subsidy.keys())
+    for key in all_keys:
+        print(f"  {key}: {outcomes_adoption_subsidy.get(key)}")
+    
+    save_object(outcomes_adoption_subsidy, file_name + "/Data", "outcomes_adoption_subsidy")
 
     ###################################################################################################################
 
