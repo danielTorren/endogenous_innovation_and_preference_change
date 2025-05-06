@@ -283,7 +283,7 @@ def main(fileName):
         top_policies,
         outputs_carbon_tax,
         outputs_adoption_subsidy,
-        dpi=300
+        dpi=200
     )
 
     plt.show()

@@ -6,7 +6,7 @@ from package.resources.utility import (
     load_object
 )
 import numpy as np
-
+import math
 def get_plot_data(
     problem: dict,
     Y_emissions_stock: npt.NDArray,
@@ -118,24 +118,28 @@ def analyze_results(
     
     return Si_emissions_stock
 
+
+
 def multi_output_sensitivity_analysis_plot(
     fileName, data_dict, output_keys, param_names, N_samples, order, latex_bool=False
 ):
     """
-    Creates a horizontally stacked sensitivity analysis plot with each column as a different output variable.
+    Creates a 2-row sensitivity analysis plot with each subplot corresponding to an output variable.
     Y-axis (parameter names) is shown for each subplot.
     """
     num_outputs = len(output_keys)
+    ncols = math.ceil(num_outputs / 2)
+    nrows = 2 if num_outputs > 1 else 1
+
     fig, axes = plt.subplots(
-        nrows=1,
-        ncols=num_outputs,
-        figsize=(3.8 * num_outputs, 6),
+        nrows=nrows,
+        ncols=ncols,
+        figsize=(4.2 * ncols, 6.5),
         sharey=True,
         constrained_layout=True
     )
 
-    if num_outputs == 1:
-        axes = [axes]  # ensure iterable
+    axes = axes.flatten() if num_outputs > 1 else [axes]
 
     for i, output in enumerate(output_keys):
         ax = axes[i]
@@ -163,14 +167,18 @@ def multi_output_sensitivity_analysis_plot(
         ax.set_title(title, fontsize=10)
         ax.set_xlim(left=0)
         ax.set_yticks(range(len(param_names)))
-        ax.set_yticklabels(param_names, fontsize=8)  # ✅ y-labels on every subplot
+        ax.set_yticklabels(param_names, fontsize=8)
         ax.grid(True, linestyle="--", alpha=0.4)
+
+    # Hide any unused subplots if num_outputs is odd
+    for j in range(len(output_keys), len(axes)):
+        fig.delaxes(axes[j])
 
     fig.supylabel("Parameter", fontsize=12)
     fig.supxlabel(r"%s order Sobol index" % (order), fontsize=12)
 
     plotName = fileName + "/Prints"
-    f = f"{plotName}/{len(param_names)}_{N_samples}_{order}_multi_output_sensitivity_plot_horizontal.eps"
+    f = f"{plotName}/{len(param_names)}_{N_samples}_{order}_multi_output_sensitivity_plot_2row.eps"
     f_png = f.replace(".eps", ".png")
     fig.savefig(f, dpi=300, format="eps")
     fig.savefig(f_png, dpi=300, format="png")

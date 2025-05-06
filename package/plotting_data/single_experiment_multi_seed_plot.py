@@ -94,8 +94,8 @@ def plot_combined_figures(base_params, fileName, dpi=300):
     plt.tight_layout(rect=[0.01, 0.0, 0.98, 1])  # Leaves space at the bottom
     plt.subplots_adjust(wspace=0.15)  # increase spacing between columns
     # Save the combined figure
-    plt.savefig(f"{fileName}/combined_plots.png", dpi=dpi)
-    plt.savefig(f"{fileName}/combined_plots.eps", dpi=dpi)
+    plt.savefig(f"{fileName}/combined_plots.png", dpi=200)
+    plt.savefig(f"{fileName}/combined_plots.eps", dpi=200)
     plt.show()
 
 # Helper functions for each subplot

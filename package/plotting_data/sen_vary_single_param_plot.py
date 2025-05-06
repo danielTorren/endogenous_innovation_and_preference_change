@@ -15,7 +15,7 @@ def load_ev_data(folder):
     property_name = vary_single["property_varied"]
     return base_params, ev_prop, property_list, property_name
 
-def plot_multi_ev_prop_grid(folders, real_data, base_params, dpi=300):
+def plot_multi_ev_prop_grid(folders, real_data, base_params, dpi=200):
     num_vars = len(folders)
     n_rows = 5
     n_cols = 2
@@ -97,7 +97,7 @@ def main():
 
     folders = [
         "results/sen_vary_alpha_13_20_04__05_05_2025",
-        "results/sen_vary_r_13_25_18__05_05_2025",
+        "results/sen_vary_r_16_39_57__05_05_2025",
         "results/sen_vary_mu_13_30_29__05_05_2025",
         "results/sen_vary_kappa_13_35_44__05_05_2025",
         "results/sen_vary_b_chi_13_41_06__05_05_2025",
