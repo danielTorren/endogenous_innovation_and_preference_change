@@ -1,5 +1,32 @@
 class PersonalCar:
+    """
+    Represents an individual-owned vehicle (either internal combustion engine or electric vehicle)
+    with detailed attributes for use in behavioral and emissions simulations.
+    """
+        
     def __init__(self, unique_id, firm, owner_id, component_string, parameters, attributes_fitness, sale_price, init_car = 0):
+        """
+        Initialize a PersonalCar object with technical, behavioral, and ownership attributes.
+
+        Args:
+            unique_id (int): Unique identifier for the car.
+            firm (object): The firm that produced the car.
+            owner_id (int): ID of the individual who owns the car.
+            component_string (str): Encoded string representing car components (used for differentiation).
+            parameters (dict): Dictionary of static car parameters such as:
+                - 'transportType': 2 (ICE) or 3 (EV)
+                - 'delta': Depreciation rate
+                - 'delta_P': Price depreciation rate (for resale)
+                - 'fuel_cost_c': Fuel cost per km or per kWh
+                - 'e_t': Emissions per unit energy
+                - 'production_emissions': Emissions from manufacturing
+                - 'fuel_tank': (for ICE) capacity in kWh
+            attributes_fitness (list): List of performance attributes:
+                [quality, efficiency, production cost, battery size (for EVs)]
+            sale_price (float): Price at which the vehicle was sold to the user.
+            init_car (int, optional): Indicates if this is a default initial vehicle (not eligible for resale). Defaults to 0.
+        """
+            
         self.id = unique_id
         self.firm = firm
         self.owner_id = owner_id
@@ -50,4 +77,9 @@ class PersonalCar:
 
 
     def update_timer_L_a_t(self):
+        """
+        Increment the age/lifetime counter of the car by 1 time unit.
+        
+        This tracks how long the vehicle has been in use.
+        """
         self.L_a_t += 1

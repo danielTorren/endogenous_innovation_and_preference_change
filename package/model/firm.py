@@ -3,8 +3,24 @@ from scipy.special import lambertw
 from package.model.carModel import CarModel
 
 class Firm:
+    """
+    Firm class represents a car manufacturer in the simulation.
+    Each firm manages its own innovation, production, pricing, and sales strategy
+    for both ICE and EV technologies.
+    """
+
     def __init__(self, firm_id, init_tech_ICE, init_tech_EV, parameters_firm, parameters_car_ICE, parameters_car_EV):
-        
+        """
+        Initialize a Firm object with its technologies, parameters, and firm-specific attributes.
+
+        Args:
+            firm_id (int): Unique identifier for the firm.
+            init_tech_ICE (CarModel): Initial ICE car model.
+            init_tech_EV (CarModel): Initial EV car model.
+            parameters_firm (dict): Configuration parameters for the firm.
+            parameters_car_ICE (dict): Parameters for ICE car models.
+            parameters_car_EV (dict): Parameters for EV car models.
+        """
 
         self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
         self.rebate_calibration = parameters_firm["rebate_calibration"]
@@ -17,10 +33,6 @@ class Firm:
         self.zero_profit_options_prod = 0
         self.zero_profit_options_research = 0
 
-        #DELETE THIS LATER
-        self.prod_counter = 0
-        self.research_counter = 0
-
         self.segment_codes = parameters_firm["segment_codes"]
         self.num_segments = len(self.segment_codes)
 
@@ -30,8 +42,6 @@ class Firm:
 
         self.beta_s_values = parameters_firm["beta_segment_vals"] 
         self.gamma_s_values = parameters_firm["gamma_segment_vals"] 
-
-        self.target_range_over_cost = parameters_firm["target_range_over_cost_init"]
 
         self.d_mean = parameters_firm["d_mean"]
         self.nu = parameters_firm["nu"]  
@@ -77,7 +87,6 @@ class Firm:
         self.U_segments_init = self.parameters_firm["U_segments_init"]
         
         self.init_price_multiplier = self.parameters_firm["init_price_multiplier"]
-        
 
         self.lambda_exp = parameters_firm["lambda"]
 
@@ -105,19 +114,21 @@ class Firm:
         else:
             self.cars_on_sale = [self.init_tech_ICE] 
 
-        self.set_car_init_price_and_base_U()
+        self.set_car_init_price()
 
         if self.save_timeseries_data_state:
             self.set_up_time_series_firm()
 
         
-    def set_car_init_price_and_base_U(self):
+    def set_car_init_price(self):
+        """
+        Set initial price for all initial cars on sale.
+        """
         for car in self.cars_on_sale:
             car.price = car.ProdCost_t*self.init_price_multiplier
             for segment_code in self.segment_codes:
                 # Add data for the segment
                 car.optimal_price_segments[segment_code] = car.price
-                #car.B_segments[segment_code] = self.B_segments_init
 
         #need to do EV IN MEMORY FOR THE FIRST STEP as well
         for car in self.list_technology_memory_EV:
@@ -128,6 +139,9 @@ class Firm:
                 #car.B_segments[segment_code] = self.B_segments_init
 
     def calc_init_U_segments(self):
+        """
+        Initialize utility values across segments for each car on sale at time step zero.
+        """
         for segment_code in self.segment_codes:          
             # Unpack the tuple
             b_idx, g_idx, e_idx = segment_code  # if your codes are (b, g, e)
@@ -138,11 +152,19 @@ class Firm:
                     car.car_utility_segments_U[segment_code] = -np.inf
 
     def calc_utility_prop(self,U,W, maxU):
+        """
+        Compute utility proportion using exponential scaling based on segment utility.
 
+        Args:
+            U (float): Utility value.
+            W (float): Segment-wide scaling factor.
+            maxU (float): Maximum utility in the segment.
+
+        Returns:
+            float: Normalized utility proportion for car choice modeling.
+        """
         exp_input = self.kappa*U - self.kappa*maxU
-        #np.clip(exp_input, -700, 700, out=exp_input)#CLIP SO DONT GET OVERFLOWS
         norm_exp_input = -self.kappa*maxU
-        #np.clip(norm_exp_input, -700, 700, out=norm_exp_input)#CLIP SO DONT GET OVERFLOWS
         
         utility_proportion = np.exp(exp_input)/(np.exp(norm_exp_input)*W + np.exp(exp_input))
 
@@ -153,13 +175,10 @@ class Firm:
         Converts a list of car objects into a dictionary of NumPy arrays for vectorized calculations.
 
         Args:
-            car_list: A list of car objects.  Each car object is assumed to have 
-                    attributes like emissions, ProdCost_t, transportType, etc.
+            car_list (list): List of CarModel objects.
 
         Returns:
-            A dictionary where keys are car attribute names (e.g., "emissions", "ProdCost_t")
-            and values are NumPy arrays containing the corresponding attribute values for all cars.
-            Returns None if car_list is empty or if car objects don't have the expected attributes.
+            dict: Dictionary mapping attribute names to numpy arrays.
         """
 
         if not car_list:
@@ -181,7 +200,16 @@ class Firm:
         return car_data
 
     def calc_optimal_price_cars(self, car_list, car_data):
-        """Fully vectorized calculation of optimal prices."""
+        """
+        Vectorized calculation of profit-maximizing prices for each car and segment.
+
+        Args:
+            car_list (list): List of cars to price.
+            car_data (dict): Dictionary of car attributes.
+
+        Returns:
+            list: Updated car list with segment-specific optimal prices.
+        """
 
         # Convert car data to NumPy arrays (CRITICAL CHANGE)
         E_m = car_data["emissions"]  # Array of emissions for all cars
@@ -223,12 +251,27 @@ class Firm:
         return car_list  # Return a dictionary of optimal prices by segment.
 
     def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta, B):
+        """
+        Compute utility value for a single car across segments.
 
+        Returns:
+            float: Utility value for given inputs.
+        """
         U = - P_adjust - gamma*E_new + beta*Q**self.alpha + self.nu*(B*omega)**self.zeta - self.d_mean*(((1+self.r)*(1-delta)*(c + gamma*e))/(omega*(self.r - delta - self.r*delta)))
         
         return U
 
     def calc_utility_cars_segments(self, car_list, car_data):
+        """
+        Compute utility for all car-segment combinations.
+
+        Args:
+            car_list (list): Cars to evaluate.
+            car_data (dict): Dictionary of car attributes.
+
+        Returns:
+            list: Updated car list with utility values by segment.
+        """
         num_cars = len(car_list)
 
         U = np.full((num_cars, self.num_segments), -np.inf)
@@ -287,6 +330,10 @@ class Firm:
     #INNOVATION
 
     def innovate(self):
+        """
+        Perform innovation step for the firm.
+        Evaluate neighboring technologies and select a new car to add to memory.
+        """
         # create a list of cars in neighbouring memory space                       
         unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
 
@@ -296,8 +343,6 @@ class Firm:
         else:
             unique_neighbouring_technologies = unique_neighbouring_technologies_ICE +  [self.last_researched_car_ICE]
 
-
-        
         # update the prices of models to consider        
         unique_neighbouring_technologies = self.update_prices_and_emissions_intensity(unique_neighbouring_technologies)
         # calculate the optimal price of cars in the memory 
@@ -327,27 +372,31 @@ class Firm:
 
     def calc_predicted_profit_segments_research(self, car_list, car_data):
         """
-        THIS INCLUDES THE FLAT SUBSIDY FOR EV RESEARCH!
-        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars,
-        and segments that do not consider EVs only able to buy ICE cars.
-        """
+        Calculate expected profits for cars being considered for research.
+        Incorporates production subsidies and considers segment compatibility.
 
+        Args:
+            car_list (list): Cars to evaluate.
+            car_data (dict): Dictionary of car attributes.
+
+        Returns:
+            list: Updated cars with expected profit by segment.
+        """
         num_cars = len(car_list)
 
         # Extract necessary car data
-        transport_types = car_data["transportType"]#np.array([car.transportType for car in car_list])
-        prod_costs = car_data["ProdCost_t"]#np.array([car.ProdCost_t for car in car_list])
+        transport_types = car_data["transportType"]
+        prod_costs = car_data["ProdCost_t"]
         optimal_prices = np.array([
             [car.optimal_price_segments.get(segment_code, 0) for segment_code in self.segment_codes] 
             for car in car_list
         ])
-        utilities = np.array([#THES ARE ADJUST FOR ICE CARS AND THE ABOLUTY TO ChOOSE EVS, the -np.inf is incase the utility doesnt exist
+        utilities = np.array([
             [car.car_utility_segments_U.get(segment_code, -np.inf) for segment_code in self.segment_codes] 
             for car in car_list
-        ])
+        ])#THES ARE ADJUST FOR ICE CARS AND THE ABOLUTY TO ChOOSE EVS, the -np.inf is incase the utility doesnt exist
 
         # Extract market data
-        #DOES THE SEGMENT ALLOW FOR EVS?
         consider_ev_mask = np.array([segment_code[2] == 1 for segment_code in self.segment_codes])  # Shape (num_segments,)
         is_ev_mask = transport_types == 3  # Shape (num_cars,)#CAR IS AN EV not ICEV
         consider_ev_broadcast = np.tile(consider_ev_mask, (num_cars, 1))
@@ -373,7 +422,7 @@ class Firm:
 
 
         # Apply research subsidy for segments that can't buy EVs, you get the resarch subsidy if you choose an EV regardless of whether or not the segemnt can buy it
-        expected_profit = np.where(#THIS SHOULD REALLY DO ANYTHING AS rare that you research subsidy is larger than profitability of ICE cars in that segment
+        expected_profit = np.where(
             include_vehicle_mask,
             raw_profit,
             0 
@@ -388,14 +437,13 @@ class Firm:
 
     def select_car_lambda_research(self, car_list):
         """
-        Probabilistically select a vehicle for research, where the probability of selecting a vehicle
-        is proportional to its expected profit, rather than always selecting the one with the highest profit.
+        Select a car for R&D using softmax over expected profits.
 
-        Parameters:
-        - expected_profits_segments (dict): A dictionary containing segment data with vehicles and their expected profits.
+        Args:
+            car_list (list): Cars to select from.
 
         Returns:
-        - CarModel: The vehicle selected for research.
+            CarModel: Selected car for innovation.
         """
         
         #PICK OUT EACH CARS BEST SEGMENT
@@ -414,7 +462,7 @@ class Firm:
 
         len_vehicles = len(car_list)  # Length of the car list
 
-        if np.sum(profits) == 0:#ALL TECHH HAS 0 UTILITY DUE TO BEIGN VERY BAD, exp caps out
+        if np.sum(profits) == 0:
             self.zero_profit_options_research = 1
             selected_index = self.random_state.choice(len_vehicles)
         else:
@@ -425,7 +473,6 @@ class Firm:
             valid_profits_mask = profits != -np.inf
 
             exp_input = self.lambda_exp*(profits[valid_profits_mask]  - np.max(profits[valid_profits_mask]))
-            #exp_input = np.clip(exp_input, -700, 700)#CLIP TO AVOID OVERFLOWS
             lambda_profits[valid_profits_mask] = np.exp(exp_input)
             sum_profit = np.sum(lambda_profits)
 
@@ -437,9 +484,13 @@ class Firm:
 
         return selected_vehicle
 
-    #Memory
     def gen_neighbour_carsModel(self, tech_strings, nk_landscape, parameters_car, transportType):
-        # Generate CarModel instances for the unique neighboring technologies
+        """
+        Generate CarModel instances for neighboring technology strings.
+
+        Returns:
+            list: List of CarModel instances.
+        """
         neighbouring_technologies = []
 
         if transportType == 2:
@@ -466,6 +517,12 @@ class Firm:
         return neighbouring_technologies
     
     def gen_neighbour_strings(self, memory_list, last_researched_car):
+        """
+        Generate strings representing neighboring technology designs.
+
+        Returns:
+            list: List of unique neighboring technology strings.
+        """
         # Initialize a list to store unique neighboring technology strings
         unique_neighbouring_technologies_strings = []
 
@@ -486,7 +543,12 @@ class Firm:
         return result
 
     def generate_neighbouring_technologies(self, last_researched_car, list_technology_memory, landscape, parameters_car, transportType):
-        """Generate neighboring technologies for cars. Roaming point"""
+        """
+        Combine generation of neighbor strings and CarModel creation.
+
+        Returns:
+            list: List of neighboring CarModels.
+        """
         # Set to track unique neighboring technology strings
 
         string_list = self.gen_neighbour_strings(list_technology_memory, last_researched_car)
@@ -496,7 +558,9 @@ class Firm:
         return self.neighbouring_technologies
     
     def add_new_vehicle_memory(self, vehicle_model_research):
-
+        """
+        Add a new vehicle model to the firm's memory.
+        """
         if vehicle_model_research.transportType == 2:#ICE
             if vehicle_model_research not in self.list_technology_memory_ICE:
                 self.list_technology_memory_ICE.append(vehicle_model_research)
@@ -505,6 +569,9 @@ class Firm:
                 self.list_technology_memory_EV.append(vehicle_model_research)
 
     def update_memory_timer(self):
+        """
+        Update memory timer for technologies not currently in use.
+        """
         #change the timer for the techs that are not the ones being used
         if self.ev_research_bool:
             for technology in self.list_technology_memory_EV:
@@ -516,7 +583,10 @@ class Firm:
                 technology.update_timer()
 
     def update_memory_len(self):
-        #is the memory list is too long then remove data
+        """
+        Trim the memory bank if it exceeds the allowed capacity.
+        Removes the oldest unused car.
+        """
 
         list_technology_memory_all = list(self.list_technology_memory_EV + self.list_technology_memory_ICE)
 
@@ -544,8 +614,10 @@ class Firm:
 
     def calc_predicted_profit_segments_production(self, car_list, car_data):
         """
-        Calculate the expected profit for each segment, with segments that consider EVs able to buy both EVs and ICE cars,
-        and segments that do not consider EVs only able to buy ICE cars.
+        Calculate expected production profits for cars across segments.
+
+        Returns:
+            list: Updated car list with profit expectations by segment.
         """
         num_cars = len(car_list)
 
@@ -610,7 +682,12 @@ class Firm:
 
 
     def set_utility_and_profit_grid_production(self, selected_vehicle, segment_codes_reduc, valid_indices):
+        """
+        Compute utility and profit for a selected vehicle across valid segments.
 
+        Returns:
+            np.ndarray: Array of expected profits per segment.
+        """
         beta_s_values = self.beta_s_values[valid_indices]
         gamma_s_values = self.gamma_s_values[valid_indices]
         I_s_t_values = self.I_s_t_vec[valid_indices]
@@ -670,14 +747,10 @@ class Firm:
     
     def select_car_lambda_production(self, car_list):
         """
-        Select vehicles for production based on a matrix of expected profits for each segment and technology combination.
-        Iteratively selects the most profitable combination, removes the segment, and updates the technology column.
-
-        Parameters:
-        - car_list (list): List of CarModel objects.
+        Select cars for production using a greedy approach over expected profits.
 
         Returns:
-        - list (tuple): List of tuples containing selected vehicles and their associated chosen segments.
+            list: Selected cars for production.
         """
         # Step 0: Build the profit matrix (segments x technologies)
 
@@ -767,7 +840,12 @@ class Firm:
 
 
     def choose_cars_segments(self):
+        """
+        Main method to choose which cars will be sold based on profitability and utility.
 
+        Returns:
+            list: Selected cars to be offered on the market.
+        """
         if self.ev_production_bool:
             list_technology_memory_all = self.list_technology_memory_EV + self.list_technology_memory_ICE 
         else:
@@ -797,10 +875,10 @@ class Firm:
 
         return cars_selected
     
-
-####################################################################################################
-
     def set_up_time_series_firm(self):
+        """
+        Initialize storage for time-series data tracking firm performance.
+        """
         self.history_profit = []
         self.history_firm_cars_users = []
         self.history_attributes_researched = []
@@ -809,6 +887,9 @@ class Firm:
         self.history_segment_production_counts = []
 
     def save_timeseries_data_firm(self):
+        """
+        Record current firm performance metrics into time-series storage.
+        """
         self.history_profit.append(self.firm_profit)
         self.history_firm_cars_users.append(self.firm_cars_users)
         self.history_num_cars_on_sale.append(len(self.cars_on_sale))
@@ -825,6 +906,12 @@ class Firm:
             self.history_research_type.append(np.nan)
     
     def update_prices_and_emissions_intensity(self, car_list):
+        """
+        Update each car's fuel cost and emissions intensity based on current market inputs.
+
+        Returns:
+            list: Updated car list.
+        """
         for car in car_list:
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
@@ -834,6 +921,13 @@ class Firm:
         return car_list
 
     def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy, rebate_calibration):
+        """
+        Advance the firm to the next time step. Updates cars, memory, and innovations.
+
+        Returns:
+            list: Cars on sale after production and innovation decisions.
+        """
+        
         self.t_firm += 1
 
         self.I_s_t_vec = I_s_t_vec
@@ -851,18 +945,14 @@ class Firm:
 
         #update cars to sell   
         if (self.random_state.rand() < self.prob_change_production):
-            #print("production", self.firm_id)
             self.cars_on_sale = self.choose_cars_segments()
-            self.production_change_bool = 1
-            self.prod_counter += 1                    
+            self.production_change_bool = 1                 
 
         self.update_memory_timer()
 
         if self.random_state.rand() < self.prob_innovate:
-            #print("innovate", self.firm_id)
             self.innovate()
-            self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DAT
-            self.research_counter += 1
+            self.research_bool = 1#JUST USED FOR THE SAVE TIME SERIES DATA
 
         if self.save_timeseries_data_state and (self.t_firm % self.compression_factor_state == 0):
             self.save_timeseries_data_firm()
@@ -871,7 +961,12 @@ class Firm:
         return self.cars_on_sale
     
     def next_step_burn_in(self, I_s_t_vec, W_vec, nu_UMax_vec):
-        
+        """
+        Execute firm actions during the burn-in phase.
+
+        Returns:
+            list: Cars on sale for this pre-initialization step.
+        """
         self.I_s_t_vec = I_s_t_vec
         self.W_vec =  W_vec
         self.maxU_vec = nu_UMax_vec

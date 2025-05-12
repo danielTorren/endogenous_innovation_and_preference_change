@@ -1,20 +1,35 @@
-"""Define controller than manages exchange of information between social network and firms
-Created: 22/12/2023
+### controller.py
 """
-from package.model.nkModel_ICE import NKModel as NKModel_ICE
-from package.model.nkModel_EV import NKModel as NKModel_EV
-from package.model.firmManager import Firm_Manager 
+Define controller that manages exchange of information between social network and firms.
+"""
+
+# Imports
+from package.model.nkModel_ICE import NKModel_ICE 
+from package.model.nkModel_EV import NKModel_EV 
+from package.model.firmManager import Firm_Manager
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
+
 import numpy as np
 import itertools
 from scipy.stats import lognorm
 from copy import deepcopy
-class Controller:
-    def __init__(self, parameters_controller):
 
-        self.absolute_2035 = 144
+class Controller:
+    """
+    Controller class orchestrates interactions between agents in a vehicle market simulation
+    involving social networks, firms, policy, and vehicle technologies (ICE and EV).
+    """
+    def __init__(self, parameters_controller):
+        """
+        Initialize the Controller object with all components and parameters.
+        Sets up initial conditions, landscapes, firms, and social network users.
+
+        Args:
+            parameters_controller (dict): Dictionary of all model configuration parameters.
+        """
+        self.absolute_2035 = 144#number of months from the end of calibration period to 2035
         self.unpack_controller_parameters(parameters_controller)
         
         self.parameters_EV["delta"] = self.parameters_ICE["delta"] 
@@ -23,41 +38,16 @@ class Controller:
 
         self.handle_seed()
 
-        #self.update_scale()#change scale to avoid overflows
-        self.parameters_firm["target_range_over_cost_init"] = 1000/10000#DELETE THIS AT SOME POINT
-
         self.gen_time_series_calibration_scenarios_policies()
         self.gen_users_parameters()
-        
-        #self.prob_switch_car_arr = np.linspace(self.parameters_social_network["prob_switch_car"], self.parameters_social_network["prob_switch_car"], int(round(self.duration_burn_in * (3 / 4))))
-        #self.prob_switch_car_arr = np.linspace(0, self.parameters_social_network["prob_switch_car"], int(round(self.duration_burn_in * (3 / 4))))
-        #self.prob_switch_car_arr = np.logspace(
-        #    np.log10(self.parameters_social_network["prob_switch_car"]),  # Start at 1e-4
-        #    np.log10(self.parameters_social_network["prob_switch_car"]),  # End at final probability
-        #    int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
-        #)
-        """
-        self.prob_innovate_arr = np.logspace(
-            np.log10(1e-4),  # Start at 1e-4
-            np.log10(self.parameters_firm["prob_innovate"]),  # End at final probability
-            int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
-        )
-
-        self.prob_change_production_arr = np.logspace(
-            np.log10(1e-4),  # Start at 1e-4
-            np.log10(self.parameters_firm["prob_change_production"]),  # End at final probability
-            int(round(self.duration_burn_in * (3 / 4)))  # Number of steps
-        )
-        """
-        #AVOID SYNCRONISATION OF CAR AGES
 
         self.update_time_series_data()
 
         self.setup_id_gen()
 
         #SET UP LANDSCAPES
-        self.setup_ICE_landscape(self.parameters_ICE)#110101101001110
-        self.setup_EV_landscape(self.parameters_EV)#110111110110001
+        self.setup_ICE_landscape(self.parameters_ICE)
+        self.setup_EV_landscape(self.parameters_EV)
         self.setup_second_hand_market()
         
         #create firms and social networks
@@ -109,7 +99,12 @@ class Controller:
             self.set_up_time_series_controller()
         
     def unpack_controller_parameters(self,parameters_controller):
-        
+        """
+        Unpack and store all input parameters from the controller configuration.
+
+        Args:
+            parameters_controller (dict): Configuration parameters for model components.
+        """
         #CONTROLLER PARAMETERS:
         self.parameters_controller = parameters_controller#save copy in the object for ease of access
 
@@ -128,13 +123,13 @@ class Controller:
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
         
-        #TIME STUFF#
+        #TIME STUFF
         self.duration_burn_in = parameters_controller["duration_burn_in"] 
         self.duration_calibration = parameters_controller["duration_calibration"] 
         self.duration_future = parameters_controller["duration_future"] 
         self.duration_burn_in_firms = parameters_controller["duration_burn_in_research"] 
 
-        self.t_2030 = int(self.duration_burn_in + self.duration_calibration + 6*12)#1/1/20230
+        self.t_2030 = int(self.duration_burn_in + self.duration_calibration + 6*12)#1/1/20230, only used to measure a medium run utility in 2030
 
         if self.duration_future > 0: 
             self.full_run_state = True
@@ -152,6 +147,10 @@ class Controller:
         self.time_steps_max = parameters_controller["time_steps_max"]
 
     def handle_seed(self):
+        """
+        Initialize random seeds for various components using controller parameters.
+        Ensures reproducibility of random processes in model.
+        """
         #Seed for inputs
         self.random_state_inputs = np.random.RandomState(self.parameters_controller["seed_inputs"])
         self.parameters_social_network["seed_inputs"] = self.parameters_controller["seed_inputs"]
@@ -166,7 +165,14 @@ class Controller:
         self.parameters_second_hand["random_state"] = self.random_state
 
     def gen_users_parameters(self):
-
+        """
+        Generate user-specific parameters for social network individuals:
+        - Driving distances
+        - Innovativeness (chi)
+        - Emissions willingness to pay (gamma)
+        - Vehicle range preference (nu)
+        - Quality sensitivity (beta)
+        """
         self.num_individuals = self.parameters_social_network["num_individuals"]
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
 
@@ -189,98 +195,6 @@ class Controller:
         ####################################################################################################################################
         #BETA
         self.gen_beta()
-
-    def gen_distance(self):
-        #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
-        bin_centers = np.array([
-            335.2791667,
-            1005.8375,
-            1676.331279,
-            2346.892946,
-            3017.452946,
-            5028.99
-        ])
-        fitted_lambda = 1.5428809450394916
-        #Fitted_lambda_10_plus_year_old_cars =  0.2345307913567248
-        #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
-        # Step 4: Generate N random distances using the fitted Poisson parameter
-        N = self.num_individuals # Number of individuals
-        poisson_samples = self.random_state_inputs.poisson(lam=fitted_lambda, size=N)
-        # Step 5: Map the Poisson samples back to the distance range of the original data
-        min_bin, max_bin = bin_centers[0], bin_centers[-1]
-        scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
-        self.d_vec = poisson_samples * scale_factor + min_bin
-        self.parameters_social_network["d_vec"] = self.d_vec
-
-    def gen_chi(self):
-        self.a_chi = self.parameters_social_network["a_chi"]
-        self.b_chi = self.parameters_social_network["b_chi"]
-        self.chi_max = self.parameters_social_network["chi_max"]
-        self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
-
-        # Step 1: Generate continuous Beta distribution
-        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
-
-        # Step 2: Introduce zeros based on target proportion
-        num_zeros = int(self.proportion_zero_target * self.num_individuals)
-        zero_indices = self.random_state_inputs.choice(self.num_individuals, size=num_zeros, replace=False)
-        innovativeness_vec_continuous[zero_indices] = 0
-
-        # Step 3: Scale to chi_max without rounding
-        self.chi_vec = innovativeness_vec_continuous * self.chi_max
-
-        # Check the actual proportion of zeros
-        self.proportion_zero_chi = np.mean(self.chi_vec == 0)
-        self.parameters_social_network["chi_vec"] = self.chi_vec 
-
-    def gen_nu(self):
-        self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
-        self.nu_median = np.median(self.nu_vec)
-        self.parameters_social_network["nu_median"] = self.nu_median
-        self.parameters_social_network["nu_vec"] = self.nu_vec 
-
-    def gen_gamma(self):
-        r = self.parameters_vehicle_user["r"]
-        delta = self.parameters_ICE["delta"]
-        if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
-            print("r and delta: r, delta/1-delta",r, delta,delta/(1-delta))
-            raise Exception("r <= delta/(1-delta)), raise r or lower delta")
-        
-        self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
-        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
-        WTP_E_vec_unclipped = self.random_state_inputs.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
-        self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
-        self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
-
-        
-        self.num_gamma_segments = self.parameters_firm_manager["num_gamma_segments"]
-        # Calculate the bin edges using quantiles
-        quants_gamma = np.linspace(0,1,self.num_gamma_segments + 1)
-        self.gamma_bins =  np.quantile(self.gamma_vec, quants_gamma)
-
-        # Step 1: Define the percentiles for the midpoints
-        percentiles_gamma = np.linspace(1 / (2 * self.num_gamma_segments), 1 - 1 / (2 * self.num_gamma_segments), self.num_gamma_segments)
-        self.gamma_s = np.quantile(self.gamma_vec, percentiles_gamma)
-
-    def gen_beta(self):
-        ####################################################################################################################################
-        
-        #BETA
-        median_beta = self.calc_beta_median()
-        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
-        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
-        median_income = np.median(incomes)
-        self.beta_vec = median_beta*(median_income/incomes)
-        self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
-
-        self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
-        # Calculate the bin edges using quantiles
-        quants = np.linspace(0,1,self.num_beta_segments + 1)
-        self.beta_bins =  np.quantile(self.beta_vec, quants)
-
-        # Step 1: Define the percentiles for the midpoints
-        percentiles = np.linspace(1 / (2 * self.num_beta_segments), 1 - 1 / (2 * self.num_beta_segments), self.num_beta_segments)
-        self.beta_s = np.quantile(self.beta_vec, percentiles)
 
         self.parameters_social_network["beta_vec"] = self.beta_vec 
         self.parameters_social_network["gamma_vec"] = self.gamma_vec 
@@ -310,6 +224,117 @@ class Controller:
 
         self.beta_segment_vals = np.array(beta_values)
         self.gamma_segment_vals = np.array(gamma_values)
+
+
+    def gen_distance(self):
+        """
+        Generate driving distance vector (d_vec) using a fitted Poisson distribution.
+        Derived from empirical California vehicle travel data.
+        """
+                
+        #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
+        bin_centers = np.array([
+            335.2791667,
+            1005.8375,
+            1676.331279,
+            2346.892946,
+            3017.452946,
+            5028.99
+        ])
+        fitted_lambda = 1.5428809450394916
+        #Fitted_lambda_10_plus_year_old_cars =  0.2345307913567248
+        #Monthly_depreciation_rate_distance =  0.010411 #THIS ASSUMES CARS OF 15 years for 10+years with max distance driven as 50% more than the second larger upper bin limit.
+        # Step 4: Generate N random distances using the fitted Poisson parameter
+        N = self.num_individuals # Number of individuals
+        poisson_samples = self.random_state_inputs.poisson(lam=fitted_lambda, size=N)
+        # Step 5: Map the Poisson samples back to the distance range of the original data
+        min_bin, max_bin = bin_centers[0], bin_centers[-1]
+        scale_factor = (max_bin - min_bin) / (len(bin_centers) - 1)
+        self.d_vec = poisson_samples * scale_factor + min_bin
+        self.parameters_social_network["d_vec"] = self.d_vec
+
+    def gen_chi(self):
+        """
+        Generate chi_vec representing innovativeness of users using a beta distribution.
+        Injects proportion of zeros to simulate innovative users. 
+        """
+        self.a_chi = self.parameters_social_network["a_chi"]
+        self.b_chi = self.parameters_social_network["b_chi"]
+        self.chi_max = self.parameters_social_network["chi_max"]
+        self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
+
+        # Step 1: Generate continuous Beta distribution
+        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+
+        # Step 2: Introduce zeros based on target proportion
+        num_zeros = int(self.proportion_zero_target * self.num_individuals)
+        zero_indices = self.random_state_inputs.choice(self.num_individuals, size=num_zeros, replace=False)
+        innovativeness_vec_continuous[zero_indices] = 0
+
+        # Step 3: Scale to chi_max without rounding
+        self.chi_vec = innovativeness_vec_continuous * self.chi_max
+
+        # Check the actual proportion of zeros
+        self.proportion_zero_chi = np.mean(self.chi_vec == 0)
+        self.parameters_social_network["chi_vec"] = self.chi_vec 
+
+    def gen_nu(self):
+        """
+        Generate constant nu vector representing vehicle range preference.
+        """
+        self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
+        self.nu_median = np.median(self.nu_vec)
+        self.parameters_social_network["nu_median"] = self.nu_median
+        self.parameters_social_network["nu_vec"] = self.nu_vec 
+
+    def gen_gamma(self):
+        """
+        Compute gamma values (willingness to pay per emissions reduced) for individuals.
+        Derived from normal distribution of WTP_E scaled by distance.
+        Used to create segmentation bins.
+        """
+        r = self.parameters_vehicle_user["r"]
+        delta = self.parameters_ICE["delta"]
+        if (r <= delta/(1-delta)) or (r <= self.parameters_EV["delta"]/(1-self.parameters_EV["delta"])):
+            print("r and delta: r, delta/1-delta",r, delta,delta/(1-delta))
+            raise Exception("r <= delta/(1-delta)), raise r or lower delta")
+        
+        self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
+        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
+        WTP_E_vec_unclipped = self.random_state_inputs.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
+        self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
+        self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
+
+        self.num_gamma_segments = self.parameters_firm_manager["num_gamma_segments"]
+        # Calculate the bin edges using quantiles
+        quants_gamma = np.linspace(0,1,self.num_gamma_segments + 1)
+        self.gamma_bins =  np.quantile(self.gamma_vec, quants_gamma)
+
+        # Step 1: Define the percentiles for the midpoints
+        percentiles_gamma = np.linspace(1 / (2 * self.num_gamma_segments), 1 - 1 / (2 * self.num_gamma_segments), self.num_gamma_segments)
+        self.gamma_s = np.quantile(self.gamma_vec, percentiles_gamma)
+
+    def gen_beta(self):
+        """
+        Generate beta_vec reflecting consumer quality sensitivity based on income.
+        Inverse relationship to income distribution drawn from a log-normal.
+        """
+        #BETA
+        median_beta = self.calc_beta_median()
+        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
+        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
+        median_income = np.median(incomes)
+        self.beta_vec = median_beta*(median_income/incomes)
+        self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+
+        self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
+        # Calculate the bin edges using quantiles
+        quants = np.linspace(0,1,self.num_beta_segments + 1)
+        self.beta_bins =  np.quantile(self.beta_vec, quants)
+
+        # Step 1: Define the percentiles for the midpoints
+        percentiles = np.linspace(1 / (2 * self.num_beta_segments), 1 - 1 / (2 * self.num_beta_segments), self.num_beta_segments)
+        self.beta_s = np.quantile(self.beta_vec, percentiles)
 
     def generate_beta_values_quintiles(self,n, quintile_incomes, median_beta):
         """
@@ -354,7 +379,7 @@ class Controller:
 
     def calc_beta_median(self):
         """
-        Calculate beta_s based on the given equation.
+        Calculate the median beta value.
         """
         # Extract parameters
         E = self.parameters_ICE["production_emissions"]
@@ -384,7 +409,6 @@ class Controller:
         Q_mt = (self.parameters_ICE["min_Quality"] + self.parameters_ICE["max_Quality"])/2
         B = self.parameters_ICE["fuel_tank"]
 
-        #print("min kappa", 1/(P - C_mean))
         # Calculate the components of the equation
         term1 = np.log(W * (kappa * (P - C_mean) - 1))* (1 / kappa)
         term2 = P + gamma * E
@@ -396,7 +420,10 @@ class Controller:
 
     #####################################################################################################################################
     def manage_burn_in(self):
-
+        """
+        Create static time series inputs for burn-in period of model.
+        Gas prices, electricity, emissions, and rebate data are held constant.
+        """
         self.burn_in_gas_price_vec = np.asarray([self.calibration_gas_price_california_vec[0]]*self.duration_burn_in)
         self.burn_in_electricity_price_vec = np.asarray([self.calibration_electricity_price_vec[0]]*self.duration_burn_in)
         self.burn_in_electricity_emissions_intensity_vec = np.asarray([self.calibration_electricity_emissions_intensity_vec[0]]*self.duration_burn_in)
@@ -404,11 +431,11 @@ class Controller:
         self.burn_in_rebate_time_series = np.zeros(self.duration_burn_in)
         self.burn_in_used_rebate_time_series = np.zeros(self.duration_burn_in)
 
-    #############################################################################################################################
-    #DEAL WITH CALIBRATION
-
     def manage_calibration(self):
-
+        """
+        Generate calibration period rebate and emissions parameters from config.
+        Handles EV rebate policy setup.
+        """
         self.gas_emissions_intensity = self.parameters_calibration_data["gasoline_Kgco2_per_Kilowatt_Hour"]
         
         self.calibration_rebate_time_series = np.zeros(self.duration_calibration + self.duration_future )
@@ -425,12 +452,11 @@ class Controller:
             self.calibration_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["rebate"]
             self.calibration_used_rebate_time_series[self.parameters_rebate_calibration["start_time"]:self.duration_calibration] = self.parameters_rebate_calibration["used_rebate"]
 
-
-    #############################################################################################################################
-    #DEAL WITH SCENARIOS
-
     def manage_scenario(self):
-
+        """
+        Generate future scenario projections for gas prices, electricity, and emissions.
+        Based on linear extrapolations from 2023 values and future scenario multipliers.
+        """
         self.Gas_price_2023 = self.parameters_calibration_data["Gas_price_2023"]
         self.Gas_price_future = self.Gas_price_2023*self.parameters_controller["parameters_scenarios"]["Gas_price"]
         if self.duration_future > self.absolute_2035:
@@ -455,11 +481,11 @@ class Controller:
         else:
             self.grid_emissions_intensity_series_future = np.linspace(self.Grid_emissions_intensity_2023, self.Grid_emissions_intensity_future, self.duration_future)
 
-    #############################################################################################################################
-    #DEAL WITH POLICIES
-
     def manage_policies(self):
-        
+        """
+        Generate policy time series data such as carbon prices, subsidies, rebates.
+        Applies configured policies from the controller settings.
+        """
         self.Carbon_price_state = self.parameters_controller["parameters_policies"]["States"]["Carbon_price"]
         
         self.Electricity_subsidy_state =  self.parameters_controller["parameters_policies"]["States"]["Electricity_subsidy"]
@@ -528,11 +554,13 @@ class Controller:
         else:
             self.production_subsidy_time_series_future = np.asarray([self.Production_subsidy]*self.duration_future)
 
-
-    #############################################################################################################################
-    #DEAL WITH CARBON PRICE
-
     def calculate_carbon_price_time_series(self):
+        """
+        Generate a time series for carbon price based on user-defined growth type.
+
+        Returns:
+            list: Carbon price values for each time step.
+        """
         time_series = np.arange(self.time_steps_max + 1)
         carbon_price_series = []
 
@@ -542,6 +570,15 @@ class Controller:
         return carbon_price_series
 
     def calculate_price_at_time(self, t):
+        """
+        Calculate carbon price at specific time t using policy schedule.
+
+        Args:
+            t (int): Time step.
+
+        Returns:
+            float: Carbon price at time t.
+        """
         if self.future_carbon_price_policy > 0 and self.duration_future > 0:
             if t > (self.duration_burn_in + self.duration_calibration + self.absolute_2035):
                 return 0#self.future_carbon_price_policy
@@ -560,7 +597,19 @@ class Controller:
             return 0
 
     def calculate_growth(self, t, total_duration, start_price, end_price, growth_type):
+        """
+        Growth function for carbon pricing policy over time.
 
+        Args:
+            t (int): Time step.
+            total_duration (int): Duration for full policy growth.
+            start_price (float): Initial price.
+            end_price (float): Final price.
+            growth_type (str): Type of growth (flat, linear, quadratic, exponential).
+
+        Returns:
+            float: Price at time t.
+        """
         if growth_type == "flat":
             return end_price
             
@@ -578,11 +627,11 @@ class Controller:
         else:
             raise ValueError(f"Unknown growth type: {growth_type}")
 
-    #############################################################################################################################
-
     def gen_time_series_calibration_scenarios_policies(self):
-        """Put together the calibration, scenarios and policies data"""
-        
+        """
+        Combine time series data for calibration, scenarios, and policy regimes.
+        Outputs vectors for pricing, emissions, rebates across all simulation phases.
+        """
         
         self.calibration_gas_price_california_vec = self.parameters_calibration_data["gas_price_california_vec"]
         self.calibration_electricity_price_vec = self.parameters_calibration_data["electricity_price_vec"]
@@ -628,13 +677,16 @@ class Controller:
             self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
             self.production_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
 
-        #FINISH JOING THE STUFF HERE FOR THE SCENARIOS AND POLICY TIME SERIES
-
-    #############################################################################################################################
     def setup_id_gen(self):
+        """
+        Initialize ID generator for firms to ensure unique IDs across agents(individuals, firms, cars and technologies).
+        """
         self.IDGenerator_firms = IDGenerator()# CREATE ID GENERATOR FOR FIRMS
 
     def setup_firm_manager_parameters(self):
+        """
+        Configure firm manager parameters with shared and calculated model values.
+        """
         #TRANSFERING COMMON INFORMATION
         #FIRM MANAGER
         self.parameters_firm_manager["num_individuals"] = self.parameters_social_network["num_individuals"]
@@ -647,6 +699,9 @@ class Controller:
         self.parameters_firm_manager["zeta"] = self.parameters_vehicle_user["zeta"]
 
     def setup_firm_parameters(self):
+        """
+        Prepare firm configuration including landscapes, pricing, and emission settings.
+        """
         self.parameters_firm["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_firm["compression_factor_state"] = self.compression_factor_state
         self.parameters_firm["IDGenerator_firms"] = self.IDGenerator_firms
@@ -681,7 +736,9 @@ class Controller:
             self.parameters_firm["ev_production_bool"] = False
 
     def setup_social_network_parameters(self):
-        #create social network
+        """
+        Set up social network agent parameters, including policies, emissions, and utilities.
+        """
         self.parameters_social_network["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_social_network["compression_factor_state"] = self.compression_factor_state
         self.parameters_social_network["policy_start_time"] = self.duration_calibration
@@ -697,20 +754,27 @@ class Controller:
         self.parameters_social_network["rebate_calibration"] = self.rebate_calibration 
         self.parameters_social_network["used_rebate_calibration"] = self.used_rebate_calibration 
 
-        #self.parameters_social_network["delta"] = self.parameters_ICE["delta"]
         self.parameters_social_network["beta_segment_vals"] = self.beta_segment_vals 
         self.parameters_social_network["gamma_segment_vals"] = self.gamma_segment_vals 
         self.parameters_social_network["scrap_price"] = self.parameters_second_hand["scrap_price"]
-        #self.parameters_social_network["nu"] = self.parameters_vehicle_user["nu"]
         self.parameters_social_network["alpha"] = self.parameters_vehicle_user["alpha"]
         self.parameters_social_network["zeta"] = self.parameters_vehicle_user["zeta"]
 
 
     def setup_vehicle_users_parameters(self):
+        """
+        Configure basic user-specific parameters for social network agents.
+        """
         self.parameters_vehicle_user["save_timeseries_data_state"] = self.save_timeseries_data_state
         self.parameters_vehicle_user["compression_factor_state"] = self.compression_factor_state
 
-    def setup_ICE_landscape(self, parameters_ICE):    
+    def setup_ICE_landscape(self, parameters_ICE):   
+        """
+        Initialize ICE technology landscape model from NK landscape model.
+
+        Args:
+            parameters_ICE (dict): ICE-related model parameters.
+        """ 
         parameters_ICE["init_price_multiplier"] = self.parameters_firm["init_price_multiplier"]
         parameters_ICE["r"] = self.parameters_vehicle_user["r"]
         parameters_ICE["median_beta"] = self.beta_median
@@ -722,13 +786,16 @@ class Controller:
         parameters_ICE["alpha"] = self.parameters_vehicle_user["alpha"]
         parameters_ICE["zeta"] = self.parameters_vehicle_user["zeta"]
         self.ICE_landscape = NKModel_ICE(parameters_ICE)
-        #self.ICE_landscape.retrieve_info("110101101001110")#self.landscape_ICE.min_fitness_string
 
     def setup_EV_landscape(self, parameters_EV):
-        
+        """
+        Initialize EV technology landscape model from NK landscape model.
+
+        Args:
+            parameters_EV (dict): EV-related model parameters.
+        """
         parameters_EV["init_price_multiplier"] = self.parameters_firm["init_price_multiplier"]
         parameters_EV["r"] = self.parameters_vehicle_user["r"]
-        #parameters_EV["delta"] = self.parameters_ICE["delta"]
         parameters_EV["median_beta"] = self.beta_median 
         parameters_EV["median_gamma"] = self.gamma_median
         parameters_EV["median_nu"] = self.nu_median
@@ -740,12 +807,13 @@ class Controller:
         self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
         self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
         self.EV_landscape = NKModel_EV(parameters_EV)
-        #self.ICE_landscape.retrieve_info("110111110110001")
+
 
     def setup_second_hand_market(self):
+        """
+        Configure and initialize the second-hand car market simulation object.
+        """
         self.parameters_second_hand["r"] = self.parameters_vehicle_user["r"]
-
-        #self.parameters_second_hand["delta"] = self.parameters_ICE["delta"]
         self.parameters_second_hand["kappa"] = self.parameters_vehicle_user["kappa"]
 
         self.parameters_second_hand["beta_segment_vals"] = self.beta_segment_vals 
@@ -755,17 +823,22 @@ class Controller:
         self.second_hand_merchant = SecondHandMerchant(unique_id = -3, parameters_second_hand= self.parameters_second_hand)
     
     def gen_firms(self):
-        #CREATE FIRMS    
+        """
+        Instantiate firm manager and all firm agents for the simulation.
+        """
         self.firm_manager = Firm_Manager(self.parameters_firm_manager, self.parameters_firm, self.parameters_ICE, self.parameters_EV, self.ICE_landscape, self.EV_landscape)
     
     def gen_social_network(self):
+        """
+        Instantiate social network object and create initial vehicle choices for users.
+        """
+        self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)
 
-        #self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
-        self.social_network = Social_Network(self.parameters_social_network, self.parameters_vehicle_user)#MUST GO SECOND AS CONSUMERS NEED TO MAKE FIRST CAR CHOICE
 
-##########################################################################################################################################
-    
     def set_up_time_series_controller(self):
+        """
+        Initialize data structures for recording controller-level time series history.
+        """
         self.history_gas_price = []
         self.history_electricity_price = []
         self.history_electricity_emissions_intensity = []
@@ -774,6 +847,9 @@ class Controller:
         self.history_policy_net_cost = []
 
     def save_timeseries_controller(self):
+        """
+        Save current time step's values to time series for later analysis.
+        """
         self.history_gas_price.append(self.gas_price)
         self.history_electricity_price.append(self.electricity_price)
         self.history_electricity_emissions_intensity.append(self.electricity_emissions_intensity)
@@ -782,7 +858,10 @@ class Controller:
         self.history_policy_net_cost.append(self.calc_net_policy_distortion())
 
     def manage_saves(self):
-        #DO it hear to avoid having to record the time in the subobjects
+        """
+        Trigger save operations for all model components if conditions met.
+        Applies compression factor to reduce frequency.
+        """
         if self.save_timeseries_data_state and (self.t_controller % self.compression_factor_state == 0):
             self.social_network.save_timeseries_data_social_network()
             self.firm_manager.save_timeseries_data_firm_manager()
@@ -793,8 +872,13 @@ class Controller:
 ##########################################################################################################################################
 
     def update_time_series_data(self):
+        """
+        Refresh controller variables each time step based on scenario and policy vectors.
+        Includes prices, emissions, subsidies, and rebates.
+        """
+                
         #EV research state
-        if self.t_controller == self.ev_research_start_time:
+        if self.t_controller == self.ev_research_start_time:#turn on ev research
             for firm in self.firm_manager.firms_list:
                 firm.ev_research_bool = True
                 firm.list_technology_memory = firm.list_technology_memory_ICE + firm.list_technology_memory_EV
@@ -826,58 +910,93 @@ class Controller:
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
 
     def update_firms(self):
+        """
+        Advance firm behavior for the current time step.
+
+        Returns:
+            list: Cars currently on sale across all firms.
+        """
         cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
-        # Update social network based on firm preferences
+        """
+        Advance social network behavior for the current time step.
+
+        Returns:
+            tuple: (consider_ev_vec, new_bought_vehicles)
+        """
         consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration)
 
-        #if self.t_controller > (self.duration_burn_in + self.duration_calibration):
-        #    print(self.t_controller, self.t_2030)
         if self.t_controller == self.t_2030:
-            
-            self.utility_cum_2030 = deepcopy(self.social_network.utility_cumulative)
-        #    print("YO", self.utility_cum_2030)        
+            self.utility_cum_2030 = deepcopy(self.social_network.utility_cumulative)     
 
         return consider_ev_vec, new_bought_vehicles
 
     def get_second_hand_cars(self):
+        """
+        Retrieve list of cars available from the second-hand market.
+
+        Returns:
+            list: Cars for sale in second-hand market.
+        """
         self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.rebate_calibration, self.rebate)
         cars_on_sale_second_hand = self.second_hand_merchant.cars_on_sale
 
         return cars_on_sale_second_hand
 
     def calc_price_range_ice(self):
+        """
+        Calculate range of prices for ICE cars currently on sale. Used to record data.
+
+        Returns:
+            float: Difference between max and min ICE vehicle price.
+        """
+                
         prices = [car.price for car in self.cars_on_sale_all_firms if car.transportType == 2]
         min_price = np.min(prices)
         max_price = np.max(prices)
         return max_price - min_price
 
-    ################################################################################################
-    #POLICY OUTPUTS
     def calc_total_policy_distortion(self):
-        """RUN ONCE AT THE END OF SIMULATION"""
+        """
+        Compute the total policy distortion cost at the end of simulation.
+
+        Returns:
+            float: Total distortion from all actors.
+        """
         policy_distortion_firms = sum(firm.policy_distortion for firm in self.firm_manager.firms_list)
         policy_distortion = self.social_network.policy_distortion + self.firm_manager.policy_distortion + policy_distortion_firms
         return policy_distortion
     
     def calc_net_policy_distortion(self):
-        """RUN ONCE AT THE END OF SIMULATION"""
+        """
+        Compute net cost of policy distortion.
+
+        Returns:
+            float: Net policy cost from all actors.
+        """
         policy_distortion_firms = sum(firm.policy_distortion for firm in self.firm_manager.firms_list)
         policy_distortion = self.social_network.net_policy_distortion - self.firm_manager.policy_distortion - policy_distortion_firms
         return -policy_distortion#NEGATIVE AS ITS COSTS
 
     def calc_EV_prop(self):
+        """
+        Compute proportion of EVs in the current vehicle fleet.
+
+        Returns:
+            float: EV share among all users.
+        """
         EV_stock_prop = sum(1 if car.transportType == 3 else 0 for car in self.social_network.current_vehicles)/self.social_network.num_individuals#NEED FOR OPTIMISATION, measures the uptake EVS
-        #self.firm_manager.history_past_new_bought_vehicles_prop_ev
+
         return EV_stock_prop
     
     ################################################################################################
 
     def next_step(self):
-
-        #print("TIME STEP", self.t_controller)
+        """
+        Advance the full model by one time step. Updates firms, users, second-hand market.
+        """
 
         self.update_time_series_data()
         self.cars_on_sale_all_firms = self.update_firms()
@@ -886,14 +1005,14 @@ class Controller:
 
         self.manage_saves()
 
-        self.t_controller+=1#I DONT KNOW IF THIS SHOULD BE AT THE START OR THE END OF THE TIME STEP? But the code works if its at the end lol
-
-
-    #################################################################################################
+        self.t_controller+=1
 
     def setup_continued_run_future(self, updated_parameters):
-        """Allows future runs to be made using a single loadable controller for a given seed. Used for policy analysis
-            SEED INDEPENDENT
+        """
+        Reset and continue simulation using an updated future parameter config.
+
+        Args:
+            updated_parameters (dict): New configuration for future period.
         """
         self.parameters_controller = updated_parameters
 
@@ -913,12 +1032,10 @@ class Controller:
             self.second_hand_merchant.set_up_time_series_second_hand_car()
             self.social_network.set_up_time_series_social_network()
             self.firm_manager.set_up_time_series_firm_manager()
-            #self.manage_saves()
 
             for firm in self.firm_manager.firms_list:
                 firm.save_timeseries_data_state = 1
                 firm.set_up_time_series_firm()
-                #firm.save_timeseries_data_firm()
 
         #RESET COUNTERS FOR POLICY
         self.social_network.emissions_cumulative = 0
@@ -938,19 +1055,9 @@ class Controller:
         self.rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.rebate_time_series_future), axis=None) 
         self.used_rebate_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.used_rebate_time_series_future), axis=None) 
         
-        #THIS IS THE REBATE ASSOCIATED WITH THE BACKED IN POLICY
         self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
         self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
 
         self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.electricity_price_subsidy_time_series_future), axis=None) 
         self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.production_subsidy_time_series_future), axis=None) 
-
-
-
-
-
-
-        
-
-
 

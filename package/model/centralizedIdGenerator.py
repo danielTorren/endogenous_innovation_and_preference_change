@@ -1,5 +1,6 @@
-"""GENERATE UNIQUE ID´S FOR TECHNOLOGY FIRMS"""
+
 class IDGenerator:
+    """GENERATE UNIQUE ID´S"""
     def __init__(self):
         self.current_id = 0
     

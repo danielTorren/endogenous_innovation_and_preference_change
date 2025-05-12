@@ -2,6 +2,14 @@ import numpy as np
 
 class SecondHandMerchant:
     def __init__(self, unique_id, parameters_second_hand):
+        """
+        Initialize the SecondHandMerchant with its unique ID and configuration.
+
+        Args:
+            unique_id (int): Unique identifier for the merchant.
+            parameters_second_hand (dict): Dictionary containing configuration parameters such as age limits,
+                                        discount rates, scrap prices, and random state.
+        """
         self.id = unique_id
         self.cars_on_sale = []
 
@@ -31,13 +39,27 @@ class SecondHandMerchant:
         self.age_second_hand_car_removed = []
         
     def calc_median(self, beta_vec, gamma_vec):
+        """
+        Calculate and store the median values of beta and gamma across users.
+
+        Args:
+            beta_vec (np.ndarray): Array of beta values for users.
+            gamma_vec (np.ndarray): Array of gamma values for users.
+        """
         self.median_beta =  np.median(beta_vec)
         self.median_gamma = np.median(gamma_vec)
 
-
-    ###############################################################################################################
-
     def gen_vehicle_dict_vecs_second_hand(self, list_vehicles):
+        """
+        Generate attribute arrays from a list of second-hand vehicle objects.
+
+        Args:
+            list_vehicles (list): List of vehicle objects.
+
+        Returns:
+            dict: Dictionary mapping attribute names to NumPy arrays.
+        """
+            
         # Initialize dictionary to hold lists of vehicle properties
         vehicle_dict_vecs = {
             "Quality_a_t": [], 
@@ -64,6 +86,16 @@ class SecondHandMerchant:
         return vehicle_dict_vecs
     
     def gen_vehicle_dict_vecs_new_cars(self, list_vehicles):
+        """
+        Generate attribute arrays from a list of new vehicle objects.
+
+        Args:
+            list_vehicles (list): List of vehicle objects.
+
+        Returns:
+            dict: Dictionary mapping attribute names to NumPy arrays.
+        """
+            
         # Initialize dictionary to hold lists of vehicle properties
         vehicle_dict_vecs = {
             "Quality_a_t": [], 
@@ -85,11 +117,17 @@ class SecondHandMerchant:
 
         return vehicle_dict_vecs
     
-
-####################################################################################################################################
-
     def calc_car_price_heuristic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_second_hand_cars):
+        """
+        Estimate second-hand car prices using a heuristic based on similarity to new cars.
 
+        Args:
+            vehicle_dict_vecs_new_cars (dict): Attributes of new cars.
+            vehicle_dict_vecs_second_hand_cars (dict): Attributes of second-hand cars.
+
+        Returns:
+            np.ndarray: Estimated prices for second-hand cars.
+        """
         # Extract Quality, Efficiency, and Prices of first-hand cars
         first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
         first_hand_efficiency =  vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
@@ -134,9 +172,14 @@ class SecondHandMerchant:
 
         return adjusted_prices
 
-#############################################################################################################################
-
     def update_stock_contents(self):
+        """
+        Update the stock of second-hand cars:
+            - Remove overaged or underpriced cars.
+            - Update prices using a heuristic method.
+            - Enforce max inventory constraint.
+        """
+            
         #check len of list    
         for vehicle in self.cars_on_sale:       
             if vehicle.second_hand_counter > self.age_limit_second_hand:
@@ -195,6 +238,13 @@ class SecondHandMerchant:
         """
         
     def add_to_stock(self,vehicle):
+        """
+        Add a new second-hand vehicle to the merchant's stock.
+
+        Args:
+            vehicle (object): Vehicle object to add.
+        """
+            
         #add new car to stock
         vehicle.price = vehicle.price_second_hand_merchant
         vehicle.scenario = "second_hand"
@@ -202,26 +252,39 @@ class SecondHandMerchant:
         self.cars_on_sale.append(vehicle)
     
     def remove_car(self, vehicle):
+        """
+        Remove a vehicle from the merchant's stock.
+
+        Args:
+            vehicle (object): Vehicle object to remove.
+        """
+            
         self.cars_on_sale.remove(vehicle)
 
-############################################################################################
-
     def set_up_time_series_second_hand_car(self):
+        """
+        Initialize time series trackers for second-hand inventory metrics.
+        """
+            
         self.history_num_second_hand = []
         self.history_profit = []
         self.history_age_second_hand_car_removed = []
 
     def save_timeseries_second_hand_merchant(self):
+        """
+        Save current values of second-hand inventory, profit, and removal history to time series.
+        """
+            
         self.history_num_second_hand.append(len(self.cars_on_sale))
         self.history_profit.append(self.profit )
         self.history_age_second_hand_car_removed.append(self.age_second_hand_car_removed)
 
-#########################################################################################
-
     def update_age_stock_prices_and_emissions_intensity(self, list_cars):
-
         """
-        Update ages of cars and the prices and emissiosn intensities
+        Increment the age and update fuel costs and emissions intensities for a list of cars.
+
+        Args:
+            list_cars (list): List of vehicle objects currently in stock.
         """
         for car in list_cars:
             if self.t_second_hand_cars > self.burn_in_second_hand_market:
@@ -234,7 +297,23 @@ class SecondHandMerchant:
                 car.e_t = self.electricity_emissions_intensity
 
     def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, rebate_calibration,rebate):
-        
+        """
+        Advance the second-hand merchant's state by one timestep:
+            - Update fuel prices and emission intensities.
+            - Age vehicles and adjust stock post-burn-in.
+            - Update profit and return current stock.
+
+        Args:
+            gas_price (float): Current gasoline price.
+            electricity_price (float): Current electricity price.
+            electricity_emissions_intensity (float): Grid carbon intensity.
+            vehicles_on_sale (list): List of new cars for price reference.
+            rebate_calibration (float): Policy calibration value for EV rebates.
+            rebate (float): Rebate for used electric vehicles.
+
+        Returns:
+            list: Updated list of second-hand vehicles in stock.
+        """
         self.t_second_hand_cars += 1
 
         self.gas_price =  gas_price

@@ -1267,6 +1267,7 @@ def plot_distance_individuals_mean_median_type(base_params, social_network, time
     
     # Save and show the plot
     save_and_show(fig, fileName, "user_distance_mean_median_type", dpi)
+    
 # Sample main function
 def main(fileName, dpi=300):
     try:
@@ -1283,56 +1284,25 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    #plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
-
-    #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
-    #plot_total_utility_per_capita(base_params,social_network, time_series, fileName, dpi)
-
-    #plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
-
-    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    #plot_history_car_age_full(base_params, social_network, time_series,fileName, dpi)
-    #plt.show()
-    
-    #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
-    #plot_segment_count_grid_percentage(base_params, firm_manager, time_series, fileName)
-
-    #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
-    #plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
-    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
-    
-    
+    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
+    plot_total_utility(base_params,social_network, time_series, fileName, dpi)
+    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
+    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
+    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
     plot_preferences(social_network, fileName, dpi)
-    #plot_ev_stock(base_params, EV_stock_prop_2010_23, social_network, fileName, dpi)
-    #plot_ev_consider_adoption_rate(base_params, social_network, time_series, fileName, EV_stock_prop_2010_23, dpi)
-
-    #plot_history_prop_EV_research(base_params,firm_manager, fileName)
-    #plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
-    #plot_kg_co2_per_year_per_vehicle_by_type(base_params, social_network, time_series, fileName, dpi)
-    #plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
-    #plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
-    #plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
-    #emissions_decomposed(base_params,social_network, time_series, fileName, dpi)
-    
-    #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
-    
-    #plot_distance_individuals_mean_median_type(base_params, social_network, time_series, fileName)
-    #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
-    
-    #plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
-
-    #plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
-
-
-    #plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
-    #
-    #plot_segment_count_grid(base_params,firm_manager, time_series, fileName)
-    #plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
-    #
-    
-    #plot_history_W(base_params, firm_manager,time_series,  fileName)
-    #plot_calibration_data(base_params, data_controller, time_series, fileName, dpi)
-    #plot_prop_EV_on_sale(base_params,firm_manager, fileName)
+    plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
+    plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
+    plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
+    plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
+    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+    plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
+    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
+    plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
+    plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
 
     plt.show()
 

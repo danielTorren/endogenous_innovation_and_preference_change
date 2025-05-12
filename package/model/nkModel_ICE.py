@@ -1,15 +1,33 @@
 import numpy as np
 
-class NKModel:
+class NKModel_ICE:
+    """
+    Represents an interal combustion engine vehicle NK fitness landscape model for simulating interdependent vehicle component configurations.
+
+    This class models how different component combinations (designs) affect car attributes such as quality,
+    efficiency, and production cost, incorporating user behavior and environmental policy parameters.
+    """
+        
     def __init__(self, parameters):
         """
-        Initialize the NKModel.
+        Initialize the NKModel with design, attribute, and policy parameters.
 
         Args:
-        - N (int): Number of components in a car design.
-        - K (int): Level of interdependence between components.
-        - A (int): Number of attributes influencing the fitness.
-        - rho (list): List of length A containing correlation coefficients.
+            parameters (dict): A dictionary containing:
+                - N (int): Number of components in a car design.
+                - K (int): Number of interdependencies per component.
+                - A (int): Number of output attributes (e.g. quality, efficiency, cost).
+                - rho (list[float]): Correlation coefficients for attribute interactions.
+                - random_state_inputs (np.random.RandomState): Seeded random generator.
+                - min_*, max_* (float): Attribute bounds.
+                - fuel_tank (float): Fuel capacity (ICE) or battery size (EV).
+                - r, delta (float): Discount and depreciation rates.
+                - median_beta, median_gamma, median_nu (float): User preferences.
+                - fuel_cost, e_t, d_mean (float): Energy price, emissions, and average distance.
+                - alpha, zeta (float): Utility exponents.
+                - production_emissions (float): Emissions from vehicle manufacturing.
+                - prop_explore (float): Proportion of designs to explore.
+                - init_price_multiplier (float): Cost scaling factor.
         """
         self.N = int(round(parameters["N"]))
         self.K = int(round(parameters["K"]))
@@ -51,7 +69,19 @@ class NKModel:
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string(self.prop_explore)
 
     def calc_present_utility_minimum_single(self, Q, omega, prod_cost, B):
-        """assuem all cars are new to simplify, assume emissiosn intensities and prices from t = 0"""
+        """
+        Calculate the utility of a vehicle using median behavioral parameters.
+
+        Args:
+            Q (float): Quality of the vehicle.
+            omega (float): Efficiency.
+            prod_cost (float): Production cost.
+            B (float): Energy capacity (fuel tank or battery).
+
+        Returns:
+            float: Present utility of the vehicle.
+        """
+        #assume all cars are new to simplify, assume emissiosn intensities and prices from t = 0
         cost_multiplier = self.init_price_multiplier
         U = -cost_multiplier*prod_cost - self.median_gamma*self.E + ((1+self.r)*(self.median_beta*Q**self.alpha))/self.r + ((1+self.r)*(self.median_nu*(B*omega)**self.zeta))/(1 + self.r - (1- self.delta)**self.zeta) - self.d_mean*(((1+self.r)*(1-self.delta)*(self.fuel_cost + self.median_gamma*self.e_t))/(omega*(self.r - self.delta - self.r*self.delta)))
         
@@ -142,7 +172,7 @@ class NKModel:
         fitness = np.zeros(self.A)
         for a in range(self.A):
             for n in range(self.N):
-                k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2) #REVIST THIS AND UNDERSTAND WHAT IS GOING ON BETTER
+                k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2)
                 fitness[a] +=  self.fitness_landscape[k, n, a]
         average_fitness_components = fitness / self.N
 
@@ -170,7 +200,7 @@ class NKModel:
             L_cost[:, :, 1] = L_quality[:, :, 1]
         else:
             #FOR COST ITS CORRELATION IS 0.5
-            Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION
             Q_a = self.random_state_inputs.choice(self.N, size=Q_a_size, replace=False)
             L_cost[:, Q_a, 1] = L_quality[:, Q_a, 1]  # Copy fitness contribution from attribute 1
 
@@ -178,15 +208,22 @@ class NKModel:
             L_cost[:, :, 1] = L_efficiency[:, :, 2]
         else:
             #FOR COST ITS CORRELATION IS 0.5
-            Q_a_size = int(abs(self.rho[1]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-            #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
+            Q_a_size = int(abs(self.rho[1]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION
             Q_a = self.random_state_inputs.choice(self.N, size=Q_a_size, replace=False)
             L_cost[:, Q_a, 2] = L_efficiency[:, Q_a, 2]  # Copy fitness contribution from attribute 1
 
         return L_cost
     
     def invert_bits_one_at_a_time(self, decimal_value):
-        """THIS IS ONLY USED ONCE I THINK"""
+        """
+        Generate all 1-bit neighbors of a binary string by flipping each bit.
+
+        Args:
+            decimal_value (int): Integer representation of a binary string.
+
+        Returns:
+            list[str]: List of binary strings differing by one bit.
+        """
         inverted_binary_values = []
         for bit_position in range(self.N):
             inverted_value = decimal_value ^ (1 << bit_position)
@@ -196,6 +233,16 @@ class NKModel:
         return inverted_binary_values
 
     def retrieve_info(self, component_string):
+        """
+        Retrieve or calculate the attribute vector for a given component string.
+
+        Args:
+            component_string (str): Binary string representing the design.
+
+        Returns:
+            np.ndarray: Attribute vector (quality, efficiency, cost).
+        """
+            
         attributes = self.attributes_dict.get(component_string)
         
         if attributes is None:

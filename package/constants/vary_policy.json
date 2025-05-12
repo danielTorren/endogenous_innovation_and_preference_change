@@ -1,9 +1,0 @@
-
-{
-    "Carbon_price": ["Zero", "Low", "High"],
-    "Targeted_research_subsidy": ["Zero", "Low", "High"],
-    "Electricity_subsidy": ["Zero", "Low", "High"],
-    "Adoption_subsidy": ["Zero", "Low", "High"],
-    "Production_subsidy": ["Zero", "Low", "High"],
-    "Research_subsidy": ["Zero", "Low", "High"]
-}

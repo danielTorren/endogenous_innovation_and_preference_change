@@ -11,11 +11,15 @@ from package.model.carModel import CarModel
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
-        Constructs all the necessary attributes for the Social Network object.
+        Initialize the Social_Network model with user parameters and policy settings.
+
+        Args:
+            parameters_social_network (dict): Parameters defining social, behavioral, and policy settings.
+            parameters_vehicle_user (dict): 
         """
         self.t_social_network = 0
 
-        self.policy_distortion = 0#NEED FOR OPTIMISATION, measures the distortion from policies
+        self.policy_distortion = 0
         self.net_policy_distortion = 0
         
         self.rebate = parameters_social_network["rebate"]
@@ -33,7 +37,6 @@ class Social_Network:
 
         self.d_vec = parameters_social_network["d_vec"]
 
-        #self.delta = parameters_social_network["delta"]
         self.alpha = parameters_social_network["alpha"]
         self.zeta = parameters_social_network["zeta"]
 
@@ -48,6 +51,7 @@ class Social_Network:
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
 
+        #measure effects on bottom and top percentiles
         self.beta_median = np.median(self.beta_vec )
         self.beta_rich = np.percentile(self.beta_vec, 90)
         self.num_poor = self.num_individuals*0.5
@@ -90,11 +94,13 @@ class Social_Network:
         
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
-    ###############################################################################################################################################################
-    ###############################################################################################################################################################
-    #MODEL SETUP
-
     def init_initial_state(self, parameters_social_network):
+        """
+        Initialize key state variables related to users, policies, and system settings.
+
+        Args:
+            parameters_social_network (dict): Dictionary of parameters defining the structure and initial setup of the social network.
+        """
         self.num_individuals = int(round(parameters_social_network["num_individuals"]))
         self.id_generator = parameters_social_network["IDGenerator_firms"]
         self.second_hand_merchant = parameters_social_network["second_hand_merchant"]
@@ -103,15 +109,26 @@ class Social_Network:
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
         self.carbon_price =  parameters_social_network["carbon_price"]
 
-
     def init_network_settings(self, parameters_social_network):
+        """
+        Initialize the network settings
+        """
+
         self.prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_network_density_input = parameters_social_network["SW_network_density"]
         self.SW_prob_rewire = parameters_social_network["SW_prob_rewire"]
         self.SW_K = int(round((self.num_individuals - 1) * self.SW_network_density_input))
 
     def set_init_cars_selection(self, parameters_social_network):
-        """GIVE PEOPLE CARS NO CHOICE"""
+        """
+        Assign each user an initial car based on utility maximization, without allowing user choice.
+
+        Args:
+            parameters_social_network (dict): Contains the list of old cars and related attributes.
+
+        Returns:
+            list: Assigned list of vehicle objects corresponding to each user.
+        """
         old_cars = parameters_social_network["old_cars"]
 
         # Extract properties using list comprehensions
@@ -179,25 +196,6 @@ class Social_Network:
 
         return current_cars  # Return the assigned cars
     
-    def set_init_cars_selection_old(self, parameters_social_network):
-        """GIVE PEOPLE CARS NO CHOICE"""
-        old_cars = parameters_social_network["old_cars"]
-    
-        for i, car in enumerate(old_cars):
-            self.vehicleUsers_list[i].vehicle = car
-            
-        #SET USER ID OF CARS
-        for i, individual in enumerate(self.vehicleUsers_list):
-            individual.vehicle.owner_id = individual.user_id
-
-        current_cars =  [user.vehicle for user in self.vehicleUsers_list]
-
-        return current_cars#current cars
-        
-    def normalize_vec_sum(self, vec):
-        return vec/sum(vec)
-    
-
     def _normlize_matrix(self, matrix: sp.csr_matrix) -> sp.csr_matrix:
         """
         Normalize a sparse matrix row-wise.
@@ -217,21 +215,12 @@ class Social_Network:
 
     def create_network(self) -> tuple[npt.NDArray, npt.NDArray, nx.Graph]:
         """
-        Create watts-strogatz small world graph using Networkx library
+        Create a Watts-Strogatz small-world network to model user interactions.
 
-        parameters_social_network
-        ----------
-        None
-
-        Returns
-        -------
-        weighting_matrix: npt.NDArray[bool]
-            adjacency matrix, array giving social network structure where 1 represents a connection between agents and 0 no connection. It is symetric about the diagonal
-        norm_weighting_matrix: npt.NDArray[float]
-            an NxN array how how much each agent values the opinion of their neighbour. Note that is it not symetric and agent i doesn"t need to value the
-            opinion of agent j as much as j does i"s opinion
-        ws: nx.Graph
-            a networkx watts strogatz small world graph
+        Returns:
+            tuple: 
+                adjacency_matrix (np.ndarray): Binary matrix indicating connections between users.
+                network (nx.Graph): NetworkX graph object representing the social network.
         """
 
         network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.seed_inputs)#FIX THE NETWORK STRUCTURE
@@ -246,14 +235,17 @@ class Social_Network:
         self.total_neighbors = np.array(self.sparse_adjacency_matrix.sum(axis=1)).flatten()
         return adjacency_matrix, network
 
-    ###############################################################################################################################################################
-    
-    #DYNAMIC COMPONENTS
-
     def calculate_ev_adoption(self, ev_type=3):
         """
-        Calculate the proportion of neighbors using EVs for each user, 
-        and determine EV adoption consideration.
+        Determine which users consider adopting electric vehicles (EVs) based on neighbor influence.
+
+        Args:
+            ev_type (int): Vehicle type identifier for EVs. Defaults to 3.
+
+        Returns:
+            tuple:
+                consider_ev_vec (np.ndarray): Binary vector of users considering EVs.
+                ev_adoption_vec (np.ndarray): Binary vector of users currently using EVs.
         """
         
         self.vehicle_type_vec = np.array([user.vehicle.transportType for user in self.vehicleUsers_list])  # Current vehicle types
@@ -268,13 +260,20 @@ class Social_Network:
 
         return consider_ev_vec, ev_adoption_vec
 
-##########################################################################################################################################################
-#MATRIX CALCULATION
-#CHECK THE ACTUAL EQUATIONS
     def update_VehicleUsers(self):
-        
+        """
+        Perform a full timestep update for all users:
+        - Determines who considers switching vehicles.
+        - Calculates utilities for keeping or switching.
+        - Applies policy impacts and updates emissions.
+        - Tracks all related counters and statistics.
+
+        Returns:
+            list: Updated list of current vehicles assigned to each user.
+        """
+
         self.new_bought_vehicles = []#track list of new vehicles
-        self.second_hand_bought = 0#CAN REMOVE LATER ON IF I DONT ACTUALLY NEED TO COUNT
+        self.second_hand_bought = 0#track number of second hand bought
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
         
         #########################################################
@@ -285,10 +284,9 @@ class Social_Network:
         num_switchers = len(switcher_indices)
         non_switcher_indices = np.where(~switch_draws)[0]  # e.g., [0, 1, 3, 4, 6, ...]
 
-
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow = 0#MEASURIBNG THE FLOW
-            self.zero_util_count = 0 #are people actually choosing or beign forced to choose the same
+            self.zero_util_count = 0#tracking if are people actually choosing or beign forced to choose the same
             self.num_switchers = num_switchers
             self.drive_min_num = 0
 
@@ -306,12 +304,6 @@ class Social_Network:
             index_current_cars_start = len(self.new_cars) + len(self.second_hand_cars)
         else:
             index_current_cars_start = len(self.new_cars)
-
-        ##########################################################################################################################
-        #I now have all the information neccessary all the calcualtions are done
-        #Do anything that needs to be doen in terms of counters for the non-switchers
-        #I then need to do the users chooses with the switchers
-        ##########################################################################################################################
 
         #NON-SWTICHERS
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
@@ -395,15 +387,11 @@ class Social_Network:
             driven_distance = self.d_vec[global_index]  # Use the reduced index for the matrix
             self.update_emisisons(vehicle_chosen, driven_distance)
 
-            #CARBON TAX POLICY OPTIMISATION
-            #self.policy_distortion += (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t#NEEDED FOR OPTIMISATION of carbon tax
-            #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
             if user.vehicle.transportType == 3:
                 elec_sub = (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
                 self.policy_distortion += elec_sub
                 self.net_policy_distortion -= elec_sub
             else:
-                #NEEDED FOR OPTIMISATION, add the carbon price paid 
                 carbon_price_paid = (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
                 self.policy_distortion += carbon_price_paid
                 self.net_policy_distortion += carbon_price_paid
@@ -418,13 +406,20 @@ class Social_Network:
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow_history.append(self.emissions_flow)
 
-
         return user_vehicle_list
 
-#####################################################################################################
-
     def calc_offer_prices_heursitic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_current_cars, current_cars):
+        """
+        Estimate second-hand car offer prices using heuristic comparison to new cars.
 
+        Args:
+            vehicle_dict_vecs_new_cars (dict): Property arrays of new cars.
+            vehicle_dict_vecs_current_cars (dict): Property arrays of second-hand cars.
+            current_cars (list): List of current vehicle objects.
+
+        Returns:
+            np.ndarray: Offer prices for second-hand cars.
+        """
         # Extract Quality, Efficiency, and Prices of first-hand cars
         first_hand_quality = vehicle_dict_vecs_new_cars["Quality_a_t"]
         first_hand_efficiency =  vehicle_dict_vecs_new_cars["Eff_omega_a_t"]
@@ -480,9 +475,18 @@ class Social_Network:
 
         return offer_prices
 
-########################################################################################################
-
     def gen_mask(self, available_and_current_vehicles_list, consider_ev_vec):
+        """
+        Generate mask for valid EV options based on user consideration.
+
+        Args:
+            available_and_current_vehicles_list (list): All vehicle options.
+            consider_ev_vec (np.ndarray): Vector indicating which users consider EVs.
+
+        Returns:
+            np.ndarray: Mask matrix of shape (users, vehicles).
+        """
+            
         # Generate individual masks based on vehicle type and user conditions
         # Create a boolean vector where True indicates that a vehicle is NOT an EV (non-EV)
         not_ev_vec = np.array([vehicle.transportType == 2 for vehicle in available_and_current_vehicles_list], dtype=bool)
@@ -496,8 +500,17 @@ class Social_Network:
         return ev_mask_matrix
 
     def masking_options(self, utilities_matrix, available_and_current_vehicles_list, consider_ev_vec):
-        """Applies mask before exponentiation, setting masked-out values to -inf."""
+        """
+        Apply mask to utility matrix to prevent users from selecting vehicles they don't consider.
 
+        Args:
+            utilities_matrix (np.ndarray): Utility matrix before masking.
+            available_and_current_vehicles_list (list): Vehicles available to users.
+            consider_ev_vec (np.ndarray): Which users are considering EVs.
+
+        Returns:
+            np.ndarray: Masked utility matrix.
+        """
         # Step 1: Generate the mask
         combined_mask = self.gen_mask(available_and_current_vehicles_list, consider_ev_vec)
 
@@ -511,15 +524,10 @@ class Social_Network:
         row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
         # Further mask to remove -np.inf values
-
         filtered_values = masked_utilities[valid_rows]  # Subset based on valid_rows mask
         filtered_values = filtered_values[np.isfinite(filtered_values)]  # Keeps only finite values
 
-        #self.max_utility_list.append(np.median(filtered_values))
-
-        # Step 5: Compute safe exponentiation input and clip to prevent overflow
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
-        #np.clip(exp_input, -700, 700, out=exp_input)
 
         # Step 6: Exponentiate, directly filling only valid entries
         utilities_kappa = np.zeros_like(utilities_matrix)
@@ -527,9 +535,21 @@ class Social_Network:
 
         return utilities_kappa
 
-#########################################################################################################################################################
-    #choosing vehicles
     def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start ):
+        """
+        Let a user choose a vehicle based on masked and exponentiated utility values.
+
+        Args:
+            person_index (int): Global user index.
+            user (VehicleUser): User object.
+            available_and_current_vehicles_list (list): All available vehicles.
+            utilities_kappa (np.ndarray): Masked and exponentiated utility matrix.
+            reduced_person_index (int): Row index in the utility matrix.
+            index_current_cars_start (int): Starting index for current vehicles.
+
+        Returns:
+            tuple: (chosen vehicle, assigned vehicle, index of chosen vehicle, updated utilities matrix)
+        """
         # Select individual-specific utilities
         individual_specific_util_kappa = utilities_kappa[reduced_person_index]  
         
@@ -546,19 +566,9 @@ class Social_Network:
         else:#at leat 1 non zero probability
             # Calculate the probability of choosing each vehicle              
             sum_U_kappa = np.sum(individual_specific_util_kappa)
-            #print("sum_U_kappa", sum_U_kappa)
-            if not np.isfinite(sum_U_kappa):
-                print(self.t_social_network)
-                print("⚠️ Warning: Unstable utility sum", sum_U_kappa)
-                print("individual_specific_util_kappa:", individual_specific_util_kappa)
-
             probability_choose = individual_specific_util_kappa / sum_U_kappa
-
             choice_index = self.random_state.choice(len(available_and_current_vehicles_list), p=probability_choose)
-            #choice_index = np.argmax(probability_choose)
-            #if user.user_id == 1:
-            #    self.max_utility_list.append(individual_specific_util_kappa[choice_index]/self.kappa)
-        #print("U chosen:", individual_specific_util_kappa[choice_index]/self.kappa, np.max(individual_specific_util_kappa)/self.kappa)
+
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
 
@@ -585,12 +595,8 @@ class Social_Network:
                     self.policy_distortion += adopt_sub
                     self.net_policy_distortion -= adopt_sub    
 
-                ###########################################################################
-                #DO NOT DELETE
                 #SET THE UTILITY TO 0 of that second hand car
                 utilities_kappa[:, choice_index] = 0#THIS STOPS OTHER INDIVIDUALS FROM BUYING SECOND HAND CAR THAT YOU BOUGHT, VERY IMPORANT LINE
-                ###############################################################
-                
                 
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
@@ -625,15 +631,17 @@ class Social_Network:
         user.vehicle.update_timer_L_a_t()
 
         return vehicle_chosen, user.vehicle, choice_index, utilities_kappa
-
-##############################################################################################################################################################
-
-##############################################################################################################################################################
-    #CURRENT
     
     def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):# -> NDArray:
         """
-        Optimized utility calculation assuming individuals compare either their current car, with price adjustments only applied for those who do not own a car.
+        Compute utility values for users keeping their current vehicle.
+
+        Args:
+            vehicle_dict_vecs (dict): Feature matrix for current vehicles.
+            beta_vec, gamma_vec, d_vec, nu_vec (np.ndarray): User-specific parameters.
+
+        Returns:
+            tuple: (utility matrix, utility vector)
         """
 
         U_a_i_t_vec = beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - d_vec*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
@@ -647,8 +655,15 @@ class Social_Network:
         return  CV_utilities_matrix, U_a_i_t_vec
     
     def gen_current_vehicle_dict_vecs(self, list_vehicles):
-        """Generate a dictionary of vehicle property arrays with improved performance."""
+        """
+        Create a dictionary of vehicle attributes from a list of vehicles.
 
+        Args:
+            list_vehicles (list): List of vehicle objects.
+
+        Returns:
+            dict: Dictionary of vehicle attribute arrays.
+        """
         # Extract properties using list comprehensions
         quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
         eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
@@ -674,10 +689,13 @@ class Social_Network:
 
         return vehicle_dict_vecs
 
-##############################################################################################################################################################
-
     def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+        """
+        Compute utility values for all switchers over new and second-hand cars.
 
+        Returns:
+            tuple: (utility matrix, list of vehicle objects)
+        """
 
         # Generate utilities
         #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
@@ -755,8 +773,15 @@ class Social_Network:
         return filtered_vehicle_dict, filtered_vehicles
 
     def gen_vehicle_dict_vecs_new_cars(self, list_vehicles):
-        """Generate a dictionary of vehicle property arrays with improved performance."""
+        """
+        Generate attribute arrays for new cars.
 
+        Args:
+            list_vehicles (list): List of CarModel objects.
+
+        Returns:
+            dict: Dictionary of vehicle attributes.
+        """
         # Extract properties using list comprehensions
         quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
         eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
@@ -785,8 +810,15 @@ class Social_Network:
         return vehicle_dict_vecs
 
     def gen_vehicle_dict_vecs_second_hand(self, list_vehicles):
-        """Generate a dictionary of vehicle property arrays with improved performance."""
+        """
+        Generate attribute arrays for second-hand cars.
 
+        Args:
+            list_vehicles (list): List of second-hand vehicle objects.
+
+        Returns:
+            dict: Dictionary of vehicle attributes.
+        """
         # Extract properties using list comprehensions
         quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
         eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
@@ -815,7 +847,12 @@ class Social_Network:
         return vehicle_dict_vecs
 
     def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
-        
+        """
+        Compute user utilities for second-hand car options.
+
+        Returns:
+            np.ndarray: Utility matrix for second-hand options.
+        """
         price_difference_raw = vehicle_dict_vecs["price"][:, np.newaxis] -  vehicle_dict_vecs["used_rebate"][:, np.newaxis]
 
         price_difference = np.maximum(0, price_difference_raw) - second_hand_merchant_offer_price
@@ -827,7 +864,12 @@ class Social_Network:
         return U_a_i_t_matrix
     
     def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+        """
+        Compute user utilities for new car options.
 
+        Returns:
+            np.ndarray: Utility matrix for new car options.
+        """
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
         price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis])  # Apply rebate
 
@@ -842,11 +884,12 @@ class Social_Network:
 
         return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)
     
-    ################################################################################################################################
-    
-    #TIMESERIES
     def prep_counters(self):
+        """
+        Initialize all counters and tracking variables used during a simulation timestep.
         
+        This includes emissions, utility, car attributes, purchase counts, and more.
+        """
         self.users_driving_emissions_vec = np.zeros(self.num_individuals)
         self.users_distance_vec = np.zeros(self.num_individuals)
         self.users_utility_vec  = np.zeros(self.num_individuals)
@@ -901,6 +944,16 @@ class Social_Network:
         self.battery_EV = []
     
     def update_counters(self, person_index, vehicle_chosen, driven_distance, utility):
+        """
+        Update individual- and aggregate-level counters for emissions, utility, distance, and vehicle attributes.
+
+        Args:
+            person_index (int): Index of the user.
+            vehicle_chosen (object): Vehicle object that the user ended up with.
+            driven_distance (float): Distance driven by the user this timestep.
+            utility (float): Utility derived from the choice.
+        """
+        
         #ADD TOTAL EMISSIONS     
         car_driving_emissions = (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_t 
         self.users_driving_emissions_vec[person_index] = car_driving_emissions
@@ -965,7 +1018,9 @@ class Social_Network:
             self.second_hand_users +=1
       
     def set_up_time_series_social_network(self):
-        #"""
+        """
+        Initialize all time series data structures for tracking the evolution of the system over time.
+        """
         self.emissions_flow_history = []
         self.history_utility_components = []
         self.history_max_index_segemnt = []
@@ -1054,7 +1109,11 @@ class Social_Network:
         self.history_second_hand_merchant_offer_price = []
 
     def save_timeseries_data_social_network(self):
+        """
+        Save current timestep's data to time series history for analysis and visualization.
 
+        Tracks emissions, utility, prices, car attributes, EV adoption, and more.
+        """
         self.history_second_hand_merchant_offer_price.append(self.second_hand_merchant_offer_price)
 
         self.history_count_buy.append([self.keep_car, self.buy_new_car, self.buy_second_hand_car])
@@ -1242,7 +1301,13 @@ class Social_Network:
         self.history_second_hand_merchant_price_paid.append(self.second_hand_merchant_price_paid)
     
     def update_emisisons(self, vehicle_chosen, driven_distance):      
-        
+        """
+        Update cumulative and flow emissions based on the selected vehicle and driven distance.
+
+        Args:
+            vehicle_chosen (object): The vehicle driven by the user.
+            driven_distance (float): Distance the vehicle was driven this timestep.
+        """
         emissions_flow = (driven_distance/vehicle_chosen.Eff_omega_a_t)*vehicle_chosen.e_t
         self.emissions_cumulative += emissions_flow
         self.emissions_cumulative_driving += emissions_flow
@@ -1254,11 +1319,19 @@ class Social_Network:
             self.emissions_flow += vehicle_chosen.emissions
 
     def update_EV_stock(self):
-        #CALC EV STOCK
+        """
+        Update the proportion of users currently owning electric vehicles (EVs), and append it to the history.
+        """
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
         self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
 
     def calc_price_mean_max_min(self):
+        """
+        Compute mean, min, and max prices among new cars.
+
+        Returns:
+            tuple: (mean_price, min_price, max_price)
+        """
         prices = [car.price for car in self.new_cars]
         price_mean =  np.mean(prices)
         price_min =  np.min(prices)
@@ -1267,13 +1340,19 @@ class Social_Network:
         return price_mean, price_min, price_max
     
     def calc_mean_car_age(self):
+        """
+        Calculate the average age of cars currently owned.
+
+        Returns:
+            float: Mean car age.
+        """
         mean_car_age  = np.mean([car.L_a_t for car in self.current_vehicles])
         return mean_car_age
 
-####################################################################################################################################
-
     def update_prices_and_emissions_intensity(self):
-        #UPDATE EMMISSION AND PRICES, THIS WORKS FOR BOTH PRODUCTION AND INNOVATION
+        """
+        Update the fuel cost and emissions intensity of currently owned vehicles.
+        """
         for car in self.current_vehicles:
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
@@ -1281,23 +1360,29 @@ class Social_Network:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity  
         
-        #print("first", self.current_vehicles[0].transportType, self.current_vehicles[0].fuel_cost_c, self.current_vehicles[0].e_t)
-
     def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, rebate_calibration, used_rebate_calibration):
         """
-        Push the simulation forwards one time step. First advance time, then update individuals with data from previous timestep
-        then produce new data and finally save it.
+        Advance the simulation by one time step:
+            - Update external parameters and policies.
+            - Update vehicle attributes and user decisions.
+            - Track emissions and adoption metrics.
 
-        parameters_social_network
-        ----------
-        None
+        Args:
+            carbon_price (float): Price of carbon emissions.
+            second_hand_cars (list): Available second-hand cars.
+            new_cars (list): Available new car models.
+            gas_price (float): Current gasoline price.
+            electricity_price (float): Current electricity price.
+            electricity_emissions_intensity (float): Emissions per unit electricity.
+            rebate (float): Rebate offered for new EV purchases.
+            used_rebate (float): Rebate offered for used EV purchases.
+            electricity_price_subsidy_dollars (float): Direct subsidy on electricity cost.
+            rebate_calibration (float): Calibration offset for new EV rebate.
+            used_rebate_calibration (float): Calibration offset for used EV rebate.
 
-        Returns
-        -------
-        None
+        Returns:
+            tuple: (consider_ev_vec, new_bought_vehicles) indicating user intention and new purchases.
         """
-
-        
 
         self.carbon_price = carbon_price
         self.gas_price =  gas_price

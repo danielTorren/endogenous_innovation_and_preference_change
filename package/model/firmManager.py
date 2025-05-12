@@ -7,7 +7,24 @@ from collections import defaultdict
 import itertools
 
 class Firm_Manager:
+    """
+    Manages all firms within the simulation environment.
+    Responsible for initializing firms, tracking their market activity, computing profits,
+    and updating firm behavior based on market and user data.
+    """
+
     def __init__(self, parameters_firm_manager: dict, parameters_firm: dict, parameters_car_ICE: dict, parameters_car_EV: dict, ICE_landscape: dict, EV_landscape: dict):
+        """
+        Initialize the Firm_Manager with parameters and technology landscapes.
+
+        Args:
+            parameters_firm_manager (dict): Configuration for firm manager.
+            parameters_firm (dict): Base configuration shared across firms.
+            parameters_car_ICE (dict): Parameters for ICE car models.
+            parameters_car_EV (dict): Parameters for EV car models.
+            ICE_landscape (dict): NK landscape for ICE tech.
+            EV_landscape (dict): NK landscape for EV tech.
+        """
         self.t_firm_manager = 0
         self.parameters_firm = parameters_firm
 
@@ -36,8 +53,7 @@ class Firm_Manager:
         self.init_car_age_std = parameters_firm_manager["init_car_age_std"]
 
         self.ev_production_bool = 0
-
-        self.production_subsidy = 0 #NEEDED FOR TIEM STEP 0
+        self.production_subsidy = 0
 
         self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(self.num_gamma_segments), range(2)))
         self.num_segments = len(self.all_segment_codes)
@@ -55,11 +71,13 @@ class Firm_Manager:
         #calculate the inital attributes of all the cars on sale
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
              
-
-    ###########################################################################################################
-    #INITIALISATION
-
     def gen_initial_cars(self):
+        """
+        Generate initial old car stock for simulation.
+
+        Returns:
+            list: List of PersonalCar instances representing the initial car stock.
+        """
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
 
         car_list = []
@@ -75,10 +93,8 @@ class Firm_Manager:
 
     def init_firms(self):
         """
-        Generate a initial ICE and EV TECH TO START WITH 
+        Instantiate the initial firms and their technology choices based on the provided landscapes.
         """
-
-        #Generate the initial fitness values of the starting tecnology(ies)
 
         self.init_tech_component_string_ICE = self.landscape_ICE.min_fitness_string
         self.init_tech_component_string_EV = self.landscape_EV.min_fitness_string
@@ -107,7 +123,16 @@ class Firm_Manager:
         self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV) for j in range(self.J)]
 
     def invert_bits_one_at_a_time(self, decimal_value, length):
-        """THIS IS ONLY USED ONCE TO GENERATE HETEROGENOUS INITIAL TECHS"""
+        """
+        Generate variations of a binary string by flipping each bit once.
+
+        Args:
+            decimal_value (int): Original binary string as a decimal.
+            length (int): Length of the binary string.
+
+        Returns:
+            list: List of binary strings with one bit flipped.
+        """
         inverted_binary_values = []
         for bit_position in range(length):
             inverted_value = decimal_value ^ (1 << bit_position)
@@ -115,49 +140,56 @@ class Firm_Manager:
             inverted_binary_values.append(inverted_binary_value)
         return inverted_binary_values
 
-    
     def generate_cars_on_sale_all_firms(self):
-        """ONLY USED ONCE AT INITITALISATION"""
+        """
+        Collect all cars on sale from all firms.
+
+        Returns:
+            list: List of car instances available on the market.
+        """
         cars_on_sale_all_firms = []
         for firm in self.firms_list:
             cars_on_sale_all_firms.extend(firm.cars_on_sale)
         return cars_on_sale_all_firms
 
-
-    ############################################################################################################################################################
-    #GENERATE MARKET DATA DYNAMIC
-
     def input_social_network_data(self, beta_vec, gamma_vec, consider_ev_vec, beta_bins, gamma_bins):
         """
-        Set up the individual-level vectors. 
-        We'll convert:
-          - beta_vec into 5 segments (0..4)
-          - gamma_vec into binary (0..1)
-          - consider_ev_vec is presumably 0..1
+        Input the social network data and segment users based on beta and gamma.
+
+        Args:
+            beta_vec (np.ndarray): Consumer quality sensitivity values.
+            gamma_vec (np.ndarray): Consumer emission preferences.
+            consider_ev_vec (np.ndarray): Binary indicator if user considers EV.
+            beta_bins (np.ndarray): Binning thresholds for beta.
+            gamma_bins (np.ndarray): Binning thresholds for gamma.
         """
+        
         self.beta_vec = beta_vec
         self.gamma_vec = gamma_vec
         self.consider_ev_vec = consider_ev_vec
-
 
         self.beta_bins = beta_bins
         self.gamma_bins = gamma_bins
         self.beta_segment_idx = np.digitize(self.beta_vec, self.beta_bins) - 1  
         self.gamma_segment_idx = np.digitize(self.gamma_vec, self.gamma_bins) - 1  
 
-        # Now each entry in self.beta_segment_idx is in {0,1,2,3,4}.
-        # Convert gamma to 0 or 1 based on threshold
-        #self.gamma_binary = (self.gamma_vec > self.gamma_threshold).astype(int)
-
     def calc_exp(self, U):
+        """
+        Calculate exponential of scaled utility value.
+
+        Args:
+            U (float): Utility value.
+
+        Returns:
+            float: Exponentiated value.
+        """
         exp_input = self.kappa*U
-        #exp_input = np.clip(exp_input, -700, 700)#CLIP SO DONT GET OVERFLOWS
         comp = np.exp(exp_input)
         return comp
 
     def generate_market_data(self):
         """
-        CALLED ONCE AT THE END OF THE SET UP BY CONTROLLER AND ONLY AFTER THE SOCIAL NETWORK INFORMATION HAS BEEN RECEIVIED
+            Generate initial market data by segment based on user attributes and car utility scores from firms.
         For each segment code, we store:
          - I_s_t     (count of individuals)
          - beta_s_t  (average beta)
@@ -222,13 +254,20 @@ class Firm_Manager:
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
             self.market_data[code]["W"] = segment_W[code]
-            #print("INIT W", self.market_data[code]["W"])
     
         self.I_s_t_vec = np.asarray([self.market_data[code]["I_s_t"] for code in self.all_segment_codes])
         self.W_vec = np.asarray([self.market_data[code]["W"] for code in self.all_segment_codes])
         self.maxU_vec = np.asarray([self.market_data[code]["maxU"] for code in self.all_segment_codes])
 
     def update_W_immediate(self):
+        """
+        Immediately recompute the choice denominator W for each segment
+        using currently available cars on sale.
+
+        Returns:
+            tuple: (dict of W values by segment, array of max utility values)
+        """
+                
         #calc the total "probability of selection" of the market based on max utility in the segment
         segment_W = defaultdict(float)
 
@@ -250,7 +289,15 @@ class Firm_Manager:
         return segment_W, maxU_vec
         
     def update_market_data_moving_average(self, W_segment):
+        """
+        Smooth out market data using a moving average over a sliding window.
 
+        Args:
+            W_segment (dict): Current choice denominators per segment.
+
+        Returns:
+            tuple: (array of segment sizes, array of choice denominators)
+        """
         segment_counts = defaultdict(int)
         for i in range(self.num_individuals):
             b_idx = self.beta_segment_idx[i]
@@ -290,11 +337,17 @@ class Firm_Manager:
 
         return I_s_t_vec, W_vec
         
-    
-    ######################################################################################################################
-
     def calc_total_profits(self, past_new_bought_vehicles, prod_subsidy):
+        """
+        Calculate total firm profit based on car sales and production costs.
 
+        Args:
+            past_new_bought_vehicles (list): Cars sold in the current period.
+            prod_subsidy (float): Government production subsidy per car.
+
+        Returns:
+            float: Total profit across all firms.
+        """
         total_profit_all_firms = 0         
         for car in self.cars_on_sale_all_firms:#LOOP OVER ALL CARS ON SALE TO DO IT IN ONE GO I GUESS
             num_vehicle_sold = past_new_bought_vehicles.count(car)
@@ -318,12 +371,15 @@ class Firm_Manager:
     
     def calculate_market_share(self, firm, past_new_bought_vehicles, total_sales):
         """
-        Calculate market share for a specific firm.
-        Parameters:
-            firm : Firm - The firm object for which to calculate market share
-            past_new_bought_vehicles : list - List of car objects representing vehicles sold in the past period
+        Calculate a firm's market share from total sales.
+
+        Args:
+            firm (Firm): Firm instance.
+            past_new_bought_vehicles (list): Cars sold in last period.
+            total_sales (float): Total revenue from all sales.
+
         Returns:
-            MS_firm : float - Market share for the specified firm, 0 if no cars sold
+            float: Firm's market share.
         """
         # Calculate total sales for the specified firm by summing prices of cars sold by this firm
         firm_sales = sum(car.price for car in past_new_bought_vehicles if car.firm == firm)
@@ -334,8 +390,13 @@ class Firm_Manager:
 
     def calculate_market_concentration(self, new_bought_vehicles):
         """
-        Calculate market concentration (HHI) using all cars bought over the last 12 time steps.
-        This function maintains its own history of purchases.
+        Compute Herfindahl-Hirschman Index (HHI) for market concentration based on past purchases.
+
+        Args:
+            new_bought_vehicles (list): Vehicles sold this time step.
+
+        Returns:
+            float: HHI index value.
         """
 
         # Append the new purchases to history
@@ -362,8 +423,13 @@ class Firm_Manager:
 
     def calc_profit_margin(self, new_bought_vehicles):
         """
-        Calculate market concentration (HHI) using all cars bought over the last 12 time steps.
-        This function maintains its own history of purchases.
+        Calculate profit margins for ICE and EV vehicles sold over last 12 steps.
+
+        Args:
+            new_bought_vehicles (list): List of cars sold in the current time step.
+
+        Returns:
+            tuple: (List of ICE profit margins, List of EV profit margins)
         """
 
         # Append the new purchases to history
@@ -401,20 +467,31 @@ class Firm_Manager:
 
         return profit_margin_ICE, profit_margin_EV
     
-
     def calc_last_step_profit_margin(self):
+        """
+        Return average profit margin from the last time step across all firms.
+
+        Returns:
+            float: Mean profit margin.
+        """
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
         all_profit_margins = profit_margin_ICE +  profit_margin_EV
         return np.mean(all_profit_margins)
 
     def calc_last_step_HHI(self):
+        """
+        Return HHI value from last time step.
+
+        Returns:
+            float: Herfindahl-Hirschman Index.
+        """
         HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
         return HHI
-    
-    #####################################################################################################################
 
     def set_up_time_series_firm_manager(self):
-        #self.history_cars_on_sale_all_firms = [self.cars_on_sale_all_firms]
+        """
+        Initialize all historical tracking structures for time series data.
+        """
         self.history_total_profit = []
         self.history_market_concentration = []
         self.history_segment_count = []
@@ -452,8 +529,10 @@ class Firm_Manager:
 
 
     def save_timeseries_data_firm_manager(self):
-        #self.history_cars_on_sale_all_firms.append(self.cars_on_sale_all_firms)
-        #self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles)
+        """
+        Store historical data for current time step across firm and market variables.
+        Tracks metrics like profit, HHI, car attributes, and EV adoption.
+        """
         if self.past_new_bought_vehicles:
             self.history_past_new_bought_vehicles_prop_ev.append(sum([1 for car in self.past_new_bought_vehicles if car.transportType == 3])/len(self.past_new_bought_vehicles))
         else:
@@ -567,12 +646,23 @@ class Firm_Manager:
             self.history_production_cost_ICE.append([np.nan])
 
     def calc_vehicles_chosen_list(self, past_new_bought_vehicles):
+        """
+        Count how many vehicles from each firm were chosen by users.
+
+        Args:
+            past_new_bought_vehicles (list): Cars selected by consumers.
+        """
         for firm in self.firms_list:
             firm.firm_cars_users = sum(1 for car in past_new_bought_vehicles if car.firm == firm)
 
-
-#####################################################################################################################################################
     def update_firms(self, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration):
+        """
+        Update firm behavior, generate new cars on sale.
+
+        Returns:
+            list: All cars now available in the market.
+        """
+                
         cars_on_sale_all_firms = []
         
         self.zero_profit_options_prod_sum = 0
@@ -590,6 +680,12 @@ class Firm_Manager:
         return cars_on_sale_all_firms
     
     def update_firms_burn_in(self):
+        """
+        Update firm behavior during the burn-in phase with simplified logic.
+
+        Returns:
+            list: Cars on sale post burn-in iteration.
+        """
         cars_on_sale_all_firms = []
         for firm in self.firms_list:
             cars_on_sale = firm.next_step_burn_in(self.I_s_t_vec, self.W_vec, self.maxU_vec)
@@ -599,7 +695,12 @@ class Firm_Manager:
 #####################################################################################################################
 
     def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  production_subsidy,  rebate_calibration):
-        
+        """
+        Advance firms by one simulation step, considering updated policies and user behavior.
+
+        Returns:
+            list: Cars on sale from all firms.
+        """
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
         self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles, self.production_subsidy)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
@@ -618,7 +719,10 @@ class Firm_Manager:
     
 
     def next_step_burn_in(self):
-        
+        """
+        Perform burn-in logic for firms before fuall simultion run.
+        Updates firm offerings and internal statistics.
+        """
         self.cars_on_sale_all_firms  = self.update_firms_burn_in()#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment, self.maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
         self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues

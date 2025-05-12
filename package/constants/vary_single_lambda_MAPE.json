@@ -1,7 +1,0 @@
-{
-    "property_varied": "lambda",
-    "subdict":"parameters_firm",
-    "min": 1e-4,
-    "max": 1e-2,
-    "reps": 12
-}     
