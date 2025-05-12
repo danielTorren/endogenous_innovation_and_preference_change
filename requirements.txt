@@ -41,6 +41,7 @@ httpx==0.28.1
 idna==3.10
 ipykernel==6.29.5
 ipython==8.30.0
+ipython-genutils==0.2.0
 ipywidgets==8.1.5
 isoduration==20.11.0
 jedi==0.19.2
@@ -52,13 +53,13 @@ jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 jupyter==1.1.1
 jupyter-console==6.6.3
-jupyter-events==0.10.0
+jupyter-events==0.12.0
 jupyter-lsp==2.2.5
 jupyter_client==8.6.3
 jupyter_core==5.7.2
-jupyter_server==2.14.2
+jupyter_server==2.16.0
 jupyter_server_terminals==0.5.3
-jupyterlab==4.3.3
+jupyterlab==4.4.2
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
 jupyterlab_widgets==3.0.13
@@ -81,7 +82,7 @@ nbformat==5.10.4
 nest-asyncio==1.6.0
 networkx==3.2.1
 nflows==0.14
-notebook==7.3.1
+notebook==7.4.2
 notebook_shim==0.2.4
 numpy==1.26.2
 openpyxl==3.1.5
@@ -98,6 +99,7 @@ prompt_toolkit==3.0.48
 protobuf==5.29.1
 psutil==6.1.0
 pure_eval==0.2.3
+pyaml==25.1.0
 pycparser==2.22
 Pygments==2.18.0
 pyknos==0.16.0
@@ -121,9 +123,11 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rpds-py==0.22.3
 SALib==1.5.0
-sbi==0.23.2
+sbi==0.23.3
 scikit-learn==1.5.2
+scikit-optimize==0.10.2
 scipy==1.12.0
+seaborn==0.13.2
 Send2Trash==1.8.3
 six==1.16.0
 snakeviz==2.2.0

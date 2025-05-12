@@ -129,7 +129,6 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     time_yearly = np.arange(12 + 108, 12 + 264, 12)
     
     init_real = 108 + 4#STARTS AT APRIL of THE END OF 2010
-    print(init_real, len(EV_stock_prop_2010_23) * 12)
     time_yearly = np.arange(init_real, init_real + len(EV_stock_prop_2010_23) * 12, 12)
 
     # Calculate real-world EV adoption rate from stock increase
