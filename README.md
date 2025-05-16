@@ -56,13 +56,13 @@ Core agent-based simulation logic.
 - `carModel.py`: Defines firm-created car templates.
 - `centralizedIdGenerator.py`: Provides unique IDs across the simulation.
 - `controller.py`: Master orchestrator for simulation state.
-- `firm.py`: Describes firm behavior like production/investment.
-- `firmManager.py`: Controls firm population and innovation rules.
+- `firm.py`: Describes firm behavior like production/innovation.
+- `firmManager.py`: Controls firms.
 - `nkModel_EV.py` / `nkModel_ICE.py`: EV/ICE-specific NK landscape implementations.
-- `personalCar.py`: Tracks attributes and use of user-owned vehicles.
+- `personalCar.py`: Tracks attributes of owned vehicles.
 - `secondHandMerchant.py`: Handles pricing and turnover in resale markets.
-- `socialNetworkUsers.py`: Models peer influence on EV consideration.
-- `VehicleUser.py`: Models consumer car selection and replacement logic.
+- `socialNetworkUsers.py`: Models peer influence on EV consideration adn car selection.
+- `VehicleUser.py`: Holds basic user information.
 
 ### `package/plotting_data/`
 Reusable visualizations for model results.
@@ -86,26 +86,9 @@ You can run a simulation using the included Jupyter notebook `model_playground.i
 
 1. Load and optionally modify `base_params`.
 2. Call `generate_data(base_params)` to simulate.
-3. Choose which plots to generate using checkboxes.
 4. Review EV adoption, emissions, utility, and more.
 
-Or use one of the `*_gen.py` scripts for batch or automated experiments.
-
----
-
-## 📊 Plotting and Outputs
-
-Generated output includes:
-- EV adoption rates and segment breakdowns
-- Emissions by source (driving vs. production)
-- Consumer utility
-- Firm-level profits, production, and innovation
-- Second-hand market dynamics
-- Price trends and market concentration
-
-Use the tools in `plotting_data/` for detailed visual analytics.
-
----
+Or use one of the `*_gen.py` scripts for batch or automated experiments, with the associated `*_plot.py` file.
 
 ## 📦 Requirements
 
