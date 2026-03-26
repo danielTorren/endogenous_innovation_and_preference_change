@@ -10,7 +10,7 @@ from package.resources.utility import (
     produce_name_datetime
 )
 from package.plotting_data.single_experiment_plot import main as plotting_main
-import pyperclip
+
 import numpy as np
 def main(
     base_params
@@ -18,7 +18,7 @@ def main(
 
     root = "single_experiment"
     fileName = produce_name_datetime(root)
-    pyperclip.copy(fileName)
+
     print("fileName:", fileName)
 
     controller = generate_data(base_params, print_simu= 1)  # run the simulation 

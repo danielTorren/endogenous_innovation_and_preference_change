@@ -1,0 +1,15 @@
+[project]
+name = "endogenous-innovation-and-preference-change"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "arviz<1.0.0",
+    "jupyterlab>=4.5.6",
+    "networkx>=3.6.1",
+    "pandas>=3.0.1",
+    "pyperclip>=1.11.0",
+    "sbi>=0.25.0",
+    "scipy>=1.17.1",
+]
