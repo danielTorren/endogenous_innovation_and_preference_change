@@ -1,0 +1,5 @@
+{
+    "property_varied": "income_sigma",
+    "subdict": "parameters_social_network",
+    "property_list": [0.1, 0.5, 0.927, 2, 5]
+}

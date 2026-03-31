@@ -4,6 +4,7 @@ from scipy.stats import sem, t
 from sympy import N
 from package.resources.utility import load_object
 from matplotlib.lines import Line2D  # Add this at the top of your file if not already imported
+from matplotlib.colors import ListedColormap
 
 policy_titles = {
     "Carbon_price": "Carbon Price",
@@ -91,7 +92,14 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
     }
 
     all_policies = sorted(set(p for k in outputs.keys() for p in k))
-    color_map = plt.get_cmap('Set1', 10)
+
+
+    okabe_ito_colors = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', 
+                    '#0072B2', '#D55E00', '#CC79A7', '#000000']
+    
+    color_map = ListedColormap(okabe_ito_colors)
+
+
     policy_colors = {p: color_map(i) for i, p in enumerate(all_policies)}
     marker_list = ['o', 's', '^', 'D', 'v']
     policy_markers = {p: marker_list[i % len(marker_list)] for i, p in enumerate(all_policies)}
@@ -291,4 +299,4 @@ def main(fileName):
     
 
 if __name__ == "__main__":
-    main(fileName = "results/pair_low_intensity_policies_12_56_32__05_05_2025")
+    main(fileName = "results/pair_low_intensity_policies_15_53_33__31_03_2026")

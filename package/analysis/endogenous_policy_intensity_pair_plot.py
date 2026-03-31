@@ -10,6 +10,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from package.resources.utility import (
     createFolder, save_object, produce_name_datetime
 )
+from matplotlib.colors import ListedColormap
 
 # Marker helper functions
 def half_circle_marker(start, end, offset=-45):
@@ -50,7 +51,10 @@ def plot_emissions_tradeoffs_from_outcomes(
     
     fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
     # --- Setup
-    color_map = plt.get_cmap('Set1', 10)
+    okabe_ito_colors = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', 
+                    '#0072B2', '#D55E00', '#CC79A7', '#000000']
+    
+    color_map = ListedColormap(okabe_ito_colors)
     all_policies = sorted({p for pair in pairwise_outcomes_complied for p in pair})
     policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
     policy_ranges = {policy: {"min": 0, "max": 0} for policy in all_policies}
@@ -197,8 +201,7 @@ def plot_emissions_tradeoffs_from_outcomes(
             u = entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
             c = entry["mean_net_cost"] * 1e-9
 
-            print("entry", entry)
-            quit()
+
             entry["emissions_cumulative"] = entry["emissions_cumulative_driving"] + entry["emissions_cumulative_production"]
             emissions_array = np.array(entry["emissions_cumulative"]) * 1e-9
             utility_array = np.array(entry["utility_cumulative"]) / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
@@ -322,5 +325,5 @@ if __name__ == "__main__":
     main(
         fileNames=["results/endog_pair_00_19_42__30_03_2026"],
         fileName_BAU="results/BAU_runs_13_38_11__31_03_2026",
-        fileNames_single_policies = "results/endog_single_13_02_27__31_03_2026"
+        fileNames_single_policies = "results/endog_single_13_57_18__31_03_2026"
     )
