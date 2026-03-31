@@ -475,7 +475,7 @@ def main(fileNames,
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_13_13_45__09_04_2025"],
+        fileNames=["results/endog_pair_00_19_42__30_03_2026"],
         min_ev_uptake = 0.94,
         max_ev_uptake = 0.96#0.96
     )
