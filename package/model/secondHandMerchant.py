@@ -37,6 +37,9 @@ class SecondHandMerchant:
         self.profit = 0
         self.scrap_loss = 0
         self.age_second_hand_car_removed = []
+
+        self.removed_ev_emissions = []
+        self.removed_ice_emissions = []
         
     def calc_median(self, beta_vec, gamma_vec):
         """
@@ -183,6 +186,13 @@ class SecondHandMerchant:
         #check len of list    
         for vehicle in self.cars_on_sale:       
             if vehicle.second_hand_counter > self.age_limit_second_hand:
+
+                # Capture emissions before removal
+                if vehicle.transportType == 2:
+                    self.removed_ice_emissions.append(vehicle.total_emissions)
+                else:
+                    self.removed_ev_emissions.append(vehicle.total_emissions)
+
                 self.age_second_hand_car_removed.append(vehicle.L_a_t)
                 self.assets -= vehicle.cost_second_hand_merchant
                 self.scrap_loss += vehicle.cost_second_hand_merchant
@@ -198,13 +208,25 @@ class SecondHandMerchant:
         for i, vehicle in enumerate(self.cars_on_sale):
             vehicle.price = price_vec[i]
 
-        # Vectorized approach to identify cars below the scrap price
-        below_scrap_mask = price_vec < self.scrap_price
+
 
         # Remove cars below the scrap price
-        self.cars_on_sale = [
-            vehicle for i, vehicle in enumerate(self.cars_on_sale) if not below_scrap_mask[i]
-        ]
+        new_stock = []
+        for i, vehicle in enumerate(self.cars_on_sale):
+            if price_vec[i] < self.scrap_price:
+                # Capture emissions before removal
+                if vehicle.transportType == 2:
+                    self.removed_ice_emissions.append(vehicle.total_emissions)
+                else:
+                    self.removed_ev_emissions.append(vehicle.total_emissions)
+            else:
+                new_stock.append(vehicle)
+        self.cars_on_sale = new_stock
+
+        # Vectorized approach to identify cars below the scrap price
+        #below_scrap_mask = price_vec < self.scrap_price        
+        #self.cars_on_sale = [
+        #    vehicle for i, vehicle in enumerate(self.cars_on_sale) if not below_scrap_mask[i]]
 
         #REMOVE EXCESS CARS
         if len(self.cars_on_sale) > self.max_num_cars:
@@ -218,24 +240,7 @@ class SecondHandMerchant:
             self.age_second_hand_car_removed.extend(vehicle.L_a_t for vehicle in cars_to_remove)
             # Use list comprehension to filter out the cars to remove
             self.cars_on_sale = [car for car in self.cars_on_sale if car not in cars_to_remove] 
-        """
-        #REMOVE EXCESS CARS
-        if len(self.cars_on_sale) > self.max_num_cars:
-            # Calculate how many cars to remove
-            num_cars_to_remove = len(self.cars_on_sale) - self.max_num_cars
 
-            # Sort cars by age in descending order (oldest first)
-            self.cars_on_sale.sort(key=lambda car: car.L_a_t, reverse=True)
-
-            # Select the oldest cars to remove
-            cars_to_remove = self.cars_on_sale[:num_cars_to_remove]
-
-            # Add ages of removed cars
-            self.age_second_hand_car_removed.extend(car.L_a_t for car in cars_to_remove)
-
-            # Keep only the remaining cars (i.e., exclude the removed ones)
-            self.cars_on_sale = self.cars_on_sale[num_cars_to_remove:]
-        """
         
     def add_to_stock(self,vehicle):
         """

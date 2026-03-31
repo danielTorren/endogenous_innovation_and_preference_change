@@ -1267,6 +1267,102 @@ def plot_distance_individuals_mean_median_type(base_params, social_network, time
     # Save and show the plot
     save_and_show(fig, fileName, "user_distance_mean_median_type", dpi)
     
+def plot_emissions_distribution_by_type(base_params, social_network, fileName, dpi=300):
+    """
+    Plots the distribution of total_emissions (production + cumulative driving) 
+    for all cars currently owned by users in the social network.
+    """
+    ice_emissions = []
+    ev_emissions = []
+
+    # Iterate through all users to get their current vehicle data
+    for user in social_network.vehicleUsers_list:
+        vehicle = user.vehicle
+        if vehicle is not None:
+            # transportType 2 = ICE, 3 = EV
+            if vehicle.transportType == 2:
+                ice_emissions.append(vehicle.total_emissions)
+            elif vehicle.transportType == 3:
+                ev_emissions.append(vehicle.total_emissions)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Define common histogram parameters for comparison
+    bins = 40
+    alpha = 0.6
+
+    if ice_emissions:
+        ax.hist(ice_emissions, bins=bins, alpha=alpha, label='ICE Cars', color='royalblue', edgecolor='black')
+    
+    if ev_emissions:
+        ax.hist(ev_emissions, bins=bins, alpha=alpha, label='EV Cars', color='limegreen', edgecolor='black')
+
+    # Formatting using your existing helper
+    format_plot(
+        ax, 
+        title=f"Distribution of Total Vehicle Emissions (Time: {social_network.t_social_network})", 
+        xlabel="Total Emissions (kg CO2)", 
+        ylabel="Number of Vehicles", 
+        legend=True
+    )
+
+    # Save using your existing helper
+    save_and_show(fig, fileName, "total_emissions_distribution", dpi)
+
+def plot_scrapped_emissions_distribution(merchant, fileName, dpi=300):
+    """
+    Plots the distribution of total_emissions for all cars removed from 
+    the second-hand market (due to age, scrap value, or inventory limits).
+    """
+    import matplotlib.pyplot as plt
+
+    # Extract the logged data from the merchant instance
+    ice_emissions = merchant.removed_ice_emissions
+    ev_emissions = merchant.removed_ev_emissions
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Define common histogram parameters
+    bins = 50
+    alpha = 0.6
+
+    # Plot ICE data if it exists
+    if ice_emissions:
+        ax.hist(
+            ice_emissions, 
+            bins=bins, 
+            alpha=alpha, 
+            label='Scrapped/Removed ICE', 
+            color='#d62728', # Deep red
+            edgecolor='black'
+        )
+    
+    # Plot EV data if it exists
+    if ev_emissions:
+        ax.hist(
+            ev_emissions, 
+            bins=bins, 
+            alpha=alpha, 
+            label='Scrapped/Removed EV', 
+            color='#2ca02c', # Forest green
+            edgecolor='black'
+        )
+
+    # Apply your standard formatting
+    # Note: Ensure these helper functions are available in your scope
+    title_suffix = f" (n_ice={len(ice_emissions)}, n_ev={len(ev_emissions)})"
+    
+    format_plot(
+        ax, 
+        title="Lifetime Emissions Distribution of Removed Vehicles" + title_suffix, 
+        xlabel="Total Emissions ($kg CO_2$)", 
+        ylabel="Frequency (Number of Vehicles)", 
+        legend=True
+    )
+
+    # Use your existing saving utility
+    save_and_show(fig, fileName, "removed_vehicles_emissions", dpi)
+
 # Sample main function
 def main(fileName, dpi=300):
     try:
@@ -1279,7 +1375,7 @@ def main(fileName, dpi=300):
     social_network = data_controller.social_network
     firm_manager = data_controller.firm_manager
     time_series = np.arange(0, len(data_controller.time_series) - base_params["duration_burn_in"])
-
+    merchant = data_controller.second_hand_merchant
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
@@ -1302,6 +1398,8 @@ def main(fileName, dpi=300):
     plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
     plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
     plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
+    plot_emissions_distribution_by_type(base_params, social_network, fileName, dpi)
+    plot_scrapped_emissions_distribution(merchant, fileName, dpi)
 
     plt.show()
 

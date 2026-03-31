@@ -85,8 +85,14 @@ class Social_Network:
         self.adjacency_matrix, self.network = self.create_network()
         self.network_density = nx.density(self.network)
 
-        self.weighting_matrix = self._normlize_matrix(self.adjacency_matrix)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
+        self.include_self_social_state = parameters_social_network.get("include_self_social_state", False)
+        if self.include_self_social_state:
+            np.fill_diagonal(self.adjacency_matrix, 1)
 
+        self.weighting_matrix = self._normlize_matrix(self.adjacency_matrix)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
+        #print(self.adjacency_matrix)
+        #print(self.weighting_matrix)
+        #quit()
         #Assume nobody adopts EV at the start, THIS MAY BE AN ISSUE
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
 

@@ -1,0 +1,5 @@
+{
+    "property_varied": "include_self_social_state",
+    "subdict": "parameters_social_network",
+    "property_list": [0,1]
+}
