@@ -261,13 +261,13 @@ def simulate_future_policies(file_name, controller_files, policy_list, policy_pa
             "mean_utility_cumulative": mean_utility_cumulative, 
             "mean_utility_cumulative_30": mean_utility_cumulative_30, 
             "mean_profit_cumulative": mean_profit_cumulative,
-            #"ev_uptake": ev_uptake,
-            #"net_cost": net_cost,
-            #"emissions_cumulative_driving": emissions_cumulative_driving,
-            #"emissions_cumulative_production": emissions_cumulative_production,
-            #"utility_cumulative": utility_cumulative,
-            #"profit_cumulative": profit_cumulative,
-            #"confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
+            "ev_uptake": ev_uptake,
+            "net_cost": net_cost,
+            "emissions_cumulative_driving": emissions_cumulative_driving,
+            "emissions_cumulative_production": emissions_cumulative_production,
+            "utility_cumulative": utility_cumulative,
+            "profit_cumulative": profit_cumulative,
+            "confidence_interval": 1.96 * sd_ev_uptake / np.sqrt(64)
         }
 
         print(policy_name, policy_outcomes[policy_name])

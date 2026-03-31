@@ -197,6 +197,8 @@ def plot_emissions_tradeoffs_from_outcomes(
             u = entry["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
             c = entry["mean_net_cost"] * 1e-9
 
+            print("entry", entry)
+            quit()
             entry["emissions_cumulative"] = entry["emissions_cumulative_driving"] + entry["emissions_cumulative_production"]
             emissions_array = np.array(entry["emissions_cumulative"]) * 1e-9
             utility_array = np.array(entry["utility_cumulative"]) / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
@@ -319,6 +321,6 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 if __name__ == "__main__":
     main(
         fileNames=["results/endog_pair_00_19_42__30_03_2026"],
-        fileName_BAU="results/BAU_runs_12_22_12__10_04_2025",
-        fileNames_single_policies = "results/endog_single_13_02_27__31_03_2026"#"results/endogenous_policy_intensity_18_43_26__06_03_2025"
+        fileName_BAU="results/BAU_runs_13_38_11__31_03_2026",
+        fileNames_single_policies = "results/endog_single_13_02_27__31_03_2026"
     )
