@@ -65,7 +65,7 @@ def main(
 if __name__ == "__main__":
     results = main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single.json",
-        VARY_LOAD ="package/constants/vary_income_mu.json"
+        VARY_LOAD ="package/constants/vary_beta_multiplier.json"
         )
     
     #OLD
@@ -73,3 +73,4 @@ if __name__ == "__main__":
 #        VARY_LOAD ="package/constants/vary_single_include_self_social_state.json"
     #income_mu
     #vary_income_sigma.json"
+    #vary_income_mu

@@ -320,7 +320,8 @@ class Controller:
         Inverse relationship to income distribution drawn from a log-normal.
         """
         #BETA
-        median_beta = self.calc_beta_median()
+        self.beta_multiplier = self.parameters_social_network.get("beta_multiplier", 1)#PURPOSE IS TO TEST THE ROLE OF BETA DISTRIBUTIONS
+        median_beta = self.calc_beta_median()*self.beta_multiplier 
         #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
         median_income = np.median(incomes)
