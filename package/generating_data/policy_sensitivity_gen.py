@@ -95,6 +95,6 @@ if __name__ == "__main__":
     # Example usage
     run_cross_variation(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_joint.json",
-        VAR_PHYSICAL_LOAD="package/constants/vary_policy_beta.json",
-        VAR_POLICY_LOAD="package/constants/vary_policy_carbon_tax.json" # Load your policy here
+        VAR_PHYSICAL_LOAD="package/constants/vary_policy_beta_multiplier.json",
+        VAR_POLICY_LOAD="package/constants/vary_policy_carbon_tax.json"# Load your policy here
     )
