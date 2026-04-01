@@ -8,23 +8,39 @@ from package.resources.utility import (
     params_list_with_seed
 )
 
+def set_nested_value(dic, path, value):
+    """Sets a value in a nested dict using a list of keys."""
+    keys = path.split(".")
+    for key in keys[:-1]:
+        dic = dic.setdefault(key, {})
+    dic[keys[-1]] = value
+
 def produce_nested_param_list(base_params, var_a, var_b):
     """
-    Creates a flat list of params for all combinations of var_a and var_b.
-    var_a: Dictionary for the 'Environment' parameter
-    var_b: Dictionary for the 'Policy' parameter
+    Enhanced to handle nested paths like 'subdict.property'
     """
     final_list = []
     
     for val_a in var_a["property_list"]:
         for val_b in var_b["property_list"]:
-            # Deep copy to avoid mutating the original dict in the loop
+            # Deep copy to avoid mutating the original dict
             current_params = json.loads(json.dumps(base_params))
             
-            # Set Param A
-            current_params[var_a["subdict"]][var_a["property_varied"]] = val_a
-            # Set Param B (Policy)
-            current_params[var_b["subdict"]][var_b["property_varied"]] = val_b
+            # Set Param A (Environment)
+            # Use the dot notation if path is nested, else standard access
+            if "." in var_a["subdict"]:
+                path_a = f"{var_a['subdict']}.{var_a['property_varied']}"
+                set_nested_value(current_params, path_a, val_a)
+            else:
+                current_params[var_a["subdict"]][var_a["property_varied"]] = val_a
+                
+            # Set Param B (Policy - Carbon Tax)
+            # Navigates: parameters_policies -> Values -> Carbon_price -> Carbon_price
+            if "." in var_b["subdict"]:
+                path_b = f"{var_b['subdict']}.{var_b['property_varied']}"
+                set_nested_value(current_params, path_b, val_b)
+            else:
+                current_params[var_b["subdict"]][var_b["property_varied"]] = val_b
             
             # Expand by seeds
             seeds_list = params_list_with_seed(current_params)

@@ -1,0 +1,5 @@
+{
+    "property_varied": "beta_multiplier",
+    "subdict": "parameters_social_network",
+    "property_list": [0.25, 0.5, 0.75, 1, 1.25, 1.5,1.75, 2]
+}
