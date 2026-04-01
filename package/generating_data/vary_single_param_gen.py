@@ -64,7 +64,7 @@ def main(
 
 if __name__ == "__main__":
     results = main(
-        BASE_PARAMS_LOAD="package/constants/base_params_vary_single.json",
+        BASE_PARAMS_LOAD="package/constants/base_params_vary_single_carbon_tax.json",
         VARY_LOAD ="package/constants/vary_beta_multiplier.json"
         )
     
