@@ -500,7 +500,7 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_param_vary_14_00_22__01_04_2026")
+    main("results/single_param_vary_14_30_34__01_04_2026")
 
     #single_param_vary_16_43_22__31_03_2026
     #single_param_vary_10_57_28__27_03_2026

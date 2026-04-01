@@ -1,6 +1,6 @@
 {
     "seed_repetitions": 64,
-    "duration_burn_in_research": 0,
+    "duration_burn_in_research": 1,
     "duration_burn_in": 180,
     "duration_calibration": 276,
     "duration_future": 144,
