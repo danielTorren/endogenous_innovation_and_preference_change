@@ -157,6 +157,24 @@ def ev_prop_price_emissions_parallel_run(
     return np.asarray(ev_prop_list), np.asarray(price_list), np.asarray(margins_list)
 #########################################################################################
 
+def ev_prop_emissions(params):
+    data = generate_data(params)
+    return data.social_network.history_prop_EV, data.social_network.history_total_emissions
+#data_flat_age, data_flat_price , data_flat_emissions 
+
+def ev_prop_emissions_parallel_run(
+        params_dict: list[dict]
+) -> npt.NDArray:
+    num_cores = multiprocessing.cpu_count()
+    #res = [generate_emissions_intensities(i) for i in params_dict]
+    res = Parallel(n_jobs=num_cores, verbose=10)(delayed(ev_prop_emissions)(i) for i in params_dict)
+    ev_prop_list, emissions_list = zip(
+        *res
+    )
+    return np.asarray(ev_prop_list), np.asarray(emissions_list)
+#########################################################################################
+
+
 def policy_generate_multi(params, controller_load):
     print("controller loaded!")
     data = load_in_controller(controller_load, params)

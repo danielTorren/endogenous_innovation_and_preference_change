@@ -94,7 +94,7 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
     all_policies = sorted(set(p for k in outputs.keys() for p in k))
 
 
-    okabe_ito_colors = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', 
+    okabe_ito_colors = ['#E69F00','#009E73', '#56B4E9', '#F0E442', 
                     '#0072B2', '#D55E00', '#CC79A7', '#000000']
     
     color_map = ListedColormap(okabe_ito_colors)

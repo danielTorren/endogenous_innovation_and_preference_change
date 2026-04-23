@@ -165,52 +165,27 @@ class NKModel_EV:
 
         fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec-self.min_vec)
         return fitness_scaled
-
+    
     def generate_fitness_landscape(self):
-        """
-        Generate fitness landscapes for all attributes.
-
-        Returns:
-        - L (numpy.ndarray): 3D array containing fitness landscapes for all attributes.
-                             Shape: (2**(self.K+1), self.N, self.A)
-        """    
-
-        #CHECK SEED STUFF FOR REPRODUCIBILITY 
         L_cost = self.random_state_inputs.rand(2**(self.K+1), self.N, self.A)
-        L_quality = self.random_state_inputs.rand(2**(self.K+1), self.N, self.A)
-        L_efficiency = self.random_state_inputs.rand(2**(self.K+1), self.N, self.A)
-        L_battery_size = self.random_state_inputs.rand(2**(self.K+1), self.N, self.A)
-        
-        #(Cost, quality, efficiency, battery)
-        # Iterate over each attribute
-        
-        if self.rho[1] == 0:
-            L_cost[:, :, 1] = L_quality[:, :, 1]
-        else:
-            #FOR COST ITS CORRELATION IS 0.5
-            Q_a_size = int(abs(self.rho[1]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION
-            Q_a = self.random_state_inputs.choice(self.N, size=Q_a_size, replace=False)
-            L_cost[:, Q_a, 1] = L_quality[:, Q_a, 1]  # Copy fitness contribution from attribute 1
 
-        if self.rho[2] == 0:
-            L_cost[:, :, 1] = L_efficiency[:, :, 2]
-        else:
-            #FOR COST ITS CORRELATION IS 0.5
-            Q_a_size = int(abs(self.rho[2]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION,
-            #Q_a_size = int(abs(self.rho[2]) * self.N + 0.5)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION, AS YOU SELECT HOW MANY TIME YOU SWITCH OUT!!!
-            Q_a = self.random_state_inputs.choice(self.N, size=Q_a_size, replace=False)
-            L_cost[:, Q_a, 2] = L_efficiency[:, Q_a, 2]  # Copy fitness contribution from attribute 1
-        
-        if self.rho[3] == 0:
-            L_cost[:, :, 3] = L_battery_size[:, :, 3]
-        else:
-            #FOR COST ITS CORRELATION IS 0.5
-            Q_a_size = int(abs(self.rho[3]) * self.N)#THIS IS WHAT SETS THE TIGHTNESS OF THE CORRELATION
-            Q_a = self.random_state_inputs.choice(self.N, size=Q_a_size, replace=False)
-            L_cost[:, Q_a, 3] = L_battery_size[:, Q_a, 3]  # Copy fitness contribution from attribute 1
+        for attr_idx in range(1, self.A):
+            rho_val = self.rho[attr_idx]
+            if rho_val != 0:
+                num_to_sync = int(abs(rho_val) * self.N)
+                if num_to_sync > 0:
+                    sync_indices = self.random_state_inputs.choice(
+                        self.N, size=num_to_sync, replace=False
+                    )
+                    if rho_val > 0:
+                        # Positive correlation: copy directly
+                        L_cost[:, sync_indices, attr_idx] = L_cost[:, sync_indices, 0]
+                    else:
+                        # Negative correlation: invert
+                        L_cost[:, sync_indices, attr_idx] = 1 - L_cost[:, sync_indices, 0]
 
         return L_cost
-    
+
     def invert_bits_one_at_a_time(self, decimal_value):
         """
         Generate all 1-bit neighbors of a binary string by flipping each bit.

@@ -51,7 +51,7 @@ def plot_emissions_tradeoffs_from_outcomes(
     
     fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
     # --- Setup
-    okabe_ito_colors = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', 
+    okabe_ito_colors = ['#E69F00','#009E73', '#56B4E9', '#F0E442', 
                     '#0072B2', '#D55E00', '#CC79A7', '#000000']
     
     color_map = ListedColormap(okabe_ito_colors)

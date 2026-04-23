@@ -1,41 +1,4 @@
-"""Runs a single simulation to produce data which is saved
-
-Created: 22/12/2023
-"""
-# imports
-from package.resources.run import generate_data
-from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime
-)
-from package.plotting_data.single_experiment_plot import main as plotting_main
-#test 2
-import numpy as np
-def main(
-    base_params
-) -> str: 
-
-    root = "single_experiment"
-    fileName = produce_name_datetime(root)
-
-    print("fileName:", fileName)
-
-    controller = generate_data(base_params, print_simu= 1)  # run the simulation 
-    print("E, total",controller.social_network.emissions_cumulative)
-    print("uptake end calibration", controller.social_network.history_ev_adoption_rate[controller.duration_burn_in + controller.duration_calibration - 1])
-    print("uptake end",controller.calc_EV_prop())
-    print("distortion",controller.calc_total_policy_distortion(), controller.calc_net_policy_distortion())
-    print("mean price", np.asarray(controller.social_network.history_mean_price[-1]))
-    createFolder(fileName)
-    save_object(controller, fileName + "/Data", "controller")
-    save_object(base_params, fileName + "/Data", "base_params")
-
-    return fileName
-
-if __name__ == "__main__":
-
-    base_params = {
+{
     "seed_repetitions": 64,
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
@@ -47,7 +10,7 @@ if __name__ == "__main__":
     "seed_inputs": 22,
     "ev_research_start_time":0,
     "ev_production_start_time": 0,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -167,13 +130,3 @@ if __name__ == "__main__":
         "zeta":0.29697
     }
 }
-    fileName = main(base_params=base_params)
-    print("SIMULATION FINISHED")
-
-    """
-    Will also plot stuff at the same time for convieniency
-    """
-    RUN_PLOT = 1
-    print("fileName",fileName)
-    if RUN_PLOT:
-        plotting_main(fileName = fileName)
