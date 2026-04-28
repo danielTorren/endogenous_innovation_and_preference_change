@@ -73,7 +73,7 @@
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0,0,0.5],
+        "rho":[1,0,0,0],
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,

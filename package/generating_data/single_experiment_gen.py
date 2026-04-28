@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 144,
+    "duration_future": 312,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
@@ -61,10 +61,10 @@ if __name__ == "__main__":
     "parameters_policies":{
         "States":{
             "Carbon_price": 0,
-            "Electricity_subsidy": 0,
+            "Electricity_subsidy": 1,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
-            "Production_subsidy": 0,
+            "Production_subsidy": 1,
             "Research_subsidy": 0
         },
         "Values":{
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             "Electricity_subsidy":0.5,
             "Adoption_subsidy":20000,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":58150,
+            "Production_subsidy":30548.21,
             "Research_subsidy":1000000
         }
     },
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0,0,0.5],
+        "rho":[1,0,0,0],
         "delta_P":0.0087,
         "production_emissions":14000,
         "transportType": 3,

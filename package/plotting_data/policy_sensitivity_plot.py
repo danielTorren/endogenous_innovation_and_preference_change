@@ -8,44 +8,6 @@ from matplotlib.animation import FuncAnimation
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-def plot_cross_comparison_grid(data_array, phys_list, pol_list, phys_name, pol_name, fileName):
-    """
-    1. GRID PLOT
-    Creates a subplot for each Physical Scenario. 
-    Inside each subplot, it plots a line for every Policy.
-    """
-    num_phys = len(phys_list)
-    num_pol = len(pol_list)
-    num_seeds = data_array.shape[2]
-    time_steps = np.arange(data_array.shape[3])
-
-    fig, axes = plt.subplots(1, num_phys, figsize=(6 * num_phys, 5), sharey=True)
-    if num_phys == 1: axes = [axes]
-
-    colors = plt.cm.turbo(np.linspace(0, 1, num_pol))
-
-    for i, phys_val in enumerate(phys_list):
-        ax = axes[i]
-        for j, pol_val in enumerate(pol_list):
-            # Shape: (Seeds, Time)
-            data = data_array[i, j, :, :]
-            
-            mean_vals = np.mean(data, axis=0)
-            sem_vals = stats.sem(data, axis=0)
-            ci = sem_vals * stats.t.ppf(0.975, num_seeds - 1)
-
-            line, = ax.plot(time_steps, mean_vals, label=f"{pol_name}: {pol_val}", color=colors[j])
-            ax.fill_between(time_steps, mean_vals - ci, mean_vals + ci, color=line.get_color(), alpha=0.2)
-
-        ax.set_title(f"{phys_name}: {phys_val}")
-        ax.grid(True, linestyle='--', alpha=0.6)
-        if i == 0: ax.set_ylabel("EV Proportion")
-
-    fig.supxlabel("Time Step")
-    plt.legend(title=pol_name, bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
-    plt.savefig(f"{fileName}/cross_grid_comparison.png", dpi=300)
-
 
 def plot_policy_efficiency_heatmap(data_array, phys_list, pol_list, phys_name, pol_name, fileName):
     """
@@ -104,10 +66,6 @@ def plot_seed_distribution_box(data_array, phys_list, pol_list, phys_name, pol_n
     
     plt.tight_layout()
     plt.savefig(f"{fileName}/seed_variance_boxplot.png", dpi=300)
-
-
-
-
 
 def animate_ev_uptake_calendar(data_array, phys_list, pol_list, phys_name, pol_name, fileName):
     """
@@ -186,35 +144,75 @@ def animate_ev_uptake_calendar(data_array, phys_list, pol_list, phys_name, pol_n
     plt.close()
     print(f"Animation saved: {save_path}")
 
+def plot_cross_comparison_grid(data_array, data_array_bau, phys_list, pol_list, phys_name, pol_name, fileName):
+    num_phys = len(phys_list)
+    num_pol = len(pol_list)
+    num_seeds = data_array.shape[2]
+    time_steps = np.arange(data_array.shape[3])
+
+    fig, axes = plt.subplots(1, num_phys, figsize=(6 * num_phys, 5), sharey=True)
+    if num_phys == 1:
+        axes = [axes]
+
+    # +1 color for BAU
+    colors = plt.cm.turbo(np.linspace(0, 1, num_pol))
+
+    for i, phys_val in enumerate(phys_list):
+        ax = axes[i]
+
+        # --- Plot BAU first in black dashed ---
+        bau_data = data_array_bau[i, :, :]  # (Seeds, Time)
+        bau_mean = np.mean(bau_data, axis=0)
+        bau_ci = stats.sem(bau_data, axis=0) * stats.t.ppf(0.975, num_seeds - 1)
+        ax.plot(time_steps, bau_mean, label="BAU", color='black', linestyle='--', linewidth=1.5)
+        ax.fill_between(time_steps, bau_mean - bau_ci, bau_mean + bau_ci, color='black', alpha=0.15)
+
+        # --- Plot policy lines ---
+        for j, pol_val in enumerate(pol_list):
+            data = data_array[i, j, :, :]
+            mean_vals = np.mean(data, axis=0)
+            ci = stats.sem(data, axis=0) * stats.t.ppf(0.975, num_seeds - 1)
+            line, = ax.plot(time_steps, mean_vals, label=f"{pol_name}: {pol_val}", color=colors[j])
+            ax.fill_between(time_steps, mean_vals - ci, mean_vals + ci, color=line.get_color(), alpha=0.2)
+
+        ax.set_title(f"{phys_name}: {phys_val}")
+        ax.grid(True, linestyle='--', alpha=0.6)
+        if i == 0:
+            ax.set_ylabel("EV Proportion")
+
+    fig.supxlabel("Time Step")
+    plt.legend(title=pol_name, bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
+    plt.savefig(f"{fileName}/cross_grid_comparison.png", dpi=300)
+
+
 def main_load_and_plot(results_folder):
-    # 1. Load objects using your utility function
     print(f"Loading data from: {results_folder}")
-    
+
     data_array_ev = load_object(f"{results_folder}/Data", "data_cross_ev")
+    data_array_bau = load_object(f"{results_folder}/Data", "data_cross_bau")
     metadata = load_object(f"{results_folder}/Data", "vary_metadata")
-    
-    # Extract metadata for labels
+
     phys_list = metadata["phys"]["property_list"]
     pol_list = metadata["policy"]["property_list"]
     phys_name = metadata["phys"]["property_varied"]
     pol_name = metadata["policy"]["property_varied"]
 
-    # 2. Run the three plotting functions
     print("Generating Cross-Variation Grid...")
-    plot_cross_comparison_grid(data_array_ev, phys_list, pol_list, phys_name, pol_name, results_folder)
-    
+    plot_cross_comparison_grid(data_array_ev, data_array_bau, phys_list, pol_list, phys_name, pol_name, results_folder)
+
     print("Generating Policy Heatmap...")
     plot_policy_efficiency_heatmap(data_array_ev, phys_list, pol_list, phys_name, pol_name, results_folder)
-    
+
     print("Generating Seed Variance Boxplot...")
     plot_seed_distribution_box(data_array_ev, phys_list, pol_list, phys_name, pol_name, results_folder)
-    
+
     print("Generating Heatmap Animation...")
     animate_ev_uptake_calendar(data_array_ev, phys_list, pol_list, phys_name, pol_name, results_folder)
 
-    print("All plots saved in the results folder.")
+    print("All plots saved.")
     plt.show()
-
+    
 if __name__ == "__main__":
     # Replace with your actual folder path
     path = "results/cross_nu_vs_Carbon_price_13_49_58__03_04_2026" 

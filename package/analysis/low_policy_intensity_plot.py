@@ -203,6 +203,28 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
         ax.set_ylabel(label, fontsize=16)
         add_vertical_lines(ax, base_params, annotation_height_prop=[0.5, 0.2, 0.2])
 
+
+    # Print cumulative emissions at final time step relative to BAU
+    bau_cumulative_final = np.cumsum(outputs_BAU["history_total_emissions"], axis=1)[:, -1] * 1e-9
+    bau_mean_final = np.nanmean(bau_cumulative_final)
+
+    for key, output in outputs.items():
+        policy_cumulative_final = np.cumsum(output["history_total_emissions"], axis=1)[:, -1] * 1e-9
+        policy_mean_final = np.nanmean(policy_cumulative_final)
+        delta = policy_mean_final - bau_mean_final
+        direction = "reduction" if delta < 0 else "increase"
+        print(f"{label_from_key(key)}: cumulative emissions {direction} of {abs(delta):.4f} MTCO2 relative to BAU")
+
+    bau_cumulative_final = np.cumsum(outputs_BAU["history_total_emissions"], axis=1)[:, -1] * 1e-9
+    bau_mean_final = np.nanmean(bau_cumulative_final)
+
+    for key, output in outputs.items():
+        policy_cumulative_final = np.cumsum(output["history_total_emissions"], axis=1)[:, -1] * 1e-9
+        policy_mean_final = np.nanmean(policy_cumulative_final)
+        pct_change = (policy_mean_final - bau_mean_final) / bau_mean_final * 100
+        direction = "reduction" if pct_change < 0 else "increase"
+        print(f"{label_from_key(key)}: cumulative emissions {direction} of {abs(pct_change):.2f}% relative to BAU")
+
     # --- Flow and Cumulative Utility
     for idx, (ax, key_name, transform, label) in enumerate(zip(
         [axs[2, 0], axs[2, 1]],

@@ -98,7 +98,7 @@ def plot_single_parameter_sensitivity(results_folder):
 
 if __name__ == "__main__":
     # Ensure PATH points to the directory containing the 'Data' folder
-    PATH = "results/battery_corr_rho_10_30_41__23_04_2026"
+    PATH = "results/battery_corr_rho_12_28_15__23_04_2026"
     plot_single_parameter_sensitivity(PATH)
 
     plt.show()
