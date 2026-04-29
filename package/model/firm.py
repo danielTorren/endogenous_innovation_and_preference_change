@@ -22,6 +22,8 @@ class Firm:
             parameters_car_EV (dict): Parameters for EV car models.
         """
 
+        self.bool_2035_price_update = False
+
         self.rebate = parameters_firm["rebate"]#7000#JUST TO TRY TO GET TRANSITION
         self.rebate_calibration = parameters_firm["rebate_calibration"]
         
@@ -944,9 +946,11 @@ class Firm:
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
         #update cars to sell   
-        if (self.random_state.rand() < self.prob_change_production):
+        if (self.random_state.rand() < self.prob_change_production) or self.bool_2035_price_update:
             self.cars_on_sale = self.choose_cars_segments()
-            self.production_change_bool = 1                 
+            self.production_change_bool = 1         
+            # Set the flag to False after execution so it only runs once
+            self.bool_2035_price_update = False        
 
         self.update_memory_timer()
 

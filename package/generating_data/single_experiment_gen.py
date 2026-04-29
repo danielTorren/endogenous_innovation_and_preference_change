@@ -43,7 +43,7 @@ if __name__ == "__main__":
     "duration_future": 312,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "seed": 5,
+    "seed": 10,
     "seed_inputs": 22,
     "ev_research_start_time":0,
     "ev_production_start_time": 0,
@@ -62,9 +62,9 @@ if __name__ == "__main__":
         "States":{
             "Carbon_price": 0,
             "Electricity_subsidy": 1,
-            "Adoption_subsidy": 0,
+            "Adoption_subsidy": 1,
             "Adoption_subsidy_used": 0,
-            "Production_subsidy": 1,
+            "Production_subsidy": 0,
             "Research_subsidy": 0
         },
         "Values":{
@@ -73,11 +73,11 @@ if __name__ == "__main__":
                 "Carbon_price": 0.0,
                 "Carbon_price_state": "flat"
             },
-            "Electricity_subsidy":0.5,
-            "Adoption_subsidy":20000,
+            "Electricity_subsidy":0.76,
+            "Adoption_subsidy":24772.5,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":30548.21,
-            "Research_subsidy":1000000
+            "Production_subsidy":30548.21
+            
         }
     },
     "parameters_second_hand":{

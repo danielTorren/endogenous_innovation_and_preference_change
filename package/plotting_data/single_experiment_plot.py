@@ -28,55 +28,48 @@ def save_and_show(fig, fileName, plot_name, dpi=300, annotation_height_prop= [0.
     save_path = os.path.join(fileName, "Plots")
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
-import matplotlib.pyplot as plt
 
-def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotation_height_prop=[0.2, 0.2, 0.2]):
-    """
-    Adds dashed vertical lines to the plot at specified steps with vertical annotations.
-
-    Parameters:
-    ax : matplotlib.axes.Axes
-        The Axes object to add the lines to.
-    base_params : dict
-        Dictionary containing relevant parameters for placing vertical lines.
-    color : str, optional
-        Color of the dashed lines. Default is 'black'.
-    linestyle : str, optional
-        Style of the dashed lines. Default is '--'.
-    annotation_height : float, optional
-        Y-position for text annotations (default is the middle of the y-axis).
-    """
+def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotation_height_prop=[0.2, 0.2, 0.2, 0.2]):
     burn_in = base_params["duration_burn_in"]
     no_carbon_price = base_params["duration_calibration"]
     ev_production_start_time = base_params["ev_production_start_time"]
 
-    # Determine the middle of the plot if no custom height is provided
     y_min, y_max = ax.get_ylim()
+    annotation_height_0 = y_min + annotation_height_prop[0] * (y_max - y_min)
+    annotation_height_1 = y_min + annotation_height_prop[1] * (y_max - y_min)
+    annotation_height_2 = y_min + annotation_height_prop[2] * (y_max - y_min)
+    annotation_height_3 = y_min + annotation_height_prop[2] * (y_max - y_min)
 
-    annotation_height_0 = y_min  + annotation_height_prop[0]*(y_max - y_min)
-    annotation_height_1 = y_min  + annotation_height_prop[1]*(y_max - y_min)
-    annotation_height_2 = y_min  + annotation_height_prop[2]*(y_max - y_min)
-
-    # Add vertical line with annotation
+    # EV Sale Start
     ev_sale_start_time = ev_production_start_time
     ax.axvline(ev_sale_start_time, color="black", linestyle=':')
     ax.annotate("EV Sale Start", xy=(ev_sale_start_time, annotation_height_0),
                 rotation=90, verticalalignment='center', horizontalalignment='right',
                 fontsize=8, color='black')
 
+    # EV Adoption Subsidy Start
     if base_params["EV_rebate_state"]:
-        rebate_start_time =  base_params["parameters_rebate_calibration"]["start_time"]
+        rebate_start_time = base_params["parameters_rebate_calibration"]["start_time"]
         ax.axvline(rebate_start_time, color="black", linestyle='-.')
         ax.annotate("EV Adoption Subsidy Start", xy=(rebate_start_time, annotation_height_1),
                     rotation=90, verticalalignment='center', horizontalalignment='right',
                     fontsize=8, color='black')
 
+    # Policy Start
     if base_params["duration_future"] > 0:
-        policy_start_time =  no_carbon_price
+        policy_start_time = no_carbon_price
         ax.axvline(policy_start_time, color="black", linestyle='--')
         ax.annotate("Policy Start", xy=(policy_start_time, annotation_height_2),
                     rotation=90, verticalalignment='center', horizontalalignment='right',
                     fontsize=8, color='black')
+
+        # Policy End
+        if base_params["duration_future"] >= 144:
+            policy_end_time = no_carbon_price + 144
+            ax.axvline(policy_end_time, color="black", linestyle='--')
+            ax.annotate("Policy End", xy=(policy_end_time, annotation_height_3),
+                        rotation=90, verticalalignment='center', horizontalalignment='right',
+                        fontsize=8, color='black')
 
 def plot_total_utility(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -1404,4 +1397,4 @@ def main(fileName, dpi=300):
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_17_22_12__11_04_2025")
+    main("results/single_experiment_18_15_11__28_04_2026")

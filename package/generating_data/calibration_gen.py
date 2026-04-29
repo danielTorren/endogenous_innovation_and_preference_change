@@ -16,7 +16,7 @@ def main(
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
 
-    root = "multi_seed_single"
+    root = "calibration_gen"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 

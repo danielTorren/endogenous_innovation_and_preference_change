@@ -1,0 +1,5 @@
+{
+    "subdict": "parameters_policies.Values",
+    "property_varied": "Adoption_subsidy",
+    "property_list": [10000, 15000,20000, 25000, 30000, 35000]
+}

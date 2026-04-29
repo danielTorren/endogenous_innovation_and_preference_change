@@ -30,6 +30,8 @@ class Controller:
             parameters_controller (dict): Dictionary of all model configuration parameters.
         """
         self.absolute_2035 = 144#number of months from the end of calibration period to 2035
+        
+
         self.unpack_controller_parameters(parameters_controller)
         
         self.parameters_EV["delta"] = self.parameters_ICE["delta"] 
@@ -91,6 +93,7 @@ class Controller:
         #pass information across one time
         #self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
 
+        self.relative_2035 = self.duration_burn_in + self.duration_calibration + self.absolute_2035
 
         if self.save_timeseries_data_state:
             self.social_network.set_up_time_series_social_network()
@@ -994,12 +997,20 @@ class Controller:
     
     ################################################################################################
 
+    def deal_with_updated_prices_past_2035(self):       
+        for i, firm in enumerate(self.firm_manager.firms_list):
+                firm.bool_2035_price_update = True
+
     def next_step(self):
         """
         Advance the full model by one time step. Updates firms, users, second-hand market.
         """
 
         self.update_time_series_data()
+
+        #if self.t_controller == self.relative_2035:
+        #    self.deal_with_updated_prices_past_2035()
+
         self.cars_on_sale_all_firms = self.update_firms()
         self.second_hand_cars  = self.get_second_hand_cars()
         self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
