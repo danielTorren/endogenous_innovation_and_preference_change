@@ -92,7 +92,7 @@ class Controller:
 
         #pass information across one time
         #self.firm_manager.input_social_network_data(self.social_network.beta_vec, self.social_network.gamma_vec, self.social_network.consider_ev_vec, self.beta_bins)
-
+        self.relative_2024 = self.duration_burn_in + self.duration_calibration + 1#add 1?
         self.relative_2035 = self.duration_burn_in + self.duration_calibration + self.absolute_2035
 
         if self.save_timeseries_data_state:
@@ -1008,7 +1008,8 @@ class Controller:
 
         self.update_time_series_data()
 
-        #if self.t_controller == self.relative_2035:
+        #USE BELOW TO FORCE REPRICING IMMEDIATLY WITH POLICY CHANGES
+        #if (self.t_controller == self.relative_2024) or  (self.t_controller == self.relative_2035):
         #    self.deal_with_updated_prices_past_2035()
 
         self.cars_on_sale_all_firms = self.update_firms()

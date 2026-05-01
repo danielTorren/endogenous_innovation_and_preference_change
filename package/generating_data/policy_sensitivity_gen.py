@@ -179,23 +179,23 @@ if __name__ == "__main__":
     #    VAR_POLICY_LOAD="package/constants/vary_policy_new_car_rebate.json"
     #)
 
-    #run_cross_variation(
-    #    BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_joint.json",
-    #    VAR_PHYSICAL_LOAD="package/constants/vary_policy_beta_multiplier.json",
-    #    VAR_POLICY_LOAD="package/constants/vary_policy_new_car_rebate.json"
-    #)
-    
-    run_bau_only(
-        BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_joint.json",
-        VAR_PHYSICAL_LOAD="package/constants/vary_policy_a_chi.json",
-        VAR_POLICY_LOAD="package/constants/vary_policy_carbon_tax.json"
-    )
-
-    run_bau_only(
+    run_cross_variation(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_joint.json",
         VAR_PHYSICAL_LOAD="package/constants/vary_policy_beta_multiplier.json",
-        VAR_POLICY_LOAD="package/constants/vary_policy_carbon_tax.json"
+        VAR_POLICY_LOAD="package/constants/vary_policy_new_car_rebate.json"
     )
+    
+    #run_bau_only(
+    #    BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_joint.json",
+    #    VAR_PHYSICAL_LOAD="package/constants/vary_policy_a_chi.json",
+    #    VAR_POLICY_LOAD="package/constants/vary_policy_carbon_tax.json"
+    #)
+
+    #run_bau_only(
+    #    BASE_PARAMS_LOAD="package/constants/base_params_vary_policy_joint.json",
+    #    VAR_PHYSICAL_LOAD="package/constants/vary_policy_beta_multiplier.json",
+    #    VAR_POLICY_LOAD="package/constants/vary_policy_carbon_tax.json"
+    #)
         #vary_policy_a_chi
         #vary_policy_beta_multiplier
         #vary_policy_carbon_tax

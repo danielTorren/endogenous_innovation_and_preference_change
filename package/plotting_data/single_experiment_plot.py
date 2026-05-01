@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 from package.calibration.NN_multi_round_calibration_multi_gen import convert_data
 import itertools
 
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
+
 # Ensure directory existence
 def ensure_directory_exists(path):
     if not os.path.exists(path):
@@ -970,32 +974,53 @@ def emissions_decomposed(base_params, social_network, time_series, fileName, dpi
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed", dpi)
 
-def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+
+def emissions_decomposed_flow(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop=[0.5, 0.5, 0.5]):
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))
     
+    # 1. Conversion Factor: Tonnes to Megatonnes
+    T_TO_MT = 1e-6
+    burn_in = base_params["duration_burn_in"]
 
-    # Right plot: Stacked area plot for ICE and EV emissions
-    driving_ICE = social_network.history_driving_emissions_ICE[base_params["duration_burn_in"]:]
-    driving_EV =social_network.history_driving_emissions_EV[base_params["duration_burn_in"]:]
-    production_ICE = social_network.history_production_emissions_ICE[base_params["duration_burn_in"]:]
-    production_EV = social_network.history_production_emissions_EV[base_params["duration_burn_in"]:]
-    
+    # Convert all data to Megatonnes
+    driving_ICE = [x * T_TO_MT for x in social_network.history_driving_emissions_ICE[burn_in:]]
+    driving_EV = [x * T_TO_MT for x in social_network.history_driving_emissions_EV[burn_in:]]
+    production_ICE = [x * T_TO_MT for x in social_network.history_production_emissions_ICE[burn_in:]]
+    production_EV = [x * T_TO_MT for x in social_network.history_production_emissions_EV[burn_in:]]
+    total_emissions = [x * T_TO_MT for x in social_network.history_total_emissions[burn_in:]]
+
+    # 2. Generate Calendar Dates
+    # Assuming time_series is a list of indices [0, 1, 2...] 
+    start_date = datetime(2001, 1, 1)
+    # Create actual date objects for the x-axis
+    date_series = [start_date + relativedelta(months=i) for i in range(len(driving_ICE))]
+
+    # Plotting
     ax.stackplot(
-        time_series, 
+        date_series, 
         driving_ICE, 
         driving_EV, 
         production_ICE, 
         production_EV,
-        labels=['Driving Emissions ICE', 'Driving Emissions EV', 'Production Emissions ICE', 'Production Emissions EV']
+        labels=['Driving ICE', 'Driving EV', 'Production ICE', 'Production EV'],
+        alpha=0.8
     )
-    ax.plot(time_series, social_network.history_total_emissions[base_params["duration_burn_in"]:], 
-                 label='Total Emissions', color='black', linewidth=1.5)
-    ax.set_title("Emissions Flow by Source")
-    ax.set_xlabel("Time Step")
-    ax.set_ylabel("Emissions Flow")
-    ax.legend()
+    
+    ax.plot(date_series, total_emissions, label='Total Emissions', color='black', linewidth=1.5)
 
-    # Format and save
+    # 3. Format X-Axis for 5-year intervals
+    ax.xaxis.set_major_locator(mdates.YearLocator(5)) # Tick every 5 years
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y')) # Show only the year
+    
+    # Refine Labels (No title as per your previous preference)
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Emissions Flow (Mt CO2)")
+    ax.legend(loc='upper left')
+
     plt.tight_layout()
     save_and_show(fig, fileName, "emissions_decomposed_flow", dpi)
 
@@ -1260,19 +1285,18 @@ def plot_distance_individuals_mean_median_type(base_params, social_network, time
     # Save and show the plot
     save_and_show(fig, fileName, "user_distance_mean_median_type", dpi)
     
+
 def plot_emissions_distribution_by_type(base_params, social_network, fileName, dpi=300):
     """
-    Plots the distribution of total_emissions (production + cumulative driving) 
-    for all cars currently owned by users in the social network.
+    Plots the normalized distribution (density) of total_emissions in kg CO2 for ICEV vs EV.
     """
     ice_emissions = []
     ev_emissions = []
 
-    # Iterate through all users to get their current vehicle data
     for user in social_network.vehicleUsers_list:
         vehicle = user.vehicle
         if vehicle is not None:
-            # transportType 2 = ICE, 3 = EV
+            # Using raw total_emissions (kg CO2)
             if vehicle.transportType == 2:
                 ice_emissions.append(vehicle.total_emissions)
             elif vehicle.transportType == 3:
@@ -1280,27 +1304,27 @@ def plot_emissions_distribution_by_type(base_params, social_network, fileName, d
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    # Define common histogram parameters for comparison
     bins = 40
     alpha = 0.6
 
     if ice_emissions:
-        ax.hist(ice_emissions, bins=bins, alpha=alpha, label='ICE Cars', color='royalblue', edgecolor='black')
+        ax.hist(ice_emissions, bins=bins, alpha=alpha, label='ICEV', 
+                color='royalblue', edgecolor='black', density=True)
     
     if ev_emissions:
-        ax.hist(ev_emissions, bins=bins, alpha=alpha, label='EV Cars', color='limegreen', edgecolor='black')
+        ax.hist(ev_emissions, bins=bins, alpha=alpha, label='EV', 
+                color='limegreen', edgecolor='black', density=True)
 
-    # Formatting using your existing helper
+    # Title is None; xlabel updated back to kg CO2
     format_plot(
         ax, 
-        title=f"Distribution of Total Vehicle Emissions (Time: {social_network.t_social_network})", 
+        title=None, 
         xlabel="Total Emissions (kg CO2)", 
-        ylabel="Number of Vehicles", 
+        ylabel="Density",
         legend=True
     )
 
-    # Save using your existing helper
-    save_and_show(fig, fileName, "total_emissions_distribution", dpi)
+    save_and_show(fig, fileName, "total_emissions_distribution_kg", dpi)
 
 def plot_scrapped_emissions_distribution(merchant, fileName, dpi=300):
     """
@@ -1356,7 +1380,634 @@ def plot_scrapped_emissions_distribution(merchant, fileName, dpi=300):
     # Use your existing saving utility
     save_and_show(fig, fileName, "removed_vehicles_emissions", dpi)
 
+
+
+
+def info_real_cars():
+    """
+    Vehicle attribute validation plot.
+    
+    Compares simulated cars on sale at a given time step against real-world
+    2025-2026 US BEV and ICEV reference vehicles on a (Driving Range, Price) scatter.
+    
+    Drop this function into single_experiment_plot.py and call it from main().
+    
+    Unit conventions assumed (must match your model internals):
+    - Efficiency:   EV  → km / kWh     ICE → km / L
+    - Battery size: kWh
+    - Fuel tank:    L   (passed via base_params["parameters_ICE"]["fuel_tank"])
+    - Price:        USD (car.price)
+    - Range:        km  (computed here, then converted to miles for display)
+    
+    Real-world table (2025-2026 market data):
+    
+    BEVs:
+    Tesla Model 3 Long Range RWD        – $42,490 | 363 miles
+    Chevrolet Equinox EV LT             – $34,995 | 319 miles
+    Ford Mustang Mach-E Select RWD      – $41,990 | 250 miles
+    Hyundai Ioniq 6 SE RWD Long Range   – $42,450 | 361 miles
+    Kia EV6 Light RWD                   – $42,700 | 310 miles
+    Nissan LEAF S (40 kWh)              – $29,235 | 149 miles
+    
+    ICEVs:
+    Toyota Camry LE (2025, gas)         – $28,700 | 508 miles
+    Honda Accord LX (2025, gas)         – $28,295 | 478 miles
+    Toyota RAV4 LE (2025, gas)          – $28,850 | 435 miles
+    Ford F-150 XL 2WD (3.3L V6)         – $34,810 | 494 miles
+    Subaru Outback Base (2.5L)          – $28,895 | 470 miles
+    Chevrolet Malibu LS                 – $25,100 | 441 miles
+    """
+    
+    # ---------------------------------------------------------------------------
+    # Unit-conversion helpers
+    # ---------------------------------------------------------------------------
+    MILES_PER_KM   = 0.621371
+    KM_PER_MILE    = 1.60934
+    # 1 MPGe ≈ 33.7 kWh / gallon → efficiency in km/kWh
+    # km/kWh = MPGe * (1.60934 km/mile) / 33.7 kWh-per-gallon-equivalent
+    MPGE_TO_KM_KWH = KM_PER_MILE / 33.7          # ≈ 0.04775
+    # km/L ↔ mpg:  1 mpg = 0.425144 km/L
+    MPG_TO_KM_L    = 0.425144
+    # kWh/100 miles → km/kWh conversion
+    # km/kWh = (100 miles * 1.60934 km/mile) / kWh_per_100miles
+    KWH_100MI_TO_KM_KWH = lambda kwh_100mi: (100 * KM_PER_MILE) / kwh_100mi
+    
+    # ---------------------------------------------------------------------------
+    # Real-world reference vehicles (all values stored in model-native units)
+    # ---------------------------------------------------------------------------
+    REAL_WORLD_VEHICLES = [
+        # BEVs
+        {
+            "label":      "Tesla Model 3",
+            "type":       "EV",
+            "price_usd":  42_490,
+            "range_km":   363 * KM_PER_MILE,
+            # Efficiency estimate based on typical Tesla efficiency (~4.5 mi/kWh)
+            "efficiency": 4.5 * KM_PER_MILE,  # km/kWh
+        },
+        {
+            "label":      "Chevrolet Equinox",
+            "type":       "EV",
+            "price_usd":  34_995,
+            "range_km":   319 * KM_PER_MILE,
+            # Efficiency estimate based on Equinox EV specs
+            "efficiency": 3.7 * KM_PER_MILE,  # km/kWh
+        },
+        {
+            "label":      "Ford Mustang Mach-E",
+            "type":       "EV",
+            "price_usd":  41_990,
+            "range_km":   250 * KM_PER_MILE,
+            # Efficiency estimate based on Mach-E specs
+            "efficiency": 3.3 * KM_PER_MILE,  # km/kWh
+        },
+        {
+            "label":      "Hyundai Ioniq 6",
+            "type":       "EV",
+            "price_usd":  42_450,
+            "range_km":   361 * KM_PER_MILE,
+            # Efficiency estimate based on Ioniq 6 (very efficient)
+            "efficiency": 4.7 * KM_PER_MILE,  # km/kWh
+        },
+        {
+            "label":      "Kia EV6",
+            "type":       "EV",
+            "price_usd":  42_700,
+            "range_km":   310 * KM_PER_MILE,
+            # Efficiency estimate based on EV6 specs
+            "efficiency": 3.9 * KM_PER_MILE,  # km/kWh
+        },
+        {
+            "label":      "Nissan LEAF S",
+            "type":       "EV",
+            "price_usd":  29_235,
+            "range_km":   149 * KM_PER_MILE,
+            # Efficiency estimate based on LEAF specs
+            "efficiency": 3.4 * KM_PER_MILE,  # km/kWh
+        },
+        # ICEVs
+        {
+            "label":      "Toyota Camry LE",
+            "type":       "ICE",
+            "price_usd":  28_700,
+            "range_km":   508 * KM_PER_MILE,
+            # Efficiency estimate based on Camry fuel economy (~32 MPG combined)
+            "efficiency": 32 * MPG_TO_KM_L,  # km/L
+        },
+        {
+            "label":      "Honda Accord LX",
+            "type":       "ICE",
+            "price_usd":  28_295,
+            "range_km":   478 * KM_PER_MILE,
+            # Efficiency estimate based on Accord fuel economy (~30 MPG combined)
+            "efficiency": 30 * MPG_TO_KM_L,  # km/L
+        },
+        {
+            "label":      "Toyota RAV4 LE",
+            "type":       "ICE",
+            "price_usd":  28_850,
+            "range_km":   435 * KM_PER_MILE,
+            # Efficiency estimate based on RAV4 fuel economy (~28 MPG combined)
+            "efficiency": 28 * MPG_TO_KM_L,  # km/L
+        },
+        {
+            "label":      "Ford F-150 XL",
+            "type":       "ICE",
+            "price_usd":  34_810,
+            "range_km":   494 * KM_PER_MILE,
+            # Efficiency estimate based on F-150 fuel economy (~19 MPG combined)
+            "efficiency": 19 * MPG_TO_KM_L,  # km/L
+        },
+        {
+            "label":      "Subaru Outback Base",
+            "type":       "ICE",
+            "price_usd":  28_895,
+            "range_km":   470 * KM_PER_MILE,
+            # Efficiency estimate based on Outback fuel economy (~26 MPG combined)
+            "efficiency": 26 * MPG_TO_KM_L,  # km/L
+        },
+        {
+            "label":      "Chevrolet Malibu LS",
+            "type":       "ICE",
+            "price_usd":  25_100,
+            "range_km":   441 * KM_PER_MILE,
+            # Efficiency estimate based on Malibu fuel economy (~30 MPG combined)
+            "efficiency": 30 * MPG_TO_KM_L,  # km/L
+        },
+    ]
+    
+    return MILES_PER_KM, KM_PER_MILE, MPGE_TO_KM_KWH, MPG_TO_KM_L, REAL_WORLD_VEHICLES
+
+
+# ---------------------------------------------------------------------------
+# Data extraction
+# ---------------------------------------------------------------------------
+
+def extract_simulated_car_attributes(firm_manager, base_params):
+    """
+    Extract (price, range_km, efficiency, type_label) for every car currently
+    on sale across all firms.
+
+    Range for EVs  = efficiency [km/kWh] × battery_size [kWh]
+    Range for ICEs = efficiency [km/L]   × fuel_tank    [L]
+
+    Returns
+    -------
+    list of dicts with keys: price, range_km, efficiency, vtype ('EV'|'ICE')
+    """
+    fuel_tank_L = base_params["parameters_ICE"]["fuel_tank"]  # litres
+
+    seen_ids = set()
+    records = []
+
+    for firm in firm_manager.firms_list:
+        for car in firm.cars_on_sale:
+            uid = getattr(car, "unique_id", id(car))
+            if uid in seen_ids:
+                continue
+            seen_ids.add(uid)
+
+            attrs = car.attributes_fitness   # [Quality, Efficiency, Cost, (Battery)]
+            price = getattr(car, "price", car.ProdCost_t * firm.init_price_multiplier)
+
+            if car.transportType == 3:       # EV
+                efficiency = attrs[1]        # km/kWh
+                battery_kwh = attrs[3]       # kWh
+                range_km = efficiency * battery_kwh
+                vtype = "EV"
+            else:                            # ICE (transportType == 2)
+                efficiency = attrs[1]        # km/L
+                range_km = efficiency * fuel_tank_L
+                vtype = "ICE"
+
+            records.append({
+                "price":      price,
+                "range_km":   range_km,
+                "efficiency": efficiency,
+                "vtype":      vtype,
+            })
+
+    return records
+
+
+def plot_vehicle_attribute_boxplot(base_params, firm_manager, fileName, dpi=300):
+    """
+    Two-panel box plot: Price (USD) | Driving Range (km).
+ 
+    Simulated ICE and EV distributions are shown as box plots.
+    Real-world reference vehicles are overlaid as individual markers
+    with labels, drawn at the x-position of the matching vehicle type.
+ 
+    Parameters
+    ----------
+    base_params  : dict
+    firm_manager : Firm_Manager (end-of-run state)
+    fileName     : str  – results directory (Plots/ sub-folder created automatically)
+    dpi          : int
+    """
+    MILES_PER_KM, KM_PER_MILE, MPGE_TO_KM_KWH, MPG_TO_KM_L, REAL_WORLD_VEHICLES = info_real_cars()
+
+    sim_cars = extract_simulated_car_attributes(firm_manager, base_params)
+    sim_ev   = [c for c in sim_cars if c["vtype"] == "EV"]
+    sim_ice  = [c for c in sim_cars if c["vtype"] == "ICE"]
+    
+    # Handle PHEV type - treat as EV for now (since they have electric range)
+    sim_phev = [c for c in sim_cars if c["vtype"] == "PHEV"]
+    sim_ev.extend(sim_phev)  # Add PHEVs to EV category for plotting
+    
+    # --- data arrays (range already in km) ---
+    data = {
+        "price": {
+            "ICE": [c["price"] for c in sim_ice],
+            "EV":  [c["price"] for c in sim_ev],
+        },
+        "range": {
+            "ICE": [c["range_km"] for c in sim_ice],  # Already in km
+            "EV":  [c["range_km"] for c in sim_ev],   # Already in km
+        },
+    }
+ 
+    panel_cfg = [
+        {
+            "key":    "price",
+            "ylabel": "Price (USD)",
+            "title":  "Vehicle Price Distribution",
+            "fmt":    lambda v: f"${v:,.0f}",
+        },
+        {
+            "key":    "range",
+            "ylabel": "Driving Range (km)",
+            "title":  "Driving Range Distribution",
+            "fmt":    lambda v: f"{v:.0f} km",
+        },
+    ]
+ 
+    # Colors - consistent green for EV, blue for ICE
+    ICE_COLOR  = "#4169E1"   # Royal Blue
+    EV_COLOR   = "#2E8B57"   # Sea Green
+    BOX_ALPHA  = 0.65
+    
+    # Marker styles for real-world vehicles (different shapes, same colors as simulated)
+    def get_marker_style(vehicle_type, vehicle_name):
+        """Return marker style based on vehicle type and name"""
+        if vehicle_type == "EV":
+            # EVs: diamonds with different internal markers for variety
+            markers = ["D", "d", "o", "v", "^", "<", ">"]
+            # Use hash of name to select consistent marker
+            marker_idx = hash(vehicle_name) % len(markers)
+            return {"color": EV_COLOR, "marker": markers[marker_idx], "edgecolor": "darkgreen"}
+        else:
+            # ICE: triangles with different internal markers for variety
+            markers = ["^", "v", "<", ">", "s", "p", "h"]
+            marker_idx = hash(vehicle_name) % len(markers)
+            return {"color": ICE_COLOR, "marker": markers[marker_idx], "edgecolor": "darkblue"}
+    
+    # Jitter offsets to prevent label overlap
+    jitter_offsets = {}
+    # Generate jitter offsets based on vehicle names
+    for i, v in enumerate(REAL_WORLD_VEHICLES):
+        # Distribute offsets in a circular pattern
+        angle = (i / len(REAL_WORLD_VEHICLES)) * 2 * np.pi
+        jitter_offsets[v["label"]] = 0.25 * np.cos(angle)
+    
+    # Determine x-position based on vehicle type (with jitter)
+    def get_xpos(vehicle):
+        if vehicle["type"] in ["ICE", "PHEV"]:  # PHEV treated as ICE for x-position
+            base_x = 1.0
+        else:  # EV
+            base_x = 2.0
+            
+        # Add jitter if available
+        jitter = jitter_offsets.get(vehicle["label"], 0.0)
+        return base_x + jitter
+ 
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))  # 2 panels
+
+ 
+    for ax, cfg in zip(axes, panel_cfg):
+        key   = cfg["key"]
+        ice_d = data[key]["ICE"]
+        ev_d  = data[key]["EV"]
+ 
+        # ---- box plots (only if data exists) ----
+        if ice_d:
+            bp_ice = ax.boxplot(
+                ice_d,
+                positions=[1],
+                widths=0.45,
+                patch_artist=True,
+                showfliers=True,
+                flierprops=dict(marker=".", markersize=3,
+                                markerfacecolor=ICE_COLOR, alpha=0.3),
+                medianprops=dict(color="white", linewidth=2),
+                boxprops=dict(facecolor=ICE_COLOR, alpha=BOX_ALPHA),
+                whiskerprops=dict(color=ICE_COLOR),
+                capprops=dict(color=ICE_COLOR),
+            )
+        
+        if ev_d:
+            bp_ev = ax.boxplot(
+                ev_d,
+                positions=[2],
+                widths=0.45,
+                patch_artist=True,
+                showfliers=True,
+                flierprops=dict(marker=".", markersize=3,
+                                markerfacecolor=EV_COLOR, alpha=0.3),
+                medianprops=dict(color="white", linewidth=2),
+                boxprops=dict(facecolor=EV_COLOR, alpha=BOX_ALPHA),
+                whiskerprops=dict(color=EV_COLOR),
+                capprops=dict(color=EV_COLOR),
+            )
+ 
+        # ---- real-world reference points ----
+        for v in REAL_WORLD_VEHICLES:
+            if key == "price":
+                val = v["price_usd"]
+            else:  # range
+                val = v["range_km"]  # Already in km
+ 
+            xpos = get_xpos(v)
+            
+            # Get marker style
+            style = get_marker_style(v["type"], v["label"])
+            
+            # Determine size based on vehicle type for visual distinction
+            marker_size = 180 if v["type"] == "EV" else 160
+            
+            ax.scatter(
+                xpos, val,
+                color=style["color"], marker=style["marker"],
+                s=marker_size, zorder=6, 
+                edgecolors=style["edgecolor"], linewidths=1.2,
+                alpha=0.85
+            )
+            
+            # Smart label positioning
+            # Calculate offset based on position to avoid overlap
+            base_y_offset = 8
+            if v["type"] == "PHEV":
+                base_y_offset = 12
+            
+            # Alternate label positions based on vehicle name hash
+            label_side = hash(v["label"]) % 3  # 0=top, 1=right, 2=left
+            if label_side == 0:
+                xytext = (0, base_y_offset)
+                ha = "center"
+                va = "bottom"
+            elif label_side == 1:
+                xytext = (base_y_offset, 0)
+                ha = "left"
+                va = "center"
+            else:
+                xytext = (-base_y_offset, 0)
+                ha = "right"
+                va = "center"
+                
+            ax.annotate(
+                v["label"],
+                xy=(xpos, val),
+                xytext=xytext, textcoords="offset points",
+                fontsize=7, fontweight="bold", 
+                ha=ha, va=va,
+                color=style["color"],
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", 
+                         edgecolor=style["color"], alpha=0.85, linewidth=0.8),
+                zorder=7
+            )
+ 
+        # ---- formatting ----
+        ax.set_xticks([1, 2])
+        ax.set_xticklabels(["Simulated ICE", "Simulated EV"], fontsize=10, fontweight="bold")
+        ax.set_xlim(0.4, 2.6)
+        ax.set_ylabel(cfg["ylabel"], fontsize=11, fontweight="bold")
+        ax.set_title(cfg["title"], fontsize=12, fontweight="bold", pad=10)
+        ax.grid(axis="y", alpha=0.3, linestyle="--")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        
+        # Add some padding to y-axis for labels
+        y_min, y_max = ax.get_ylim()
+        y_range = y_max - y_min
+        ax.set_ylim(y_min, y_max + y_range * 0.15)  # Add 15% padding at top for labels
+        
+        # Add horizontal lines for better readability
+        ax.axhline(y=y_min + y_range*0.25, color='gray', linestyle=':', alpha=0.2)
+        ax.axhline(y=y_min + y_range*0.5, color='gray', linestyle=':', alpha=0.2)
+        ax.axhline(y=y_min + y_range*0.75, color='gray', linestyle=':', alpha=0.2)
+ 
+    # ---- legend ----
+    from matplotlib.lines import Line2D
+    import matplotlib.patches as mpatches
+    
+    legend_handles = [
+        # Box plot representations
+        mpatches.Patch(facecolor=ICE_COLOR, alpha=BOX_ALPHA,
+                      edgecolor="grey", linewidth=1, label="Simulated ICE Distribution"),
+        mpatches.Patch(facecolor=EV_COLOR, alpha=BOX_ALPHA,
+                      edgecolor="grey", linewidth=1, label="Simulated EV Distribution"),
+        # Real vehicle representations (example markers)
+        Line2D([0], [0], marker="D", color="w", markerfacecolor=EV_COLOR,
+               markeredgecolor="darkgreen", markersize=9, label="Real-world EV"),
+        Line2D([0], [0], marker="^", color="w", markerfacecolor=ICE_COLOR,
+               markeredgecolor="darkblue", markersize=9, label="Real-world ICE"),
+    ]
+    
+    fig.legend(
+        handles=legend_handles,
+        loc="lower center",
+        ncol=2,
+        fontsize=9,
+        frameon=True,
+        fancybox=True,
+        shadow=True,
+        bbox_to_anchor=(0.5, -0.08),
+    )
+ 
+    plt.tight_layout()
+ 
+    # ---- save ----
+    save_path = os.path.join(fileName, "Plots")
+    os.makedirs(save_path, exist_ok=True)
+    out_path = f"{save_path}/vehicle_attribute_boxplot.png"
+    fig.savefig(out_path, dpi=dpi, format="png", bbox_inches="tight")
+    print(f"Saved: {out_path}")
+ 
+    return fig, axes
+
+
+def plot_vehicle_validation_simple(base_params, firm_manager, fileName, dpi=300):
+    """
+    Scatter plot: Driving Range (km) vs Price (USD).
+    
+    Simulated EVs  → green circles
+    Simulated ICEs → blue squares
+    Real-world EVs → green diamonds
+    Real-world ICE → blue triangles
+    
+    Parameters
+    ----------
+    base_params   : dict  – simulation parameter dictionary
+    firm_manager  : Firm_Manager – live or loaded object after simulation
+    fileName      : str   – base directory for saving (same convention as other plots)
+    dpi           : int   – figure resolution
+    """
+    
+    sim_cars = extract_simulated_car_attributes(firm_manager, base_params)
+    
+    MILES_PER_KM, KM_PER_MILE, MPGE_TO_KM_KWH, MPG_TO_KM_L, REAL_WORLD_VEHICLES = info_real_cars()
+    
+    # ---- split by type ----
+    sim_ev  = [c for c in sim_cars if c["vtype"] == "EV"]
+    sim_ice = [c for c in sim_cars if c["vtype"] == "ICE"]
+    real_ev  = [v for v in REAL_WORLD_VEHICLES if v["type"] == "EV"]
+    real_ice = [v for v in REAL_WORLD_VEHICLES if v["type"] in ["ICE", "PHEV"]]
+    
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Define colors
+    EV_COLOR = "#2E8B57"  # SeaGreen
+    ICE_COLOR = "#4169E1"  # RoyalBlue
+    
+    # -- simulated EVs (green circles) --
+    if sim_ev:
+        ev_ranges = np.array([c["range_km"] for c in sim_ev])  # Already in km
+        ev_prices = np.array([c["price"] for c in sim_ev])
+        ax.scatter(
+            ev_ranges, ev_prices,
+            marker="o", s=80, alpha=0.6, 
+            c=EV_COLOR, edgecolors="darkgreen", linewidths=0.5,
+            label="Simulated EV",
+            zorder=2,
+        )
+    
+    # -- simulated ICEs (blue squares) --
+    if sim_ice:
+        ice_ranges = np.array([c["range_km"] for c in sim_ice])  # Already in km
+        ice_prices = np.array([c["price"] for c in sim_ice])
+        ax.scatter(
+            ice_ranges, ice_prices,
+            marker="s", s=80, alpha=0.6,
+            c=ICE_COLOR, edgecolors="darkblue", linewidths=0.5,
+            label="Simulated ICE",
+            zorder=2,
+        )
+    
+    # -- real-world EVs (green diamonds) --
+    for i, v in enumerate(real_ev):
+        range_km = v["range_km"]  # Already in km
+        ax.scatter(
+            range_km, v["price_usd"],
+            marker="D", s=200, c=EV_COLOR, edgecolors="darkgreen", linewidths=1.5,
+            zorder=5,
+        )
+        
+        # Smart label positioning to avoid overlap
+        offset_x, offset_y = calculate_label_offset(i, len(real_ev), range_km, v["price_usd"])
+        
+        ax.annotate(
+            v["label"],
+            xy=(range_km, v["price_usd"]),
+            xytext=(offset_x, offset_y), textcoords="offset points",
+            fontsize=8, fontweight="bold", color=EV_COLOR,
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", 
+                     edgecolor=EV_COLOR, alpha=0.8, linewidth=0.5),
+            zorder=6,
+        )
+    
+    # -- real-world ICE (blue triangles) --
+    for i, v in enumerate(real_ice):
+        range_km = v["range_km"]  # Already in km
+        ax.scatter(
+            range_km, v["price_usd"],
+            marker="^", s=200, c=ICE_COLOR, edgecolors="darkblue", linewidths=1.5,
+            zorder=5,
+        )
+        
+        # Smart label positioning to avoid overlap
+        offset_x, offset_y = calculate_label_offset(i, len(real_ice), range_km, v["price_usd"], 
+                                                     offset_base=10)
+        
+        ax.annotate(
+            v["label"],
+            xy=(range_km, v["price_usd"]),
+            xytext=(offset_x, offset_y), textcoords="offset points",
+            fontsize=8, fontweight="bold", color=ICE_COLOR,
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="white", 
+                     edgecolor=ICE_COLOR, alpha=0.8, linewidth=0.5),
+            zorder=6,
+        )
+    
+    # ---- legend ----
+    from matplotlib.lines import Line2D
+    legend_handles = [
+        Line2D([0], [0], marker="o", color="w", markerfacecolor=EV_COLOR,
+               markeredgecolor="darkgreen", markersize=10, label="Simulated EV"),
+        Line2D([0], [0], marker="s", color="w", markerfacecolor=ICE_COLOR,
+               markeredgecolor="darkblue", markersize=10, label="Simulated ICE"),
+        Line2D([0], [0], marker="D", color="w", markerfacecolor=EV_COLOR,
+               markeredgecolor="darkgreen", markersize=10, label="Real-world EV"),
+        Line2D([0], [0], marker="^", color="w", markerfacecolor=ICE_COLOR,
+               markeredgecolor="darkblue", markersize=10, label="Real-world ICE"),
+    ]
+    ax.legend(handles=legend_handles, loc="upper left", fontsize=10, framealpha=0.9)
+    
+    ax.set_xlabel("Driving Range (km)", fontsize=12, fontweight="bold")
+    ax.set_ylabel("Price (USD)", fontsize=12, fontweight="bold")
+
+    ax.grid(alpha=0.3, linestyle="--")
+    
+    # Add some padding to y-axis for labels
+    y_min, y_max = ax.get_ylim()
+    y_range = y_max - y_min
+    ax.set_ylim(y_min, y_max + y_range * 0.15)  # Add 15% padding at top for labels
+    
+    # ---- save ----
+    save_path = os.path.join(fileName, "Plots")
+    os.makedirs(save_path, exist_ok=True)
+    fig.savefig(f"{save_path}/vehicle_validation_scatter_2d.png", dpi=dpi, format="png",
+                bbox_inches="tight")
+    print(f"Saved: {save_path}/vehicle_validation_scatter_2d.png")
+    
+    return fig, ax
+def calculate_label_offset(index, total_count, x, y, offset_base=8):
+    """
+    Calculate offset for label positioning to avoid overlap.
+    
+    Parameters:
+    -----------
+    index : int - index of current point
+    total_count : int - total number of points
+    x, y : float - coordinates of the point
+    offset_base : int - base offset amount
+    
+    Returns:
+    --------
+    tuple : (x_offset, y_offset) in points
+    """
+    
+    # Create a circular pattern for labels to spread them out
+    angles = [0, 45, -45, 90, -90, 135, -135, 180]
+    
+    # Use index to determine angle, but ensure we don't go out of range
+    angle_idx = index % len(angles)
+    angle_rad = np.radians(angles[angle_idx])
+    
+    # Calculate offsets based on angle
+    x_offset = offset_base * np.cos(angle_rad)
+    y_offset = offset_base * np.sin(angle_rad)
+    
+    # Add some randomization to prevent perfect alignment
+    x_offset += np.random.uniform(-2, 2)
+    y_offset += np.random.uniform(-2, 2)
+    
+    # Ensure minimum vertical offset for readability
+    if abs(y_offset) < 5:
+        y_offset = 8 if y_offset >= 0 else -8
+    
+    return x_offset, y_offset
 # Sample main function
+
 def main(fileName, dpi=300):
     try:
         base_params = load_object(fileName + "/Data", "base_params")
@@ -1372,29 +2023,34 @@ def main(fileName, dpi=300):
     calibration_data_output = load_object( "package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
-    plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
-    plot_total_utility(base_params,social_network, time_series, fileName, dpi)
-    plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
-    plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
-    emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
-    plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
-    plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
-    plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
-    plot_preferences(social_network, fileName, dpi)
-    plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
-    plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
-    plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
-    plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
-    plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
-    plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
-    plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
-    plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
-    plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
-    plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
-    plot_emissions_distribution_by_type(base_params, social_network, fileName, dpi)
-    plot_scrapped_emissions_distribution(merchant, fileName, dpi)
+    #plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
+    #plot_total_utility(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
+    #plot_history_car_age(base_params, social_network, time_series,fileName, dpi)
+    #emissions_decomposed_flow(base_params,social_network, time_series, fileName, dpi)
+    #plot_history_median_price_by_type(base_params, social_network, fileName, dpi)
+    #plot_history_mean_price_by_type(base_params, social_network, fileName, dpi)
+    #plot_price_history(base_params, firm_manager, time_series, fileName, dpi)
+    #plot_preferences(social_network, fileName, dpi)
+    #plot_market_concentration_yearly(base_params,firm_manager, time_series, fileName, dpi)
+    #plot_battery(base_params, firm_manager,social_network,time_series,  fileName, dpi)
+    #plot_vehicle_attribute_time_series_by_type_split(base_params, social_network, time_series, fileName, dpi)
+    #plot_prod_vehicle_attribute_time_series_by_type_split(base_params, firm_manager, time_series, fileName, dpi)
+    #plot_transport_users_stacked(base_params, social_network, time_series, fileName, dpi)
+    #plot_history_count_buy_stacked(base_params, social_network, fileName, dpi)
+    #plot_history_count_buy_lines(base_params, social_network, fileName, dpi)
+    #plot_profit_margins_by_type(base_params, firm_manager, time_series,  fileName)
+    #plot_total_profit(base_params,firm_manager, time_series, fileName, dpi)
+    #plot_car_sale_prop(base_params,social_network, time_series, fileName, dpi)
+    #plot_emissions_distribution_by_type(base_params, social_network, fileName, dpi)
+    #plot_scrapped_emissions_distribution(merchant, fileName, dpi)
+
+    #plot_vehicle_validation(base_params, firm_manager, fileName, dpi)
+    plot_vehicle_validation_simple(base_params, firm_manager, fileName, dpi)
+    #print_vehicle_validation_table(firm_manager, base_params)
+    plot_vehicle_attribute_boxplot(base_params, firm_manager, fileName, dpi)
 
     plt.show()
 
 if __name__ == "__main__":
-    main("results/single_experiment_18_15_11__28_04_2026")
+    main("results/single_experiment_15_08_35__30_04_2026")

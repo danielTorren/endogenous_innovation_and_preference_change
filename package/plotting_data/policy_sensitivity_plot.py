@@ -334,13 +334,16 @@ if __name__ == "__main__":
     # main_load_and_plot(path)
     
     # Example usage 2: Separate mode (main results and BAU results from different runs)
-    main_path = "results/cross_beta_multiplier_vs_Carbon_price_00_28_21__02_04_2026"
+    main_path = "results/cross_beta_multiplier_vs_Adoption_subsidy_21_19_09__29_04_2026"
     bau_path = "results/cross_beta_multiplier_vs_Carbon_price_BAU_16_32_02__29_04_2026"  # Or wherever your BAU results are saved
 
     #main_path = "results/cross_a_chi_vs_Carbon_price_14_11_13__02_04_2026"
     #bau_path = "results/cross_a_chi_vs_Carbon_price_BAU_15_37_46__29_04_2026"  # Or wherever your BAU results are saved
 
-    load_and_plot_combined(main_path, bau_path)
+    #load_and_plot_combined(main_path, bau_path)
+    load_and_plot_combined(main_path)
+
+    
     
     # You can also specify a custom output folder
     # load_and_plot_combined(main_path, bau_path, output_folder="my_combined_plots")

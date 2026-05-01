@@ -1,5 +1,5 @@
 {
     "property_varied": "Grid_emissions_intensity",
     "subdict": "parameters_scenarios",
-    "property_list": [0.1, 0.5, 0.75]
+    "property_list": [0.1, 0.5, 1]
 }

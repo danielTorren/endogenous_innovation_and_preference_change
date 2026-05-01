@@ -7,6 +7,7 @@ from package.resources.utility import (
     produce_name_datetime, 
     params_list_with_seed
 )
+from package.plotting_data.multi_seed_plot import main as plotting_main
 
 def main(
         BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
@@ -71,6 +72,15 @@ def main(
     save_object(base_params, fileName + "/Data", "base_params")
 
     print(fileName)
+    return fileName
 
 if __name__ == "__main__":
-    main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
+    fileName = main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
+
+    """
+    Will also plot stuff at the same time for convieniency
+    """
+    RUN_PLOT = 1
+    print("fileName",fileName)
+    if RUN_PLOT:
+        plotting_main(fileName = fileName)

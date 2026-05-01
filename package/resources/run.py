@@ -385,3 +385,22 @@ def parallel_run_multi_seed(params_list):
         np.asarray(history_mean_car_age),
         np.asarray(history_past_new_bought_vehicles_prop_ev)
     )
+
+#########################################################################################
+
+def generate_multi_seed_cars(params: dict):
+    """
+    Generates sensitivity output from input parameters.
+    Assumes `generate_data` is a defined function that returns
+    an object with the required attributes.
+    """
+    data = generate_data(params)
+    return data.firm_manager.cars_on_sale_all_firms
+
+def parallel_run_multi_seed_cars(params_list):
+    num_cores = multiprocessing.cpu_count()
+    cars_on_sale_list = Parallel(n_jobs=num_cores, verbose=10)(
+        delayed(generate_multi_seed_cars)(params) for params in params_list
+    )
+
+    return cars_on_sale_list

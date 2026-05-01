@@ -40,7 +40,7 @@ if __name__ == "__main__":
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
-    "duration_future": 312,
+    "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 10,
@@ -60,9 +60,9 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 0,
-            "Electricity_subsidy": 1,
-            "Adoption_subsidy": 1,
+            "Carbon_price": 1,
+            "Electricity_subsidy": 0,
+            "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
             "Production_subsidy": 0,
             "Research_subsidy": 0
@@ -70,11 +70,11 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.0,
+                "Carbon_price": 0.2,
                 "Carbon_price_state": "flat"
             },
             "Electricity_subsidy":0.76,
-            "Adoption_subsidy":24772.5,
+            "Adoption_subsidy":36875.57,
             "Adoption_subsidy_used":20000,
             "Production_subsidy":30548.21
             
