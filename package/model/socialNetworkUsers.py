@@ -89,17 +89,18 @@ class Social_Network:
         if self.include_self_social_state:
             print("YOOOO")
             np.fill_diagonal(self.adjacency_matrix, 1)
+            self.sparse_adjacency_matrix = sp.csr_matrix(self.adjacency_matrix)
 
-        self.weighting_matrix = self._normlize_matrix(self.adjacency_matrix)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
+        self.weighting_matrix = self._normlize_matrix(self.sparse_adjacency_matrix)#INTRODUCE HOMOPHILY INTO THE NETWORK BY ASSORTING BY BETA WITHING GROUPS
 
         #Assume nobody adopts EV at the start, THIS MAY BE AN ISSUE
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
 
         self.current_vehicles = self.set_init_cars_selection(parameters_social_network)
 
-        self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
-
         self._build_cv_cache()
+
+        self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
     def init_initial_state(self, parameters_social_network):
         """
@@ -255,7 +256,7 @@ class Social_Network:
                 ev_adoption_vec (np.ndarray): Binary vector of users currently using EVs.
         """
         
-        self.vehicle_type_vec = np.array([user.vehicle.transportType for user in self.vehicleUsers_list])  # Current vehicle types
+        self.vehicle_type_vec = self._cv_cache["transportType"]
 
         # Create a binary vec indicating EV users
         ev_adoption_vec = (self.vehicle_type_vec == ev_type).astype(int)
