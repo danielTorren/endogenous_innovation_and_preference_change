@@ -389,13 +389,16 @@ class Social_Network:
 
         #########################################################################################################################
 
+        # Pre-generate all uniform draws for the multinomial choices this step
+        _u_draws = self.random_state.rand(num_switchers)
+
         for i, reduced_index in enumerate(shuffle_indices_reduced):
             # Map the reduced index back to the global index
             global_index = switcher_indices[reduced_index]
-            
+
             user = self.vehicleUsers_list[global_index]  # Use the global index to access the user
             vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(
-                global_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_index, index_current_cars_start 
+                global_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_index, index_current_cars_start, _u_draws[i]
             )
             user_vehicle_list[global_index] = user_vehicle  # Update using the global index
             self._update_cv_cache_row(global_index, user_vehicle)
@@ -549,9 +552,13 @@ class Social_Network:
         utilities_kappa = np.zeros_like(utilities_matrix)
         utilities_kappa[valid_rows] = np.exp(exp_input)
 
+        # Consolidate NaN guard here so user_chooses doesn't need per-row checks
+        if np.isnan(utilities_kappa).any():
+            np.nan_to_num(utilities_kappa, nan=0.0, copy=False)
+
         return utilities_kappa
 
-    def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start ):
+    def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start, u_draw):
         """
         Let a user choose a vehicle based on masked and exponentiated utility values.
 
@@ -562,16 +569,13 @@ class Social_Network:
             utilities_kappa (np.ndarray): Masked and exponentiated utility matrix.
             reduced_person_index (int): Row index in the utility matrix.
             index_current_cars_start (int): Starting index for current vehicles.
+            u_draw (float): Pre-generated uniform [0,1) draw for this user's choice.
 
         Returns:
             tuple: (chosen vehicle, assigned vehicle, index of chosen vehicle, updated utilities matrix)
         """
-        # Select individual-specific utilities
-        individual_specific_util_kappa = utilities_kappa[reduced_person_index]  
-        
-        #check for nans and set them to 0
-        if np.isnan(individual_specific_util_kappa).any():
-            individual_specific_util_kappa = np.nan_to_num(individual_specific_util_kappa)#Set all the nans to 0
+        # Select individual-specific utilities (NaNs already handled in masking_options)
+        individual_specific_util_kappa = utilities_kappa[reduced_person_index]
 
         #SWICHING_CLAUSE
         if not np.any(individual_specific_util_kappa):#NO car option all zero, THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
@@ -579,11 +583,13 @@ class Social_Network:
             choice_index = index_current_cars_start + reduced_person_index
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.zero_util_count += 1
-        else:#at leat 1 non zero probability
-            # Calculate the probability of choosing each vehicle              
-            sum_U_kappa = np.sum(individual_specific_util_kappa)
-            probability_choose = individual_specific_util_kappa / sum_U_kappa
-            choice_index = self.random_state.choice(len(available_and_current_vehicles_list), p=probability_choose)
+        else:
+            # Cumulative sum as unnormalised CDF; sample by scaling u_draw to [0, total]
+            cumsum = np.cumsum(individual_specific_util_kappa)
+            choice_index = int(np.searchsorted(cumsum, u_draw * cumsum[-1], side='right'))
+            # Clamp against floating-point overshoot
+            if choice_index >= len(available_and_current_vehicles_list):
+                choice_index = len(available_and_current_vehicles_list) - 1
 
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
