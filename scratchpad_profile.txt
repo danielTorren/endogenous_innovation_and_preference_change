@@ -1,0 +1,142 @@
+
+
+=== TOP 60 BY CUMULATIVE ===
+         8044788 function calls (8044532 primitive calls) in 9.616 seconds
+
+   Ordered by: cumulative time
+   List reduced from 480 to 60 due to restriction <60>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    9.615    9.615 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/resources/run.py:23(generate_data)
+      200    0.001    0.000    8.257    0.041 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/controller.py:1004(next_step)
+      200    0.001    0.000    4.748    0.024 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/controller.py:926(update_social_network)
+      200    0.014    0.000    4.747    0.024 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1387(next_step)
+      200    0.488    0.002    3.705    0.019 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:270(update_VehicleUsers)
+      200    0.000    0.000    3.007    0.015 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/controller.py:916(update_firms)
+      200    0.002    0.000    3.007    0.015 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:697(next_step)
+    49519    1.195    0.000    2.074    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:553(user_chooses)
+      200    0.004    0.000    1.712    0.009 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:658(update_firms)
+     3200    0.014    0.000    1.706    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:925(next_step)
+        1    0.000    0.000    1.358    1.358 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/controller.py:24(__init__)
+        1    0.000    0.000    1.310    1.310 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/controller.py:835(gen_social_network)
+        1    0.007    0.007    1.310    1.310 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:12(__init__)
+      278    0.004    0.000    0.843    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:334(innovate)
+      269    0.004    0.000    0.838    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:844(choose_cars_segments)
+        1    0.000    0.000    0.797    0.797 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:223(create_network)
+      4/2    0.001    0.000    0.757    0.378 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/utils/backends.py:541(_call_if_no_backends_installed)
+      200    0.391    0.002    0.706    0.004 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:262(update_W_immediate)
+      201    0.069    0.000    0.639    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:245(calculate_ev_adoption)
+      200    0.415    0.002    0.558    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:291(update_market_data_moving_average)
+      201    0.546    0.003    0.546    0.003 {method 'dot' of 'numpy.ndarray' objects}
+      269    0.122    0.000    0.541    0.002 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:750(select_car_lambda_production)
+      200    0.000    0.000    0.499    0.002 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/controller.py:940(get_second_hand_cars)
+      200    0.001    0.000    0.499    0.002 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/secondHandMerchant.py:304(next_step)
+      186    0.234    0.001    0.477    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/secondHandMerchant.py:178(update_stock_contents)
+        1    0.405    0.405    0.464    0.464 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:129(set_init_cars_selection)
+        1    0.000    0.000    0.459    0.459 <class 'networkx.utils.decorators.argmap'> compilation 5:1(argmap_watts_strogatz_graph_1)
+        1    0.054    0.054    0.459    0.459 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/generators/random_graphs.py:388(watts_strogatz_graph)
+      200    0.342    0.002    0.418    0.002 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:517(masking_options)
+     6416    0.216    0.000    0.384    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:686(set_utility_and_profit_grid_production)
+      547    0.226    0.000    0.350    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:266(calc_utility_cars_segments)
+   165509    0.307    0.000    0.307    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+   634496    0.307    0.000    0.307    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:176(calc_exp)
+        1    0.000    0.000    0.297    0.297 <class 'networkx.utils.decorators.argmap'> compilation 21:1(argmap_to_numpy_array_18)
+        1    0.136    0.136    0.297    0.297 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/convert_matrix.py:881(to_numpy_array)
+      200    0.012    0.000    0.292    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:710(generate_utilities)
+       75    0.201    0.003    0.287    0.004 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/classes/graph.py:986(add_edges_from)
+      278    0.172    0.001    0.283    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:375(calc_predicted_profit_segments_research)
+      203    0.084    0.000    0.267    0.001 {built-in method builtins.sum}
+      200    0.001    0.000    0.263    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1339(update_EV_stock)
+    50262    0.042    0.000    0.235    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2436(any)
+    50075    0.059    0.000    0.227    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2304(sum)
+  1201695    0.205    0.000    0.205    0.000 {method 'get' of 'dict' objects}
+    50264    0.078    0.000    0.193    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:86(_wrapreduction_any_all)
+    52273    0.067    0.000    0.183    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:66(_wrapreduction)
+      547    0.130    0.000    0.179    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:204(calc_optimal_price_cars)
+   600200    0.178    0.000    0.178    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1343(<genexpr>)
+      186    0.168    0.001    0.168    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:867(vectorised_calculate_utility_second_hand_cars)
+  1178890    0.154    0.000    0.154    0.000 {method 'append' of 'list' objects}
+    32879    0.140    0.000    0.140    0.000 {built-in method numpy.array}
+    12817    0.024    0.000    0.133    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:3699(mean)
+    49826    0.061    0.000    0.131    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/numerictypes.py:475(issubdtype)
+      200    0.128    0.001    0.128    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1370(update_prices_and_emissions_intensity)
+      470    0.001    0.000    0.122    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:547(generate_neighbouring_technologies)
+      186    0.065    0.000    0.122    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/secondHandMerchant.py:55(gen_vehicle_dict_vecs_second_hand)
+    49531    0.026    0.000    0.118    0.000 {method 'any' of 'numpy.ndarray' objects}
+      470    0.013    0.000    0.112    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:489(gen_neighbour_carsModel)
+      269    0.071    0.000    0.111    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:617(calc_predicted_profit_segments_production)
+      200    0.071    0.000    0.109    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:748(filter_vehicle_dict_for_switchers)
+    12817    0.040    0.000    0.109    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/_methods.py:115(_mean)
+
+
+
+
+=== TOP 60 BY SELF TIME ===
+         8044788 function calls (8044532 primitive calls) in 9.616 seconds
+
+   Ordered by: internal time
+   List reduced from 480 to 60 due to restriction <60>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+    49519    1.195    0.000    2.074    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:553(user_chooses)
+      201    0.546    0.003    0.546    0.003 {method 'dot' of 'numpy.ndarray' objects}
+      200    0.488    0.002    3.705    0.019 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:270(update_VehicleUsers)
+      200    0.415    0.002    0.558    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:291(update_market_data_moving_average)
+        1    0.405    0.405    0.464    0.464 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:129(set_init_cars_selection)
+      200    0.391    0.002    0.706    0.004 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:262(update_W_immediate)
+      200    0.342    0.002    0.418    0.002 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:517(masking_options)
+   165509    0.307    0.000    0.307    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+   634496    0.307    0.000    0.307    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firmManager.py:176(calc_exp)
+      186    0.234    0.001    0.477    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/secondHandMerchant.py:178(update_stock_contents)
+      547    0.226    0.000    0.350    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:266(calc_utility_cars_segments)
+     6416    0.216    0.000    0.384    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:686(set_utility_and_profit_grid_production)
+  1201695    0.205    0.000    0.205    0.000 {method 'get' of 'dict' objects}
+       75    0.201    0.003    0.287    0.004 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/classes/graph.py:986(add_edges_from)
+   600200    0.178    0.000    0.178    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1343(<genexpr>)
+      278    0.172    0.001    0.283    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:375(calc_predicted_profit_segments_research)
+      186    0.168    0.001    0.168    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:867(vectorised_calculate_utility_second_hand_cars)
+  1178890    0.154    0.000    0.154    0.000 {method 'append' of 'list' objects}
+    32879    0.140    0.000    0.140    0.000 {built-in method numpy.array}
+        1    0.136    0.136    0.297    0.297 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/convert_matrix.py:881(to_numpy_array)
+      547    0.130    0.000    0.179    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:204(calc_optimal_price_cars)
+      200    0.128    0.001    0.128    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1370(update_prices_and_emissions_intensity)
+      269    0.122    0.000    0.541    0.002 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:750(select_car_lambda_production)
+     6963    0.101    0.000    0.101    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:255(calc_utility)
+   600000    0.091    0.000    0.091    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/personalCar.py:79(update_timer_L_a_t)
+      203    0.084    0.000    0.267    0.001 {built-in method builtins.sum}
+    49519    0.081    0.000    0.081    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:687(_update_cv_cache_row)
+    50264    0.078    0.000    0.193    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:86(_wrapreduction_any_all)
+      200    0.072    0.000    0.072    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:884(vectorised_calculate_utility_new_cars)
+      269    0.071    0.000    0.111    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:617(calc_predicted_profit_segments_production)
+      200    0.071    0.000    0.109    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:748(filter_vehicle_dict_for_switchers)
+      200    0.070    0.000    0.078    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:426(calc_offer_prices_heursitic)
+      201    0.069    0.000    0.639    0.003 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:245(calculate_ev_adoption)
+    52273    0.067    0.000    0.183    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:66(_wrapreduction)
+      186    0.065    0.000    0.122    0.001 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/secondHandMerchant.py:55(gen_vehicle_dict_vecs_second_hand)
+      186    0.063    0.000    0.072    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/secondHandMerchant.py:123(calc_car_price_heuristic)
+   225001    0.062    0.000    0.078    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/classes/reportviews.py:856(__iter__)
+    49826    0.061    0.000    0.131    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/numerictypes.py:475(issubdtype)
+     6963    0.060    0.000    0.060    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:156(calc_utility_prop)
+    50075    0.059    0.000    0.227    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2304(sum)
+      901    0.058    0.000    0.060    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/nkModel_ICE.py:157(calculate_fitness_single)
+        1    0.054    0.054    0.459    0.459 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/networkx/generators/random_graphs.py:388(watts_strogatz_graph)
+   475360    0.052    0.000    0.052    0.000 {method 'update' of 'dict' objects}
+     3001    0.051    0.000    0.051    0.000 {method 'argsort' of 'numpy.ndarray' objects}
+      547    0.047    0.000    0.047    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/scipy/special/_lambertw.py:6(lambertw)
+    20626    0.044    0.000    0.044    0.000 {method 'remove' of 'list' objects}
+    50262    0.042    0.000    0.235    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/fromnumeric.py:2436(any)
+     7164    0.040    0.000    0.049    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/numeric.py:323(full)
+    49519    0.040    0.000    0.040    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/socialNetworkUsers.py:1321(update_emisisons)
+    12817    0.040    0.000    0.109    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/_methods.py:115(_mean)
+    99652    0.037    0.000    0.060    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/numerictypes.py:293(issubclass_)
+    99594    0.037    0.000    0.060    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/_core/getlimits.py:178(__new__)
+   168711    0.036    0.000    0.036    0.000 {built-in method builtins.issubclass}
+360998/360997    0.035    0.000    0.035    0.000 {built-in method builtins.len}
+        1    0.032    0.032    0.032    0.032 {built-in method scipy.sparse._sparsetools.dia_matvecs}
+        2    0.032    0.016    0.032    0.016 {method 'nonzero' of 'numpy.ndarray' objects}
+      278    0.031    0.000    0.045    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/package/model/firm.py:440(select_car_lambda_research)
+   153178    0.031    0.000    0.031    0.000 {method 'items' of 'dict' objects}
+     6017    0.030    0.000    0.056    0.000 /home/daniel/Documents/Code/endogenous_innovation_and_preference_change/.venv/lib/python3.13/site-packages/numpy/lib/_shape_base_impl.py:1199(tile)
+    49531    0.026    0.000    0.118    0.000 {method 'any' of 'numpy.ndarray' objects}
+
+

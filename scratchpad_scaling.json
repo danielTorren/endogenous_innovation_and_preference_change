@@ -1,0 +1,14 @@
+{
+  "loky": {
+    "1": {
+      "wall_s": 17.09,
+      "speedup": 0.81,
+      "efficiency_pct": 81.0
+    },
+    "4": {
+      "wall_s": 9.07,
+      "speedup": 1.53,
+      "efficiency_pct": 38.2
+    }
+  }
+}

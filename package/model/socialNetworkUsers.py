@@ -96,8 +96,10 @@ class Social_Network:
         self.consider_ev_vec = np.zeros(self.num_individuals).astype(np.int8)
 
         self.current_vehicles = self.set_init_cars_selection(parameters_social_network)
-        
+
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
+
+        self._build_cv_cache()
 
     def init_initial_state(self, parameters_social_network):
         """
@@ -316,28 +318,35 @@ class Social_Network:
             __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
 
 
-        for i, person_index in enumerate(non_switcher_indices):
-            user = self.vehicleUsers_list[person_index]
-            user.vehicle.update_timer_L_a_t()# Update the age or timer of the chosen vehicle
-            # Handle consequences of the choice
-            driven_distance = self.d_vec[person_index]
-            self.update_emisisons(user.vehicle, driven_distance)
+        # Vectorised emissions + policy distortion for non-switchers
+        ns_eff  = CV_vehicle_dict_vecs["Eff_omega_a_t"][non_switcher_indices]
+        ns_e_t  = CV_vehicle_dict_vecs["e_t"][non_switcher_indices]
+        ns_d    = self.d_vec[non_switcher_indices]
+        ns_type = CV_vehicle_dict_vecs["transportType"][non_switcher_indices]
 
-            #NEEDED FOR OPTIMISATION, ELECTRICITY SUBSIDY
-            if user.vehicle.transportType == 3:
-                elec_sub = (self.electricity_price_subsidy_dollars*driven_distance)/user.vehicle.Eff_omega_a_t
-                self.policy_distortion += elec_sub 
-                self.net_policy_distortion -= elec_sub 
-            else:
-                #NEEDED FOR OPTIMISATION, add the carbon price paid 
-                carbon_price_paid = (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
-                self.policy_distortion += carbon_price_paid
-                self.net_policy_distortion += carbon_price_paid
+        ns_driving_emissions = (ns_d / ns_eff) * ns_e_t
+        total_ns_emit = float(ns_driving_emissions.sum())
+        self.emissions_cumulative        += total_ns_emit
+        self.emissions_cumulative_driving += total_ns_emit
+        self.emissions_flow              += total_ns_emit
+
+        ev_mask = (ns_type == 3)
+        elec_sub_total = float(np.where(ev_mask,  (self.electricity_price_subsidy_dollars * ns_d) / ns_eff, 0.0).sum())
+        carbon_total   = float(np.where(~ev_mask, (self.carbon_price * ns_e_t * ns_d) / ns_eff, 0.0).sum())
+        self.policy_distortion     += elec_sub_total + carbon_total
+        self.net_policy_distortion += -elec_sub_total + carbon_total
+
+        for person_index in non_switcher_indices:
+            user = self.vehicleUsers_list[person_index]
+            user.vehicle.update_timer_L_a_t()
 
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.keep_car += 1
                 utility = full_CV_utility_vec[person_index]
-                self.update_counters(person_index, user.vehicle, driven_distance, utility) 
+                driven_distance = self.d_vec[person_index]
+                self.update_counters(person_index, user.vehicle, driven_distance, utility)
+
+        self._cv_cache["L_a_t"][non_switcher_indices] += 1
 
                 
         ##################################################################
@@ -388,6 +397,7 @@ class Social_Network:
                 global_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_index, index_current_cars_start 
             )
             user_vehicle_list[global_index] = user_vehicle  # Update using the global index
+            self._update_cv_cache_row(global_index, user_vehicle)
 
             driven_distance = self.d_vec[global_index]  # Use the reduced index for the matrix
             self.update_emisisons(vehicle_chosen, driven_distance)
@@ -659,40 +669,43 @@ class Social_Network:
 
         return  CV_utilities_matrix, U_a_i_t_vec
     
-    def gen_current_vehicle_dict_vecs(self, list_vehicles):
-        """
-        Create a dictionary of vehicle attributes from a list of vehicles.
-
-        Args:
-            list_vehicles (list): List of vehicle objects.
-
-        Returns:
-            dict: Dictionary of vehicle attribute arrays.
-        """
-        # Extract properties using list comprehensions
-        quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
-        eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
-        transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
-        l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
-        fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
-        e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
-        delta = np.array([vehicle.delta for vehicle in list_vehicles])
-        delta_P = np.array([vehicle.delta_P for vehicle in list_vehicles])
-        B = np.array([vehicle.B for vehicle in list_vehicles])
-        # Create the dictionary directly with NumPy arrays
-        vehicle_dict_vecs = {
-            "Quality_a_t": quality_a_t,
-            "Eff_omega_a_t": eff_omega_a_t,
-            "fuel_cost_c": fuel_cost_c,
-            "e_t": e_t,
-            "L_a_t": l_a_t,
-            "transportType": transport_type,
-            "delta": delta,
-            "delta_P": delta_P,
-            "B": B
+    def _build_cv_cache(self):
+        """Build (or rebuild) the vehicle attribute cache from current_vehicles."""
+        vs = self.current_vehicles
+        self._cv_cache = {
+            "Quality_a_t":   np.array([v.Quality_a_t   for v in vs]),
+            "Eff_omega_a_t": np.array([v.Eff_omega_a_t for v in vs]),
+            "fuel_cost_c":   np.array([v.fuel_cost_c   for v in vs]),
+            "e_t":           np.array([v.e_t           for v in vs]),
+            "L_a_t":         np.array([v.L_a_t         for v in vs]),
+            "transportType": np.array([v.transportType for v in vs]),
+            "delta":         np.array([v.delta         for v in vs]),
+            "delta_P":       np.array([v.delta_P       for v in vs]),
+            "B":             np.array([v.B             for v in vs]),
         }
 
-        return vehicle_dict_vecs
+    def _update_cv_cache_row(self, idx, vehicle):
+        """Update a single row in the vehicle attribute cache after a switcher chooses."""
+        c = self._cv_cache
+        c["Quality_a_t"][idx]   = vehicle.Quality_a_t
+        c["Eff_omega_a_t"][idx] = vehicle.Eff_omega_a_t
+        c["fuel_cost_c"][idx]   = vehicle.fuel_cost_c
+        c["e_t"][idx]           = vehicle.e_t
+        c["L_a_t"][idx]         = vehicle.L_a_t
+        c["transportType"][idx] = vehicle.transportType
+        c["delta"][idx]         = vehicle.delta
+        c["delta_P"][idx]       = vehicle.delta_P
+        c["B"][idx]             = vehicle.B
+
+    def gen_current_vehicle_dict_vecs(self, list_vehicles):
+        """
+        Return vehicle attribute arrays for all current vehicles.
+
+        Uses the maintained cache (_cv_cache) instead of rebuilding from
+        object attributes each step — kept in sync by update_prices_and_emissions_intensity,
+        the non-switcher L_a_t increment, and _update_cv_cache_row.
+        """
+        return self._cv_cache
 
     def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
         """
@@ -1363,7 +1376,13 @@ class Social_Network:
                 car.fuel_cost_c = self.gas_price
             elif car.transportType == 3:
                 car.fuel_cost_c = self.electricity_price
-                car.e_t = self.electricity_emissions_intensity  
+                car.e_t = self.electricity_emissions_intensity
+
+        ice_mask = self._cv_cache["transportType"] == 2
+        ev_mask  = self._cv_cache["transportType"] == 3
+        self._cv_cache["fuel_cost_c"][ice_mask] = self.gas_price
+        self._cv_cache["fuel_cost_c"][ev_mask]  = self.electricity_price
+        self._cv_cache["e_t"][ev_mask]          = self.electricity_emissions_intensity
         
     def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, rebate_calibration, used_rebate_calibration):
         """

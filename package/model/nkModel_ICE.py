@@ -32,6 +32,7 @@ class NKModel_ICE:
         self.N = int(round(parameters["N"]))
         self.K = int(round(parameters["K"]))
         self.A = parameters["A"]
+        self._k_powers = (2 ** np.arange(self.K, -1, -1)).astype(np.intp)
         self.rho = parameters["rho"] 
 
         self.random_state_inputs = parameters["random_state_inputs"]
@@ -144,9 +145,8 @@ class NKModel_ICE:
         fitness = np.zeros((num_designs, self.A))
 
         for n in range(self.N):
-            k_indices = np.array([
-                int(''.join(map(str, (design[(n + i) % self.N] for i in range(self.K + 1)))), 2) for design in designs
-            ])
+            col_idx = [(n + i) % self.N for i in range(self.K + 1)]
+            k_indices = designs[:, col_idx] @ self._k_powers
             fitness += self.fitness_landscape[k_indices, n, :]
 
         average_fitness_components = fitness / self.N
@@ -169,11 +169,15 @@ class NKModel_ICE:
                                     Shape: (self.A,)
         """
         
+        if isinstance(design, str):
+            design = np.array([int(c) for c in design], dtype=np.intp)
+        else:
+            design = np.asarray(design, dtype=np.intp)
         fitness = np.zeros(self.A)
-        for a in range(self.A):
-            for n in range(self.N):
-                k = int(''.join([str(design[(n+i) % self.N]) for i in range(self.K+1)]), 2)
-                fitness[a] +=  self.fitness_landscape[k, n, a]
+        for n in range(self.N):
+            col_idx = [(n + i) % self.N for i in range(self.K + 1)]
+            k = int(design[col_idx] @ self._k_powers)
+            fitness += self.fitness_landscape[k, n, :]
         average_fitness_components = fitness / self.N
 
         fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec-self.min_vec)
