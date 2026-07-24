@@ -69,6 +69,7 @@ from .surrogate import SurrogateGP, validate, loo_cv, save_surrogate, load_surro
 from .optimisation import (
     active_bo_loop, compute_pareto_front,
     plot_pareto_front, plot_bo_convergence,
+    load_optimisation_config,
 )
 
 # ---------------------------------------------------------------------------
@@ -79,20 +80,15 @@ _CONSTANTS_DIR   = "package/surrogate/constants"
 BASE_PARAMS_PATH = f"{_CONSTANTS_DIR}/base_params_surrogate.json"
 BOUNDS_PATH      = f"{_CONSTANTS_DIR}/policy_bounds_surrogate.json"
 PAIRWISE_PATH    = "package/surrogate/pair_wise_outcomes/pairwise_outcomes.pkl"
+OPT_CONFIG_PATH  = f"{_CONSTANTS_DIR}/optimisation_config.json"
 RESULTS_DIR      = "results/surrogate_optimisation"
 
-N_LHS    = 100   # LHS evaluations (80% train / 20% test for validation)
-N_BO     = 50    # active BO iterations after LHS
+N_LHS = 100  # LHS evaluations (80% train / 20% test for validation)
+N_BO  = 50   # active BO iterations after LHS
 
-EV_LO    = 0.94  # EV uptake constraint lower bound
-EV_HI    = 0.96  # EV uptake constraint upper bound
-
-# Affects which part of the Pareto front the BO explores most intensively.
-# The full Pareto front is extracted post-hoc regardless of these weights.
-BO_WEIGHTS = np.array([1.0, 1.0, 1.0])  # [utility, emissions, net_cost]
-
-# Loaded from JSON at import time so the rest of the module can reference it
+# Loaded from JSON at import time so the rest of the module can reference them
 POLICY_BOUNDS = load_policy_bounds(BOUNDS_PATH)
+OPT_CONFIG    = load_optimisation_config(OPT_CONFIG_PATH)
 
 
 # ---------------------------------------------------------------------------
@@ -167,12 +163,11 @@ def _train_test_split(X, Y, test_frac=0.2, seed=0):
 def main(
     base_params_path: str = BASE_PARAMS_PATH,
     bounds_path: str = BOUNDS_PATH,
+    opt_config_path: str = OPT_CONFIG_PATH,
     existing_calib_folder: str = None,
     pairwise_path: str = None,
     n_lhs: int = N_LHS,
     n_bo: int = N_BO,
-    ev_lo: float = EV_LO,
-    ev_hi: float = EV_HI,
     results_dir: str = RESULTS_DIR,
 ) -> tuple:
     """
@@ -182,6 +177,8 @@ def main(
     ----------
     base_params_path       : JSON config (defaults to package/surrogate/constants/base_params_surrogate.json)
     bounds_path            : JSON policy bounds (defaults to package/surrogate/constants/policy_bounds_surrogate.json)
+    opt_config_path        : JSON optimisation config — EV constraint, reference scales, weights
+                             (defaults to package/surrogate/constants/optimisation_config.json)
     existing_calib_folder  : path to a previous run's folder that has Calibration_runs/
                              controller_seed_*.pkl files — skips Phase 1 entirely
     pairwise_path          : path to pairwise_outcomes.pkl — if given, these ~100 real
@@ -191,7 +188,6 @@ def main(
                              high-intensity 2-policy edge combinations).
     n_lhs                  : number of LHS evaluations (Phase 2 only, ~seconds each)
     n_bo                   : number of active BO iterations (Phase 2 only)
-    ev_lo / ev_hi          : EV uptake constraint bounds
 
     Returns
     -------
@@ -199,9 +195,19 @@ def main(
     """
     _setup_dirs(results_dir)
     bounds = load_policy_bounds(bounds_path)
+    cfg    = load_optimisation_config(opt_config_path)
+    ev_lo, ev_hi = cfg["ev_lo"], cfg["ev_hi"]
+    y_refs  = cfg["y_refs"]
+    weights = cfg["weights"]
+
     print(f"Policy bounds loaded from {bounds_path}:")
     for name, (lo, hi) in bounds.bounds.items():
         print(f"  {name}: [{lo}, {hi}]")
+    print(f"EV constraint: [{ev_lo:.0%}, {ev_hi:.0%}]")
+    print(f"Objective reference scales: utility={y_refs[1]:.3g}  "
+          f"emissions={y_refs[2]:.3g}  net_cost={y_refs[3]:.3g}")
+    print(f"BO weights: utility={weights[0]:.2f}  emissions={weights[1]:.2f}  "
+          f"net_cost={weights[2]:.2f}")
 
     # ------------------------------------------------------------------
     # Step 1: Calibration — run once or reuse saved controllers
@@ -295,7 +301,8 @@ def main(
         n_iterations=n_bo,
         ev_lo=ev_lo,
         ev_hi=ev_hi,
-        weights=BO_WEIGHTS,
+        weights=weights,
+        y_refs=y_refs,
         cache_path=bo_cache,
     )
     n_feas = ((Y_all[:, 0] >= ev_lo) & (Y_all[:, 0] <= ev_hi)).sum()
@@ -314,7 +321,7 @@ def main(
 
     X_pareto, Y_pareto = compute_pareto_front(
         X_all, Y_all, surrogate_final, bounds,
-        ev_lo=ev_lo, ev_hi=ev_hi, n_weight_vectors=100,
+        ev_lo=ev_lo, ev_hi=ev_hi, y_refs=y_refs, n_weight_vectors=100,
     )
     np.savez(f"{results_dir}/Data/pareto.npz", X=X_pareto, Y=Y_pareto)
     plot_pareto_front(X_pareto, Y_pareto, ev_lo, ev_hi, save_dir=f"{results_dir}/Plots")

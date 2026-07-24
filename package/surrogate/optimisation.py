@@ -36,6 +36,7 @@ three objectives simultaneously. Choosing among them is a value judgement:
   low emissions + lower utility = strict carbon price regime
 """
 
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import differential_evolution, minimize
@@ -49,23 +50,52 @@ EV_LO_DEFAULT = 0.94
 EV_HI_DEFAULT = 0.96
 
 
+def load_optimisation_config(path: str) -> dict:
+    """
+    Load EV constraint bounds, fixed reference scales, and BO weights from JSON.
+
+    Returns a dict with:
+      ev_lo, ev_hi  — EV uptake constraint (fraction, e.g. 0.94 / 0.96)
+      y_refs        — shape (4,) array [dummy, utility_ref, emissions_ref, net_cost_ref]
+                      used to normalise objectives to comparable [0,1] scale
+      weights       — shape (3,) array [w_utility, w_emissions, w_net_cost]
+
+    WHY FIXED REFERENCES?
+    Using the observed data range to normalise (the old approach) means the
+    effective weight of each objective shifts every BO iteration as new points
+    arrive.  A fixed reference computed once from the pairwise data gives
+    stable, interpretable weights throughout the optimisation.
+    """
+    with open(path) as f:
+        cfg = json.load(f)
+    ev_lo = cfg["ev_constraint"]["ev_lo"]
+    ev_hi = cfg["ev_constraint"]["ev_hi"]
+    refs  = cfg["objective_reference_scales"]
+    # Index 0 is ev_uptake — not in the objective, so set to 1.0 as a safe dummy
+    y_refs = np.array([1.0, refs["utility"], refs["emissions"], refs["net_cost"]])
+    w = cfg["bo_weights"]
+    weights = np.array([w["utility"], w["emissions"], w["net_cost"]], dtype=float)
+    return {"ev_lo": ev_lo, "ev_hi": ev_hi, "y_refs": y_refs, "weights": weights}
+
+
 # ---------------------------------------------------------------------------
 # Acquisition function
 # ---------------------------------------------------------------------------
 
-def _scalarize(mu: np.ndarray, weights: np.ndarray, y_ranges: np.ndarray) -> float:
+def _scalarize(mu: np.ndarray, weights: np.ndarray, y_refs: np.ndarray) -> float:
     """
     Weighted scalarized objective (to be maximised).
-    Normalises each output by its observed range so weights are comparable.
-      weights[0] × utility/range - weights[1] × emissions/range - weights[2] × cost/range
+    Normalises each output by a fixed reference scale so weights are stable and
+    interpretable across all BO iterations.
+      weights[0] × utility/ref - weights[1] × emissions/ref - weights[2] × cost/ref
     """
-    return (weights[0] * mu[1] / y_ranges[1]
-            - weights[1] * mu[2] / y_ranges[2]
-            - weights[2] * mu[3] / y_ranges[3])
+    return (weights[0] * mu[1] / y_refs[1]
+            - weights[1] * mu[2] / y_refs[2]
+            - weights[2] * mu[3] / y_refs[3])
 
 
 def _acquisition(x: np.ndarray, surrogate: SurrogateGP,
-                 y_best_scalar: float, weights: np.ndarray, y_ranges: np.ndarray,
+                 y_best_scalar: float, weights: np.ndarray, y_refs: np.ndarray,
                  ev_lo: float, ev_hi: float) -> float:
     """
     Constrained Expected Improvement (to minimise — negated).
@@ -80,11 +110,11 @@ def _acquisition(x: np.ndarray, surrogate: SurrogateGP,
               - norm.cdf(ev_lo, mu[0], sigma[0] + 1e-8))
 
     # Expected Improvement on scalarized objective
-    mu_scalar = _scalarize(mu, weights, y_ranges)
+    mu_scalar = _scalarize(mu, weights, y_refs)
     sigma_scalar = float(np.sqrt(
-        (weights[0] * sigma[1] / y_ranges[1])**2
-        + (weights[1] * sigma[2] / y_ranges[2])**2
-        + (weights[2] * sigma[3] / y_ranges[3])**2
+        (weights[0] * sigma[1] / y_refs[1])**2
+        + (weights[1] * sigma[2] / y_refs[2])**2
+        + (weights[2] * sigma[3] / y_refs[3])**2
     )) + 1e-8
 
     if y_best_scalar is None:
@@ -97,7 +127,7 @@ def _acquisition(x: np.ndarray, surrogate: SurrogateGP,
 
 
 def _propose_next(surrogate: SurrogateGP, bounds: PolicyBounds,
-                  Y_all: np.ndarray, weights: np.ndarray, y_ranges: np.ndarray,
+                  Y_all: np.ndarray, weights: np.ndarray, y_refs: np.ndarray,
                   ev_lo: float, ev_hi: float, n_restarts: int = 20) -> np.ndarray:
     """
     Maximise the acquisition function via multi-start L-BFGS-B.
@@ -105,7 +135,7 @@ def _propose_next(surrogate: SurrogateGP, bounds: PolicyBounds,
     """
     feasible_mask = (Y_all[:, 0] >= ev_lo) & (Y_all[:, 0] <= ev_hi)
     if feasible_mask.sum() > 0:
-        scalars = [_scalarize(Y_all[i], weights, y_ranges)
+        scalars = [_scalarize(Y_all[i], weights, y_refs)
                    for i in np.where(feasible_mask)[0]]
         y_best = max(scalars)
     else:
@@ -120,7 +150,7 @@ def _propose_next(surrogate: SurrogateGP, bounds: PolicyBounds,
         result = minimize(
             _acquisition,
             x0,
-            args=(surrogate, y_best, weights, y_ranges, ev_lo, ev_hi),
+            args=(surrogate, y_best, weights, y_refs, ev_lo, ev_hi),
             bounds=bounds_list,
             method="L-BFGS-B",
             options={"maxiter": 200},
@@ -145,6 +175,7 @@ def active_bo_loop(
     ev_lo: float = EV_LO_DEFAULT,
     ev_hi: float = EV_HI_DEFAULT,
     weights: np.ndarray = None,
+    y_refs: np.ndarray = None,
     cache_path: str = None,
 ) -> tuple:
     """
@@ -153,10 +184,13 @@ def active_bo_loop(
     Sequentially proposes new policy combinations to evaluate, guided by the
     GP surrogate's uncertainty and the EV constraint.
 
-    weights: [w_utility, w_emissions, w_cost] — how to scalarise objectives
-             for the acquisition function. Defaults to equal weighting.
-             This does NOT lock you into one Pareto point; the BO explores
-             the whole feasible region and the Pareto front is extracted post-hoc.
+    weights : [w_utility, w_emissions, w_cost] — relative importance of each
+              objective. Loaded from optimisation_config.json via run.main();
+              defaults to equal weighting if not supplied.
+    y_refs  : shape (4,) fixed reference scales [dummy, utility, emissions, cost]
+              used to normalise objectives before weighting. Load from
+              optimisation_config.json via load_optimisation_config().
+              Falls back to dynamic observed-data range if not supplied.
 
     Returns: (X_all, Y_all) — all evaluated points including the initial LHS.
     """
@@ -182,11 +216,13 @@ def active_bo_loop(
         surrogate = SurrogateGP(bounds.lower, bounds.upper)
         surrogate.fit(X_all, Y_all)
 
-        # Output ranges for normalisation (use observed data)
-        y_ranges = np.maximum(Y_all.max(axis=0) - Y_all.min(axis=0), 1e-8)
+        # Reference scales: fixed (preferred) or fall back to observed data range
+        refs = y_refs if y_refs is not None else np.maximum(
+            Y_all.max(axis=0) - Y_all.min(axis=0), 1e-8
+        )
 
         # Propose next point
-        x_next = _propose_next(surrogate, bounds, Y_all, weights, y_ranges, ev_lo, ev_hi)
+        x_next = _propose_next(surrogate, bounds, Y_all, weights, refs, ev_lo, ev_hi)
         policy_dict = dict(zip(bounds.names, x_next))
         print(f"  Proposed: { {k: round(v, 4) for k, v in policy_dict.items()} }")
 
@@ -235,7 +271,7 @@ def _is_non_dominated(obj: np.ndarray) -> np.ndarray:
 
 def _optimise_weight_vector(
     surrogate: SurrogateGP, bounds: PolicyBounds,
-    weights: np.ndarray, y_ranges: np.ndarray,
+    weights: np.ndarray, y_refs: np.ndarray,
     ev_lo: float, ev_hi: float,
 ) -> np.ndarray:
     """
@@ -245,7 +281,7 @@ def _optimise_weight_vector(
     def neg_obj(x):
         mu, _ = surrogate.predict(x[None])
         mu = mu[0]
-        obj = _scalarize(mu, weights, y_ranges)
+        obj = _scalarize(mu, weights, y_refs)
         ev_penalty = 1e4 * (
             max(0.0, ev_lo - mu[0])**2 + max(0.0, mu[0] - ev_hi)**2
         )
@@ -266,6 +302,7 @@ def compute_pareto_front(
     bounds: PolicyBounds,
     ev_lo: float = EV_LO_DEFAULT,
     ev_hi: float = EV_HI_DEFAULT,
+    y_refs: np.ndarray = None,
     n_weight_vectors: int = 100,
 ) -> tuple:
     """
@@ -280,9 +317,14 @@ def compute_pareto_front(
     it is a "free" dense search over the surrogate, using the ABM only for
     the final validation of the best point(s).
 
+    y_refs : fixed reference scales from load_optimisation_config(); falls back
+             to observed data range if not supplied.
+
     Returns: (X_pareto, Y_pareto) — surrogate-predicted values for Pareto points.
     """
-    y_ranges = np.maximum(Y_all.max(axis=0) - Y_all.min(axis=0), 1e-8)
+    refs = y_refs if y_refs is not None else np.maximum(
+        Y_all.max(axis=0) - Y_all.min(axis=0), 1e-8
+    )
 
     # (a) Observed feasible points
     obs_feas = (Y_all[:, 0] >= ev_lo) & (Y_all[:, 0] <= ev_hi)
@@ -299,7 +341,7 @@ def compute_pareto_front(
 
     for i, w in enumerate(weight_vectors):
         print(f"  {i+1}/{n_weight_vectors}", end="\r")
-        x_opt = _optimise_weight_vector(surrogate, bounds, w, y_ranges, ev_lo, ev_hi)
+        x_opt = _optimise_weight_vector(surrogate, bounds, w, refs, ev_lo, ev_hi)
         mu, _ = surrogate.predict(x_opt[None])
         X_cands.append(x_opt)
         Y_cands.append(mu[0])

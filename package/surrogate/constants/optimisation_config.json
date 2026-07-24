@@ -1,0 +1,23 @@
+{
+    "_comment": "Fixed reference scales and constraint bounds for the surrogate optimisation.",
+
+    "ev_constraint": {
+        "ev_lo": 0.94,
+        "ev_hi": 0.96
+    },
+
+    "objective_reference_scales": {
+        "_comment": "Ranges used to normalise each objective to a comparable [0,1] scale before weighting.",
+        "_source": "Computed from pairwise_outcomes.pkl — spans the full output variation observed across all 2-policy combinations at varying intensities, covering the space from no-policy baseline to maximum single/pair-policy intensity.",
+        "utility":    2.47287e+09,
+        "emissions":  2.28205e+08,
+        "net_cost":   1.08741e+09
+    },
+
+    "bo_weights": {
+        "_comment": "Relative importance of each objective in the acquisition function scalarisation. Equal weights = treat a 1-unit-of-range improvement in utility the same as 1-unit-of-range reduction in emissions or cost.",
+        "utility":   1.0,
+        "emissions": 1.0,
+        "net_cost":  1.0
+    }
+}
