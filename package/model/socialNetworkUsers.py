@@ -1341,8 +1341,8 @@ class Social_Network:
         """
         Update the proportion of users currently owning electric vehicles (EVs), and append it to the history.
         """
-        self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.current_vehicles)
-        self.history_prop_EV.append(self.EV_users_count/self.num_individuals)
+        self.EV_users_count = int(np.sum(self._cv_cache["transportType"] == 3))
+        self.history_prop_EV.append(self.EV_users_count / self.num_individuals)
 
     def calc_price_mean_max_min(self):
         """
