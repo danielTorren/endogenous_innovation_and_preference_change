@@ -7,8 +7,8 @@
     },
 
     "objective_reference_scales": {
-        "_comment": "Ranges used to normalise each objective to a comparable [0,1] scale before weighting.",
-        "_source": "Computed from pairwise_outcomes.pkl — spans the full output variation observed across all 2-policy combinations at varying intensities, covering the space from no-policy baseline to maximum single/pair-policy intensity.",
+        "_comment": "SUPERSEDED — no longer read by run.py. Kept here only as a historical record.",
+        "_source": "These were computed from pairwise_outcomes.pkl on ABSOLUTE utility/emissions/net_cost, back when the surrogate's outputs were absolute values. Since utility/emissions/net_cost were changed to BAU-relative deltas (this policy vs. doing nothing), run.py now recomputes reference scales itself from each run's own LHS data (see run.py Step 2 / BAU-RELATIVE OBJECTIVES in its module docstring) — the numbers below are stale for that purpose and are not loaded for it.",
         "utility":    2.47287e+09,
         "emissions":  2.28205e+08,
         "net_cost":   1.08741e+09

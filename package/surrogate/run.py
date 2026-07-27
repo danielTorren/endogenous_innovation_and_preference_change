@@ -37,6 +37,19 @@ only Phase 2 runs are performed.
 The folder must contain a Calibration_runs/ sub-directory with
 controller_seed_*.pkl files, and a Data/base_params.pkl file.
 
+BAU-RELATIVE OBJECTIVES
+-----------------------------
+utility, emissions, and net_cost (surrogate output columns 1-3) are deltas
+relative to BAU (all policies off), not absolute values — "how much better/
+worse than doing nothing". Computed once per seed set (see
+sampling.compute_bau_baseline) and subtracted per-seed (paired, common
+random numbers) from every LHS/BO evaluation before averaging. ev_uptake
+(column 0) stays absolute — it's the constraint target (94-96% EV share),
+not an objective. Reference scales for weighting these deltas in the BO
+acquisition/Pareto search are recomputed from each run's own LHS data
+(Step 2), not read from optimisation_config.json — those static numbers
+predate this change and are no longer used.
+
 IMPROVING SURROGATE QUALITY
 -----------------------------
   R² < 0.85 on any output  →  add more LHS points (increase N_LHS)
@@ -50,19 +63,29 @@ HOW TO CHOOSE AMONG PARETO POINTS
   np.argsort(Y_pareto[:, 1])[::-1]   # highest utility first
   np.argsort(Y_pareto[:, 2])         # lowest emissions first
   np.argsort(Y_pareto[:, 3])         # lowest net cost first
-Then pass X_pareto[i] to run_final_abm() for the full time-series result.
+Running the top policies through the real ABM (time series + plots) is
+done by package/surrogate/best_policies.py, not by this module — see
+run_final_abm() and main() there.
 """
 
 import os
+
+# Must be set before numpy/BLAS is imported: each of the seed_repetitions
+# joblib workers otherwise spawns its own BLAS thread pool, oversubscribing
+# the node's cores when running on a cluster. setdefault so an explicit
+# value from the submission script (e.g. Slurm) still wins.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 import glob
 import json
 import numpy as np
-from copy import deepcopy
 
 from package.resources.utility import load_object, save_object
 from package.analysis.endogenous_policy_intensity_single_gen import set_up_calibration_runs
 from .sampling import (
-    PolicyBounds, load_policy_bounds, evaluate_lhs,
+    load_policy_bounds, evaluate_lhs, get_or_create_bau_baseline,
     load_pairwise_warmstart, run_policy_combination, OUTPUT_NAMES,
 )
 from .surrogate import SurrogateGP, validate, loo_cv, save_surrogate, load_surrogate
@@ -140,6 +163,22 @@ def get_or_create_calibration(
     return controller_files, base_params, calib_folder
 
 
+def _resolve_calib_folder(results_dir: str, existing_calib_folder: str = None):
+    """
+    existing_calib_folder, if given, always wins. Otherwise, look for a
+    calib_folder.pkl already saved under results_dir/Data from a previous
+    call to main() with this same results_dir — so rerunning main() against
+    the same results_dir (e.g. after an interrupted run) reuses Phase 1
+    instead of silently recalibrating from scratch every time.
+    """
+    if existing_calib_folder is not None:
+        return existing_calib_folder
+    try:
+        return load_object(f"{results_dir}/Data", "calib_folder")
+    except FileNotFoundError:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -186,6 +225,11 @@ def main(
                              the surrogate is fitted on the LHS data.  They are NOT
                              added to the training data (avoids biasing the GP toward
                              high-intensity 2-policy edge combinations).
+                             WARNING: pairwise_outcomes.pkl stores ABSOLUTE utility/
+                             emissions/net_cost, but LHS/BO now train on BAU-relative
+                             deltas — do not pass this until pairwise_outcomes.pkl is
+                             regenerated in the same (delta) units, or the validation
+                             R²/coverage numbers will be meaningless.
     n_lhs                  : number of LHS evaluations (Phase 2 only, ~seconds each)
     n_bo                   : number of active BO iterations (Phase 2 only)
 
@@ -197,22 +241,23 @@ def main(
     bounds = load_policy_bounds(bounds_path)
     cfg    = load_optimisation_config(opt_config_path)
     ev_lo, ev_hi = cfg["ev_lo"], cfg["ev_hi"]
-    y_refs  = cfg["y_refs"]
     weights = cfg["weights"]
 
     print(f"Policy bounds loaded from {bounds_path}:")
     for name, (lo, hi) in bounds.bounds.items():
         print(f"  {name}: [{lo}, {hi}]")
     print(f"EV constraint: [{ev_lo:.0%}, {ev_hi:.0%}]")
-    print(f"Objective reference scales: utility={y_refs[1]:.3g}  "
-          f"emissions={y_refs[2]:.3g}  net_cost={y_refs[3]:.3g}")
     print(f"BO weights: utility={weights[0]:.2f}  emissions={weights[1]:.2f}  "
           f"net_cost={weights[2]:.2f}")
+    print("Objective reference scales: recomputed from this run's own LHS data "
+          "(BAU-relative deltas) after Step 2 — optimisation_config.json's "
+          "objective_reference_scales is no longer used for this.")
 
     # ------------------------------------------------------------------
     # Step 1: Calibration — run once or reuse saved controllers
     # ------------------------------------------------------------------
     print("=== Step 1: Calibration ===")
+    existing_calib_folder = _resolve_calib_folder(results_dir, existing_calib_folder)
     controller_files, base_params, calib_folder = get_or_create_calibration(
         base_params_path, existing_calib_folder
     )
@@ -221,6 +266,19 @@ def main(
     print(f"  Estimated Phase 2 runs: ({n_lhs} LHS + {n_bo} BO) × {n_seeds} = "
           f"{(n_lhs + n_bo) * n_seeds} total future-period ABM runs")
 
+    # Persisted so best_policies.py can reuse these controllers without the
+    # calib_folder path having to be passed in by hand.
+    save_object(calib_folder, f"{results_dir}/Data", "calib_folder")
+
+    # BAU baseline (all policies off), per-seed — used to turn utility/emissions/
+    # net_cost into BAU-relative deltas throughout LHS and BO (paired per seed,
+    # not just one overall BAU mean, so seed-specific noise cancels out).
+    bau_cache = f"{results_dir}/Data/bau_baseline.npz"
+    bau_baseline = get_or_create_bau_baseline(base_params, controller_files, cache_path=bau_cache)
+    print(f"  BAU baseline: utility={bau_baseline['utility'].mean():.4g}  "
+          f"emissions={bau_baseline['emissions'].mean():.4g}  "
+          f"net_cost={bau_baseline['net_cost'].mean():.4g}")
+
     # ------------------------------------------------------------------
     # Step 2: LHS sampling (Phase 2 only — future period per point)
     # ------------------------------------------------------------------
@@ -228,12 +286,26 @@ def main(
     lhs_cache = f"{results_dir}/Data/lhs_data.npz"
     X_lhs, Y_lhs = evaluate_lhs(
         bounds, n_lhs, base_params, controller_files,
+        bau_baseline=bau_baseline,
         cache_path=lhs_cache,
     )
     n_init = len(X_lhs)
     print(f"LHS complete: {n_init} points")
     for j, name in enumerate(OUTPUT_NAMES):
         print(f"  {name}: [{Y_lhs[:, j].min():.4g},  {Y_lhs[:, j].max():.4g}]")
+
+    # Reference scales recomputed from THIS run's actual BAU-relative LHS data,
+    # rather than trusting the static values in optimisation_config.json —
+    # those were calibrated on an older, absolute-units dataset and go stale
+    # the moment the objective definition, bounds, or seed count changes.
+    y_refs = np.array([
+        1.0,
+        max(np.abs(Y_lhs[:, 1]).max(), 1e-8),
+        max(np.abs(Y_lhs[:, 2]).max(), 1e-8),
+        max(np.abs(Y_lhs[:, 3]).max(), 1e-8),
+    ])
+    print(f"Objective reference scales (BAU-relative, from LHS): "
+          f"utility={y_refs[1]:.3g}  emissions={y_refs[2]:.3g}  net_cost={y_refs[3]:.3g}")
 
     # ------------------------------------------------------------------
     # Step 3: Surrogate validation
@@ -303,6 +375,7 @@ def main(
         ev_hi=ev_hi,
         weights=weights,
         y_refs=y_refs,
+        bau_baseline=bau_baseline,
         cache_path=bo_cache,
     )
     n_feas = ((Y_all[:, 0] >= ev_lo) & (Y_all[:, 0] <= ev_hi)).sum()
@@ -334,8 +407,9 @@ def main(
         print("No feasible Pareto points found. Run more BO iterations or widen EV constraint.")
         return None, None
 
-    header = f"{'#':<4} {'EV':>6} {'Utility':>14} {'Emissions':>14} {'Net cost':>14}  " + \
+    header = f"{'#':<4} {'EV':>6} {'ΔUtility':>14} {'ΔEmissions':>14} {'ΔNet cost':>14}  " + \
              "  ".join(f"{n[:10]:>12}" for n in bounds.names)
+    print("(Δ columns are BAU-relative — vs. doing nothing — not absolute values)")
     print(header)
     print("-" * len(header))
     for rank, i in enumerate(np.argsort(Y_pareto[:, 1])[::-1]):
@@ -344,70 +418,10 @@ def main(
         print(f"{rank:<4} {y[0]:>6.3f} {y[1]:>14.4g} {y[2]:>14.4g} {y[3]:>14.4g}  {policy_str}")
 
     print(f"\nSaved to {results_dir}/Data/pareto.npz")
-    print("Next: call run_final_abm(X_pareto[i], base_params, controller_files) "
-          "to generate full time-series results for a chosen point.")
+    print("Next: run `python -m package.surrogate.best_policies` to run the top "
+          "policies through the real ABM and produce time-series + trade-off plots.")
 
     return X_pareto, Y_pareto
-
-
-# ---------------------------------------------------------------------------
-# Step 7: Full ABM run for a chosen Pareto point
-# ---------------------------------------------------------------------------
-
-def run_final_abm(
-    policy_vector: np.ndarray,
-    base_params: dict,
-    controller_files: list,
-    bounds: PolicyBounds = None,
-    results_dir: str = RESULTS_DIR,
-) -> dict:
-    """
-    Run the full ABM (with time-series output) for a chosen Pareto policy.
-
-    WHAT THIS RUNS:
-      N_seeds future-period runs (Phase 2 only — calibration NOT re-run).
-      Returns a dict matching the format used by low_policy_intensity_plot.py.
-
-    policy_vector : one row from X_pareto
-    controller_files : from get_or_create_calibration() — reuse the same ones
-    bounds : PolicyBounds used during optimisation; defaults to loading from JSON
-    """
-    from package.analysis.low_policy_intensity_gen import single_policy_with_seeds
-    from package.analysis.endogenous_policy_intensity_single_gen import update_policy_intensity
-
-    if bounds is None:
-        bounds = load_policy_bounds(BOUNDS_PATH)
-    policy_dict = dict(zip(bounds.names, policy_vector))
-    print(f"\nRunning final ABM ({len(controller_files)} seeds, future period only):")
-    for k, v in policy_dict.items():
-        if v > 0:
-            print(f"  {k}: {v:.4f}")
-
-    params = deepcopy(base_params)
-    for key in params["parameters_policies"]["States"]:
-        params["parameters_policies"]["States"][key] = 0
-    for name, intensity in policy_dict.items():
-        if intensity > 0:
-            params = update_policy_intensity(params, name, intensity)
-
-    results = single_policy_with_seeds(params, controller_files)
-
-    output = {
-        "history_driving_emissions":              results[0],
-        "history_production_emissions":           results[1],
-        "history_total_emissions":                results[2],
-        "history_prop_EV":                        results[3],
-        "history_total_utility":                  results[9],
-        "history_mean_price_ICE_EV_arr":          results[7],
-        "history_policy_net_cost":                results[22],
-        "history_mean_car_age":                   results[20],
-        "history_past_new_bought_vehicles_prop_ev": results[21],
-    }
-
-    save_object(output,       f"{results_dir}/Data", "optimal_policy_output")
-    save_object(policy_dict,  f"{results_dir}/Data", "optimal_policy_dict")
-    print(f"Saved to {results_dir}/Data/")
-    return output
 
 
 if __name__ == "__main__":

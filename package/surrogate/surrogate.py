@@ -207,7 +207,12 @@ def _parity_plots(mu: np.ndarray, sigma: np.ndarray, Y_true: np.ndarray,
     fig.tight_layout()
     if save_dir:
         fig.savefig(f"{save_dir}/parity_{label.replace(' ', '_')}.png", dpi=150)
-    plt.show()
+    try:
+        # Raises on headless cluster nodes with no display backend; the
+        # figure is already saved above, so it's safe to skip silently.
+        plt.show()
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------

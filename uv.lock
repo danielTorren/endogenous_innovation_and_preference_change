@@ -2,12 +2,17 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 resolution-markers = [
-    "python_full_version >= '3.14' and sys_platform == 'win32'",
+    "python_full_version >= '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version >= '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version < '3.14' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
     "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
+required-markers = [
+    "platform_machine == 'AMD64' and sys_platform == 'win32'",
 ]
 
 [[package]]
@@ -337,7 +342,7 @@ name = "cons"
 version = "0.4.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "logical-unification" },
+    { name = "logical-unification", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ae/20/0eca1dcdbac64a570e60df66119847f94cdd513178d9c222c15101ca1022/cons-0.4.7.tar.gz", hash = "sha256:0a96cd2abd6a9f494816c1272cf5583a960041750c2d7a48eeeccd47ce369dfd", size = 8690, upload-time = "2025-07-11T18:01:31.534Z" }
 wheels = [
@@ -444,28 +449,57 @@ wheels = [
 ]
 
 [[package]]
+name = "dill"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/e1/56027a71e31b02ddc53c7d65b01e68edf64dea2932122fe7746a516f75d5/dill-0.4.1.tar.gz", hash = "sha256:423092df4182177d4d8ba8290c8a5b640c66ab35ec7da59ccfa00f6fa3eea5fa", size = 187315, upload-time = "2026-01-19T02:36:56.85Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/77/dc8c558f7593132cf8fefec57c4f60c83b16941c574ac5f619abb3ae7933/dill-0.4.1-py3-none-any.whl", hash = "sha256:1e1ce33e978ae97fcfcff5638477032b801c46c7c65cf717f95fbc2248f79a9d", size = 120019, upload-time = "2026-01-19T02:36:55.663Z" },
+]
+
+[[package]]
 name = "endogenous-innovation-and-preference-change"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "arviz" },
+    { name = "joblib" },
     { name = "jupyterlab" },
+    { name = "matplotlib" },
     { name = "networkx" },
+    { name = "numpy" },
     { name = "pandas" },
     { name = "pyperclip" },
-    { name = "sbi" },
+    { name = "python-dateutil" },
+    { name = "salib" },
+    { name = "sbi", version = "0.25.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "sbi", version = "0.26.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "scikit-learn" },
+    { name = "scikit-optimize" },
     { name = "scipy" },
+    { name = "seaborn" },
+    { name = "sympy", version = "1.13.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "sympy", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "arviz", specifier = "<1.0.0" },
+    { name = "joblib" },
     { name = "jupyterlab", specifier = ">=4.5.6" },
+    { name = "matplotlib" },
     { name = "networkx", specifier = ">=3.6.1" },
+    { name = "numpy" },
     { name = "pandas", specifier = ">=3.0.1" },
     { name = "pyperclip", specifier = ">=1.11.0" },
+    { name = "python-dateutil" },
+    { name = "salib" },
     { name = "sbi", specifier = ">=0.25.0" },
+    { name = "scikit-learn" },
+    { name = "scikit-optimize" },
     { name = "scipy", specifier = ">=1.17.1" },
+    { name = "seaborn" },
+    { name = "sympy" },
 ]
 
 [[package]]
@@ -473,8 +507,8 @@ name = "etuples"
 version = "0.3.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cons" },
-    { name = "multipledispatch" },
+    { name = "cons", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "multipledispatch", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/c0/ba049efa7d216221713cffc303641bd73bbb309ff0e4e2a623f32af2a4ea/etuples-0.3.10.tar.gz", hash = "sha256:26fde81d7e822837146231bfce4d6ba67eab5d7ed55bc58ba7437c2568051167", size = 21493, upload-time = "2025-07-14T18:49:35.654Z" }
 wheels = [
@@ -1103,8 +1137,8 @@ name = "logical-unification"
 version = "0.4.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "multipledispatch" },
-    { name = "toolz" },
+    { name = "multipledispatch", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "toolz", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b0/5d/37673e494a4eed550785ad1268df0202e69aa081bcbf7c0aafd0a853b0fc/logical_unification-0.4.7.tar.gz", hash = "sha256:3d73b263a870827b3f52d89c94f3336afd7fcaecf1e0c67fa18e73025399775c", size = 13513, upload-time = "2025-10-20T21:42:24.904Z" }
 wheels = [
@@ -1125,7 +1159,7 @@ name = "markdown-it-py"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "mdurl" },
+    { name = "mdurl", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5b/f5/4ec618ed16cc4f8fb3b701563655a69816155e79e24a17b651541804721d/markdown_it_py-4.0.0.tar.gz", hash = "sha256:cb0a2b4aa34f932c007117b194e945bd74e0ec24133ceb5bac59009cda1cb9f3", size = 73070, upload-time = "2025-08-11T12:57:52.854Z" }
 wheels = [
@@ -1257,12 +1291,12 @@ name = "minikanren"
 version = "1.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cons" },
-    { name = "etuples" },
-    { name = "logical-unification" },
-    { name = "multipledispatch" },
-    { name = "toolz" },
-    { name = "typing-extensions" },
+    { name = "cons", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "etuples", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "logical-unification", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "multipledispatch", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "toolz", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "typing-extensions", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ab/3d/bbab3c19771efbfafc52de98db8ad7cf3c2c444bbbd7241c2b06e9f305bc/minikanren-1.0.5.tar.gz", hash = "sha256:c030e3e9a3fa5f372f84b66966776a8dc63b16b98768b78be0401982b892e00d", size = 21699, upload-time = "2025-06-24T21:38:51.439Z" }
 wheels = [
@@ -1294,6 +1328,23 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/fe/3e/a62c3b824c7dec33c4a1578bcc842e6c30300051033a4e5975ed86cc2536/multipledispatch-1.0.0.tar.gz", hash = "sha256:5c839915465c68206c3e9c473357908216c28383b425361e5d144594bf85a7e0", size = 12385, upload-time = "2023-06-27T16:45:11.074Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl", hash = "sha256:0c53cd8b077546da4e48869f49b13164bebafd0c2a5afceb6bb6a316e7fb46e4", size = 12818, upload-time = "2023-06-27T16:45:09.418Z" },
+]
+
+[[package]]
+name = "multiprocess"
+version = "0.70.19"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dill" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/f2/e783ac7f2aeeed14e9e12801f22529cc7e6b7ab80928d6dcce4e9f00922d/multiprocess-0.70.19.tar.gz", hash = "sha256:952021e0e6c55a4a9fe4cd787895b86e239a40e76802a789d6305398d3975897", size = 2079989, upload-time = "2026-01-19T06:47:39.744Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/45/8004d1e6b9185c1a444d6b55ac5682acf9d98035e54386d967366035a03a/multiprocess-0.70.19-py310-none-any.whl", hash = "sha256:97404393419dcb2a8385910864eedf47a3cadf82c66345b44f036420eb0b5d87", size = 134948, upload-time = "2026-01-19T06:47:32.325Z" },
+    { url = "https://files.pythonhosted.org/packages/86/c2/dec9722dc3474c164a0b6bcd9a7ed7da542c98af8cabce05374abab35edd/multiprocess-0.70.19-py311-none-any.whl", hash = "sha256:928851ae7973aea4ce0eaf330bbdafb2e01398a91518d5c8818802845564f45c", size = 144457, upload-time = "2026-01-19T06:47:33.711Z" },
+    { url = "https://files.pythonhosted.org/packages/71/70/38998b950a97ea279e6bd657575d22d1a2047256caf707d9a10fbce4f065/multiprocess-0.70.19-py312-none-any.whl", hash = "sha256:3a56c0e85dd5025161bac5ce138dcac1e49174c7d8e74596537e729fd5c53c28", size = 150281, upload-time = "2026-01-19T06:47:35.037Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/74/d2c27e03cb84251dfe7249b8e82923643c6d48fa4883b9476b025e7dc7eb/multiprocess-0.70.19-py313-none-any.whl", hash = "sha256:8d5eb4ec5017ba2fab4e34a747c6d2c2b6fecfe9e7236e77988db91580ada952", size = 156414, upload-time = "2026-01-19T06:47:35.915Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/61/af9115673a5870fd885247e2f1b68c4f1197737da315b520a91c757a861a/multiprocess-0.70.19-py314-none-any.whl", hash = "sha256:e8cc7fbdff15c0613f0a1f1f8744bef961b0a164c0ca29bdff53e9d2d93c5e5f", size = 160318, upload-time = "2026-01-19T06:47:37.497Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/82/69e539c4c2027f1e1697e09aaa2449243085a0edf81ae2c6341e84d769b6/multiprocess-0.70.19-py39-none-any.whl", hash = "sha256:0d4b4397ed669d371c81dcd1ef33fd384a44d6c3de1bd0ca7ac06d837720d3c5", size = 133477, upload-time = "2026-01-19T06:47:38.619Z" },
 ]
 
 [[package]]
@@ -1377,7 +1428,8 @@ dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "tensorboard" },
-    { name = "torch" },
+    { name = "torch", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
     { name = "tqdm" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bd/16/a484db41aab28332f42080435c9342fa87cfc9a4fce5495521ea1e80ca27/nflows-0.14.tar.gz", hash = "sha256:6299844a62f9999fcdf2d95cb2d01c091a50136bd17826e303aba646b2d11b55", size = 45784, upload-time = "2020-12-02T11:55:56.545Z" }
@@ -1387,21 +1439,21 @@ name = "notebook"
 version = "6.4.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "argon2-cffi" },
-    { name = "ipykernel" },
-    { name = "ipython-genutils" },
-    { name = "jinja2" },
-    { name = "jupyter-client" },
-    { name = "jupyter-core" },
-    { name = "nbconvert" },
-    { name = "nbformat" },
-    { name = "nest-asyncio" },
-    { name = "prometheus-client" },
-    { name = "pyzmq" },
-    { name = "send2trash" },
-    { name = "terminado" },
-    { name = "tornado" },
-    { name = "traitlets" },
+    { name = "argon2-cffi", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "ipykernel", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "ipython-genutils", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "jinja2", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "jupyter-client", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "jupyter-core", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "nbconvert", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "nbformat", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "nest-asyncio", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "prometheus-client", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pyzmq", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "send2trash", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "terminado", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "tornado", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "traitlets", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d5/94/b15c0e44c37e49cf77866ff56cc7644632229b79c113a0eafd908fc7c7d7/notebook-6.4.12.tar.gz", hash = "sha256:6268c9ec9048cff7a45405c990c29ac9ca40b0bc3ec29263d218c5e01f2b4e86", size = 14389641, upload-time = "2022-06-07T16:42:13.365Z" }
 wheels = [
@@ -1425,8 +1477,8 @@ name = "numba"
 version = "0.64.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "llvmlite" },
-    { name = "numpy" },
+    { name = "llvmlite", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "numpy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/23/c9/a0fb41787d01d621046138da30f6c2100d80857bf34b3390dd68040f27a3/numba-0.64.0.tar.gz", hash = "sha256:95e7300af648baa3308127b1955b52ce6d11889d16e8cfe637b4f85d2fca52b1", size = 2765679, upload-time = "2026-02-18T18:41:20.974Z" }
 wheels = [
@@ -1842,6 +1894,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pyaml"
+version = "26.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/15/6a/acfdf17de0d6947b419da8696e02b781b18de2cf49e0472298b50e1f0711/pyaml-26.7.0.tar.gz", hash = "sha256:11cda3a796efc6dbce0d56836be56cfd26289dad07bcd78e9904086729929c93", size = 30669, upload-time = "2026-07-04T00:34:38.532Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/26/3f05f9e3692853dff663913d5d62fb8df3f5640c8d70b06588c0b51ed953/pyaml-26.7.0-py3-none-any.whl", hash = "sha256:cfa382780c43ae660669b87d394d550a41856ef175f5749f51f753e12d7077ac", size = 27226, upload-time = "2026-07-04T00:34:37.198Z" },
+]
+
+[[package]]
 name = "pycparser"
 version = "3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1864,12 +1928,12 @@ name = "pyknos"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "matplotlib" },
-    { name = "nflows" },
-    { name = "numpy" },
-    { name = "tensorboard" },
-    { name = "torch" },
-    { name = "tqdm" },
+    { name = "matplotlib", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "nflows", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "numpy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "tensorboard", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "torch", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "tqdm", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/71/7c/2688c3c4de39bb8fd0f3e9ca53d6910ddcbbac69be45f344d33d24f8e79b/pyknos-0.16.0.tar.gz", hash = "sha256:4e1db834d8a5fd847882a081937732fea6798668b72293ae052765e7bfc371c3", size = 15089, upload-time = "2024-08-20T09:51:22.091Z" }
 wheels = [
@@ -1881,16 +1945,16 @@ name = "pymc"
 version = "5.28.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "arviz" },
-    { name = "cachetools" },
-    { name = "cloudpickle" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "pytensor" },
-    { name = "rich" },
-    { name = "scipy" },
-    { name = "threadpoolctl" },
-    { name = "typing-extensions" },
+    { name = "arviz", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "cachetools", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "cloudpickle", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "numpy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pandas", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pytensor", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "rich", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "scipy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "threadpoolctl", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "typing-extensions", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c0/7b/b8ccacceb44ba06806611c2fd35e05429c051497f46d55f1f0ee61a6c442/pymc-5.28.0.tar.gz", hash = "sha256:cea264e72b1040399db1f33a4585ce45b7223eb81c29c299e7ed6e3e26ec2129", size = 506476, upload-time = "2026-02-21T09:38:22.551Z" }
 wheels = [
@@ -1929,11 +1993,11 @@ name = "pyro-ppl"
 version = "1.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy" },
-    { name = "opt-einsum" },
-    { name = "pyro-api" },
-    { name = "torch" },
-    { name = "tqdm" },
+    { name = "numpy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "opt-einsum", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pyro-api", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "torch", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "tqdm", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/4c/2e/3bcba8688d58f8dc954cef6831c19d52b6017b035d783685d67cd99fa351/pyro_ppl-1.9.1.tar.gz", hash = "sha256:5e1596de276c038a3f77d2580a90d0a97126e0104900444a088eee620bb0d65e", size = 570861, upload-time = "2024-06-02T00:37:39.688Z" }
 wheels = [
@@ -1945,15 +2009,15 @@ name = "pytensor"
 version = "2.38.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cons" },
-    { name = "etuples" },
-    { name = "filelock" },
-    { name = "logical-unification" },
-    { name = "minikanren" },
-    { name = "numba" },
-    { name = "numpy" },
-    { name = "scipy" },
-    { name = "setuptools" },
+    { name = "cons", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "etuples", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "filelock", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "logical-unification", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "minikanren", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "numba", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "numpy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "scipy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "setuptools", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/89/e7b91f7366e36dbf937d4e53fa949b7f93627812e833526e0e426becbacb/pytensor-2.38.2.tar.gz", hash = "sha256:c804e665e69e830e31344133fea5793d2fd75c662ee1359d01589875c0cce105", size = 4862054, upload-time = "2026-03-06T13:37:01.039Z" }
 wheels = [
@@ -2150,8 +2214,8 @@ name = "rich"
 version = "14.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "markdown-it-py" },
-    { name = "pygments" },
+    { name = "markdown-it-py", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pygments", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b3/c6/f3b320c27991c46f43ee9d856302c70dc2d0fb2dba4842ff739d5f46b393/rich-14.3.3.tar.gz", hash = "sha256:b8daa0b9e4eef54dd8cf7c86c03713f53241884e814f4e2f5fb342fe520f639b", size = 230582, upload-time = "2026-02-19T17:23:12.474Z" }
 wheels = [
@@ -2225,29 +2289,80 @@ wheels = [
 ]
 
 [[package]]
+name = "salib"
+version = "1.5.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "multiprocess" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/16/63/bdde6c303e95e2c819c668076fb3255f4453ee2041103d0edd18a90b6839/salib-1.5.2.tar.gz", hash = "sha256:a8eeedc4e87cf070f7ef450b76cdecd120d1e5c602a9c35855ec7777591f949f", size = 725859, upload-time = "2025-10-12T02:38:50.303Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/e2/9fbf2d571c0d5360f9cf6656de6c94b273d08ede1b628f23f319fa1a910d/salib-1.5.2-py3-none-any.whl", hash = "sha256:6f4b6bebc1eeed1d081c8f951fa8c2ad7b0cd8a7159d206af48ef137cc806c43", size = 780059, upload-time = "2025-10-12T02:38:48.878Z" },
+]
+
+[[package]]
 name = "sbi"
 version = "0.25.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version >= '3.14' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and sys_platform == 'emscripten'",
+    "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
 dependencies = [
-    { name = "arviz" },
-    { name = "joblib" },
-    { name = "matplotlib" },
-    { name = "notebook" },
-    { name = "numpy" },
-    { name = "pillow" },
-    { name = "pyknos" },
-    { name = "pymc" },
-    { name = "pyro-ppl" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "tensorboard" },
-    { name = "torch" },
-    { name = "tqdm" },
-    { name = "zuko" },
+    { name = "arviz", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "joblib", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "matplotlib", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "notebook", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "numpy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pillow", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pyknos", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pymc", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "pyro-ppl", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "scikit-learn", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "scipy", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "tensorboard", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "torch", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "tqdm", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "zuko", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/75/f6/9d8428d9cbdbbd2cf54eb1549aa27362830855b252a89130f63e63245901/sbi-0.25.0.tar.gz", hash = "sha256:e643b6cbf645bb0f59822cda3ae502332bc77fa4bd674abf23306222387e85dd", size = 4419834, upload-time = "2025-09-05T13:03:15.66Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/44/2e/10bcff27d921e3cc31632c760d0e905b410283017f852b13170b82f9985e/sbi-0.25.0-py3-none-any.whl", hash = "sha256:ebb00fe6e2e970bb2bc5d2481bea727d444d6a5fc8f5eda11a6a8aacf18911a7", size = 459979, upload-time = "2025-09-05T13:03:13.579Z" },
+]
+
+[[package]]
+name = "sbi"
+version = "0.26.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
+]
+dependencies = [
+    { name = "joblib", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "matplotlib", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "nflows", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "numpy", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "pillow", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "scikit-learn", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "scipy", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "skorch", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "tensorboard", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "tqdm", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "zuko", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/50/5ab2aa359d0089a97ab855a47c6349166d1bb9a654f7a3496e57be895063/sbi-0.26.1.tar.gz", hash = "sha256:bcdcd9f19318815e8e6314523f23b727b509f02c8e657cf3696c30231d23fc07", size = 4133653, upload-time = "2026-04-09T10:08:56.967Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/9c/dfec7c59a04e1656c3e71daa0fce2dfc74362fe8819a60ff6e66c3b9c21d/sbi-0.26.1-py3-none-any.whl", hash = "sha256:3d18b78f79bb2005154f02bb5ec7cd281873e6e2def72e989dd486019d85dd40", size = 517907, upload-time = "2026-04-09T10:08:54.859Z" },
 ]
 
 [[package]]
@@ -2286,6 +2401,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c7/57/51f2384575bdec454f4fe4e7a919d696c9ebce914590abf3e52d47607ab8/scikit_learn-1.8.0-cp314-cp314t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:15fc3b5d19cc2be65404786857f2e13c70c83dd4782676dd6814e3b89dc8f5b9", size = 8922467, upload-time = "2025-12-10T07:08:47.408Z" },
     { url = "https://files.pythonhosted.org/packages/35/4d/748c9e2872637a57981a04adc038dacaa16ba8ca887b23e34953f0b3f742/scikit_learn-1.8.0-cp314-cp314t-win_amd64.whl", hash = "sha256:00d6f1d66fbcf4eba6e356e1420d33cc06c70a45bb1363cd6f6a8e4ebbbdece2", size = 8774395, upload-time = "2025-12-10T07:08:49.337Z" },
     { url = "https://files.pythonhosted.org/packages/60/22/d7b2ebe4704a5e50790ba089d5c2ae308ab6bb852719e6c3bd4f04c3a363/scikit_learn-1.8.0-cp314-cp314t-win_arm64.whl", hash = "sha256:f28dd15c6bb0b66ba09728cf09fd8736c304be29409bd8445a080c1280619e8c", size = 8002647, upload-time = "2025-12-10T07:08:51.601Z" },
+]
+
+[[package]]
+name = "scikit-optimize"
+version = "0.10.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "joblib" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "pyaml" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b3/95/1b433b9eb9eb653fb97fd525552fd027886e3812d7d20d843994263340aa/scikit_optimize-0.10.2.tar.gz", hash = "sha256:00a3d91bf9015e292b6e7aaefe7e6cb95e8d25ce19adafd2cd88849e1a0b0da0", size = 86202, upload-time = "2024-06-04T19:12:56.879Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/cd/15c9ebea645cc9860aa71fe0474f4be981f10ed8e19e1fb0ef1027d4966e/scikit_optimize-0.10.2-py2.py3-none-any.whl", hash = "sha256:45bc7e879b086133984721f2f6735a86c085073f6c481c2ec665b5c67b44d723", size = 107794, upload-time = "2024-06-04T19:12:54.592Z" },
 ]
 
 [[package]]
@@ -2340,6 +2472,20 @@ wheels = [
 ]
 
 [[package]]
+name = "seaborn"
+version = "0.13.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/86/59/a451d7420a77ab0b98f7affa3a1d78a313d2f7281a57afb1a34bae8ab412/seaborn-0.13.2.tar.gz", hash = "sha256:93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7", size = 1457696, upload-time = "2024-01-25T13:21:52.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl", hash = "sha256:636f8336facf092165e27924f223d3c62ca560b1f2bb5dff7ab7fad265361987", size = 294914, upload-time = "2024-01-25T13:21:49.598Z" },
+]
+
+[[package]]
 name = "send2trash"
 version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2364,6 +2510,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "skorch"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "scikit-learn", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "scipy", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "tabulate", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "tqdm", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c1/c4/395ce13f1f22ff7feebb9be69e1f86b656500fe22d80f37542196d5fa00c/skorch-1.4.0.tar.gz", hash = "sha256:f7a5d3c13a3aecf0a0fe689ff25188be1145a95268f8fe81f01aaa9fbd7cead1", size = 252219, upload-time = "2026-05-14T13:03:26.606Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2d/1e/8c8890462354c2312c07c408505a7585ad66dc558cd912d7f41196127e1d/skorch-1.4.0-py3-none-any.whl", hash = "sha256:eed53db7a7d5e72df38ec518a24206ee8e87c0bffd4a0386da3261ff667690ed", size = 271588, upload-time = "2026-05-14T13:03:24.519Z" },
 ]
 
 [[package]]
@@ -2393,12 +2555,45 @@ wheels = [
 name = "sympy"
 version = "1.13.1"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version >= '3.14' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and sys_platform == 'emscripten'",
+    "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
 dependencies = [
-    { name = "mpmath" },
+    { name = "mpmath", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/ca/99/5a5b6f19ff9f083671ddf7b9632028436167cd3d33e11015754e41b249a4/sympy-1.13.1.tar.gz", hash = "sha256:9cebf7e04ff162015ce31c9c6c9144daa34a93bd082f54fd8f12deca4f47515f", size = 7533040, upload-time = "2024-07-19T09:26:51.238Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/fe/81695a1aa331a842b582453b605175f419fe8540355886031328089d840a/sympy-1.13.1-py3-none-any.whl", hash = "sha256:db36cdc64bf61b9b24578b6f7bab1ecdd2452cf008f34faa33776680c26d66f8", size = 6189177, upload-time = "2024-07-19T09:26:48.863Z" },
+]
+
+[[package]]
+name = "sympy"
+version = "1.14.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
+]
+dependencies = [
+    { name = "mpmath", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517", size = 7793921, upload-time = "2025-04-27T18:05:01.611Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl", hash = "sha256:e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5", size = 6299353, upload-time = "2025-04-27T18:04:59.103Z" },
+]
+
+[[package]]
+name = "tabulate"
+version = "0.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/58/8c37dea7bbf769b20d58e7ace7e5edfe65b849442b00ffcdd56be88697c6/tabulate-0.10.0.tar.gz", hash = "sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d", size = 91754, upload-time = "2026-03-04T18:55:34.402Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl", hash = "sha256:f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3", size = 39814, upload-time = "2026-03-04T18:55:31.284Z" },
 ]
 
 [[package]]
@@ -2479,11 +2674,19 @@ wheels = [
 name = "torch"
 version = "2.5.1"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version >= '3.14' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.14' and platform_machine != 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and sys_platform == 'emscripten'",
+    "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
 dependencies = [
-    { name = "filelock" },
-    { name = "fsspec" },
-    { name = "jinja2" },
-    { name = "networkx" },
+    { name = "filelock", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "fsspec", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "jinja2", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "networkx", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
     { name = "nvidia-cublas-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "nvidia-cuda-cupti-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "nvidia-cuda-nvrtc-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
@@ -2496,12 +2699,35 @@ dependencies = [
     { name = "nvidia-nccl-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "nvidia-nvjitlink-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
     { name = "nvidia-nvtx-cu12", marker = "platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "setuptools" },
-    { name = "sympy" },
-    { name = "typing-extensions" },
+    { name = "setuptools", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "sympy", version = "1.13.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "typing-extensions", marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/69/72/20cb30f3b39a9face296491a86adb6ff8f1a47a897e4d14667e6cf89d5c3/torch-2.5.1-cp313-cp313-manylinux1_x86_64.whl", hash = "sha256:9b61edf3b4f6e3b0e0adda8b3960266b9009d02b37555971f4d1c8f7a05afed7", size = 906393265, upload-time = "2024-10-29T17:35:06.866Z" },
+]
+
+[[package]]
+name = "torch"
+version = "2.13.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
+    "python_full_version < '3.14' and platform_machine == 'AMD64' and sys_platform == 'win32'",
+]
+dependencies = [
+    { name = "filelock", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "fsspec", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "jinja2", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "networkx", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "setuptools", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "sympy", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+    { name = "typing-extensions", marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/3d/e7adcc6aaf36961cd18f56cf8ad0f3058c3a5c84ccf391762176c94581b8/torch-2.13.0-cp313-cp313-win_amd64.whl", hash = "sha256:49b58f1e2c52440abb6f17c28f0335fe6c6d01ad1a7f55b0183b81e4b34d64e6", size = 122057920, upload-time = "2026-07-08T16:03:01.808Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/0c/7d1deb6bce5bc3e6042caf39100ac768eba3b9a098e1dddd16f75bd6489b/torch-2.13.0-cp314-cp314-win_amd64.whl", hash = "sha256:4f8573e3ce9ebcd53fe922f01077a6085ccdfbe5f12fd215883a9d87d7a744fd", size = 122051871, upload-time = "2026-07-08T16:03:23.521Z" },
+    { url = "https://files.pythonhosted.org/packages/56/94/655c91992a882bd5071aa0b5d22a07dbb130d801e872be97c0b627a7c693/torch-2.13.0-cp314-cp314t-win_amd64.whl", hash = "sha256:a7de8a313090dc5c7d7ba4bfe5c3be222528f9a4dba1acc83bddb1157360c4b8", size = 122306773, upload-time = "2026-07-08T16:02:39.832Z" },
 ]
 
 [[package]]
@@ -2660,7 +2886,8 @@ version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
-    { name = "torch" },
+    { name = "torch", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine != 'AMD64' or sys_platform != 'win32'" },
+    { name = "torch", version = "2.13.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'AMD64' and sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8c/41/ddbe72cb64996d7826ba427c675252be0c38fbd9fbf8920d0fcdaf5d8e38/zuko-1.6.0.tar.gz", hash = "sha256:edc516e51bbbf9d64e7663b617cf9293c6e1e6bbfcb39559bc383383e6663b04", size = 45245, upload-time = "2026-03-10T08:38:19.646Z" }
 wheels = [

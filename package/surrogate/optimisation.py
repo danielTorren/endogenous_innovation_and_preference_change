@@ -176,6 +176,7 @@ def active_bo_loop(
     ev_hi: float = EV_HI_DEFAULT,
     weights: np.ndarray = None,
     y_refs: np.ndarray = None,
+    bau_baseline: dict = None,
     cache_path: str = None,
 ) -> tuple:
     """
@@ -191,6 +192,9 @@ def active_bo_loop(
               used to normalise objectives before weighting. Load from
               optimisation_config.json via load_optimisation_config().
               Falls back to dynamic observed-data range if not supplied.
+    bau_baseline : per-seed BAU arrays from compute_bau_baseline() — must be
+              the SAME one used to produce Y_init, so every point in Y_all
+              stays in the same (BAU-relative or absolute) units throughout.
 
     Returns: (X_all, Y_all) — all evaluated points including the initial LHS.
     """
@@ -227,7 +231,7 @@ def active_bo_loop(
         print(f"  Proposed: { {k: round(v, 4) for k, v in policy_dict.items()} }")
 
         # Evaluate ABM
-        y_next = run_policy_combination(base_params, policy_dict, controller_files)
+        y_next = run_policy_combination(base_params, policy_dict, controller_files, bau_baseline=bau_baseline)
         print(f"  Result: ev={y_next[0]:.3f}  utility={y_next[1]:.4g}  "
               f"emis={y_next[2]:.4g}  cost={y_next[3]:.4g}")
 
@@ -406,7 +410,12 @@ def plot_pareto_front(
     fig.tight_layout()
     if save_dir:
         fig.savefig(f"{save_dir}/pareto_front.png", dpi=150, bbox_inches='tight')
-    plt.show()
+    try:
+        # Raises on headless cluster nodes with no display backend; the
+        # figure is already saved above, so it's safe to skip silently.
+        plt.show()
+    except Exception:
+        pass
 
 
 def plot_bo_convergence(Y_all: np.ndarray, n_init: int,
@@ -450,4 +459,9 @@ def plot_bo_convergence(Y_all: np.ndarray, n_init: int,
     fig.tight_layout()
     if save_dir:
         fig.savefig(f"{save_dir}/bo_convergence.png", dpi=150, bbox_inches='tight')
-    plt.show()
+    try:
+        # Raises on headless cluster nodes with no display backend; the
+        # figure is already saved above, so it's safe to skip silently.
+        plt.show()
+    except Exception:
+        pass

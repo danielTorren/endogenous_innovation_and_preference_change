@@ -7,9 +7,27 @@ requires-python = ">=3.13"
 dependencies = [
     "arviz<1.0.0",
     "jupyterlab>=4.5.6",
+    "joblib",
+    "matplotlib",
     "networkx>=3.6.1",
+    "numpy",
     "pandas>=3.0.1",
+    "python-dateutil",
     "pyperclip>=1.11.0",
+    "salib",
     "sbi>=0.25.0",
+    "scikit-learn",
+    "scikit-optimize",
     "scipy>=1.17.1",
+    "seaborn",
+    "sympy",
+]
+
+[tool.uv]
+# sbi -> torch is otherwise resolved without checking Windows wheel
+# availability, which can lock onto a torch build that only ships a
+# manylinux wheel (e.g. torch==2.5.1 has no win_amd64 wheel for cp313).
+# This forces the resolver to only pick versions installable on Windows too.
+required-environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]

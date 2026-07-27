@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the article and the software itself."
+authors:
+  - family-names: "Niamir"
+    given-names: "Leila"
+title: "BENCH: An Open-Source Model Archive"
+version: "1.0.1"
+doi: "10.5281/zenodo.20798923"
+date-released: "2026-06-22"
+url: "https://github.com/BENCH-Models/bench-model-archive"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Niamir"
+    given-names: "Leila"
+  title: "Transition to low-carbon economy: Assessing cumulative impacts of individual behavioral changes"
+  journal: "Energy Policy"
+  volume: "118"
+  pages: "325-345"
+  year: 2018
+  doi: "10.1016/j.enpol.2018.03.045"
+  url: "https://doi.org/10.1016/j.enpol.2018.03.045"
