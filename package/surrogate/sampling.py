@@ -4,24 +4,24 @@ sampling.py — LHS design generation and ABM evaluation interface.
 The ABM is expensive, so we front-load a Latin Hypercube Sample (LHS) to
 cover the 5D policy space efficiently, then refine via active BO in optimisation.py.
 
-Output columns (Y):
-  0: ev_uptake        — mean final EV share across seeds (fraction, e.g. 0.94)
-                        Always absolute — it's used as a constraint target
-                        (94-96% EV share), not an objective, so it's never
-                        made relative to BAU.
-  1: utility          — mean cumulative utility across seeds (£)
-  2: emissions        — mean cumulative emissions across seeds (kg CO2)
-  3: net_cost         — mean cumulative net policy cost across seeds (£)
+Output columns (Y) — all four ABSOLUTE (not BAU-relative):
+  0: ev_uptake   — mean final EV share across seeds (fraction). Diagnostic
+                   only; not used as a constraint or objective any more.
+  1: log_utility — mean, across seeds, of a one-time post-simulation
+                   calculation: shift every (timestep, individual) raw
+                   utility value to be positive, take log(), sum everything.
+                   See compute_log_utility_metric(). Concave in each
+                   individual's utility, so it penalises inequality — a
+                   policy that concentrates gains in a few people scores
+                   worse than one that spreads the same total more evenly.
+  2: emissions   — mean cumulative emissions across seeds (kg CO2)
+  3: net_cost    — mean cumulative net policy cost across seeds (£)
 
-Columns 1-3 are BAU-relative deltas (this policy vs. doing nothing) whenever
-a bau_baseline is passed to run_policy_combination()/evaluate_lhs() — see
-compute_bau_baseline(). Paired per seed (common random numbers) rather than
-subtracting one overall BAU mean, which cancels seed-specific noise. Without
-a bau_baseline, all four columns are absolute (legacy behaviour).
-
-Keeping outputs in raw (£, kg) units — whether absolute or BAU-relative — is
-intentional: the surrogate standardises internally so the GP length-scales
-are comparable.
+The optimisation constraints (emissions <= X% of BAU, log_utility >= Y% of
+BAU, net_cost >= 0) are evaluated against these absolute values in
+optimisation.py, using a separately-computed BAU reference (see
+compute_bau_baseline()) — Y itself is never BAU-relative here, so the GP
+surrogate is trained on the same absolute units for every point.
 """
 
 import json
@@ -32,7 +32,35 @@ from scipy.stats.qmc import LatinHypercube, scale
 from joblib import Parallel, delayed, load
 import multiprocessing
 
-OUTPUT_NAMES = ["ev_uptake", "utility", "emissions", "net_cost"]
+OUTPUT_NAMES = ["ev_uptake", "log_utility", "emissions", "net_cost"]
+
+# Empirically probed worst-case raw (timestep, individual) utility across BAU
+# + a spread of extreme single/all-policy-max scenarios: min ~= -457,798.
+# 1,000,000 gives >2x safety margin. If compute_log_utility_metric() ever
+# raises because this proves insufficient, raise this value — don't silently
+# clip or floor the utility values themselves.
+LOG_UTILITY_SHIFT = 1_000_000.0
+
+
+def compute_log_utility_metric(step_utility_array: np.ndarray, shift: float = LOG_UTILITY_SHIFT) -> float:
+    """
+    One-time post-simulation calculation (NOT done inside the simulation loop,
+    which only accumulates raw utility — see socialNetworkUsers.history_utility_individual_always).
+
+    step_utility_array : shape (n_timesteps, num_individuals) — raw utility per
+                         person per timestep for the whole policy period.
+
+    Returns: float — sum over every (timestep, individual) value of log(utility + shift).
+    """
+    shifted = step_utility_array + shift
+    min_shifted = shifted.min()
+    if min_shifted <= 0:
+        raise ValueError(
+            f"LOG_UTILITY_SHIFT={shift:.6g} insufficient: shifted min={min_shifted:.6g} <= 0. "
+            "This policy combination pushed raw utility lower than anything seen in the "
+            "empirical probe — increase LOG_UTILITY_SHIFT in sampling.py rather than clipping."
+        )
+    return float(np.sum(np.log(shifted)))
 
 # ---------------------------------------------------------------------------
 # Policy space definition
@@ -133,9 +161,12 @@ def _single_seed_run(params: dict, controller_file: str) -> tuple:
     controller = load(controller_file)
     from package.resources.run import load_in_controller
     data = load_in_controller(controller, params)
+    log_utility = compute_log_utility_metric(
+        np.stack(data.social_network.history_utility_individual_always)
+    )
     return (
         data.calc_EV_prop(),
-        data.social_network.utility_cumulative,
+        log_utility,
         data.social_network.emissions_cumulative,
         data.calc_net_policy_distortion(),
     )
@@ -144,13 +175,12 @@ def _single_seed_run(params: dict, controller_file: str) -> tuple:
 def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
     """
     Run BAU (all policies off) once across all seeds, keeping PER-SEED values
-    (not means) so run_policy_combination() can subtract a paired baseline —
-    seed i's policy result is compared against seed i's own BAU result, which
-    cancels seed-specific noise (common random numbers) rather than just
-    subtracting one overall BAU average from every point.
+    (not means). Used to derive the scalar BAU reference points (mean across
+    seeds) that optimisation.py's constraints are evaluated against — e.g.
+    emissions_bau_ref = compute_bau_baseline(...)["emissions"].mean().
 
-    Returns dict of per-seed arrays: {"ev_uptake", "utility", "emissions", "net_cost"},
-    each shape (n_seeds,), aligned by index to controller_files.
+    Returns dict of per-seed arrays: {"ev_uptake", "log_utility", "emissions",
+    "net_cost"}, each shape (n_seeds,), aligned by index to controller_files.
     """
     params = deepcopy(base_params)
     params = _reset_policies(params)
@@ -160,10 +190,10 @@ def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
         delayed(_single_seed_run)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
     )
-    ev_arr, util_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
+    ev_arr, logutil_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
     return {
         "ev_uptake": ev_arr,
-        "utility": util_arr,
+        "log_utility": logutil_arr,
         "emissions": emis_arr,
         "net_cost": cost_arr,
     }
@@ -178,7 +208,7 @@ def get_or_create_bau_baseline(
         if os.path.exists(cache_path):
             print(f"Loading cached BAU baseline from {cache_path}")
             data = np.load(cache_path)
-            return {k: data[k] for k in ("ev_uptake", "utility", "emissions", "net_cost")}
+            return {k: data[k] for k in ("ev_uptake", "log_utility", "emissions", "net_cost")}
 
     baseline = compute_bau_baseline(base_params, controller_files)
 
@@ -193,7 +223,6 @@ def run_policy_combination(
     base_params: dict,
     policy_dict: dict,
     controller_files: list,
-    bau_baseline: dict = None,
 ) -> np.ndarray:
     """
     Run one policy combination across all pre-saved controller seeds in parallel.
@@ -201,15 +230,9 @@ def run_policy_combination(
     policy_dict: {policy_name: intensity_value, ...}
                  Policies with intensity=0 are left inactive.
 
-    bau_baseline : per-seed BAU arrays from compute_bau_baseline()/get_or_create_bau_baseline().
-                   If given, utility/emissions/net_cost are returned as deltas relative to
-                   BAU (paired per seed) — i.e. "how much better/worse is this policy than
-                   doing nothing". ev_uptake is never made relative: it's used as an absolute
-                   constraint target (94-96% EV share), not an objective to optimise.
-                   If None, all four outputs are absolute (legacy behaviour).
-
-    Returns: shape (4,) array — [mean_ev_uptake, mean_utility, mean_emissions, mean_net_cost]
-             (utility/emissions/net_cost are BAU-relative deltas when bau_baseline is given)
+    Returns: shape (4,) array — [mean_ev_uptake, mean_log_utility, mean_emissions, mean_net_cost]
+             All absolute — see module docstring for why BAU-relativity is
+             handled downstream (in optimisation.py), not here.
     """
     params = deepcopy(base_params)
     params = _reset_policies(params)
@@ -223,16 +246,11 @@ def run_policy_combination(
         for i in range(len(controller_files))
     )
 
-    ev_arr, util_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
-
-    if bau_baseline is not None:
-        util_arr = util_arr - bau_baseline["utility"]
-        emis_arr = emis_arr - bau_baseline["emissions"]
-        cost_arr = cost_arr - bau_baseline["net_cost"]
+    ev_arr, logutil_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
 
     return np.array([
         np.mean(ev_arr),
-        np.mean(util_arr),
+        np.mean(logutil_arr),
         np.mean(emis_arr),
         np.mean(cost_arr),
     ])
@@ -247,7 +265,6 @@ def evaluate_lhs(
     n_samples: int,
     base_params: dict,
     controller_files: list,
-    bau_baseline: dict = None,
     seed: int = 42,
     cache_path: str = None,
 ) -> tuple:
@@ -256,10 +273,6 @@ def evaluate_lhs(
 
     If cache_path is given and the file exists, loads from cache instead of
     re-running — useful since each ABM evaluation takes ~seconds.
-
-    bau_baseline : passed through to run_policy_combination() — if given,
-                   utility/emissions/net_cost columns of Y are BAU-relative
-                   deltas rather than absolute values (see run_policy_combination).
 
     Returns: X (n_samples, n_policies), Y (n_samples, 4)
     """
@@ -276,7 +289,7 @@ def evaluate_lhs(
     for i, x in enumerate(X):
         policy_dict = dict(zip(bounds.names, x))
         print(f"  LHS {i+1}/{n_samples}: {policy_dict}")
-        Y[i] = run_policy_combination(base_params, policy_dict, controller_files, bau_baseline=bau_baseline)
+        Y[i] = run_policy_combination(base_params, policy_dict, controller_files)
 
     if cache_path:
         np.savez(cache_path, X=X, Y=Y)
@@ -314,10 +327,15 @@ def load_pairwise_warmstart(path: str, bounds: PolicyBounds) -> tuple:
       the GP sees some interior points before it starts proposing combinations
       with all 5 policies active
 
+    STALE: this pkl predates both the log_utility metric and the constraint-
+    based objective — its "mean_utility_cumulative" is the old switchers-only
+    utility_cumulative, not log_utility. Do not use until pairwise_outcomes.pkl
+    is regenerated with the new metric.
+
     Returns
     -------
     X : (n, n_policies) — policy intensity matrix; zeros for inactive policies
-    Y : (n, 4)          — [ev_uptake, utility, emissions, net_cost]
+    Y : (n, 4)          — [ev_uptake, utility, emissions, net_cost] (OLD units, see above)
     """
     with open(path, "rb") as f:
         raw = pickle.load(f)

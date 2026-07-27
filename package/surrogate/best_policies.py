@@ -1,14 +1,17 @@
 """
-best_policies.py — Run the surrogate's top Pareto policies through the real ABM.
+best_policies.py — Run the surrogate's cheapest feasible policies through the real ABM.
 
-run.py only ever queries the GP surrogate — it never confirms a Pareto point
+run.py only ever queries the GP surrogate — it never confirms a result
 against the actual model. This module closes that loop:
 
-  1. Loads the Pareto front saved by run.py (results_dir/Data/pareto.npz).
-  2. Takes the best N policies (ranked by predicted utility, descending) plus
-     a BAU baseline, and runs each through the real ABM — full time series,
-     N_seeds future-period runs each (calibration is NOT re-run), in the same
-     way as package/analysis/low_policy_intensity_gen.py.
+  1. Loads the ranked feasible policies saved by run.py (results_dir/Data/pareto.npz)
+     — sorted by ascending net_cost, since run.py now does a constrained
+     single-objective search (minimise cost subject to emissions/utility
+     bounds), not a multi-objective Pareto front.
+  2. Takes the best N (cheapest feasible) policies plus a BAU baseline, and
+     runs each through the real ABM — full time series, N_seeds future-period
+     runs each (calibration is NOT re-run), in the same way as
+     package/analysis/low_policy_intensity_gen.py.
   3. Produces a combined dashboard (EV share, EV price, emissions, utility,
      car age, net cost), in the same style as
      package/analysis/low_policy_intensity_plot.py.
@@ -86,7 +89,7 @@ def run_final_abm(
       N_seeds future-period runs (Phase 2 only — calibration NOT re-run).
       Returns a dict matching the format used by low_policy_intensity_plot.py.
 
-    policy_vector : one row from X_pareto, or all-zeros for the BAU baseline
+    policy_vector : one row from X_ranked, or all-zeros for the BAU baseline
     controller_files : from get_or_create_calibration() — reuse the same ones
     bounds : PolicyBounds used during optimisation; defaults to loading from JSON
     save : whether to pickle the output/policy_dict to results_dir/Data
@@ -137,17 +140,22 @@ def run_final_abm(
 
 
 # ---------------------------------------------------------------------------
-# Select and run the top Pareto policies
+# Select and run the top (cheapest feasible) policies
 # ---------------------------------------------------------------------------
 
-def select_top_policies(X_pareto: np.ndarray, Y_pareto: np.ndarray, n_best: int = N_BEST) -> tuple:
-    """Top n_best Pareto points by predicted utility, descending (Y column 1)."""
-    n_best = min(n_best, len(X_pareto))
+def select_top_policies(X_ranked: np.ndarray, Y_ranked: np.ndarray, n_best: int = N_BEST) -> tuple:
+    """
+    Top n_best cheapest feasible policies (ascending net_cost, Y column 3).
+    run.py already saves pareto.npz pre-sorted this way, so this is mostly
+    just a top-N slice — the explicit sort here is defensive, in case this
+    is ever called on unsorted data from elsewhere.
+    """
+    n_best = min(n_best, len(X_ranked))
     if n_best < N_BEST:
-        print(f"Only {n_best} Pareto point(s) available (requested {N_BEST}).")
-    order = np.argsort(Y_pareto[:, 1])[::-1]
+        print(f"Only {n_best} feasible point(s) available (requested {N_BEST}).")
+    order = np.argsort(Y_ranked[:, 3])
     idx = order[:n_best]
-    return X_pareto[idx], Y_pareto[idx]
+    return X_ranked[idx], Y_ranked[idx]
 
 
 def run_top_policies(
@@ -158,17 +166,17 @@ def run_top_policies(
     existing_calib_folder: str = None,
 ) -> tuple:
     """
-    Load the Pareto front saved by run.py, run the BAU baseline and the top
-    n_best policies (ranked by predicted utility) through the real ABM, and
+    Load the ranked feasible policies saved by run.py, run the BAU baseline
+    and the top n_best (cheapest feasible) policies through the real ABM, and
     save the aggregated results — same pattern as low_policy_intensity_gen.py.
 
     Returns: (out_folder, base_params, outputs, outputs_BAU, policy_dicts, Y_top, bounds)
     """
-    pareto_path = f"{results_dir}/Data/pareto.npz"
-    data = np.load(pareto_path)
-    X_pareto, Y_pareto = data["X"], data["Y"]
-    if len(X_pareto) == 0:
-        raise ValueError(f"No Pareto points found in {pareto_path} — run package.surrogate.run first.")
+    ranked_path = f"{results_dir}/Data/pareto.npz"
+    data = np.load(ranked_path)
+    X_ranked, Y_ranked = data["X"], data["Y"]
+    if len(X_ranked) == 0:
+        raise ValueError(f"No feasible policies found in {ranked_path} — run package.surrogate.run first.")
 
     bounds = load_policy_bounds(bounds_path)
 
@@ -177,8 +185,8 @@ def run_top_policies(
         base_params_path, calib_folder
     )
 
-    X_top, Y_top = select_top_policies(X_pareto, Y_pareto, n_best)
-    print(f"Running BAU + top {len(X_top)} Pareto policies through the real ABM "
+    X_top, Y_top = select_top_policies(X_ranked, Y_ranked, n_best)
+    print(f"Running BAU + top {len(X_top)} cheapest feasible policies through the real ABM "
           f"({len(controller_files)} seeds each)...")
 
     outputs_BAU = run_final_abm(
@@ -213,7 +221,7 @@ def run_top_policies(
 def _label_for_rank(rank: int, policy_dict: dict, y_row: np.ndarray) -> str:
     active = [f"{POLICY_TITLES.get(k, k)} ({v:.2g})" for k, v in policy_dict.items() if v > 0]
     tag = ", ".join(active) if active else "no active policy"
-    return f"#{rank + 1} (EV {y_row[0]:.0%}): {tag}"
+    return f"#{rank + 1} (cost {y_row[3]:.2g}, EV {y_row[0]:.0%}): {tag}"
 
 
 def plot_top_policies_dashboard(
@@ -287,8 +295,10 @@ def plot_top_policies_dashboard(
         _add_vline(ax, annotation_height_prop=(0.5, 0.2, 0.2))
 
     def panel_utility(ax, cumulative=False, add_labels=False):
+        # Raw utility flow/sum — not the log-utility metric the surrogate
+        # actually optimises against (see sampling.compute_log_utility_metric).
         transform = (lambda x: np.cumsum(x, axis=1) * 1e-9) if cumulative else (lambda x: x * 1e-9)
-        ylabel = "Cumulative Utility, bn $" if cumulative else "Flow Utility, bn $"
+        ylabel = "Cumulative Utility (raw), bn $" if cumulative else "Flow Utility (raw), bn $"
         plot_line_with_ci(ax, transform(outputs_BAU["history_total_utility"]), 'black', 'o', '-', 'BAU')
         for r in ranks:
             color, marker = rank_style[r]
@@ -431,7 +441,7 @@ def plot_top_policies_tradeoff(
             ax_bottom.scatter(e, u, s=size, marker=wedge, color=policy_colors[policy], edgecolor="black", zorder=2)
 
     ax_top.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)
-    ax_bottom.set_ylabel("Cumulative Utility, bn $", fontsize=16)
+    ax_bottom.set_ylabel("Cumulative Utility, bn $\n(raw sum — not the log-utility optimisation metric)", fontsize=13)
     ax_bottom.set_xlabel("Cumulative Emissions, MTCO2", fontsize=16)
 
     legend_elements = [

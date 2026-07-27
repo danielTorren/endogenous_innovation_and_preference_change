@@ -3,4 +3,4 @@ from .sampling import (
     run_policy_combination, load_pairwise_warmstart, OUTPUT_NAMES,
 )
 from .surrogate import SurrogateGP, validate, loo_cv, save_surrogate, load_surrogate
-from .optimisation import active_bo_loop, compute_pareto_front, plot_pareto_front
+from .optimisation import active_bo_loop, find_best_policy, plot_bo_convergence

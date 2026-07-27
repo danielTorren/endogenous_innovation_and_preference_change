@@ -1055,6 +1055,7 @@ class Controller:
         self.social_network.emissions_cumulative_driving = 0
         self.social_network.emissions_cumulative_production = 0
         self.social_network.utility_cumulative = 0
+        self.social_network.history_utility_individual_always = []
         self.firm_manager.profit_cumulative = 0
 
         self.manage_calibration()

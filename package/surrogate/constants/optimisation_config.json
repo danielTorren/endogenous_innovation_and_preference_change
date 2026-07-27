@@ -1,23 +1,23 @@
 {
-    "_comment": "Fixed reference scales and constraint bounds for the surrogate optimisation.",
+    "_comment": "Constrained single-objective search: minimise net_cost subject to the emissions and utility constraints below (both relative to BAU, cumulative over the whole policy period). net_cost also has a hard floor of 0 (a policy can't be net income) — that floor is not configurable here, it's structural (see optimisation.py).",
 
-    "ev_constraint": {
-        "ev_lo": 0.94,
-        "ev_hi": 0.96
+    "constraints": {
+        "_comment": "Both fractions are one-sided bounds vs. BAU — exceeding them (more decarbonisation, smaller utility loss) is fine and unconstrained; only the stated direction is enforced.",
+        "emissions_max_fraction_of_bau": 0.70,
+        "utility_min_fraction_of_bau": 0.95
     },
 
-    "objective_reference_scales": {
-        "_comment": "SUPERSEDED — no longer read by run.py. Kept here only as a historical record.",
-        "_source": "These were computed from pairwise_outcomes.pkl on ABSOLUTE utility/emissions/net_cost, back when the surrogate's outputs were absolute values. Since utility/emissions/net_cost were changed to BAU-relative deltas (this policy vs. doing nothing), run.py now recomputes reference scales itself from each run's own LHS data (see run.py Step 2 / BAU-RELATIVE OBJECTIVES in its module docstring) — the numbers below are stale for that purpose and are not loaded for it.",
-        "utility":    2.47287e+09,
-        "emissions":  2.28205e+08,
-        "net_cost":   1.08741e+09
-    },
+    "log_utility_shift": 1000000.0,
+    "_log_utility_shift_comment": "Documents the shift constant in effect when this config was set (see sampling.LOG_UTILITY_SHIFT, which is what's actually used — this field is informational only, not loaded by run.py). Empirically probed worst-case raw per-(timestep,individual) utility across BAU + extreme policy scenarios was ~-457,798; this shift gives >2x safety margin.",
 
-    "bo_weights": {
-        "_comment": "Relative importance of each objective in the acquisition function scalarisation. Equal weights = treat a 1-unit-of-range improvement in utility the same as 1-unit-of-range reduction in emissions or cost.",
-        "utility":   1.0,
-        "emissions": 1.0,
-        "net_cost":  1.0
+    "_deprecated": {
+        "_comment": "Historical record from the previous weighted multi-objective design — no longer read by any code. Kept only for reference.",
+        "ev_constraint": { "ev_lo": 0.94, "ev_hi": 0.96 },
+        "objective_reference_scales": {
+            "utility":    2.47287e+09,
+            "emissions":  2.28205e+08,
+            "net_cost":   1.08741e+09
+        },
+        "bo_weights": { "utility": 1.0, "emissions": 1.0, "net_cost": 1.0 }
     }
 }

@@ -66,6 +66,17 @@ class Social_Network:
         self.emissions_flow = 0
         self.utility_cumulative = 0
 
+        # Always-on (unlike users_utility_vec/history_utility_individual, which are
+        # gated behind save_timeseries_data_state): one (num_individuals,) array per
+        # timestep, raw utility for every agent (switchers + non-switchers), whole
+        # simulation. Reset to [] at the start of the future/policy period in
+        # controller.setup_continued_run_future(), same as utility_cumulative is
+        # reset to 0 there. Feeds the BAU-relative log-utility surrogate metric
+        # (see sampling.compute_log_utility_metric) — entirely independent of the
+        # existing prep_counters()/users_utility_vec instrumentation, so it changes
+        # no existing behaviour.
+        self.history_utility_individual_always = []
+
         self.init_network_settings(parameters_social_network)
 
         self.random_state = parameters_social_network["random_state"]
@@ -314,9 +325,14 @@ class Social_Network:
             index_current_cars_start = len(self.new_cars)
 
         #NON-SWTICHERS
+        # full_CV_utility_vec is now computed unconditionally (previously only
+        # under save_timeseries_data_state) — it feeds the always-on
+        # history_utility_individual_always buffer below. prep_counters() itself
+        # stays gated exactly as before; it only resets state used by the
+        # optional full history tracking, which this doesn't touch.
+        __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
-            __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
 
 
         # Vectorised emissions + policy distortion for non-switchers
@@ -336,6 +352,13 @@ class Social_Network:
         carbon_total   = float(np.where(~ev_mask, (self.carbon_price * ns_e_t * ns_d) / ns_eff, 0.0).sum())
         self.policy_distortion     += elec_sub_total + carbon_total
         self.net_policy_distortion += -elec_sub_total + carbon_total
+
+        # Always-on per-timestep utility buffer (switchers + non-switchers) — see
+        # history_utility_individual_always docstring in __init__. Independent of
+        # save_timeseries_data_state and of the users_utility_vec/prep_counters
+        # instrumentation above; doesn't affect anything else in this method.
+        step_utility_buffer = np.zeros(self.num_individuals)
+        step_utility_buffer[non_switcher_indices] = full_CV_utility_vec[non_switcher_indices]
 
         for person_index in non_switcher_indices:
             user = self.vehicleUsers_list[person_index]
@@ -417,13 +440,16 @@ class Social_Network:
             
             utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
             self.utility_cumulative += utility
-            
+            step_utility_buffer[global_index] = utility
+
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
-                
+
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow_history.append(self.emissions_flow)
+
+        self.history_utility_individual_always.append(step_utility_buffer)
 
         return user_vehicle_list
 
