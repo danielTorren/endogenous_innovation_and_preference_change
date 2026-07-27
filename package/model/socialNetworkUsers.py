@@ -86,6 +86,9 @@ class Social_Network:
         self.r = parameters_vehicle_user["r"]
         self.kappa = parameters_vehicle_user["kappa"]
 
+        # Backward compatible: absent => naive/permanent expectations (old behaviour).
+        self.forward_looking_expectations = parameters_social_network.get("forward_looking_expectations", False)
+
         # Generate a list of indices and shuffle them
         self.user_indices = np.arange(self.num_individuals)
 
@@ -680,6 +683,32 @@ class Social_Network:
 
         return vehicle_chosen, user.vehicle, choice_index, utilities_kappa
     
+    def _lifecycle_cost_term(self, vehicle_dict_vecs, gamma_vec, d_vec, age_factor=1):
+        """
+        Present-value lifecycle fuel/emissions cost term (the d_vec-weighted
+        term subtracted in the utility formulas below).
+
+        forward_looking_expectations off: reproduces the paper's naive/
+        permanent-policy closed form exactly (Appendix A.4) — bit-for-bit,
+        since it's the same expression, just parameterised by age_factor.
+
+        forward_looking_expectations on: uses the forward-looking discounted
+        present-value indices (cost_index, emissions_index) computed once per
+        timestep in controller.compute_discounted_indices() over the actual
+        known future price/policy path, instead of assuming today's level
+        persists forever. cost_index and emissions_index are kept separate
+        (rather than combined like fuel_cost_c + gamma*e_t) because gamma is
+        agent-heterogeneous and must be applied outside the discounted sum.
+        """
+        delta = vehicle_dict_vecs["delta"]
+        Eff = vehicle_dict_vecs["Eff_omega_a_t"]
+        if self.forward_looking_expectations:
+            numerator = vehicle_dict_vecs["cost_index"] + gamma_vec*vehicle_dict_vecs["emissions_index"]
+            return d_vec*(numerator/(Eff*age_factor))
+        else:
+            numerator = (1+self.r)*(1-delta)*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"])
+            return d_vec*(numerator/(Eff*age_factor*(self.r - delta - self.r*delta)))
+
     def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):# -> NDArray:
         """
         Compute utility values for users keeping their current vehicle.
@@ -692,8 +721,9 @@ class Social_Network:
             tuple: (utility matrix, utility vector)
         """
 
-        U_a_i_t_vec = beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - d_vec*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-        
+        age_factor = (1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
+        U_a_i_t_vec = beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec, d_vec, age_factor)
+
         # Initialize the matrix with -np.inf
         CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
         
@@ -710,6 +740,8 @@ class Social_Network:
             "Eff_omega_a_t": np.array([v.Eff_omega_a_t for v in vs]),
             "fuel_cost_c":   np.array([v.fuel_cost_c   for v in vs]),
             "e_t":           np.array([v.e_t           for v in vs]),
+            "cost_index":      np.array([v.cost_index      for v in vs]),
+            "emissions_index": np.array([v.emissions_index for v in vs]),
             "L_a_t":         np.array([v.L_a_t         for v in vs]),
             "transportType": np.array([v.transportType for v in vs]),
             "delta":         np.array([v.delta         for v in vs]),
@@ -724,6 +756,8 @@ class Social_Network:
         c["Eff_omega_a_t"][idx] = vehicle.Eff_omega_a_t
         c["fuel_cost_c"][idx]   = vehicle.fuel_cost_c
         c["e_t"][idx]           = vehicle.e_t
+        c["cost_index"][idx]      = vehicle.cost_index
+        c["emissions_index"][idx] = vehicle.emissions_index
         c["L_a_t"][idx]         = vehicle.L_a_t
         c["transportType"][idx] = vehicle.transportType
         c["delta"][idx]         = vehicle.delta
@@ -840,6 +874,8 @@ class Social_Network:
         production_emissions = np.array([vehicle.emissions for vehicle in list_vehicles])
         fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
         e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
+        cost_index = np.array([vehicle.cost_index for vehicle in list_vehicles])
+        emissions_index = np.array([vehicle.emissions_index for vehicle in list_vehicles])
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
         rebate_vec = np.where(transport_type == 3, self.rebate_calibration + self.rebate, 0)
@@ -852,6 +888,8 @@ class Social_Network:
             "production_emissions": production_emissions,
             "fuel_cost_c": fuel_cost_c,
             "e_t": e_t,
+            "cost_index": cost_index,
+            "emissions_index": emissions_index,
             "transportType": transport_type,
             "rebate": rebate_vec,
             "delta": delta,
@@ -876,6 +914,8 @@ class Social_Network:
         price = np.array([vehicle.price for vehicle in list_vehicles])
         fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
         e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
+        cost_index = np.array([vehicle.cost_index for vehicle in list_vehicles])
+        emissions_index = np.array([vehicle.emissions_index for vehicle in list_vehicles])
         l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
         transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
         delta = np.array([vehicle.delta for vehicle in list_vehicles])
@@ -888,6 +928,8 @@ class Social_Network:
             "price": price,
             "fuel_cost_c": fuel_cost_c,
             "e_t": e_t,
+            "cost_index": cost_index,
+            "emissions_index": emissions_index,
             "L_a_t": l_a_t,
             "transportType": transport_type,
             "used_rebate": used_rebate_vec,
@@ -910,8 +952,9 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        U_a_i_t_matrix  = -price_difference_T + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-        
+        age_factor = (1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
+        U_a_i_t_matrix  = -price_difference_T + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec[:, np.newaxis], d_vec[:, np.newaxis], age_factor)
+
         return U_a_i_t_matrix
     
     def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
@@ -930,8 +973,7 @@ class Social_Network:
 
         price_difference_T = price_difference.T
 
-        #U_a_i_t_matrix = ((1+self.r)*(beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta))/self.r - price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r-vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-        U_a_i_t_matrix  = -price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta - d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_matrix  = -price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec[:, np.newaxis], d_vec[:, np.newaxis])
 
         return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)
     
@@ -1407,17 +1449,25 @@ class Social_Network:
         for car in self.current_vehicles:
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
+                car.cost_index = self.gas_cost_index
+                car.emissions_index = self.gas_emissions_index
             elif car.transportType == 3:
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
+                car.cost_index = self.electricity_cost_index
+                car.emissions_index = self.electricity_emissions_index
 
         ice_mask = self._cv_cache["transportType"] == 2
         ev_mask  = self._cv_cache["transportType"] == 3
         self._cv_cache["fuel_cost_c"][ice_mask] = self.gas_price
         self._cv_cache["fuel_cost_c"][ev_mask]  = self.electricity_price
         self._cv_cache["e_t"][ev_mask]          = self.electricity_emissions_intensity
-        
-    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, rebate_calibration, used_rebate_calibration):
+        self._cv_cache["cost_index"][ice_mask]      = self.gas_cost_index
+        self._cv_cache["cost_index"][ev_mask]       = self.electricity_cost_index
+        self._cv_cache["emissions_index"][ice_mask] = self.gas_emissions_index
+        self._cv_cache["emissions_index"][ev_mask]  = self.electricity_emissions_index
+
+    def next_step(self, carbon_price, second_hand_cars,new_cars, gas_price, electricity_price, electricity_emissions_intensity, rebate, used_rebate, electricity_price_subsidy_dollars, rebate_calibration, used_rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
         """
         Advance the simulation by one time step:
             - Update external parameters and policies.
@@ -1436,6 +1486,9 @@ class Social_Network:
             electricity_price_subsidy_dollars (float): Direct subsidy on electricity cost.
             rebate_calibration (float): Calibration offset for new EV rebate.
             used_rebate_calibration (float): Calibration offset for used EV rebate.
+            gas_cost_index, gas_emissions_index, electricity_cost_index, electricity_emissions_index (float):
+                Forward-looking present-value indices at this timestep (see controller.compute_discounted_indices).
+                Only used when forward_looking_expectations is on.
 
         Returns:
             tuple: (consider_ev_vec, new_bought_vehicles) indicating user intention and new purchases.
@@ -1449,6 +1502,10 @@ class Social_Network:
         self.used_rebate = used_rebate
         self.rebate_calibration = rebate_calibration
         self.used_rebate_calibration = used_rebate_calibration
+        self.gas_cost_index = gas_cost_index
+        self.gas_emissions_index = gas_emissions_index
+        self.electricity_cost_index = electricity_cost_index
+        self.electricity_emissions_index = electricity_emissions_index
         self.electricity_price_subsidy_dollars = electricity_price_subsidy_dollars
 
         #update new tech and prices

@@ -59,6 +59,12 @@ class PersonalCar:
         self.Eff_omega_a_t = self.attributes_fitness[1]  #FUEL EFFICIENCY km per kilojoules
         self.ProdCost_t = self.attributes_fitness[2]  #PRODUCTION COST
         self.fuel_cost_c = parameters["fuel_cost_c"]#Fuel cost
+        # Forward-looking discounted present-value indices (see socialNetworkUsers.py
+        # utility formulas) — .get() with a safe default since these are only read
+        # when forward_looking_expectations is on; update_prices_and_emissions_intensity()
+        # refreshes them every timestep regardless of this initial value.
+        self.cost_index = parameters.get("cost_index", 0.0)
+        self.emissions_index = parameters.get("emissions_index", 0.0)
         self.e_t = parameters["e_t"]  # Effort factor for the vehicle at time 't'.
                             # Represents the effort required to use the vehicle, which can include physical, cognitive, or time-related efforts associated with traveling using this mode of transportation.
 

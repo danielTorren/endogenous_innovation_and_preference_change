@@ -655,7 +655,7 @@ class Firm_Manager:
         for firm in self.firms_list:
             firm.firm_cars_users = sum(1 for car in past_new_bought_vehicles if car.firm == firm)
 
-    def update_firms(self, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration):
+    def update_firms(self, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
         """
         Update firm behavior, generate new cars on sale.
 
@@ -673,7 +673,7 @@ class Firm_Manager:
         for firm in self.firms_list:
             self.zero_profit_options_prod_sum += firm.zero_profit_options_prod#CAN DELETE OCNE FIXED ISSUE O uitlity in firms prod
             self.zero_profit_options_research_sum += firm.zero_profit_options_research
-            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration)
+            cars_on_sale = firm.next_step(self.I_s_t_vec, self.W_vec, self.maxU_vec, self.carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration, gas_cost_index, gas_emissions_index, electricity_cost_index, electricity_emissions_index)
 
             cars_on_sale_all_firms.extend(cars_on_sale)
 
@@ -694,7 +694,7 @@ class Firm_Manager:
 
 #####################################################################################################################
 
-    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  production_subsidy,  rebate_calibration):
+    def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  production_subsidy,  rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
         """
         Advance firms by one simulation step, considering updated policies and user behavior.
 
@@ -710,7 +710,7 @@ class Firm_Manager:
         self.carbon_price = carbon_price
         self.production_subsidy = production_subsidy
         
-        self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
+        self.cars_on_sale_all_firms  = self.update_firms(gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy,  rebate_calibration, gas_cost_index, gas_emissions_index, electricity_cost_index, electricity_emissions_index)#WE ASSUME THAT FIRMS DONT CONSIDER SECOND HAND MARKET
         self.W_segment, self.maxU_vec = self.update_W_immediate()#calculate the competiveness of the market current
 
         self.I_s_t_vec, self.W_vec = self.update_market_data_moving_average(self.W_segment)#update the rollign vlaues

@@ -109,6 +109,13 @@ class Firm:
         self.rebate =  0
         self.production_subsidy =  0
 
+        # Backward compatible: absent => naive/permanent expectations (old behaviour).
+        self.forward_looking_expectations = self.parameters_firm.get("forward_looking_expectations", False)
+        self.gas_cost_index = 0.0
+        self.gas_emissions_index = 0.0
+        self.electricity_cost_index = 0.0
+        self.electricity_emissions_index = 0.0
+
         self.expected_profits_segments = {}      
         
         if self.ev_production_bool:
@@ -172,6 +179,19 @@ class Firm:
 
         return utility_proportion
 
+    def _lifecycle_cost_term_firm(self, fuel_cost_c, e_t, cost_index, emissions_index, gamma, delta, Eff_omega_a_t):
+        """
+        Present-value lifecycle fuel/emissions cost term (per unit d_mean),
+        mirroring Social_Network._lifecycle_cost_term — see that docstring for
+        the forward_looking_expectations branch rationale. Firms always price
+        against a freshly-designed car (age 0), so there is no age_factor term
+        here (equivalent to age_factor=1 in the social-network version).
+        """
+        if self.forward_looking_expectations:
+            return (cost_index + gamma*emissions_index) / Eff_omega_a_t
+        else:
+            return ((1+self.r)*(1-delta)*(fuel_cost_c + gamma*e_t)) / (Eff_omega_a_t*(self.r - delta - self.r*delta))
+
     def create_car_data(self, car_list):
         """
         Converts a list of car objects into a dictionary of NumPy arrays for vectorized calculations.
@@ -187,7 +207,7 @@ class Firm:
             return None
 
         # Check if car objects have the necessary attributes (you might want to add more checks)
-        required_attributes = ["emissions", "ProdCost_t", "transportType", "delta", "Quality_a_t", "Eff_omega_a_t", "e_t", "fuel_cost_c", "B"]
+        required_attributes = ["emissions", "ProdCost_t", "transportType", "delta", "Quality_a_t", "Eff_omega_a_t", "e_t", "fuel_cost_c", "cost_index", "emissions_index", "B"]
         for attr in required_attributes:
             if not hasattr(car_list[0], attr):
                 print(f"Error: Car object does not have attribute '{attr}'")
@@ -222,6 +242,8 @@ class Firm:
         Eff_omega_a_t = car_data["Eff_omega_a_t"]
         e_t = car_data["e_t"]
         fuel_cost_c = car_data["fuel_cost_c"]
+        cost_index = car_data["cost_index"]
+        emissions_index = car_data["emissions_index"]
         B = car_data["B"]
 
         # Apply EV-specific calculations using boolean indexing
@@ -234,7 +256,11 @@ class Firm:
         term1 = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] # Matrix with shape: num cars x num segments
         term2 = self.beta_s_values[np.newaxis, :]*(Quality_a_t[:, np.newaxis]**self.alpha)# Matrix with shape: num cars x num segments
         term3 =self.nu*(B[:, np.newaxis]*Eff_omega_a_t[:, np.newaxis])**self.zeta# Matrix with shape: num cars x num segments
-        term4 = - self.d_mean * (((1 + self.r) * (1 - delta[:, np.newaxis]) * (fuel_cost_c[:, np.newaxis] + self.gamma_s_values[np.newaxis, :] * e_t[:, np.newaxis])) / (Eff_omega_a_t[:, np.newaxis] * (self.r - delta[:, np.newaxis] - self.r * delta[:, np.newaxis])))
+        term4 = - self.d_mean * self._lifecycle_cost_term_firm(
+            fuel_cost_c[:, np.newaxis], e_t[:, np.newaxis],
+            cost_index[:, np.newaxis], emissions_index[:, np.newaxis],
+            self.gamma_s_values[np.newaxis, :], delta[:, np.newaxis], Eff_omega_a_t[:, np.newaxis]
+        )
         
         U = term1 + term2 + term3 + term4# Matrix with shape: num cars x num segments
 
@@ -252,15 +278,15 @@ class Firm:
 
         return car_list  # Return a dictionary of optimal prices by segment.
 
-    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta, B):
+    def calc_utility(self, Q, beta, gamma, c, omega, e, E_new, P_adjust, delta, B, cost_index, emissions_index):
         """
         Compute utility value for a single car across segments.
 
         Returns:
             float: Utility value for given inputs.
         """
-        U = - P_adjust - gamma*E_new + beta*Q**self.alpha + self.nu*(B*omega)**self.zeta - self.d_mean*(((1+self.r)*(1-delta)*(c + gamma*e))/(omega*(self.r - delta - self.r*delta)))
-        
+        U = - P_adjust - gamma*E_new + beta*Q**self.alpha + self.nu*(B*omega)**self.zeta - self.d_mean*self._lifecycle_cost_term_firm(c, e, cost_index, emissions_index, gamma, delta, omega)
+
         return U
 
     def calc_utility_cars_segments(self, car_list, car_data):
@@ -283,6 +309,8 @@ class Firm:
         c_values = np.tile(car_data["fuel_cost_c"][:, np.newaxis], (1, self.num_segments))
         omega_values = np.tile(car_data["Eff_omega_a_t"][:, np.newaxis], (1, self.num_segments))
         e_values = np.tile(car_data["e_t"][:, np.newaxis], (1, self.num_segments))
+        cost_index_values = np.tile(car_data["cost_index"][:, np.newaxis], (1, self.num_segments))
+        emissions_index_values = np.tile(car_data["emissions_index"][:, np.newaxis], (1, self.num_segments))
         E_new_values = np.tile(car_data["emissions"][:, np.newaxis], (1, self.num_segments))
         delta_values = np.tile(car_data["delta"][:, np.newaxis], (1, self.num_segments))
         transport_types = np.tile(car_data["transportType"][:, np.newaxis], (1, self.num_segments))
@@ -318,7 +346,9 @@ class Firm:
             E_new_values[valid_mask],
             P_adjust_values[valid_mask],
             delta_values[valid_mask],
-            B_values[valid_mask]
+            B_values[valid_mask],
+            cost_index_values[valid_mask],
+            emissions_index_values[valid_mask]
         )
 
         # Assign calculated utilities back to car objects
@@ -719,7 +749,9 @@ class Firm:
             selected_vehicle.emissions,
             price_adjust_values[valid_segments],
             selected_vehicle.delta,
-            selected_vehicle.B
+            selected_vehicle.B,
+            selected_vehicle.cost_index,
+            selected_vehicle.emissions_index
         )
 
         for idx, code in enumerate(segment_codes_reduc):
@@ -917,12 +949,16 @@ class Firm:
         for car in car_list:
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
+                car.cost_index = self.gas_cost_index
+                car.emissions_index = self.gas_emissions_index
             else:#EV
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
+                car.cost_index = self.electricity_cost_index
+                car.emissions_index = self.electricity_emissions_index
         return car_list
 
-    def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy, rebate_calibration):
+    def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy, rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
         """
         Advance the firm to the next time step. Updates cars, memory, and innovations.
 
@@ -942,6 +978,10 @@ class Firm:
         self.rebate = rebate
         self.rebate_calibration = rebate_calibration
         self.production_subsidy = production_subsidy
+        self.gas_cost_index = gas_cost_index
+        self.gas_emissions_index = gas_emissions_index
+        self.electricity_cost_index = electricity_cost_index
+        self.electricity_emissions_index = electricity_emissions_index
 
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 

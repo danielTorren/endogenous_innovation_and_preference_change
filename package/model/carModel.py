@@ -58,6 +58,12 @@ class CarModel:
         self.ProdCost_t = self.attributes_fitness[2]#PRODUCTION COST
 
         self.fuel_cost_c = self.parameters["fuel_cost_c"]#Fuel cost
+        # Forward-looking discounted present-value indices (see socialNetworkUsers.py
+        # utility formulas) — .get() with a safe default since these are only read
+        # when forward_looking_expectations is on; update_prices_and_emissions_intensity()
+        # refreshes them every timestep regardless of this initial value.
+        self.cost_index = self.parameters.get("cost_index", 0.0)
+        self.emissions_index = self.parameters.get("emissions_index", 0.0)
 
         self.delta = self.parameters["delta"]# Depreciation of efficiency for the vehicle.
                         

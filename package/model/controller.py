@@ -125,7 +125,14 @@ class Controller:
         self.t_controller = 0
         self.save_timeseries_data_state = parameters_controller["save_timeseries_data_state"]
         self.compression_factor_state = parameters_controller["compression_factor_state"]
-        
+
+        # Backward compatible: absent in existing base_params_*.json => naive/permanent
+        # expectations, identical to current behaviour. See socialNetworkUsers.py /
+        # firm.py utility formulas and compute_discounted_indices() below.
+        self.forward_looking_expectations = parameters_controller.get("forward_looking_expectations", False)
+        self.parameters_social_network["forward_looking_expectations"] = self.forward_looking_expectations
+        self.parameters_firm["forward_looking_expectations"] = self.forward_looking_expectations
+
         #TIME STUFF
         self.duration_burn_in = parameters_controller["duration_burn_in"] 
         self.duration_calibration = parameters_controller["duration_calibration"] 
@@ -631,6 +638,63 @@ class Controller:
         else:
             raise ValueError(f"Unknown growth type: {growth_type}")
 
+    def compute_discounted_indices(self):
+        """
+        Precompute forward-looking present-value indices for fuel/electricity
+        cost and emissions intensity, used by socialNetworkUsers.py/firm.py's
+        utility formulas when forward_looking_expectations is enabled.
+
+        Generalises the naive closed-form geometric series (paper Appendix A.4)
+        — which assumes the CURRENT price/emissions level persists forever —
+        to the ACTUAL known future path. That path is already fully computed
+        above (gas_price_california_vec / electricity_price_vec / etc. cover
+        the whole simulation horizon) but previously only ever read one
+        timestep at a time. Computed once here via backward recursion, not
+        per-agent, so it costs nothing extra per utility evaluation:
+            Index(t) = z_t + q * Index(t+1)
+        (unrolling this to infinity with a constant z_t reproduces the old
+        closed form exactly, so this is a strict generalisation.)
+
+        If forward_looking_expectations is False, these arrays are still
+        computed (cheap, done once) but never read by the utility formulas,
+        so behaviour is unchanged.
+        """
+        r = self.parameters_vehicle_user["r"]
+        delta = self.parameters_ICE["delta"]  # identical for EV, see unpack_controller_parameters
+        q = 1.0 / ((1 + r) * (1 - delta))
+
+        n = len(self.gas_price_california_vec)
+        carbon_price_arr = np.asarray(self.carbon_price_time_series)[:n]
+
+        gas_cost_effective = self.gas_price_california_vec + carbon_price_arr * self.gas_emissions_intensity
+        gas_emissions_effective = np.full(n, self.gas_emissions_intensity)
+        electricity_cost_effective = (
+            self.electricity_price_vec * (1 - self.electricity_price_subsidy_time_series)
+            + carbon_price_arr * self.electricity_emissions_intensity_vec
+        )
+        electricity_emissions_effective = self.electricity_emissions_intensity_vec
+
+        self.gas_cost_index_vec = self._discounted_index(gas_cost_effective, q)
+        self.gas_emissions_index_vec = self._discounted_index(gas_emissions_effective, q)
+        self.electricity_cost_index_vec = self._discounted_index(electricity_cost_effective, q)
+        self.electricity_emissions_index_vec = self._discounted_index(electricity_emissions_effective, q)
+
+    @staticmethod
+    def _discounted_index(values, q):
+        """
+        Backward recursion: Index(t) = values[t] + q*Index(t+1). The last
+        known value is treated as persisting forever beyond the modelled
+        horizon (Index(last) = values[last]/(1-q)) — the same perpetuity
+        assumption the naive model already makes, just deferred to "after we
+        stop knowing anything" instead of "starting from right now".
+        """
+        n = len(values)
+        index = np.empty(n)
+        index[-1] = values[-1] / (1 - q)
+        for t in range(n - 2, -1, -1):
+            index[t] = values[t] + q * index[t + 1]
+        return index
+
     def gen_time_series_calibration_scenarios_policies(self):
         """
         Combine time series data for calibration, scenarios, and policy regimes.
@@ -680,6 +744,11 @@ class Controller:
 
             self.electricity_price_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
             self.production_subsidy_time_series = np.zeros(self.duration_burn_in + self.duration_calibration)
+
+        # Cheap (single O(horizon) pass) and needed regardless of full_run_state,
+        # since a calibration-only controller can later be reused with a new
+        # policy config via setup_continued_run_future().
+        self.compute_discounted_indices()
 
     def setup_id_gen(self):
         """
@@ -913,6 +982,14 @@ class Controller:
 
         self.production_subsidy = self.production_subsidy_time_series[self.t_controller]
 
+        # Forward-looking present-value indices at the current timestep (see
+        # compute_discounted_indices()). Only read by socialNetworkUsers.py/
+        # firm.py when forward_looking_expectations is on.
+        self.gas_cost_index = self.gas_cost_index_vec[self.t_controller]
+        self.gas_emissions_index = self.gas_emissions_index_vec[self.t_controller]
+        self.electricity_cost_index = self.electricity_cost_index_vec[self.t_controller]
+        self.electricity_emissions_index = self.electricity_emissions_index_vec[self.t_controller]
+
     def update_firms(self):
         """
         Advance firm behavior for the current time step.
@@ -920,7 +997,7 @@ class Controller:
         Returns:
             list: Cars currently on sale across all firms.
         """
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration)
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration, self.gas_cost_index, self.gas_emissions_index, self.electricity_cost_index, self.electricity_emissions_index)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
@@ -930,7 +1007,7 @@ class Controller:
         Returns:
             tuple: (consider_ev_vec, new_bought_vehicles)
         """
-        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration)
+        consider_ev_vec, new_bought_vehicles = self.social_network.next_step(self.carbon_price,  self.second_hand_cars, self.cars_on_sale_all_firms, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.used_rebate, self.electricity_price_subsidy_dollars, self.rebate_calibration, self.used_rebate_calibration, self.gas_cost_index, self.gas_emissions_index, self.electricity_cost_index, self.electricity_emissions_index)
 
         if self.t_controller == self.t_2030:
             self.utility_cum_2030 = deepcopy(self.social_network.utility_cumulative)     
@@ -944,7 +1021,7 @@ class Controller:
         Returns:
             list: Cars for sale in second-hand market.
         """
-        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.rebate_calibration, self.rebate)
+        self.second_hand_merchant.next_step(self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.cars_on_sale_all_firms, self.rebate_calibration, self.rebate, self.gas_cost_index, self.gas_emissions_index, self.electricity_cost_index, self.electricity_emissions_index)
         cars_on_sale_second_hand = self.second_hand_merchant.cars_on_sale
 
         return cars_on_sale_second_hand
@@ -1033,6 +1110,17 @@ class Controller:
         self.time_steps_max = self.parameters_controller["time_steps_max"]
         self.save_timeseries_data_state = self.parameters_controller["save_timeseries_data_state"]
 
+        # Re-propagate to the already-constructed sub-objects: this controller
+        # (and its social_network/firm_manager) is typically a deepcopy of a
+        # shared calibration reused across many future policy scenarios (see
+        # package.resources.run.load_in_controller), so a per-scenario flag in
+        # updated_parameters would otherwise have no effect on the objects
+        # built during the original __init__.
+        self.forward_looking_expectations = self.parameters_controller.get("forward_looking_expectations", False)
+        self.social_network.forward_looking_expectations = self.forward_looking_expectations
+        for firm in self.firm_manager.firms_list:
+            firm.forward_looking_expectations = self.forward_looking_expectations
+
 
         if self.save_timeseries_data_state:#SAVE DATA
             self.set_up_time_series_controller()
@@ -1072,6 +1160,12 @@ class Controller:
         self.rebate_calibration_time_series = np.concatenate((self.burn_in_rebate_time_series, self.calibration_rebate_time_series), axis=None) #THIS IS BOTH BURN IN CALIBRATION AND FUTURE
         self.used_rebate_calibration_time_series = np.concatenate((self.burn_in_used_rebate_time_series, self.calibration_used_rebate_time_series), axis=None) 
 
-        self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.electricity_price_subsidy_time_series_future), axis=None) 
-        self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.production_subsidy_time_series_future), axis=None) 
+        self.electricity_price_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.electricity_price_subsidy_time_series_future), axis=None)
+        self.production_subsidy_time_series = np.concatenate(( np.zeros(self.duration_burn_in + self.duration_calibration), self.production_subsidy_time_series_future), axis=None)
+
+        # Rebuild the forward-looking indices against the NEW policy path — this
+        # is the calibration-reuse entry point (load_in_controller), so the old
+        # (calibration-only) indices computed in gen_time_series_calibration_scenarios_policies()
+        # must not be left stale.
+        self.compute_discounted_indices()
 

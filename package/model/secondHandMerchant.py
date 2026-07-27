@@ -297,11 +297,15 @@ class SecondHandMerchant:
                 car.second_hand_counter += 1#UPDATE THE STEPS ITS BEEN HERE
             if car.transportType == 2:#ICE
                 car.fuel_cost_c = self.gas_price
+                car.cost_index = self.gas_cost_index
+                car.emissions_index = self.gas_emissions_index
             else:#EV
                 car.fuel_cost_c = self.electricity_price
                 car.e_t = self.electricity_emissions_intensity
+                car.cost_index = self.electricity_cost_index
+                car.emissions_index = self.electricity_emissions_index
 
-    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, rebate_calibration,rebate):
+    def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, rebate_calibration,rebate, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
         """
         Advance the second-hand merchant's state by one timestep:
             - Update fuel prices and emission intensities.
@@ -327,6 +331,10 @@ class SecondHandMerchant:
         self.vehicles_on_sale = vehicles_on_sale
         self.rebate_calibration = rebate_calibration
         self.rebate = rebate
+        self.gas_cost_index = gas_cost_index
+        self.gas_emissions_index = gas_emissions_index
+        self.electricity_cost_index = electricity_cost_index
+        self.electricity_emissions_index = electricity_emissions_index
         self.update_age_stock_prices_and_emissions_intensity(self.cars_on_sale)
 
         self.age_second_hand_car_removed = []
