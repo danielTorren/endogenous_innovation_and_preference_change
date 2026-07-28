@@ -156,6 +156,41 @@ class Controller:
 
         self.time_steps_max = parameters_controller["time_steps_max"]
 
+        #############################################################################################################################
+        #DEAL WITH ICE SALE BAN (optional, backward compatible: absent => never banned)
+        self._unpack_ice_ban_parameters()
+
+    def _unpack_ice_ban_parameters(self):
+        """
+        ICE_ban_time (months after burn-in ends, i.e. same convention as
+        ev_research_start_time/ev_production_start_time above) is the absolute
+        controller timestep at which firms may no longer sell new ICE cars —
+        see the "ICE ban" block in update_time_series_data() and
+        ice_production_bool/ice_research_bool in firm.py. None (the default)
+        means no ban, identical to current behaviour.
+
+        ICE_ban_anticipation_lead (months) only matters for
+        forward_looking_expectations firms: they stop RESEARCHING new ICE
+        models this many months before ICE_ban_time (anticipating the ban and
+        pivoting R&D to EV early), while naive firms keep researching (and
+        selling) ICE right up to the legal deadline. Either way, the actual
+        sale ban at ICE_ban_time is mandatory and identical for every firm —
+        expectations only affect how early a firm STOPS TRYING, not whether
+        the ban itself applies. The second-hand market is untouched: existing
+        ICE cars can still be resold/owned after the ban.
+
+        Called from both unpack_controller_parameters() (fresh run) and
+        setup_continued_run_future() (calibration-reuse: a deepcopied,
+        already-calibrated controller gets a NEW future-period policy config,
+        which may set a different ICE_ban_time per scenario).
+        """
+        self.ICE_ban_time = None
+        if self.parameters_controller.get("ICE_ban_time") is not None:
+            self.ICE_ban_time = self.duration_burn_in + self.parameters_controller["ICE_ban_time"]
+            if self.ICE_ban_time < self.ev_production_start_time:
+                raise ValueError("ICE ban cannot take effect before EV production has started")
+        self.ICE_ban_anticipation_lead = self.parameters_controller.get("ICE_ban_anticipation_lead", 0)
+
     def handle_seed(self):
         """
         Initialize random seeds for various components using controller parameters.
@@ -961,6 +996,24 @@ class Controller:
             for firm in self.firm_manager.firms_list:
                 firm.ev_production_bool = True
 
+        #ICE sale ban (see _unpack_ice_ban_parameters() docstring): a
+        #forward-looking firm stops RESEARCHING new ICE models
+        #ICE_ban_anticipation_lead months early; a naive firm keeps
+        #researching (and selling) ICE right up to the mandatory deadline.
+        #The sale itself -- removing ICE from cars_on_sale and disabling
+        #ice_production_bool so it can't be re-added by choose_cars_segments()
+        #-- is identical for every firm, exactly at ICE_ban_time.
+        if self.ICE_ban_time is not None:
+            lead = self.ICE_ban_anticipation_lead if self.forward_looking_expectations else 0
+            if self.t_controller == self.ICE_ban_time - lead:
+                for firm in self.firm_manager.firms_list:
+                    firm.ice_research_bool = False
+
+            if self.t_controller == self.ICE_ban_time:
+                for firm in self.firm_manager.firms_list:
+                    firm.ice_production_bool = False
+                    firm.cars_on_sale = [car for car in firm.cars_on_sale if car.transportType != 2]
+
         #carbon price
         self.carbon_price = self.carbon_price_time_series[self.t_controller]
         #update_prices_and_emmisions
@@ -1120,6 +1173,17 @@ class Controller:
         self.social_network.forward_looking_expectations = self.forward_looking_expectations
         for firm in self.firm_manager.firms_list:
             firm.forward_looking_expectations = self.forward_looking_expectations
+
+        # Same re-propagation for the ICE ban: recompute ICE_ban_time/lead for
+        # THIS scenario's updated_parameters, and reset every firm's ban
+        # switches to their pristine (unbanned) state -- the controller this
+        # method runs on is normally a fresh deepcopy of a shared, pre-ban
+        # calibration (see package.resources.run.load_in_controller), but
+        # resetting explicitly here is correct even if it's reused directly.
+        self._unpack_ice_ban_parameters()
+        for firm in self.firm_manager.firms_list:
+            firm.ice_production_bool = True
+            firm.ice_research_bool = True
 
 
         if self.save_timeseries_data_state:#SAVE DATA

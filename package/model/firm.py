@@ -70,6 +70,14 @@ class Firm:
         self.ev_research_bool = parameters_firm["ev_research_bool"]
         self.ev_production_bool = parameters_firm["ev_production_bool"]
 
+        # Backward compatible: absent => ICE never banned (old behaviour).
+        # Flipped to False at runtime by controller.update_time_series_data()
+        # once an ICE sale ban (ICE_ban_time) takes effect -- see
+        # choose_cars_segments()/innovate() below and
+        # controller._unpack_ice_ban_parameters().
+        self.ice_production_bool = parameters_firm.get("ice_production_bool", True)
+        self.ice_research_bool = parameters_firm.get("ice_research_bool", True)
+
         self.firm_profit = 0
         self.firm_cars_users = 0
         self.research_bool = 0
@@ -366,14 +374,29 @@ class Firm:
         Perform innovation step for the firm.
         Evaluate neighboring technologies and select a new car to add to memory.
         """
-        # create a list of cars in neighbouring memory space                       
-        unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
+        # create a list of cars in neighbouring memory space
+        # ice_research_bool is normally True (see __init__); a forward-looking
+        # firm sets it False ICE_ban_anticipation_lead months before an ICE
+        # sale ban, a naive firm only at the ban itself (see
+        # controller.update_time_series_data) -- either way, once it's False
+        # the firm stops inventing new ICE designs entirely.
+        if self.ice_research_bool:
+            unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
+        else:
+            unique_neighbouring_technologies_ICE = []
 
         if self.ev_research_bool:
             unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
-            unique_neighbouring_technologies = unique_neighbouring_technologies_EV + unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
         else:
-            unique_neighbouring_technologies = unique_neighbouring_technologies_ICE +  [self.last_researched_car_ICE]
+            unique_neighbouring_technologies_EV = []
+
+        last_researched_cars = []
+        if self.ev_research_bool:
+            last_researched_cars.append(self.last_researched_car_EV)
+        if self.ice_research_bool:
+            last_researched_cars.append(self.last_researched_car_ICE)
+
+        unique_neighbouring_technologies = unique_neighbouring_technologies_EV + unique_neighbouring_technologies_ICE + last_researched_cars
 
         # update the prices of models to consider        
         unique_neighbouring_technologies = self.update_prices_and_emissions_intensity(unique_neighbouring_technologies)
@@ -880,10 +903,18 @@ class Firm:
         Returns:
             list: Selected cars to be offered on the market.
         """
-        if self.ev_production_bool:
-            list_technology_memory_all = self.list_technology_memory_EV + self.list_technology_memory_ICE 
+        # ice_production_bool is normally True (see __init__); it only becomes
+        # False once an ICE sale ban takes effect (controller.update_time_series_data),
+        # at which point ICE models are excluded here so choose_cars_segments()
+        # can never re-add one to cars_on_sale after the ban.
+        if self.ice_production_bool and self.ev_production_bool:
+            list_technology_memory_all = self.list_technology_memory_EV + self.list_technology_memory_ICE
+        elif self.ev_production_bool:
+            list_technology_memory_all = self.list_technology_memory_EV
+        elif self.ice_production_bool:
+            list_technology_memory_all = self.list_technology_memory_ICE
         else:
-            list_technology_memory_all = self.list_technology_memory_ICE 
+            list_technology_memory_all = []
 
         # Create a shallow copy of the list to keep the list structure independent, THIS STOPS THE MEMORY LIST AND THE CURRENT CARS LIST FROM LINKING!!!
         list_technology_memory_all = list(list_technology_memory_all)
