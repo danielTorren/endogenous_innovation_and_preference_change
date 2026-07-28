@@ -1,45 +1,62 @@
 """
-package/car_ban/gen.py — ICE sale ban in 2030 vs. 2031 vs. ... vs. 2035,
+package/car_ban/gen.py — ICE driving ban in 2030 vs. 2035 vs. 2040 vs. 2050,
 naive vs. forward-looking firms and consumers.
+
+The simulation itself only ever runs through the policy period to ~2035
+(duration_future=144 months, unchanged from before) -- it is NOT extended to
+actually reach 2040/2050. Those two ban years deliberately fall beyond the
+simulated horizon, exercising controller.compute_discounted_indices' horizon
+extrapolation (see its docstring and the "Bans beyond the simulated
+horizon" section of paper/forward_looking_expectations.tex): a
+forward-looking agent still partially anticipates a 2040 or 2050 ban within
+the simulated 2024-2035 window, just less than it would a nearer one, while
+a naive agent is (correctly) completely unaffected by either, since the
+simulation ends long before the ban ever actually takes effect for them.
 
 WHY THIS EXPERIMENT
 --------------------
 The ABM lets firms/agents be either naive/permanent-policy (they act as if
 today's rules last forever, the paper's default) or forward-looking (they
-correctly anticipate a KNOWN future policy change — see
+correctly discount a KNOWN future price path — see
 forward_looking_expectations in controller.py / socialNetworkUsers.py /
-firm.py, and ICE_ban_time / ice_production_bool / ice_research_bool in
-firm.py). A sale ban on new ICE cars is a natural second test of this
-machinery, quite different in character from a rising carbon price
-(package.variable_carbon_price): it is a discrete, mandatory market event
-rather than a continuous cost signal.
+firm.py). A future ICE driving ban is a natural second test of this
+machinery, alongside a rising carbon price (package.variable_carbon_price).
 
-WHAT "FORWARD-LOOKING" MEANS FOR THIS POLICY
+WHAT THE BAN IS AND HOW ANTICIPATION EMERGES
 -----------------------------------------------
-The ban itself is a hard, mandatory cutoff — from ICE_ban_time onward NO
-firm may sell (or research) a new ICE car, naive or forward-looking, because
-that is simply the law. The only thing expectations change is HOW EARLY a
-firm reacts:
-  naive             keeps researching (and selling) ICE right up to the
-                    legal deadline, then is cut off abruptly.
-  forward_looking   stops RESEARCHING new ICE models
-                    ICE_BAN_ANTICIPATION_LEAD_MONTHS before the deadline,
-                    pivoting R&D to EV early (it keeps selling
-                    already-researched ICE models until the mandatory
-                    cutoff — a real firm wouldn't pull a still-legal,
-                    still-profitable product off the shelf early).
-Consumers are not given any ban-specific anticipation mechanism here: the
-one realistic channel (buying an ICE car close to the ban being riskier
-because of reduced resale liquidity) needs vehicle resale-value modelling
-the ABM does not have. What consumers DO inherit "for free" from
-forward_looking_expectations is the existing fuel/carbon-price discounting
-behaviour (unchanged from package.variable_carbon_price), plus an INDIRECT
-anticipation effect: if forward-looking firms pivot to EV earlier, consumers
-(naive or forward-looking) simply see better EV options on the market sooner.
+This is a DRIVING ban, not a sale ban: from ICE_driving_ban_time onward,
+driving an ICE car (new OR second-hand — see controller._unpack_ice_driving_ban_parameters
+docstring) is made prohibitively costly by adding ICE_DRIVING_BAN_PENALTY to
+the effective per-unit ICE fuel cost for every month from that point on. This
+extra cost is fed into the exact same gas-price path
+(controller.compute_discounted_indices' gas_cost_effective_vec) that every
+consumer and firm already reads for ordinary fuel-cost purposes — no
+ICE-specific firm switch, no separately-chosen "anticipation lead"
+parameter, and no changes anywhere in firm.py:
+  naive             only reads TODAY's fuel cost, so it doesn't notice
+                    anything until t reaches ICE_driving_ban_time, then
+                    switches away from ICE via the ordinary utility-driven
+                    choice mechanism (which already exists) as soon as it
+                    happens to re-evaluate.
+  forward_looking   discounts the WHOLE known future cost path (the same
+                    Index mechanism used for carbon price), so it sees the
+                    penalty coming and erodes its valuation of ICE
+                    gradually as the ban approaches — governed entirely by
+                    the model's own discount rate r and depreciation rate
+                    delta, not by any hand-picked lead time.
+Firms need no ban-specific code at all: as consumer demand for ICE erodes
+(faster for forward-looking consumers, right at the deadline for naive
+ones), expected profit from producing/researching ICE erodes with it, and
+the EXISTING profit-maximising choose_cars_segments()/innovate() logic
+naturally shifts toward EV as a direct, emergent consequence — this is
+exactly "the firm just picks whichever car is currently most profitable",
+which is how firms already behave; nothing new was added on the firm side.
 
-SECOND-HAND MARKET: deliberately untouched. Existing ICE cars can still be
-owned, driven, and resold after the ban — only NEW ICE production/sale is
-restricted. See package.model.secondHandMerchant (no changes there).
+Because the mechanism acts through the fuel-cost channel, it also reaches
+second-hand ICE cars (secondHandMerchant.py already refreshes
+car.fuel_cost_c from the same gas_price every step) — correct for a driving
+ban, which (unlike a sale ban) makes every ICE car on the road illegal to
+drive, regardless of when or from whom it was bought.
 
 CALIBRATION REUSE
 -------------------
@@ -80,7 +97,7 @@ from joblib import Parallel, delayed, load as joblib_load
 
 from package.resources.run import load_in_controller
 from package.resources.utility import save_object
-from package.surrogate.run import get_or_create_calibration
+from package.surrogate.run import get_or_create_calibration, _resolve_calib_folder
 
 # ---------------------------------------------------------------------------
 # Configuration — edit before running
@@ -94,12 +111,22 @@ RESULTS_DIR = "results/car_ban"
 # future period starts at year 2024 (see controller.unpack_controller_parameters).
 _FUTURE_PERIOD_START_YEAR = 2024
 
-BAN_YEARS = list(range(2030, 2036))  # 2030, 2031, ..., 2035
+BAN_YEARS = [2030, 2035, 2040, 2050]
+# 2040 and 2050 fall beyond the simulated horizon (duration_future=144
+# months => the future period runs 2024-~2035/36, unchanged) -- see the
+# module docstring above.
 
-# How many months before ICE_ban_time a forward-looking firm stops
-# researching new ICE models (see module docstring). Naive firms always get
-# lead=0 regardless of this value (controller.update_time_series_data).
-ICE_BAN_ANTICIPATION_LEAD_MONTHS = 24
+# Added to the effective per-unit ICE fuel cost for every month from the ban
+# onward (see controller._unpack_ice_driving_ban_parameters). Large relative
+# to the calibrated gas price so that, once in effect, P(choose/keep ICE)
+# collapses to ~0 via the ordinary logit choice mechanism -- tune and
+# re-check via the sales/ev_uptake plots if this ever looks too soft or too
+# knife-edge for a given calibration. Kept an order of magnitude below the
+# MAX_LIFECYCLE_COST_TERM(_FIRM) safety clip in socialNetworkUsers.py/firm.py
+# even after the model's own ~400x amplification factor and worst-case
+# gamma_i (emissions willingness-to-pay) draws -- comfortable margin rather
+# than relying on the clip alone.
+ICE_DRIVING_BAN_PENALTY = 10.0
 
 EXPECTATION_MODES = ("naive", "forward_looking")
 TIME_SERIES_METRICS = ("cost", "utility", "emissions", "ev_uptake", "sales")
@@ -109,34 +136,34 @@ TIME_SERIES_METRICS = ("cost", "utility", "emissions", "ev_uptake", "sales")
 # Scenario construction
 # ---------------------------------------------------------------------------
 
-def _ice_ban_time_param(ban_year, duration_calibration):
+def _ice_driving_ban_time_param(ban_year, duration_calibration):
     """
-    ICE_ban_time is read by controller.py relative to the END OF BURN-IN
-    (the same convention as ev_research_start_time/ev_production_start_time
-    — see controller._unpack_ice_ban_parameters), i.e. duration_calibration
-    (to reach the end of calibration) plus however many months into the
-    future period are needed to reach ban_year.
+    ICE_driving_ban_time is read by controller.py relative to the END OF
+    BURN-IN (the same convention as ev_research_start_time/
+    ev_production_start_time — see controller._unpack_ice_driving_ban_parameters),
+    i.e. duration_calibration (to reach the end of calibration) plus however
+    many months into the future period are needed to reach ban_year.
     """
     return duration_calibration + (ban_year - _FUTURE_PERIOD_START_YEAR) * 12
 
 
 def _car_ban_scenario(base_params_future, ban_year, expectation_mode,
-                       anticipation_lead_months=ICE_BAN_ANTICIPATION_LEAD_MONTHS):
+                       penalty=ICE_DRIVING_BAN_PENALTY):
     """
-    Deep-copies base_params_future and sets the ICE_ban_time policy + the
-    forward_looking_expectations flag + save_timeseries_data_state=1 (we need
-    the full monthly history, not just end-of-run scalars, for every run here).
-    ban_year=None means BAU (no ban at all).
+    Deep-copies base_params_future and sets the ICE_driving_ban_time policy +
+    the forward_looking_expectations flag + save_timeseries_data_state=1 (we
+    need the full monthly history, not just end-of-run scalars, for every
+    run here). ban_year=None means BAU (no ban at all).
     """
     params = deepcopy(base_params_future)
     params["forward_looking_expectations"] = (expectation_mode == "forward_looking")
     params["save_timeseries_data_state"] = 1
 
     if ban_year is None:
-        params["ICE_ban_time"] = None
+        params["ICE_driving_ban_time"] = None
     else:
-        params["ICE_ban_time"] = _ice_ban_time_param(ban_year, base_params_future["duration_calibration"])
-    params["ICE_ban_anticipation_lead"] = anticipation_lead_months
+        params["ICE_driving_ban_time"] = _ice_driving_ban_time_param(ban_year, base_params_future["duration_calibration"])
+    params["ICE_driving_ban_penalty"] = penalty
 
     return params
 
@@ -212,6 +239,12 @@ def main(
     os.makedirs(f"{results_dir}/Data", exist_ok=True)
 
     print("=== Step 1: Calibration (shared across every scenario below) ===")
+    # existing_calib_folder, if passed, always wins; otherwise auto-detect a
+    # calib_folder.pkl already saved under results_dir/Data from a PRIOR call
+    # to this same results_dir, so simply rerunning main() again (e.g.
+    # `uv run python -m package.car_ban.gen`, no args) reuses that
+    # calibration instead of silently redoing Phase 1 every time.
+    existing_calib_folder = _resolve_calib_folder(results_dir, existing_calib_folder)
     controller_files, base_params, calib_folder = get_or_create_calibration(
         base_params_path, existing_calib_folder
     )

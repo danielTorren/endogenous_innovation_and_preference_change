@@ -8,6 +8,11 @@ from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
 
+# Safety bound for _lifecycle_cost_term — see that method's docstring. Far
+# above any value the model's realistic (non-extreme-policy) parameter
+# ranges could ever legitimately produce.
+MAX_LIFECYCLE_COST_TERM = 1e8
+
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
@@ -699,15 +704,25 @@ class Social_Network:
         persists forever. cost_index and emissions_index are kept separate
         (rather than combined like fuel_cost_c + gamma*e_t) because gamma is
         agent-heterogeneous and must be applied outside the discounted sum.
+
+        The result is clipped at MAX_LIFECYCLE_COST_TERM: with a large ICE
+        driving-ban penalty (see controller._unpack_ice_driving_ban_parameters)
+        and a tail-end gamma_i (emissions willingness-to-pay) draw, this term
+        can otherwise reach magnitudes far beyond anything a realistic
+        fuel/carbon cost would ever produce, which previously led to a rare
+        but real crash further down the choice pipeline. The clip is set far
+        above any value the pre-existing (no-ban) model could ever legitimately
+        produce, so it is a no-op for every scenario except this one.
         """
         delta = vehicle_dict_vecs["delta"]
         Eff = vehicle_dict_vecs["Eff_omega_a_t"]
         if self.forward_looking_expectations:
             numerator = vehicle_dict_vecs["cost_index"] + gamma_vec*vehicle_dict_vecs["emissions_index"]
-            return d_vec*(numerator/(Eff*age_factor))
+            term = d_vec*(numerator/(Eff*age_factor))
         else:
             numerator = (1+self.r)*(1-delta)*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"])
-            return d_vec*(numerator/(Eff*age_factor*(self.r - delta - self.r*delta)))
+            term = d_vec*(numerator/(Eff*age_factor*(self.r - delta - self.r*delta)))
+        return np.minimum(term, MAX_LIFECYCLE_COST_TERM)
 
     def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):# -> NDArray:
         """

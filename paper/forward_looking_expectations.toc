@@ -1,0 +1,19 @@
+\contentsline {section}{\numberline {1}Baseline: naive, permanent-policy expectations}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}The lifecycle-cost term}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Where Eq.~\eqref {eq:naive-lcc} comes from}{2}{subsection.1.2}%
+\contentsline {section}{\numberline {2}Forward-looking expectations}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Generalising the geometric series}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Backward recursion}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Why cost and emissions must be indexed separately}{3}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}The four price/emissions paths}{4}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}Firms}{4}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}A single switch, two exact regimes}{4}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.7}Application: the \texttt {variable\_carbon\_price} experiment}{4}{subsection.2.7}%
+\contentsline {section}{\numberline {3}ICEV sale ban}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Why this needs a different mechanism}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Ban timing}{5}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Firm-level indicator functions}{5}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Immediate market exit at $T_{\mathrm {ban}}$}{6}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}What is \emph {not} modelled}{6}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Application: the \texttt {car\_ban} experiment}{6}{subsection.3.6}%
+\contentsline {section}{\numberline {4}Summary of new parameters}{6}{section.4}%

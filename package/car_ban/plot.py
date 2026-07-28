@@ -1,13 +1,17 @@
 """
-package/car_ban/plot.py — time-series plots for gen.py's ICE-sale-ban
-results (2030 vs. 2031 vs. ... vs. 2035, naive vs. forward-looking firms).
+package/car_ban/plot.py — time-series plots for gen.py's ICE-driving-ban
+results (2030 vs. 2035 vs. 2040 vs. 2050, naive vs. forward-looking firms
+and consumers). The simulation only runs through the policy period to
+~2035, so 2040/2050 fall beyond the simulated horizon -- see gen.py's
+module docstring and controller.compute_discounted_indices.
 
 Produces ONE FIGURE PER METRIC (cost / utility / emissions / ev_uptake /
 sales), each saved as its own PNG under <save_dir>/. Within a figure, columns
 = expectation_mode (naive / forward_looking), so comparing the two panels
-side by side shows exactly what firms' anticipation of the ban changes for
-that metric. Every panel shows BAU (black, no ban) plus every ban year
-(viridis, by year) as a mean line with a 95% CI band across seeds.
+side by side shows exactly what agents anticipating the ban (rather than
+being surprised by it) changes for that metric. Every panel shows BAU
+(black, no ban) plus every ban year (viridis, by year) as a mean line with a
+95% CI band across seeds.
 """
 
 import os
@@ -29,8 +33,8 @@ METRIC_LABELS = {
     "sales": "EV share of new car sales (flow)",
 }
 EXPECTATION_TITLES = {
-    "naive": "Naive firms/agents (surprised by the ban)",
-    "forward_looking": "Forward-looking firms (anticipate the ban)",
+    "naive": "Naive (only reacts once the ban arrives)",
+    "forward_looking": "Forward-looking (anticipates the ban in advance)",
 }
 
 
