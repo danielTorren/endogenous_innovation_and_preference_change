@@ -17,10 +17,15 @@ set -euo pipefail
 
 module purge
 # This repo requires Python >=3.13 (see .python-version / pyproject.toml).
-# Your BENCH v4 notes' "Python/3.12.3-GCCcore-13.3.0" is one minor version
-# too old for it -- swap in whatever 3.13+ build this cluster provides, e.g.
-# something like Python/3.13.x-GCCcore-13.3.0 if it exists in `module avail`.
-module load Python/3.13.0-GCCcore-13.3.0   # <-- verify/replace with `module avail Python`
+# Confirmed available via `module avail Python` on jupyter-torrenperaire.
+module load Python/3.13.5-GCCcore-14.3.0
+
+# sbatch runs a non-interactive shell, which does not source ~/.bashrc -- so
+# `uv` (installed via the astral.sh installer to ~/.local/bin) would
+# otherwise be "command not found" here even though it works fine in an
+# interactive terminal. Add it explicitly rather than relying on rc-file
+# sourcing.
+export PATH="$HOME/.local/bin:$PATH"
 
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1

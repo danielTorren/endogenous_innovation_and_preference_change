@@ -1,5 +1,6 @@
 results/
 venv/
+.venv/
 package/results/
 package/".ipynb_checkpoints"/
 package/.ipynb_checkpoints/
@@ -11,3 +12,5 @@ package/.ipynb_checkpoints
 **/__pychache__/
 __pycache__/
 package/generating_data/__pychache__/
+sbi-logs/
+.claude/

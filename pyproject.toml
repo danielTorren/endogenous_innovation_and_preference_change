@@ -21,6 +21,13 @@ dependencies = [
     "scipy>=1.17.1",
     "seaborn",
     "sympy",
+    # Not imported directly anywhere in package/ -- only sbi (via nflows/
+    # pyknos/pyro-ppl) needs it. Listed explicitly so the [tool.uv.sources]
+    # override below actually applies: uv only honours a sources override for
+    # a package that is a direct project dependency, not a purely transitive
+    # one, so without this line torch would silently keep resolving from
+    # PyPI's default (CUDA-bundled) build. See the comment there for why.
+    "torch",
 ]
 
 [tool.uv]
@@ -31,3 +38,16 @@ dependencies = [
 required-environments = [
     "sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]
+
+[tool.uv.sources]
+# Nothing in this repo trains on GPU (sbi is only used by the
+# NN_multi_round_calibration_* scripts, which are CPU-bound like everything
+# else here) -- pull torch from PyTorch's CPU-only wheel index instead of
+# PyPI's default, which drags in ~2.8GB of unused nvidia-*-cu12 CUDA
+# dependencies on Linux for every fresh environment (e.g. every cluster job).
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
