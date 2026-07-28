@@ -8,7 +8,7 @@
 #SBATCH --mem=64G                 # adjust after checking actual usage on a first run
 #SBATCH --time=24:00:00           # Phase 1 calibration + (1 BAU + 10 ramps + 5 flats) x 2 expectation modes
                                    # = 32 Phase-2 scenarios x 64 seeds; pad generously first time
-#SBATCH --partition=<your-partition>
+#SBATCH --partition=generic        # default partition on jupyter-torrenperaire (see `sinfo`); CPU-only, 10-day limit
 
 # Single-node: joblib fans out across CPUs on this one machine, there is no
 # multi-node/MPI parallelism anywhere in this package.
