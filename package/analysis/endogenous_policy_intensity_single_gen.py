@@ -5,7 +5,7 @@ from joblib import Parallel, delayed, dump, load
 import multiprocessing
 from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import (
-    createFolder, save_object, produce_name_datetime, params_list_with_seed
+    createFolder, save_object, produce_name_datetime, params_list_with_seed, get_num_workers
 )
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
@@ -39,7 +39,7 @@ def single_policy_with_seeds(params, controller_files):
     """
     Run policy scenarios using pre-saved controllers for consistency.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
 
     res = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
@@ -137,7 +137,7 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     """
     Runs calibration for multiple seeds in parallel and saves them.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
 
     def run_and_save(param, idx):
         controller = generate_data(param)  # Run calibration

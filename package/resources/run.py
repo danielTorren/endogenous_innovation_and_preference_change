@@ -10,7 +10,7 @@ import numpy.typing as npt
 from joblib import Parallel, delayed
 import multiprocessing
 from package.model.controller import Controller
-from package.resources.utility import load_object
+from package.resources.utility import load_object, get_num_workers
 from copy import deepcopy
 
 # modules
@@ -88,7 +88,7 @@ def generate_emissions(params):
 def emissions_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     emissions_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_emissions)(i) for i in params_dict)
 
@@ -101,7 +101,7 @@ def generate_ev_prop(params):
 def ev_prop_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_ev_prop(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_ev_prop)(i) for i in params_dict)
     ev_prop_list, price_range_ice_list = zip(
@@ -118,7 +118,7 @@ def generate_distance(params):
 def distance_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     distance_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_distance)(i) for i in params_dict)
 
@@ -131,7 +131,7 @@ def generate_distance_ev_prop(params):
 def distance_ev_prop_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_distance_ev_prop)(i) for i in params_dict)
     distance_list, ev_prop_list = zip(
@@ -148,7 +148,7 @@ def generate_multi(params):
 def ev_prop_price_emissions_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_multi)(i) for i in params_dict)
     ev_prop_list, price_list, margins_list = zip(
@@ -165,7 +165,7 @@ def ev_prop_emissions(params):
 def ev_prop_emissions_parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(ev_prop_emissions)(i) for i in params_dict)
     ev_prop_list, emissions_list = zip(
@@ -187,7 +187,7 @@ def policy_parallel_run(
 ) -> npt.NDArray:
     res = [policy_generate_multi(params_dict[i],deepcopy(controller)) for i in range(len(params_dict))]
     
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = Parallel(n_jobs=num_cores, verbose=10)(delayed(policy_generate_multi)(i, params_dict[i], deepcopy(controller) ) for i in range(len(params_dict)))
     distance_list, ev_prop_list, age_list, price_list, emissions_list, quality_ICE_list, quality_EV_list, efficiency_ICE_list, efficiency_EV_list, production_cost_ICE_list, production_cost_EV_list, distance_individual_ICE_list, distance_individual_EV_list = zip(
         *res
@@ -203,7 +203,7 @@ def policy_parallel_run(
 def parallel_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     data_list = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_data)(i) for i in params_dict)
 
@@ -214,7 +214,7 @@ def parallel_run(
 def parallel_run_multi_run(
         params_dict: list[dict]
 ) -> npt.NDArray:
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_emissions_intensities(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(delayed(generate_data)(i) for i in params_dict)
 
@@ -241,7 +241,7 @@ def parallel_run_sa(params_dict: list[dict]):
     """
     Runs the sensitivity analysis in parallel using the given parameter dictionary.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_sensitivity_output_flat(i) for i in params_dict]
     res = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_sensitivity_output_flat)(params) for params in params_dict
@@ -282,7 +282,7 @@ def parallel_run_sa_ev(params_dict: list[dict]):
     """
     Runs the sensitivity analysis in parallel using the given parameter dictionary.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #ev_prop_list= [generate_sensitivity_output_ev(i) for i in params_dict]
     ev_prop_list = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_sensitivity_output_ev)(params) for params in params_dict
@@ -328,7 +328,7 @@ def generate_multi_seed(params: dict):
     )
 
 def parallel_run_multi_seed(params_list):
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #res = [generate_multi_seed(i) for i in params_list]
     res = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_multi_seed)(params) for params in params_list
@@ -398,7 +398,7 @@ def generate_multi_seed_cars(params: dict):
     return data.firm_manager.cars_on_sale_all_firms
 
 def parallel_run_multi_seed_cars(params_list):
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     cars_on_sale_list = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_multi_seed_cars)(params) for params in params_list
     )

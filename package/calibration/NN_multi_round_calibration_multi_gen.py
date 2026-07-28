@@ -13,7 +13,8 @@ from package.resources.utility import (
     produce_name_datetime,
     save_object,
     createFolder,
-    load_object
+    load_object,
+    get_num_workers
 )
 from package.resources.run import generate_data
 import multiprocessing
@@ -127,7 +128,7 @@ def main(
                 sim_for_seed,
                 proposal,
                 num_simulations=num_simulations,
-                num_workers=multiprocessing.cpu_count(),
+                num_workers=get_num_workers(),
                 simulation_batch_size=1
             )
 

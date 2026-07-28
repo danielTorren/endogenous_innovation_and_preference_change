@@ -800,10 +800,34 @@ class Controller:
         # elsewhere), then call the real exogenous formula for the extension
         # -- NOT a flat hold -- so it correctly reverts to 0 past the policy
         # period instead of persisting at its ramped-up value.
+        #
+        # Carbon price: reuse the already-computed array for t<n (guarantees
+        # bit-for-bit consistency with self.carbon_price/carbon_price_time_series
+        # elsewhere), then call the real exogenous formula for the extension
+        # -- NOT a flat hold -- so it correctly reverts to 0 past the policy
+        # period instead of persisting at its ramped-up value.
+        #
+        # calculate_price_at_time() is only safe to call once
+        # future_carbon_price_policy/_state/_init exist, which happens only
+        # after manage_policies() has run. A calibration-only controller
+        # (Phase 1, duration_future == 0, e.g. package.surrogate.run's
+        # set_up_calibration_runs) never calls manage_policies() at all, so
+        # those attributes don't exist yet -- checking hasattr() directly
+        # (rather than self.full_run_state, which setup_continued_run_future()
+        # never updates and so would be stale False even once manage_policies()
+        # genuinely has run for that controller) is what actually tracks
+        # whether it's safe to call. Calibration-only needs no special
+        # handling anyway: carbon_price_time_series is already forced to all
+        # zeros there (see the full_run_state branch above), so a flat hold
+        # of that (still zero) tail is already exactly correct -- there is no
+        # policy to revert away from.
         carbon_price_ext = np.empty(horizon)
         carbon_price_ext[:n] = carbon_price_arr
         if horizon > n:
-            carbon_price_ext[n:] = [self.calculate_price_at_time(t) for t in range(n, horizon)]
+            if hasattr(self, "future_carbon_price_policy"):
+                carbon_price_ext[n:] = [self.calculate_price_at_time(t) for t in range(n, horizon)]
+            else:
+                carbon_price_ext[n:] = carbon_price_arr[-1]
 
         ban_penalty_ext = np.zeros(horizon)
         if self.ICE_driving_ban_time is not None:

@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Parallel, delayed, dump, load
 import multiprocessing
 from package.resources.run import load_in_controller, generate_data
-from package.resources.utility import createFolder, save_object, produce_name_datetime, params_list_with_seed
+from package.resources.utility import createFolder, save_object, produce_name_datetime, params_list_with_seed, get_num_workers
 import shutil  # Add this import at the top of your script
 from pathlib import Path  # For easier path handling
 
@@ -50,7 +50,7 @@ def grid_search_policy_with_seeds(grid_scenarios, controller_files):
     Perform parallel execution of all policy scenarios and seeds,
     ensuring each run starts from a fresh copy of the calibrated controller.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
 
     def run_scenario(scenario_params, controller_file):
         #print("controller_file", controller_file)
@@ -73,7 +73,7 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     """
     Runs calibration for multiple seeds in parallel and saves them.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     #createFolder(save_path)  # Ensure directory exists
 
     def run_and_save(param, idx):

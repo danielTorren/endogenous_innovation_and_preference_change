@@ -8,6 +8,7 @@ Created: 10/10/2022
 from copy import deepcopy
 import pickle
 import os
+import multiprocessing
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
@@ -194,6 +195,35 @@ def calc_bounds(data, confidence_level):
     upper_bound = ys_mean + margin_of_error
 
     return ys_mean,lower_bound, upper_bound
+
+def get_num_workers():
+    """
+    Number of worker processes to hand to joblib.Parallel(n_jobs=...).
+
+    multiprocessing.cpu_count() reports the WHOLE MACHINE's CPU count,
+    completely ignoring any SLURM/cgroup restriction on the current job --
+    on a shared cluster node this badly oversubscribes (e.g. spawning 384
+    workers when --cpus-per-task=64 only actually allocated 64 CPUs),
+    thrashing on context switches at best and risking an OOM kill at worst
+    since --mem is sized for the requested worker count, not the node's
+    full one.
+
+    Preferred in order:
+      1. SLURM_CPUS_PER_TASK -- what was actually requested/granted for
+         this job, set by sbatch from --cpus-per-task.
+      2. This process's own CPU affinity mask (Linux only) -- correctly
+         reflects a cgroup/cpuset restriction even outside Slurm.
+      3. multiprocessing.cpu_count() -- last resort (Windows, or no
+         restriction in place), same as the previous unconditional behaviour.
+    """
+    slurm_cpus = os.environ.get("SLURM_CPUS_PER_TASK")
+    if slurm_cpus:
+        return int(slurm_cpus)
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return multiprocessing.cpu_count()
+
 
 def params_list_with_seed(base_params):
     """

@@ -96,7 +96,7 @@ import numpy as np
 from joblib import Parallel, delayed, load as joblib_load
 
 from package.resources.run import load_in_controller
-from package.resources.utility import save_object
+from package.resources.utility import save_object, get_num_workers
 from package.surrogate.run import get_or_create_calibration, _resolve_calib_folder
 
 # ---------------------------------------------------------------------------
@@ -213,7 +213,7 @@ def _run_one_seed(base_params_future, scenario, controller_file):
 
 
 def _run_scenario_all_seeds(base_params_future, scenario, controller_files):
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     per_seed = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(_run_one_seed)(base_params_future, scenario, cf) for cf in controller_files
     )

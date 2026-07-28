@@ -31,6 +31,7 @@ from copy import deepcopy
 from scipy.stats.qmc import LatinHypercube, scale
 from joblib import Parallel, delayed, load
 import multiprocessing
+from package.resources.utility import get_num_workers
 
 OUTPUT_NAMES = ["ev_uptake", "log_utility", "emissions", "net_cost"]
 
@@ -185,7 +186,7 @@ def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
     params = deepcopy(base_params)
     params = _reset_policies(params)
 
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     results = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(_single_seed_run)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
@@ -240,7 +241,7 @@ def run_policy_combination(
         if intensity > 0:
             params = _update_policy_intensity(params, name, intensity)
 
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     results = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(_single_seed_run)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))

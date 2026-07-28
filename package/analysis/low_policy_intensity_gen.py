@@ -2,8 +2,9 @@ from package.resources.utility import load_object, save_object
 import numpy as np
 from package.analysis.endogenous_policy_intensity_single_gen import update_policy_intensity, set_up_calibration_runs
 from package.resources.utility import (
-    save_object, 
+    save_object,
     load_object,
+    get_num_workers,
 )
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
@@ -51,7 +52,7 @@ def single_policy_with_seeds(params, controller_files):
     """
     Run policy scenarios using pre-saved controllers for consistency.
     """
-    num_cores = multiprocessing.cpu_count()
+    num_cores = get_num_workers()
     res = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
