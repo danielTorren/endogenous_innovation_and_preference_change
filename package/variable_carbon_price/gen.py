@@ -91,7 +91,7 @@ from joblib import Parallel, delayed, load as joblib_load
 
 from package.resources.run import load_in_controller
 from package.resources.utility import save_object
-from package.surrogate.run import get_or_create_calibration
+from package.surrogate.run import get_or_create_calibration, _resolve_calib_folder
 
 # ---------------------------------------------------------------------------
 # Configuration — edit before running
@@ -231,6 +231,12 @@ def main(
     os.makedirs(f"{results_dir}/Data", exist_ok=True)
 
     print("=== Step 1: Calibration (shared across every scenario below) ===")
+    # existing_calib_folder, if passed, always wins; otherwise auto-detect a
+    # calib_folder.pkl already saved under results_dir/Data from a PRIOR call
+    # to this same results_dir, so simply rerunning main() again (e.g.
+    # `uv run python -m package.variable_carbon_price.gen`, no args) reuses
+    # that calibration instead of silently redoing Phase 1 every time.
+    existing_calib_folder = _resolve_calib_folder(results_dir, existing_calib_folder)
     controller_files, base_params, calib_folder = get_or_create_calibration(
         base_params_path, existing_calib_folder
     )
@@ -266,4 +272,16 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    # Optional: --existing_calib_folder=PATH to reuse a calibration produced
+    # by ANOTHER package's run (e.g. package.car_ban), instead of only
+    # auto-detecting one from this same results_dir. Valid because
+    # base_params_variable_carbon_price.json and base_params_car_ban.json are
+    # currently byte-for-byte identical -- a calibration from either is a
+    # valid calibration for both. Falls back to the auto-detect in main() if
+    # not given.
+    import sys
+    _calib_arg = None
+    for _arg in sys.argv[1:]:
+        if _arg.startswith("--existing_calib_folder="):
+            _calib_arg = _arg.split("=", 1)[1]
+    main(existing_calib_folder=_calib_arg)

@@ -280,4 +280,16 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    # Optional: --existing_calib_folder=PATH to reuse a calibration produced
+    # by ANOTHER package's run (e.g. package.variable_carbon_price), instead
+    # of only auto-detecting one from this same results_dir. Valid because
+    # base_params_car_ban.json and base_params_variable_carbon_price.json are
+    # currently byte-for-byte identical -- a calibration from either is a
+    # valid calibration for both. Falls back to the auto-detect in main() if
+    # not given.
+    import sys
+    _calib_arg = None
+    for _arg in sys.argv[1:]:
+        if _arg.startswith("--existing_calib_folder="):
+            _calib_arg = _arg.split("=", 1)[1]
+    main(existing_calib_folder=_calib_arg)
