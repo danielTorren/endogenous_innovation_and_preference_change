@@ -111,7 +111,7 @@ RESULTS_DIR = "results/car_ban"
 # future period starts at year 2024 (see controller.unpack_controller_parameters).
 _FUTURE_PERIOD_START_YEAR = 2024
 
-BAN_YEARS = [2030, 2035, 2040, 2050]
+BAN_YEARS = [2030, 2036, 2040, 2050]
 # 2040 and 2050 fall beyond the simulated horizon (duration_future=144
 # months => the future period runs 2024-~2035/36, unchanged) -- see the
 # module docstring above.
