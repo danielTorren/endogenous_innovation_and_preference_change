@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_surrogate.json
 #SBATCH --mem=64G                 # adjust after checking actual usage on a first run
 #SBATCH --time=24:00:00           # Phase 1 calibration + 150 Phase-2 evaluations; pad generously first time
-#SBATCH --partition=<your-partition>
+#SBATCH --partition=generic        # default partition on jupyter-torrenperaire (see `sinfo`); CPU-only, 10-day limit
 
 # The whole pipeline is single-node: joblib fans out across CPUs on this one
 # machine, there is no multi-node/MPI parallelism anywhere in package/surrogate.
@@ -17,7 +17,16 @@
 set -euo pipefail
 
 module purge
-module load python/3.13            # replace with whatever module gives Python 3.13 on this cluster
+# This repo requires Python >=3.13 (see .python-version / pyproject.toml).
+# Confirmed available via `module avail Python` on jupyter-torrenperaire.
+module load Python/3.13.5-GCCcore-14.3.0
+
+# sbatch runs a non-interactive shell, which does not source ~/.bashrc -- so
+# `uv` (installed via the astral.sh installer to ~/.local/bin) would
+# otherwise be "command not found" here even though it works fine in an
+# interactive terminal. Add it explicitly rather than relying on rc-file
+# sourcing.
+export PATH="$HOME/.local/bin:$PATH"
 
 # OMP_NUM_THREADS / MKL_NUM_THREADS / OPENBLAS_NUM_THREADS are also defaulted
 # to 1 inside run.py (before numpy is imported), so these exports are a
@@ -34,10 +43,20 @@ export OPENBLAS_NUM_THREADS=1
 # backend when $DISPLAY is unset.
 export MPLBACKEND=Agg
 
-# Resolve the repo root relative to this script's own location, so it works
-# regardless of the directory `sbatch` was invoked from.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Resolve the repo root. sbatch stages a COPY of this script in a spool
+# directory before running it, so ${BASH_SOURCE[0]}-based path resolution
+# (dirname/../..) resolves relative to that spool copy, not this script's
+# real location in the repo -- that previously caused a hard-to-diagnose
+# "No pyproject.toml found" failure a couple of seconds into the job.
+# $SLURM_SUBMIT_DIR is set by Slurm to wherever `sbatch` was actually
+# invoked from, which is reliable regardless of script staging; fall back to
+# the old method for direct/manual (non-sbatch) invocation.
+if [ -n "${SLURM_SUBMIT_DIR:-}" ]; then
+    REPO_ROOT="$SLURM_SUBMIT_DIR"
+else
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
 cd "$REPO_ROOT"
 
 # uv.lock is checked into the repo — use uv if available:
