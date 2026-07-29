@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=variable_carbon_price
-#SBATCH --output=variable_carbon_price_%j.log
-#SBATCH --error=variable_carbon_price_%j.err
+#SBATCH --output=slurm_logs/%x_%j.log     # slurm_logs/ must exist in the dir sbatch is run from -- see .gitkeep there
+#SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_variable_carbon_price.json

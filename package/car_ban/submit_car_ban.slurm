@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=car_ban
-#SBATCH --output=car_ban_%j.log
-#SBATCH --error=car_ban_%j.err
+#SBATCH --output=slurm_logs/%x_%j.log     # slurm_logs/ must exist in the dir sbatch is run from -- see .gitkeep there
+#SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_car_ban.json
