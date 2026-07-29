@@ -45,7 +45,7 @@ This is NOT a multi-objective trade-off search — there's one true objective
 
   emissions   <= emissions_frac * emissions_bau_ref    (default: <= 70% of BAU)
   log_utility >= utility_frac   * log_utility_bau_ref  (default: >= 95% of BAU)
-  net_cost    >= 0                                     (a policy can't be net income)
+  net_cost    >= cost_floor                            (default: 0 — a policy can't be net income)
 
 Exceeding either bound (more decarbonisation, smaller-than-required utility
 loss) is fine and unconstrained — only the stated direction is enforced.
@@ -106,7 +106,7 @@ from .sampling import (
 from .surrogate import SurrogateGP, validate, loo_cv, save_surrogate
 from .optimisation import (
     active_bo_loop, find_best_policy, plot_bo_convergence,
-    load_optimisation_config,
+    load_optimisation_config, _feasible_mask,
 )
 
 # ---------------------------------------------------------------------------
@@ -120,11 +120,10 @@ PAIRWISE_PATH    = "package/surrogate/pair_wise_outcomes/pairwise_outcomes.pkl"
 OPT_CONFIG_PATH  = f"{_CONSTANTS_DIR}/optimisation_config.json"
 RESULTS_DIR      = "results/surrogate_optimisation"
 
-N_LHS = 100  # LHS evaluations (80% train / 20% test for validation)
-N_BO  = 50   # active BO iterations after LHS
-
-# Loaded from JSON at import time so the rest of the module can reference them
-POLICY_BOUNDS = load_policy_bounds(BOUNDS_PATH)
+# N_LHS/N_BO defaults live in optimisation_config.json's "search" section
+# (loaded fresh inside main() via load_optimisation_config, same as the
+# emissions/utility constraint fractions) rather than as constants here —
+# main()'s n_lhs/n_bo parameters fall back to that config when left as None.
 
 
 # ---------------------------------------------------------------------------
@@ -208,14 +207,6 @@ def _train_test_split(X, Y, test_frac=0.2, seed=0):
     return X[idx[n_test:]], Y[idx[n_test:]], X[idx[:n_test]], Y[idx[:n_test]]
 
 
-def _feasible_mask(Y, emissions_bau_ref, log_utility_bau_ref, emissions_frac, utility_frac):
-    return (
-        (Y[:, 2] <= emissions_frac * emissions_bau_ref)
-        & (Y[:, 1] >= utility_frac * log_utility_bau_ref)
-        & (Y[:, 3] >= 0)
-    )
-
-
 # ---------------------------------------------------------------------------
 # Main workflow
 # ---------------------------------------------------------------------------
@@ -226,8 +217,8 @@ def main(
     opt_config_path: str = OPT_CONFIG_PATH,
     existing_calib_folder: str = None,
     pairwise_path: str = None,
-    n_lhs: int = N_LHS,
-    n_bo: int = N_BO,
+    n_lhs: int | None = None,
+    n_bo: int | None = None,
     results_dir: str = RESULTS_DIR,
 ) -> tuple:
     """
@@ -237,15 +228,17 @@ def main(
     ----------
     base_params_path       : JSON config (defaults to package/surrogate/constants/base_params_surrogate.json)
     bounds_path            : JSON policy bounds (defaults to package/surrogate/constants/policy_bounds_surrogate.json)
-    opt_config_path        : JSON optimisation config — emissions/utility constraint fractions
-                             (defaults to package/surrogate/constants/optimisation_config.json)
+    opt_config_path        : JSON optimisation config — emissions/utility constraint fractions,
+                             LHS/BO search budget (defaults to package/surrogate/constants/optimisation_config.json)
     existing_calib_folder  : path to a previous run's folder that has Calibration_runs/
                              controller_seed_*.pkl files — skips Phase 1 entirely
     pairwise_path          : path to pairwise_outcomes.pkl — STALE, do not use (see
                              sampling.load_pairwise_warmstart's docstring) until it's
                              regenerated with the log_utility metric.
-    n_lhs                  : number of LHS evaluations (Phase 2 only, ~seconds each)
-    n_bo                   : number of active BO iterations (Phase 2 only)
+    n_lhs                  : number of LHS evaluations (Phase 2 only, ~seconds each).
+                             None (default) uses "search.n_lhs" from opt_config_path.
+    n_bo                   : number of active BO iterations (Phase 2 only).
+                             None (default) uses "search.n_bo" from opt_config_path.
 
     Returns
     -------
@@ -257,12 +250,17 @@ def main(
     cfg = load_optimisation_config(opt_config_path)
     emissions_frac = cfg["emissions_frac"]
     utility_frac = cfg["utility_frac"]
+    cost_floor = cfg["cost_floor"]
+    if n_lhs is None:
+        n_lhs = int(cfg["n_lhs"])
+    if n_bo is None:
+        n_bo = int(cfg["n_bo"])
 
     print(f"Policy bounds loaded from {bounds_path}:")
     for name, (lo, hi) in bounds.bounds.items():
         print(f"  {name}: [{lo}, {hi}]")
     print(f"Constraints: emissions <= {emissions_frac:.0%} of BAU, "
-          f"log_utility >= {utility_frac:.0%} of BAU, net_cost >= 0")
+          f"log_utility >= {utility_frac:.0%} of BAU, net_cost >= {cost_floor:.4g}")
 
     # ------------------------------------------------------------------
     # Step 1: Calibration — run once or reuse saved controllers
@@ -369,15 +367,16 @@ def main(
         log_utility_bau_ref=log_utility_bau_ref,
         emissions_frac=emissions_frac,
         utility_frac=utility_frac,
+        cost_floor=cost_floor,
         cache_path=bo_cache,
     )
     n_feas = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
-                             emissions_frac, utility_frac).sum()
+                             emissions_frac, utility_frac, cost_floor).sum()
     print(f"\nTotal evaluations: {len(X_all)}   Feasible: {n_feas}")
     plot_bo_convergence(
         Y_all, n_init=n_init,
         emissions_bau_ref=emissions_bau_ref, log_utility_bau_ref=log_utility_bau_ref,
-        emissions_frac=emissions_frac, utility_frac=utility_frac,
+        emissions_frac=emissions_frac, utility_frac=utility_frac, cost_floor=cost_floor,
         save_dir=f"{results_dir}/Plots",
     )
 
@@ -392,7 +391,7 @@ def main(
     best_x, best_y, source = find_best_policy(
         X_all, Y_all, surrogate_final, bounds,
         emissions_bau_ref=emissions_bau_ref, log_utility_bau_ref=log_utility_bau_ref,
-        emissions_frac=emissions_frac, utility_frac=utility_frac,
+        emissions_frac=emissions_frac, utility_frac=utility_frac, cost_floor=cost_floor,
     )
 
     # All feasible observed policies, ranked by ascending net_cost (row 0 =
@@ -401,7 +400,7 @@ def main(
     # backward compatibility with best_policies.py's array-based loading —
     # it's no longer a Pareto front (single objective now), just a ranking.
     feas_mask = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
-                                emissions_frac, utility_frac)
+                                emissions_frac, utility_frac, cost_floor)
     X_ranked, Y_ranked = X_all[feas_mask].copy(), Y_all[feas_mask].copy()
     if best_x is not None and source == "surrogate-refined":
         X_ranked = np.vstack([best_x[None], X_ranked])

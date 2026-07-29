@@ -18,7 +18,7 @@ Output columns (Y) — all four ABSOLUTE (not BAU-relative):
   3: net_cost    — mean cumulative net policy cost across seeds (£)
 
 The optimisation constraints (emissions <= X% of BAU, log_utility >= Y% of
-BAU, net_cost >= 0) are evaluated against these absolute values in
+BAU, net_cost >= cost_floor) are evaluated against these absolute values in
 optimisation.py, using a separately-computed BAU reference (see
 compute_bau_baseline()) — Y itself is never BAU-relative here, so the GP
 surrogate is trained on the same absolute units for every point.

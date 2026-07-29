@@ -13,7 +13,9 @@ This is a CONSTRAINED SINGLE-OBJECTIVE search, not a multi-objective trade-off:
   objective:   minimise net_cost
   constraints: emissions   <= emissions_frac  * emissions_bau_ref   (e.g. <= 70% of BAU)
                log_utility >= utility_frac    * log_utility_bau_ref (e.g. >= 95% of BAU)
-               net_cost    >= 0                                     (policy can't be net income)
+               net_cost    >= cost_floor                            (default 0: policy can't
+                                                                      be net income — see
+                                                                      constants/optimisation_config.json)
 
 emissions_bau_ref / log_utility_bau_ref are scalar references (mean across
 seeds of the BAU run) computed once via sampling.compute_bau_baseline() —
@@ -21,7 +23,7 @@ see run.py. The EV-uptake band that used to be a hard constraint is gone;
 ev_uptake is still tracked in Y as a diagnostic, nothing more.
 
 The acquisition function is:
-  EI(x) × P(emissions feasible | x) × P(log_utility feasible | x) × P(net_cost >= 0 | x)
+  EI(x) × P(emissions feasible | x) × P(log_utility feasible | x) × P(net_cost >= cost_floor | x)
 
   EI = Expected Improvement for MINIMISING net_cost, relative to the lowest
        net_cost seen among currently-feasible points.
@@ -54,27 +56,30 @@ from .sampling import PolicyBounds, run_policy_combination
 
 DEFAULT_EMISSIONS_FRAC = 0.70   # emissions <= 70% of BAU (>= 30% reduction)
 DEFAULT_UTILITY_FRAC   = 0.95   # log_utility >= 95% of BAU (<= 5% decrease)
+DEFAULT_COST_FLOOR     = 0.0    # net_cost >= 0 (a policy can't be net income)
 
 
 def load_optimisation_config(path: str) -> dict:
     """
-    Load the constraint fractions (and log-utility shift, kept alongside for
-    convenience) from JSON.
+    Load the constraint fractions/floor and LHS/BO search budget from JSON.
 
     Returns a dict with:
       emissions_frac — emissions constraint: policy emissions <= emissions_frac * BAU emissions
       utility_frac   — utility constraint: policy log_utility >= utility_frac * BAU log_utility
-      log_utility_shift — informational only; the shift actually used is
-                          sampling.LOG_UTILITY_SHIFT (this just lets the config
-                          file document/pin the value that was in effect).
+      cost_floor     — net_cost constraint: policy net_cost >= cost_floor (default 0: can't be net income)
+      n_lhs          — number of LHS evaluations (Phase 2 only)
+      n_bo           — number of active BO iterations (Phase 2 only)
     """
     with open(path) as f:
         cfg = json.load(f)
     c = cfg["constraints"]
+    s = cfg["search"]
     return {
         "emissions_frac": c["emissions_max_fraction_of_bau"],
         "utility_frac": c["utility_min_fraction_of_bau"],
-        "log_utility_shift": cfg.get("log_utility_shift"),
+        "cost_floor": c.get("net_cost_floor", DEFAULT_COST_FLOOR),
+        "n_lhs": s["n_lhs"],
+        "n_bo": s["n_bo"],
     }
 
 
@@ -86,11 +91,12 @@ def _feasibility_prob(
     mu: np.ndarray, sigma: np.ndarray,
     emissions_bau_ref: float, log_utility_bau_ref: float,
     emissions_frac: float, utility_frac: float,
+    cost_floor: float = DEFAULT_COST_FLOOR,
 ) -> float:
     """
     P(emissions constraint satisfied) x P(log_utility constraint satisfied)
-    x P(net_cost >= 0), each under the GP's Gaussian posterior for that output.
-    mu/sigma indices: 0=ev_uptake, 1=log_utility, 2=emissions, 3=net_cost.
+    x P(net_cost >= cost_floor), each under the GP's Gaussian posterior for
+    that output. mu/sigma indices: 0=ev_uptake, 1=log_utility, 2=emissions, 3=net_cost.
     """
     emissions_threshold = emissions_frac * emissions_bau_ref
     p_emissions = norm.cdf(emissions_threshold, mu[2], sigma[2] + 1e-8)
@@ -98,27 +104,29 @@ def _feasibility_prob(
     utility_threshold = utility_frac * log_utility_bau_ref
     p_utility = 1.0 - norm.cdf(utility_threshold, mu[1], sigma[1] + 1e-8)
 
-    p_cost_floor = 1.0 - norm.cdf(0.0, mu[3], sigma[3] + 1e-8)
+    p_cost_floor = 1.0 - norm.cdf(cost_floor, mu[3], sigma[3] + 1e-8)
 
     return p_emissions * p_utility * p_cost_floor
 
 
 def _is_feasible(y: np.ndarray, emissions_bau_ref: float, log_utility_bau_ref: float,
-                  emissions_frac: float, utility_frac: float) -> bool:
+                  emissions_frac: float, utility_frac: float,
+                  cost_floor: float = DEFAULT_COST_FLOOR) -> bool:
     """Same three constraints, evaluated on an observed (not predicted) Y row."""
     return (
         y[2] <= emissions_frac * emissions_bau_ref
         and y[1] >= utility_frac * log_utility_bau_ref
-        and y[3] >= 0
+        and y[3] >= cost_floor
     )
 
 
 def _feasible_mask(Y: np.ndarray, emissions_bau_ref: float, log_utility_bau_ref: float,
-                    emissions_frac: float, utility_frac: float) -> np.ndarray:
+                    emissions_frac: float, utility_frac: float,
+                    cost_floor: float = DEFAULT_COST_FLOOR) -> np.ndarray:
     return (
         (Y[:, 2] <= emissions_frac * emissions_bau_ref)
         & (Y[:, 1] >= utility_frac * log_utility_bau_ref)
-        & (Y[:, 3] >= 0)
+        & (Y[:, 3] >= cost_floor)
     )
 
 
@@ -127,6 +135,7 @@ def _acquisition(
     y_best_cost: float,
     emissions_bau_ref: float, log_utility_bau_ref: float,
     emissions_frac: float, utility_frac: float,
+    cost_floor: float = DEFAULT_COST_FLOOR,
 ) -> float:
     """
     Constrained Expected Improvement for MINIMISING net_cost (to minimise — negated).
@@ -137,7 +146,7 @@ def _acquisition(
     mu, sigma = mu[0], sigma[0]
 
     p_feas = _feasibility_prob(mu, sigma, emissions_bau_ref, log_utility_bau_ref,
-                                emissions_frac, utility_frac)
+                                emissions_frac, utility_frac, cost_floor)
 
     if y_best_cost is None:
         # No feasible point yet — just explore toward the feasible region
@@ -155,13 +164,14 @@ def _propose_next(
     emissions_bau_ref: float, log_utility_bau_ref: float,
     emissions_frac: float, utility_frac: float,
     n_restarts: int = 20,
+    cost_floor: float = DEFAULT_COST_FLOOR,
 ) -> np.ndarray:
     """
     Maximise the acquisition function via multi-start L-BFGS-B.
     Returns the proposed next policy vector.
     """
     feasible_mask = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
-                                    emissions_frac, utility_frac)
+                                    emissions_frac, utility_frac, cost_floor)
     y_best_cost = Y_all[feasible_mask, 3].min() if feasible_mask.sum() > 0 else None
 
     bounds_list = list(zip(bounds.lower, bounds.upper))
@@ -174,7 +184,7 @@ def _propose_next(
             _acquisition,
             x0,
             args=(surrogate, y_best_cost, emissions_bau_ref, log_utility_bau_ref,
-                  emissions_frac, utility_frac),
+                  emissions_frac, utility_frac, cost_floor),
             bounds=bounds_list,
             method="L-BFGS-B",
             options={"maxiter": 200},
@@ -200,6 +210,7 @@ def active_bo_loop(
     log_utility_bau_ref: float = None,
     emissions_frac: float = DEFAULT_EMISSIONS_FRAC,
     utility_frac: float = DEFAULT_UTILITY_FRAC,
+    cost_floor: float = DEFAULT_COST_FLOOR,
     cache_path: str = None,
 ) -> tuple:
     """
@@ -233,7 +244,7 @@ def active_bo_loop(
 
         # Propose next point
         x_next = _propose_next(surrogate, bounds, Y_all, emissions_bau_ref, log_utility_bau_ref,
-                                emissions_frac, utility_frac)
+                                emissions_frac, utility_frac, cost_floor=cost_floor)
         policy_dict = dict(zip(bounds.names, x_next))
         print(f"  Proposed: { {k: round(v, 4) for k, v in policy_dict.items()} }")
 
@@ -247,7 +258,7 @@ def active_bo_loop(
 
         # Progress summary
         feas_mask = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
-                                    emissions_frac, utility_frac)
+                                    emissions_frac, utility_frac, cost_floor)
         n_feas = feas_mask.sum()
         best_cost = Y_all[feas_mask, 3].min() if n_feas > 0 else np.nan
         print(f"  Feasible: {n_feas}/{len(Y_all)}   Best feasible net_cost so far: {best_cost:.4g}")
@@ -279,12 +290,13 @@ def find_best_policy(
     log_utility_bau_ref: float,
     emissions_frac: float = DEFAULT_EMISSIONS_FRAC,
     utility_frac: float = DEFAULT_UTILITY_FRAC,
+    cost_floor: float = DEFAULT_COST_FLOOR,
 ) -> tuple:
     """
     Find the single minimum-net_cost policy satisfying:
       emissions   <= emissions_frac * emissions_bau_ref
       log_utility >= utility_frac   * log_utility_bau_ref
-      net_cost    >= 0
+      net_cost    >= cost_floor
 
     Combines the best observed feasible point with one surrogate-based local
     refinement (constrained differential evolution on the fitted GP) — the
@@ -296,7 +308,7 @@ def find_best_policy(
              (None, None, None) if nothing feasible was found either way.
     """
     obs_feasible = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
-                                   emissions_frac, utility_frac)
+                                   emissions_frac, utility_frac, cost_floor)
     candidates = []
 
     if obs_feasible.sum() > 0:
@@ -314,7 +326,7 @@ def find_best_policy(
         mu = mu[0]
         emissions_viol = max(0.0, mu[2] - emissions_frac * emissions_bau_ref) / abs(emissions_bau_ref)
         utility_viol   = max(0.0, utility_frac * log_utility_bau_ref - mu[1]) / abs(log_utility_bau_ref)
-        cost_viol      = max(0.0, -mu[3])
+        cost_viol      = max(0.0, cost_floor - mu[3])
         penalty = 1e9 * (emissions_viol**2 + utility_viol**2) + 10 * cost_viol
         return mu[3] + penalty
 
@@ -327,7 +339,7 @@ def find_best_policy(
     mu_refined, _ = surrogate.predict(x_refined[None])
     mu_refined = mu_refined[0]
 
-    if _is_feasible(mu_refined, emissions_bau_ref, log_utility_bau_ref, emissions_frac, utility_frac):
+    if _is_feasible(mu_refined, emissions_bau_ref, log_utility_bau_ref, emissions_frac, utility_frac, cost_floor):
         candidates.append((x_refined, mu_refined, "surrogate-refined"))
     else:
         print("Surrogate-refined candidate not feasible under the GP's own prediction — discarded.")
@@ -355,6 +367,7 @@ def plot_bo_convergence(
     emissions_bau_ref: float, log_utility_bau_ref: float,
     emissions_frac: float = DEFAULT_EMISSIONS_FRAC,
     utility_frac: float = DEFAULT_UTILITY_FRAC,
+    cost_floor: float = DEFAULT_COST_FLOOR,
     save_dir: str = None,
 ):
     """
@@ -364,7 +377,7 @@ def plot_bo_convergence(
     """
     n_total = len(Y_all)
     feas_mask_all = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
-                                    emissions_frac, utility_frac)
+                                    emissions_frac, utility_frac, cost_floor)
     cumulative_feasible = np.cumsum(feas_mask_all)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
