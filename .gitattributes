@@ -1,0 +1,12 @@
+# Slurm/bash scripts must stay LF -- sbatch refuses a script with CRLF line
+# endings outright ("Batch script contains DOS line breaks"). Without this,
+# a Windows git client (core.autocrlf=true) checking out the repo onto a
+# filesystem also read directly by the cluster (e.g. a shared H-drive mount)
+# converts LF -> CRLF on checkout, breaking every .slurm script in place.
+*.slurm text eol=lf
+*.sh text eol=lf
+
+# Let git auto-detect everything else as usual; this just pins the two
+# extensions above to LF regardless of the checking-out platform's
+# core.autocrlf setting.
+* text=auto
