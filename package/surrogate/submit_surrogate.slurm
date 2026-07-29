@@ -35,6 +35,13 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 
+# stdout is redirected straight to a log file above (not a terminal), so
+# Python fully block-buffers it by default -- every print() in run.py/
+# sampling.py/optimisation.py (LHS/BO progress included) would otherwise sit
+# in that buffer and only appear in slurm_logs/*.log once it fills or the
+# process exits, well after the work it's reporting actually happened.
+export PYTHONUNBUFFERED=1
+
 # Force a non-interactive matplotlib backend. Every plt.show() call in
 # run.py/optimisation.py/best_policies.py is already wrapped in try/except so
 # a missing display can't crash the job, but this is the real fix: on Agg,

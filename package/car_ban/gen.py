@@ -90,6 +90,8 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 
 import multiprocessing
+import shutil
+from pathlib import Path
 from copy import deepcopy
 
 import numpy as np
@@ -97,7 +99,7 @@ from joblib import Parallel, delayed, load as joblib_load
 
 from package.resources.run import load_in_controller
 from package.resources.utility import save_object, get_num_workers
-from package.surrogate.run import get_or_create_calibration, _resolve_calib_folder
+from package.surrogate.run import get_or_create_calibration
 
 # ---------------------------------------------------------------------------
 # Configuration — edit before running
@@ -239,17 +241,16 @@ def main(
     os.makedirs(f"{results_dir}/Data", exist_ok=True)
 
     print("=== Step 1: Calibration (shared across every scenario below) ===")
-    # existing_calib_folder, if passed, always wins; otherwise auto-detect a
-    # calib_folder.pkl already saved under results_dir/Data from a PRIOR call
-    # to this same results_dir, so simply rerunning main() again (e.g.
-    # `uv run python -m package.car_ban.gen`, no args) reuses that
-    # calibration instead of silently redoing Phase 1 every time.
-    existing_calib_folder = _resolve_calib_folder(results_dir, existing_calib_folder)
+    # existing_calib_folder is only used if explicitly passed (e.g. to reuse
+    # another experiment's calibration on purpose) — no auto-detection from a
+    # prior call against this same results_dir, so this always runs Phase 1
+    # fresh unless you deliberately ask it not to. That avoids silently
+    # reusing a stale calibration after changing calibration settings.
+    ran_fresh_calibration = existing_calib_folder is None
     controller_files, base_params, calib_folder = get_or_create_calibration(
         base_params_path, existing_calib_folder
     )
     n_seeds = len(controller_files)
-    save_object(calib_folder, f"{results_dir}/Data", "calib_folder")
 
     scenarios = build_scenarios(ban_years, expectation_modes)
     print(f"  Seeds: {n_seeds}")
@@ -276,17 +277,22 @@ def main(
     plot.plot_time_series(results, scenarios, save_dir=f"{results_dir}/Plots")
     print(f"Saved one PNG per metric to {results_dir}/Plots/")
 
+    # Nothing downstream reuses this calibration, so don't leave it on disk —
+    # but only if we created it this call; an explicitly-passed
+    # existing_calib_folder belongs to another experiment and must be left alone.
+    if ran_fresh_calibration:
+        shutil.rmtree(Path(calib_folder) / "Calibration_runs", ignore_errors=True)
+
     return results
 
 
 if __name__ == "__main__":
     # Optional: --existing_calib_folder=PATH to reuse a calibration produced
-    # by ANOTHER package's run (e.g. package.variable_carbon_price), instead
-    # of only auto-detecting one from this same results_dir. Valid because
-    # base_params_car_ban.json and base_params_variable_carbon_price.json are
-    # currently byte-for-byte identical -- a calibration from either is a
-    # valid calibration for both. Falls back to the auto-detect in main() if
-    # not given.
+    # by ANOTHER package's run (e.g. package.variable_carbon_price). Valid
+    # because base_params_car_ban.json and base_params_variable_carbon_price.json
+    # are currently byte-for-byte identical -- a calibration from either is a
+    # valid calibration for both. Without this flag, main() always runs
+    # Phase 1 fresh.
     import sys
     _calib_arg = None
     for _arg in sys.argv[1:]:

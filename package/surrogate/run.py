@@ -231,7 +231,11 @@ def main(
     opt_config_path        : JSON optimisation config — emissions/utility constraint fractions,
                              LHS/BO search budget (defaults to package/surrogate/constants/optimisation_config.json)
     existing_calib_folder  : path to a previous run's folder that has Calibration_runs/
-                             controller_seed_*.pkl files — skips Phase 1 entirely
+                             controller_seed_*.pkl files — skips Phase 1 entirely.
+                             None (default): Phase 1 always runs fresh — this is never
+                             auto-detected from a prior call against the same results_dir,
+                             so changing calibration settings between runs can't silently
+                             pick up a stale calibration.
     pairwise_path          : path to pairwise_outcomes.pkl — STALE, do not use (see
                              sampling.load_pairwise_warmstart's docstring) until it's
                              regenerated with the log_utility metric.
@@ -266,7 +270,9 @@ def main(
     # Step 1: Calibration — run once or reuse saved controllers
     # ------------------------------------------------------------------
     print("=== Step 1: Calibration ===")
-    existing_calib_folder = _resolve_calib_folder(results_dir, existing_calib_folder)
+    # existing_calib_folder is only used if the caller explicitly passed one —
+    # no auto-detection from a prior call against this same results_dir, so
+    # this always runs Phase 1 fresh unless you deliberately ask it not to.
     controller_files, base_params, calib_folder = get_or_create_calibration(
         base_params_path, existing_calib_folder
     )
@@ -275,8 +281,10 @@ def main(
     print(f"  Estimated Phase 2 runs: ({n_lhs} LHS + {n_bo} BO) × {n_seeds} = "
           f"{(n_lhs + n_bo) * n_seeds} total future-period ABM runs")
 
-    # Persisted so best_policies.py can reuse these controllers without the
-    # calib_folder path having to be passed in by hand.
+    # Persisted so best_policies.py (run right after this) can reuse these
+    # exact controllers without the calib_folder path having to be passed in
+    # by hand — this is the one legitimate same-session reuse, not the
+    # cross-invocation auto-detection removed above.
     save_object(calib_folder, f"{results_dir}/Data", "calib_folder")
 
     # BAU baseline (all policies off), per-seed — the mean across seeds gives
