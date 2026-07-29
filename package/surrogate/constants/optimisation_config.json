@@ -10,7 +10,7 @@
 
     "search": {
         "_comment": "LHS + BO evaluation budget, both Phase 2 only (see run.py module docstring for the compute-cost breakdown).",
-        "n_lhs": 100,
-        "n_bo": 50
+        "n_lhs": 150,
+        "n_bo": 80
     }
 }
