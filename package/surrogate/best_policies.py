@@ -81,6 +81,7 @@ def run_final_abm(
     results_dir: str = RESULTS_DIR,
     save: bool = True,
     tag: str = "optimal_policy",
+    forward_looking_expectations: bool = None,
 ) -> dict:
     """
     Run the full ABM (with time-series output) for a chosen policy vector.
@@ -95,6 +96,11 @@ def run_final_abm(
     save : whether to pickle the output/policy_dict to results_dir/Data
     tag : filename prefix used when save=True — pass a distinct tag per call
           when running several policies so files don't overwrite each other
+    forward_looking_expectations : None (default) leaves base_params's own
+          setting untouched (naive, absent a setting there — see firm.py).
+          Pass True/False to override it explicitly, e.g. to compare the same
+          policy under naive vs. forward-looking agents (see
+          package.policy_test_future_sight).
     """
     if bounds is None:
         bounds = load_policy_bounds(BOUNDS_PATH)
@@ -112,6 +118,8 @@ def run_final_abm(
     # which only reads final scalar values — single_policy_with_seeds() needs
     # the full history_* time series, so it must be turned on here.
     params["save_timeseries_data_state"] = 1
+    if forward_looking_expectations is not None:
+        params["forward_looking_expectations"] = forward_looking_expectations
     for key in params["parameters_policies"]["States"]:
         params["parameters_policies"]["States"][key] = 0
     for name, intensity in policy_dict.items():
