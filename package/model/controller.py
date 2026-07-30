@@ -160,6 +160,11 @@ class Controller:
         #DEAL WITH ICE DRIVING BAN (optional, backward compatible: absent => never banned)
         self._unpack_ice_driving_ban_parameters()
 
+        #############################################################################################################################
+        #DEAL WITH ICE SALES BAN AND ICE RESEARCH BAN (optional, backward compatible: absent => never banned)
+        self._unpack_ice_sales_ban_parameters()
+        self._unpack_ice_research_ban_parameters()
+
     def _unpack_ice_driving_ban_parameters(self):
         """
         ICE_driving_ban_time (months after burn-in ends, i.e. same convention
@@ -210,6 +215,58 @@ class Controller:
             if self.ICE_driving_ban_time < self.ev_production_start_time:
                 raise ValueError("ICE driving ban cannot take effect before EV production has started")
         self.ICE_driving_ban_penalty = self.parameters_controller.get("ICE_driving_ban_penalty", 0.0)
+
+    def _unpack_ice_sales_ban_parameters(self):
+        """
+        ICE_sales_ban_time (same "months after burn-in ends" convention as
+        ICE_driving_ban_time/ev_production_start_time above) is the absolute
+        controller timestep from which no firm may offer a NEW ICE car for
+        sale any more. None (the default) means no ban.
+
+        Unlike the ICE driving ban, this is a hard structural constraint on
+        firms' own choice sets, not a cost shock: from ICE_sales_ban_time
+        onward, firm.choose_cars_segments() drops ICE cars from its candidate
+        pool before any profit/utility calculation, and firm.next_step()
+        immediately flushes any ICE car still sitting in cars_on_sale from a
+        pre-ban period rather than waiting on the ordinary probabilistic
+        prob_change_production roll. It deliberately does NOT touch already
+        -sold ICE cars: they remain drivable and resellable on the
+        second-hand market exactly as before (that's what distinguishes a
+        sales ban from a driving ban).
+
+        Requires EV production to already be running by the time the ban
+        bites, otherwise a firm would be left with nothing to sell.
+        """
+        self.ICE_sales_ban_time = None
+        if self.parameters_controller.get("ICE_sales_ban_time") is not None:
+            self.ICE_sales_ban_time = self.duration_burn_in + self.parameters_controller["ICE_sales_ban_time"]
+            if self.ICE_sales_ban_time < self.ev_production_start_time:
+                raise ValueError("ICE sales ban cannot take effect before EV production has started")
+
+    def _unpack_ice_research_ban_parameters(self):
+        """
+        ICE_research_ban_time (same convention as ICE_sales_ban_time above)
+        is the absolute controller timestep from which firms may no longer
+        research/improve ICE technology at all. None (the default) means no
+        ban.
+
+        Independent of the sales ban: this only stops firm.innovate() from
+        generating/selecting new ICE neighbouring technologies (see
+        firm.ice_research_ban_active) -- it does NOT remove ICE models
+        already in a firm's memory (list_technology_memory_ICE), so a firm
+        can still SELL previously-researched ICE cars until/unless
+        ICE_sales_ban_time also kicks in. This is what lets the two bans be
+        combined additively (research ban alone; research+sales; research
+        +sales+driving) rather than only ever together.
+
+        Requires EV research to already be running by the time the ban
+        bites, otherwise a firm would be left with nothing to research.
+        """
+        self.ICE_research_ban_time = None
+        if self.parameters_controller.get("ICE_research_ban_time") is not None:
+            self.ICE_research_ban_time = self.duration_burn_in + self.parameters_controller["ICE_research_ban_time"]
+            if self.ICE_research_ban_time < self.ev_research_start_time:
+                raise ValueError("ICE research ban cannot take effect before EV research has started")
 
     def handle_seed(self):
         """
@@ -1164,6 +1221,16 @@ class Controller:
         self.electricity_cost_index = self.electricity_cost_index_vec[self.t_controller]
         self.electricity_emissions_index = self.electricity_emissions_index_vec[self.t_controller]
 
+        # ICE sales/research bans (see _unpack_ice_sales_ban_parameters/
+        # _unpack_ice_research_ban_parameters) -- recomputed every step
+        # (rather than a one-shot "==" trigger) so they stay correct
+        # regardless of where t_controller sits when setup_continued_run_future
+        # re-derives *_ban_time for a new scenario. Passed down to firms as
+        # plain step arguments (like gas_price/carbon_price), not baked into
+        # any shared parameters_firm dict -- see update_firms() below.
+        self.ice_sales_ban_active = (self.ICE_sales_ban_time is not None) and (self.t_controller >= self.ICE_sales_ban_time)
+        self.ice_research_ban_active = (self.ICE_research_ban_time is not None) and (self.t_controller >= self.ICE_research_ban_time)
+
     def update_firms(self):
         """
         Advance firm behavior for the current time step.
@@ -1171,7 +1238,7 @@ class Controller:
         Returns:
             list: Cars currently on sale across all firms.
         """
-        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration, self.gas_cost_index, self.gas_emissions_index, self.electricity_cost_index, self.electricity_emissions_index)
+        cars_on_sale_all_firms = self.firm_manager.next_step(self.carbon_price, self.consider_ev_vec, self.new_bought_vehicles, self.gas_price, self.electricity_price, self.electricity_emissions_intensity, self.rebate, self.production_subsidy, self.rebate_calibration, self.gas_cost_index, self.gas_emissions_index, self.electricity_cost_index, self.electricity_emissions_index, self.ice_sales_ban_active, self.ice_research_ban_active)
         return cars_on_sale_all_firms
     
     def update_social_network(self):
@@ -1301,6 +1368,16 @@ class Controller:
         # to reset -- the ban acts purely through the fuel-cost channel, not
         # through any firm switch.
         self._unpack_ice_driving_ban_parameters()
+
+        # Same for the ICE sales/research bans: recompute ICE_sales_ban_time/
+        # ICE_research_ban_time for THIS scenario. Again no firm-level state
+        # to reset here -- ice_sales_ban_active/ice_research_ban_active are
+        # recomputed fresh every step in update_time_series_data() and passed
+        # down to firms as step arguments (see update_firms()), so there is
+        # nothing stale left over on the firm objects from the calibration
+        # this controller was deepcopied from.
+        self._unpack_ice_sales_ban_parameters()
+        self._unpack_ice_research_ban_parameters()
 
         if self.save_timeseries_data_state:#SAVE DATA
             self.set_up_time_series_controller()

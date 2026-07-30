@@ -115,6 +115,18 @@ class Firm:
 
         # Backward compatible: absent => naive/permanent expectations (old behaviour).
         self.forward_looking_expectations = self.parameters_firm.get("forward_looking_expectations", False)
+
+        # ICE sales/research bans (optional, backward compatible: absent =>
+        # never banned). Unlike the ICE driving ban (a cost shock fed through
+        # gas_price, see controller._unpack_ice_driving_ban_parameters), these
+        # are hard structural constraints on this firm's own choice sets, so
+        # they're tracked as firm state and refreshed every step from the
+        # booleans controller.py computes off ICE_sales_ban_time/
+        # ICE_research_ban_time -- see next_step(), choose_cars_segments(),
+        # and innovate() below.
+        self.ice_sales_ban_active = False
+        self.ice_research_ban_active = False
+
         self.gas_cost_index = 0.0
         self.gas_emissions_index = 0.0
         self.electricity_cost_index = 0.0
@@ -373,17 +385,34 @@ class Firm:
         """
         Perform innovation step for the firm.
         Evaluate neighboring technologies and select a new car to add to memory.
+
+        ICE research ban (self.ice_research_ban_active, set from
+        controller.ICE_research_ban_time -- see next_step()): once active, no
+        new ICE neighbouring technologies are generated at all (the firm never
+        considers improving its ICE line further), and the candidate list is
+        also defensively filtered afterwards in case an ICE car slipped in
+        through last_researched_car_ICE. Requires ev_research_bool to already
+        be True (validated in controller._unpack_ice_research_ban_parameters)
+        so the EV branch below always leaves at least one candidate.
         """
         # create a list of cars in neighbouring memory space
-        unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
+        if self.ice_research_ban_active:
+            unique_neighbouring_technologies_ICE = []
+            ice_candidates = []
+        else:
+            unique_neighbouring_technologies_ICE = self.generate_neighbouring_technologies(self.last_researched_car_ICE,  self.list_technology_memory_ICE, self.ICE_landscape, self.parameters_car_ICE, transportType = 2)
+            ice_candidates = [self.last_researched_car_ICE]
 
         if self.ev_research_bool:
             unique_neighbouring_technologies_EV = self.generate_neighbouring_technologies(self.last_researched_car_EV,  self.list_technology_memory_EV, self.EV_landscape, self.parameters_car_EV, transportType = 3 )
-            unique_neighbouring_technologies = unique_neighbouring_technologies_EV + unique_neighbouring_technologies_ICE + [self.last_researched_car_EV, self.last_researched_car_ICE]
+            unique_neighbouring_technologies = unique_neighbouring_technologies_EV + unique_neighbouring_technologies_ICE + [self.last_researched_car_EV] + ice_candidates
         else:
-            unique_neighbouring_technologies = unique_neighbouring_technologies_ICE +  [self.last_researched_car_ICE]
+            unique_neighbouring_technologies = unique_neighbouring_technologies_ICE + ice_candidates
 
-        # update the prices of models to consider        
+        if self.ice_research_ban_active:#defensive: strip any ICE that slipped through
+            unique_neighbouring_technologies = [tech for tech in unique_neighbouring_technologies if tech.transportType != 2]
+
+        # update the prices of models to consider
         unique_neighbouring_technologies = self.update_prices_and_emissions_intensity(unique_neighbouring_technologies)
         # calculate the optimal price of cars in the memory 
     
@@ -626,13 +655,25 @@ class Firm:
         """
         Trim the memory bank if it exceeds the allowed capacity.
         Removes the oldest unused car.
+
+        Never evicts a type's LAST remaining entry: choose_cars_segments()
+        (and the ICE sales ban's filter within it, see
+        controller._unpack_ice_sales_ban_parameters) assumes
+        list_technology_memory_EV is always non-empty once ev_production_bool
+        is True, so a firm is never left with nothing to sell.
         """
 
         list_technology_memory_all = list(self.list_technology_memory_EV + self.list_technology_memory_ICE)
 
         if len(list_technology_memory_all) > self.memory_cap:
-            tech_to_remove = max((tech for tech in list_technology_memory_all if not tech.choosen_tech_bool), key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
-            
+            removable = (
+                tech for tech in list_technology_memory_all
+                if not tech.choosen_tech_bool
+                and not (tech.transportType == 3 and len(self.list_technology_memory_EV) <= 1)
+                and not (tech.transportType == 2 and len(self.list_technology_memory_ICE) <= 1)
+            )
+            tech_to_remove = max(removable, key=lambda x: x.timer, default=None)#PICK TECH WITH MAX TIMER WHICH IS NOT ACTIVE
+
             # If there's no unchosen tech to remove, do nothing (or handle differently)
             if tech_to_remove is None:
                 print("Warning: Memory is full, but no unchosen technology to remove.")
@@ -869,14 +910,7 @@ class Firm:
                 vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True
             )
 
-        vehicle_to_max_profit = {}
-        for vehicle, profit, segment in vehicles_selected_profits:
-            if vehicle not in vehicle_to_max_profit or profit > vehicle_to_max_profit[vehicle]["profit"]:
-                vehicle_to_max_profit[vehicle] = {"profit": profit, "segment": segment}
-        
-        sorted_vehicles = sorted(vehicle_to_max_profit.items(), key=lambda x: x[1]["profit"], reverse=True)
-
-        vehicles_selected = [x[0] for x in sorted_vehicles[:self.max_cars_prod]]
+            vehicles_selected = [x[0] for x in sorted_vehicles[:self.max_cars_prod]]
 
         return vehicles_selected
 
@@ -884,6 +918,14 @@ class Firm:
     def choose_cars_segments(self):
         """
         Main method to choose which cars will be sold based on profitability and utility.
+
+        ICE sales ban (self.ice_sales_ban_active, set from
+        controller.ICE_sales_ban_time -- see next_step()): once active, ICE
+        cars are removed from the candidate pool before profitability/utility
+        are even computed, so a firm can never pick one to sell again.
+        Requires ev_production_bool to already be True (validated in
+        controller._unpack_ice_sales_ban_parameters) so the EV branch below
+        always leaves at least one candidate.
 
         Returns:
             list: Selected cars to be offered on the market.
@@ -895,6 +937,9 @@ class Firm:
 
         # Create a shallow copy of the list to keep the list structure independent, THIS STOPS THE MEMORY LIST AND THE CURRENT CARS LIST FROM LINKING!!!
         list_technology_memory_all = list(list_technology_memory_all)
+
+        if self.ice_sales_ban_active:
+            list_technology_memory_all = [car for car in list_technology_memory_all if car.transportType != 2]
 
         list_technology_memory_all = self.update_prices_and_emissions_intensity(list_technology_memory_all)#UPDATE TECHNOLOGY WITH NEW PRICES FOR PRODUCTION SELECTION
 
@@ -966,15 +1011,31 @@ class Firm:
                 car.emissions_index = self.electricity_emissions_index
         return car_list
 
-    def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy, rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
+    def next_step(self, I_s_t_vec, W_vec, nu_UMax_vec, carbon_price, gas_price, electricity_price, electricity_emissions_intensity, rebate, production_subsidy, rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0, ice_sales_ban_active=False, ice_research_ban_active=False):
         """
         Advance the firm to the next time step. Updates cars, memory, and innovations.
+
+        ice_sales_ban_active/ice_research_ban_active are recomputed by
+        controller.py every step from ICE_sales_ban_time/ICE_research_ban_time
+        (see controller._unpack_ice_sales_ban_parameters/
+        _unpack_ice_research_ban_parameters) and simply latched onto this firm
+        -- see choose_cars_segments()/innovate() for where they take effect.
+        The moment the sales ban switches on, any ICE car still sitting in
+        cars_on_sale from a prior (pre-ban) period is flushed immediately
+        (rather than lingering until the next probabilistic
+        prob_change_production roll), and choose_cars_segments() is forced to
+        re-run right away so the firm doesn't limp along on a stale/thin
+        leftover EV lineup in the meantime.
 
         Returns:
             list: Cars on sale after production and innovation decisions.
         """
-        
+
         self.t_firm += 1
+
+        sales_ban_just_activated = ice_sales_ban_active and not self.ice_sales_ban_active
+        self.ice_sales_ban_active = ice_sales_ban_active
+        self.ice_research_ban_active = ice_research_ban_active
 
         self.I_s_t_vec = I_s_t_vec
         self.W_vec =  W_vec
@@ -993,12 +1054,15 @@ class Firm:
 
         self.cars_on_sale = self.update_prices_and_emissions_intensity(self.cars_on_sale)#update the prices of cars on sales with changes, this is required for calculations made by users
 
-        #update cars to sell   
-        if (self.random_state.rand() < self.prob_change_production) or self.bool_2035_price_update:
+        if self.ice_sales_ban_active:#flush any ICE that slipped through from before the ban took effect
+            self.cars_on_sale = [car for car in self.cars_on_sale if car.transportType != 2]
+
+        #update cars to sell
+        if (self.random_state.rand() < self.prob_change_production) or self.bool_2035_price_update or sales_ban_just_activated:
             self.cars_on_sale = self.choose_cars_segments()
-            self.production_change_bool = 1         
+            self.production_change_bool = 1
             # Set the flag to False after execution so it only runs once
-            self.bool_2035_price_update = False        
+            self.bool_2035_price_update = False
 
         self.update_memory_timer()
 
