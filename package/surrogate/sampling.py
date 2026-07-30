@@ -4,18 +4,19 @@ sampling.py — LHS design generation and ABM evaluation interface.
 The ABM is expensive, so we front-load a Latin Hypercube Sample (LHS) to
 cover the 5D policy space efficiently, then refine via active BO in optimisation.py.
 
-Output columns (Y) — all four ABSOLUTE (not BAU-relative):
-  0: ev_uptake   — mean final EV share across seeds (fraction). Diagnostic
-                   only; not used as a constraint or objective any more.
-  1: log_utility — mean, across seeds, of a one-time post-simulation
+Output columns (Y) — all three ABSOLUTE (not BAU-relative):
+  0: log_utility — mean, across seeds, of a one-time post-simulation
                    calculation: shift every (timestep, individual) raw
-                   utility value to be positive, take log(), sum everything.
-                   See compute_log_utility_metric(). Concave in each
-                   individual's utility, so it penalises inequality — a
-                   policy that concentrates gains in a few people scores
-                   worse than one that spreads the same total more evenly.
-  2: emissions   — mean cumulative emissions across seeds (kg CO2)
-  3: net_cost    — mean cumulative net policy cost across seeds (£)
+                   utility value to be positive, take log(), sum across
+                   individuals and within each 12-month year, then take the
+                   MINIMUM across years. See compute_log_utility_metric().
+                   Concave in each individual's utility (penalises
+                   inequality across people, same as before) AND a worst-year
+                   floor across time (penalises a policy that has one brutal
+                   year even if other years more than make up for it in a
+                   straight cumulative sum).
+  1: emissions   — mean cumulative emissions across seeds (kg CO2)
+  2: net_cost    — mean cumulative net policy cost across seeds (£)
 
 The optimisation constraints (emissions <= X% of BAU, log_utility >= Y% of
 BAU, net_cost >= cost_floor) are evaluated against these absolute values in
@@ -33,7 +34,7 @@ from joblib import Parallel, delayed, load
 import multiprocessing
 from package.resources.utility import get_num_workers
 
-OUTPUT_NAMES = ["ev_uptake", "log_utility", "emissions", "net_cost"]
+OUTPUT_NAMES = ["log_utility", "emissions", "net_cost"]
 
 # Empirically probed worst-case raw (timestep, individual) utility across BAU
 # + a spread of extreme single/all-policy-max scenarios: min ~= -457,798.
@@ -42,6 +43,8 @@ OUTPUT_NAMES = ["ev_uptake", "log_utility", "emissions", "net_cost"]
 # clip or floor the utility values themselves.
 LOG_UTILITY_SHIFT = 1_000_000.0
 
+MONTHS_PER_YEAR = 12
+
 
 def compute_log_utility_metric(step_utility_array: np.ndarray, shift: float = LOG_UTILITY_SHIFT) -> float:
     """
@@ -49,9 +52,20 @@ def compute_log_utility_metric(step_utility_array: np.ndarray, shift: float = LO
     which only accumulates raw utility — see socialNetworkUsers.history_utility_individual_always).
 
     step_utility_array : shape (n_timesteps, num_individuals) — raw utility per
-                         person per timestep for the whole policy period.
+                         person per timestep for the whole simulated horizon.
+                         n_timesteps must be a whole number of 12-month years
+                         (true for any duration_future that's a multiple of 12,
+                         e.g. 144 or 312).
 
-    Returns: float — sum over every (timestep, individual) value of log(utility + shift).
+    Aggregates log(utility + shift) across individuals AND within each
+    12-month year, then takes the MINIMUM across years — a worst-year welfare
+    floor, rather than summing over the whole horizon. This stops a single
+    brutal year (e.g. during the 2024-2035 EV-transition period) from being
+    invisibly averaged away by many comfortable years elsewhere in the
+    horizon, the way a straight cumulative sum would.
+
+    Returns: float — the minimum, across whole years, of that year's sum
+    (over individuals and months) of log(utility + shift).
     """
     shifted = step_utility_array + shift
     min_shifted = shifted.min()
@@ -61,7 +75,16 @@ def compute_log_utility_metric(step_utility_array: np.ndarray, shift: float = LO
             "This policy combination pushed raw utility lower than anything seen in the "
             "empirical probe — increase LOG_UTILITY_SHIFT in sampling.py rather than clipping."
         )
-    return float(np.sum(np.log(shifted)))
+    n_timesteps, n_individuals = shifted.shape
+    if n_timesteps % MONTHS_PER_YEAR != 0:
+        raise ValueError(
+            f"compute_log_utility_metric: {n_timesteps} months is not a whole number of "
+            f"{MONTHS_PER_YEAR}-month years — duration_future must be a multiple of 12 "
+            "for the annual minimum-utility metric."
+        )
+    n_years = n_timesteps // MONTHS_PER_YEAR
+    yearly_totals = np.log(shifted).reshape(n_years, MONTHS_PER_YEAR, n_individuals).sum(axis=(1, 2))
+    return float(yearly_totals.min())
 
 # ---------------------------------------------------------------------------
 # Policy space definition
@@ -166,7 +189,6 @@ def _single_seed_run(params: dict, controller_file: str) -> tuple:
         np.stack(data.social_network.history_utility_individual_always)
     )
     return (
-        data.calc_EV_prop(),
         log_utility,
         data.social_network.emissions_cumulative,
         data.calc_net_policy_distortion(),
@@ -180,7 +202,7 @@ def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
     seeds) that optimisation.py's constraints are evaluated against — e.g.
     emissions_bau_ref = compute_bau_baseline(...)["emissions"].mean().
 
-    Returns dict of per-seed arrays: {"ev_uptake", "log_utility", "emissions",
+    Returns dict of per-seed arrays: {"log_utility", "emissions",
     "net_cost"}, each shape (n_seeds,), aligned by index to controller_files.
     """
     params = deepcopy(base_params)
@@ -191,9 +213,8 @@ def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
         delayed(_single_seed_run)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
     )
-    ev_arr, logutil_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
+    logutil_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
     return {
-        "ev_uptake": ev_arr,
         "log_utility": logutil_arr,
         "emissions": emis_arr,
         "net_cost": cost_arr,
@@ -209,7 +230,7 @@ def get_or_create_bau_baseline(
         if os.path.exists(cache_path):
             print(f"Loading cached BAU baseline from {cache_path}")
             data = np.load(cache_path)
-            return {k: data[k] for k in ("ev_uptake", "log_utility", "emissions", "net_cost")}
+            return {k: data[k] for k in ("log_utility", "emissions", "net_cost")}
 
     baseline = compute_bau_baseline(base_params, controller_files)
 
@@ -231,7 +252,7 @@ def run_policy_combination(
     policy_dict: {policy_name: intensity_value, ...}
                  Policies with intensity=0 are left inactive.
 
-    Returns: shape (4,) array — [mean_ev_uptake, mean_log_utility, mean_emissions, mean_net_cost]
+    Returns: shape (3,) array — [mean_log_utility, mean_emissions, mean_net_cost]
              All absolute — see module docstring for why BAU-relativity is
              handled downstream (in optimisation.py), not here.
     """
@@ -247,10 +268,9 @@ def run_policy_combination(
         for i in range(len(controller_files))
     )
 
-    ev_arr, logutil_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
+    logutil_arr, emis_arr, cost_arr = (np.array(a) for a in zip(*results))
 
     return np.array([
-        np.mean(ev_arr),
         np.mean(logutil_arr),
         np.mean(emis_arr),
         np.mean(cost_arr),
@@ -275,7 +295,7 @@ def evaluate_lhs(
     If cache_path is given and the file exists, loads from cache instead of
     re-running — useful since each ABM evaluation takes ~seconds.
 
-    Returns: X (n_samples, n_policies), Y (n_samples, 4)
+    Returns: X (n_samples, n_policies), Y (n_samples, 3)
     """
     if cache_path:
         import os
@@ -285,7 +305,7 @@ def evaluate_lhs(
             return data["X"], data["Y"]
 
     X = generate_lhs(bounds, n_samples, seed=seed)
-    Y = np.zeros((n_samples, 4))
+    Y = np.zeros((n_samples, 3))
 
     for i, x in enumerate(X):
         policy_dict = dict(zip(bounds.names, x))

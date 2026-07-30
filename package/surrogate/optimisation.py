@@ -19,8 +19,7 @@ This is a CONSTRAINED SINGLE-OBJECTIVE search, not a multi-objective trade-off:
 
 emissions_bau_ref / log_utility_bau_ref are scalar references (mean across
 seeds of the BAU run) computed once via sampling.compute_bau_baseline() —
-see run.py. The EV-uptake band that used to be a hard constraint is gone;
-ev_uptake is still tracked in Y as a diagnostic, nothing more.
+see run.py.
 
 The acquisition function is:
   EI(x) × P(emissions feasible | x) × P(log_utility feasible | x) × P(net_cost >= cost_floor | x)
@@ -96,15 +95,15 @@ def _feasibility_prob(
     """
     P(emissions constraint satisfied) x P(log_utility constraint satisfied)
     x P(net_cost >= cost_floor), each under the GP's Gaussian posterior for
-    that output. mu/sigma indices: 0=ev_uptake, 1=log_utility, 2=emissions, 3=net_cost.
+    that output. mu/sigma indices: 0=log_utility, 1=emissions, 2=net_cost.
     """
     emissions_threshold = emissions_frac * emissions_bau_ref
-    p_emissions = norm.cdf(emissions_threshold, mu[2], sigma[2] + 1e-8)
+    p_emissions = norm.cdf(emissions_threshold, mu[1], sigma[1] + 1e-8)
 
     utility_threshold = utility_frac * log_utility_bau_ref
-    p_utility = 1.0 - norm.cdf(utility_threshold, mu[1], sigma[1] + 1e-8)
+    p_utility = 1.0 - norm.cdf(utility_threshold, mu[0], sigma[0] + 1e-8)
 
-    p_cost_floor = 1.0 - norm.cdf(cost_floor, mu[3], sigma[3] + 1e-8)
+    p_cost_floor = 1.0 - norm.cdf(cost_floor, mu[2], sigma[2] + 1e-8)
 
     return p_emissions * p_utility * p_cost_floor
 
@@ -114,9 +113,9 @@ def _is_feasible(y: np.ndarray, emissions_bau_ref: float, log_utility_bau_ref: f
                   cost_floor: float = DEFAULT_COST_FLOOR) -> bool:
     """Same three constraints, evaluated on an observed (not predicted) Y row."""
     return (
-        y[2] <= emissions_frac * emissions_bau_ref
-        and y[1] >= utility_frac * log_utility_bau_ref
-        and y[3] >= cost_floor
+        y[1] <= emissions_frac * emissions_bau_ref
+        and y[0] >= utility_frac * log_utility_bau_ref
+        and y[2] >= cost_floor
     )
 
 
@@ -124,9 +123,9 @@ def _feasible_mask(Y: np.ndarray, emissions_bau_ref: float, log_utility_bau_ref:
                     emissions_frac: float, utility_frac: float,
                     cost_floor: float = DEFAULT_COST_FLOOR) -> np.ndarray:
     return (
-        (Y[:, 2] <= emissions_frac * emissions_bau_ref)
-        & (Y[:, 1] >= utility_frac * log_utility_bau_ref)
-        & (Y[:, 3] >= cost_floor)
+        (Y[:, 1] <= emissions_frac * emissions_bau_ref)
+        & (Y[:, 0] >= utility_frac * log_utility_bau_ref)
+        & (Y[:, 2] >= cost_floor)
     )
 
 
@@ -153,8 +152,8 @@ def _acquisition(
         return -p_feas
 
     # EI for minimisation: improvement = y_best_cost - predicted cost
-    sigma_cost = sigma[3] + 1e-8
-    z = (y_best_cost - mu[3]) / sigma_cost
+    sigma_cost = sigma[2] + 1e-8
+    z = (y_best_cost - mu[2]) / sigma_cost
     ei = sigma_cost * (z * norm.cdf(z) + norm.pdf(z))
     return -(ei * p_feas)
 
@@ -172,7 +171,7 @@ def _propose_next(
     """
     feasible_mask = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
                                     emissions_frac, utility_frac, cost_floor)
-    y_best_cost = Y_all[feasible_mask, 3].min() if feasible_mask.sum() > 0 else None
+    y_best_cost = Y_all[feasible_mask, 2].min() if feasible_mask.sum() > 0 else None
 
     bounds_list = list(zip(bounds.lower, bounds.upper))
     best_val, best_x = np.inf, None
@@ -250,8 +249,8 @@ def active_bo_loop(
 
         # Evaluate ABM
         y_next = run_policy_combination(base_params, policy_dict, controller_files)
-        print(f"  Result: ev={y_next[0]:.3f}  log_utility={y_next[1]:.4g}  "
-              f"emis={y_next[2]:.4g}  cost={y_next[3]:.4g}")
+        print(f"  Result: log_utility={y_next[0]:.4g}  "
+              f"emis={y_next[1]:.4g}  cost={y_next[2]:.4g}")
 
         X_all = np.vstack([X_all, x_next[None]])
         Y_all = np.vstack([Y_all, y_next[None]])
@@ -260,7 +259,7 @@ def active_bo_loop(
         feas_mask = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
                                     emissions_frac, utility_frac, cost_floor)
         n_feas = feas_mask.sum()
-        best_cost = Y_all[feas_mask, 3].min() if n_feas > 0 else np.nan
+        best_cost = Y_all[feas_mask, 2].min() if n_feas > 0 else np.nan
         print(f"  Feasible: {n_feas}/{len(Y_all)}   Best feasible net_cost so far: {best_cost:.4g}")
 
     if cache_path:
@@ -312,7 +311,7 @@ def find_best_policy(
     candidates = []
 
     if obs_feasible.sum() > 0:
-        idx = np.argmin(Y_all[obs_feasible, 3])
+        idx = np.argmin(Y_all[obs_feasible, 2])
         candidates.append((X_all[obs_feasible][idx], Y_all[obs_feasible][idx], "observed"))
     else:
         print("WARNING: no observed feasible point among LHS + BO evaluations.")
@@ -324,11 +323,11 @@ def find_best_policy(
     def neg_obj(x):
         mu, _ = surrogate.predict(x[None])
         mu = mu[0]
-        emissions_viol = max(0.0, mu[2] - emissions_frac * emissions_bau_ref) / abs(emissions_bau_ref)
-        utility_viol   = max(0.0, utility_frac * log_utility_bau_ref - mu[1]) / abs(log_utility_bau_ref)
-        cost_viol      = max(0.0, cost_floor - mu[3])
+        emissions_viol = max(0.0, mu[1] - emissions_frac * emissions_bau_ref) / abs(emissions_bau_ref)
+        utility_viol   = max(0.0, utility_frac * log_utility_bau_ref - mu[0]) / abs(log_utility_bau_ref)
+        cost_viol      = max(0.0, cost_floor - mu[2])
         penalty = 1e9 * (emissions_viol**2 + utility_viol**2) + 10 * cost_viol
-        return mu[3] + penalty
+        return mu[2] + penalty
 
     bounds_de = list(zip(bounds.lower, bounds.upper))
     result = differential_evolution(
@@ -349,12 +348,11 @@ def find_best_policy(
               "Run more BO iterations or loosen the constraints.")
         return None, None, None
 
-    candidates.sort(key=lambda c: c[1][3])  # ascending net_cost
+    candidates.sort(key=lambda c: c[1][2])  # ascending net_cost
     best_x, best_y, source = candidates[0]
-    print(f"Best policy found ({source}): net_cost={best_y[3]:.4g}  "
-          f"log_utility={best_y[1]:.4g} (need >= {utility_frac * log_utility_bau_ref:.4g})  "
-          f"emissions={best_y[2]:.4g} (need <= {emissions_frac * emissions_bau_ref:.4g})  "
-          f"ev_uptake={best_y[0]:.3f}")
+    print(f"Best policy found ({source}): net_cost={best_y[2]:.4g}  "
+          f"log_utility={best_y[0]:.4g} (need >= {utility_frac * log_utility_bau_ref:.4g})  "
+          f"emissions={best_y[1]:.4g} (need <= {emissions_frac * emissions_bau_ref:.4g})")
     return best_x, best_y, source
 
 
@@ -394,7 +392,7 @@ def plot_bo_convergence(
     best_so_far = np.inf
     for i in range(n_total):
         if feas_mask_all[i]:
-            best_so_far = min(best_so_far, Y_all[i, 3])
+            best_so_far = min(best_so_far, Y_all[i, 2])
         best_cost.append(best_so_far if best_so_far < np.inf else np.nan)
 
     ax2.plot(range(1, n_total + 1), best_cost, color='darkorange')

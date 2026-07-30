@@ -153,7 +153,7 @@ def select_top_policies(X_ranked: np.ndarray, Y_ranked: np.ndarray, n_best: int 
     n_best = min(n_best, len(X_ranked))
     if n_best < N_BEST:
         print(f"Only {n_best} feasible point(s) available (requested {N_BEST}).")
-    order = np.argsort(Y_ranked[:, 3])
+    order = np.argsort(Y_ranked[:, 2])
     idx = order[:n_best]
     return X_ranked[idx], Y_ranked[idx]
 
@@ -221,7 +221,7 @@ def run_top_policies(
 def _label_for_rank(rank: int, policy_dict: dict, y_row: np.ndarray) -> str:
     active = [f"{POLICY_TITLES.get(k, k)} ({v:.2g})" for k, v in policy_dict.items() if v > 0]
     tag = ", ".join(active) if active else "no active policy"
-    return f"#{rank + 1} (cost {y_row[3]:.2g}, EV {y_row[0]:.0%}): {tag}"
+    return f"#{rank + 1} (cost {y_row[2]:.2g}): {tag}"
 
 
 def plot_top_policies_dashboard(

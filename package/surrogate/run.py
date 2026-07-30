@@ -50,11 +50,12 @@ This is NOT a multi-objective trade-off search — there's one true objective
 Exceeding either bound (more decarbonisation, smaller-than-required utility
 loss) is fine and unconstrained — only the stated direction is enforced.
 log_utility is a one-time post-simulation calculation (shift raw per-person
-utility positive, log(), sum over every person and timestep — see
-sampling.compute_log_utility_metric) that penalises inequality: concentrating
-the same total utility in fewer people scores worse. ev_uptake is still
-tracked in the surrogate's Y array as a diagnostic only — it is no longer a
-constraint.
+utility positive, log(), sum across people and within each 12-month year,
+then take the MINIMUM across years — see sampling.compute_log_utility_metric)
+that penalises inequality across people (concentrating the same total
+utility in fewer people scores worse) AND penalises a single brutal year
+(a policy can't make up for one terrible year with several comfortable ones,
+the way a straight cumulative sum would let it).
 
 emissions_bau_ref / log_utility_bau_ref are scalars (mean across seeds of a
 BAU run) computed once via sampling.compute_bau_baseline(), cached to
@@ -414,7 +415,7 @@ def main(
         X_ranked = np.vstack([best_x[None], X_ranked])
         Y_ranked = np.vstack([best_y[None], Y_ranked])
     if len(X_ranked) > 0:
-        order = np.argsort(Y_ranked[:, 3])
+        order = np.argsort(Y_ranked[:, 2])
         X_ranked, Y_ranked = X_ranked[order], Y_ranked[order]
 
     np.savez(f"{results_dir}/Data/pareto.npz", X=X_ranked, Y=Y_ranked)
@@ -428,16 +429,16 @@ def main(
               "constraints in optimisation_config.json.")
         return None, None
 
-    header = f"{'#':<4} {'EV':>6} {'LogUtil':>14} {'Emissions':>14} {'NetCost':>14}  " + \
+    header = f"{'#':<4} {'LogUtil':>14} {'Emissions':>14} {'NetCost':>14}  " + \
              "  ".join(f"{n[:10]:>12}" for n in bounds.names)
     print(header)
     print("-" * len(header))
     for rank in range(len(X_ranked)):
         x, y = X_ranked[rank], Y_ranked[rank]
         policy_str = "  ".join(f"{v:>12.2f}" for v in x)
-        print(f"{rank:<4} {y[0]:>6.3f} {y[1]:>14.4g} {y[2]:>14.4g} {y[3]:>14.4g}  {policy_str}")
+        print(f"{rank:<4} {y[0]:>14.4g} {y[1]:>14.4g} {y[2]:>14.4g}  {policy_str}")
 
-    print(f"\nBest policy ({source}): net_cost={Y_ranked[0, 3]:.4g}")
+    print(f"\nBest policy ({source}): net_cost={Y_ranked[0, 2]:.4g}")
     print(f"Saved to {results_dir}/Data/pareto.npz")
     print("Next: run `python -m package.surrogate.best_policies` to run the top "
           "policies through the real ABM and produce time-series + trade-off plots.")

@@ -92,8 +92,8 @@ class SurrogateGP:
         self.bounds_upper = bounds_upper.copy()
         self.n_restarts = n_restarts
         self.gps: list = []
-        self.y_mean = np.zeros(4)
-        self.y_std = np.ones(4)
+        self.y_mean = np.zeros(3)
+        self.y_std = np.ones(3)
         self._input_range = np.where(
             bounds_upper - bounds_lower == 0, 1.0, bounds_upper - bounds_lower
         )
@@ -102,7 +102,7 @@ class SurrogateGP:
         return (X - self.bounds_lower) / self._input_range
 
     def fit(self, X: np.ndarray, Y: np.ndarray):
-        """Fit one GP per output column. X: (n, p), Y: (n, 4)."""
+        """Fit one GP per output column. X: (n, p), Y: (n, 3)."""
         X_n = self._norm_X(X)
         self.y_mean = Y.mean(axis=0)
         self.y_std = np.where(Y.std(axis=0) < 1e-8, 1.0, Y.std(axis=0))
@@ -122,7 +122,7 @@ class SurrogateGP:
     def predict(self, X: np.ndarray) -> tuple:
         """
         Returns (mean, std) in original units.
-        Both arrays have shape (n, 4).
+        Both arrays have shape (n, 3).
         """
         X_n = self._norm_X(X)
         means, stds = [], []
@@ -131,13 +131,6 @@ class SurrogateGP:
             means.append(mu_n * self.y_std[j] + self.y_mean[j])
             stds.append(np.abs(sigma_n) * self.y_std[j])
         return np.stack(means, axis=1), np.stack(stds, axis=1)
-
-    def predict_ev(self, X: np.ndarray) -> tuple:
-        """Convenience method: predict only the EV uptake GP (index 0)."""
-        X_n = self._norm_X(X)
-        mu_n, sigma_n = self.gps[0].predict(X_n, return_std=True)
-        return (mu_n * self.y_std[0] + self.y_mean[0],
-                np.abs(sigma_n) * self.y_std[0])
 
 
 # ---------------------------------------------------------------------------
@@ -314,7 +307,7 @@ def save_surrogate(surrogate: SurrogateGP, path: str):
     Usage:
         save_surrogate(surrogate, "results/surrogate_optimisation/Data/surrogate.pkl")
 
-    Typical file size: ~1–5 MB for a 100-point, 5-input, 4-output GP.
+    Typical file size: ~1–5 MB for a 100-point, 5-input, 3-output GP.
     """
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
