@@ -49,7 +49,7 @@ from package.analysis.endogenous_policy_intensity_pair_plot import (
 
 from .sampling import PolicyBounds, load_policy_bounds
 from .run import (
-    get_or_create_calibration, _resolve_calib_folder,
+    get_or_create_calibration, _resolve_calib_folder, _resolve_forward_looking_expectations,
     BASE_PARAMS_PATH, BOUNDS_PATH, RESULTS_DIR,
 )
 
@@ -172,11 +172,22 @@ def run_top_policies(
     bounds_path: str = BOUNDS_PATH,
     base_params_path: str = BASE_PARAMS_PATH,
     existing_calib_folder: str = None,
+    forward_looking_expectations: bool = None,
 ) -> tuple:
     """
     Load the ranked feasible policies saved by run.py, run the BAU baseline
     and the top n_best (cheapest feasible) policies through the real ABM, and
     save the aggregated results — same pattern as low_policy_intensity_gen.py.
+
+    forward_looking_expectations : None (default) auto-resolves to whatever
+        value run.main() was called with for this same results_dir (persisted
+        there — see run._resolve_forward_looking_expectations), so the
+        policies found under forward-looking optimisation get evaluated
+        under forward-looking expectations here too, without having to pass
+        this twice. Pass True/False explicitly to override that. Applies to
+        every run_final_abm() call below (Phase 2/future period only —
+        calibration, loaded via get_or_create_calibration just below, is
+        never affected).
 
     Returns: (out_folder, base_params, outputs, outputs_BAU, policy_dicts, Y_top, bounds)
     """
@@ -193,12 +204,19 @@ def run_top_policies(
         base_params_path, calib_folder
     )
 
+    forward_looking_expectations = _resolve_forward_looking_expectations(
+        results_dir, forward_looking_expectations
+    )
+    mode_str = "naive" if not forward_looking_expectations else "forward-looking"
+    print(f"Evaluating under {mode_str} expectations (Phase 2/future period only).")
+
     X_top, Y_top = select_top_policies(X_ranked, Y_ranked, n_best)
     print(f"Running BAU + top {len(X_top)} cheapest feasible policies through the real ABM "
           f"({len(controller_files)} seeds each)...")
 
     outputs_BAU = run_final_abm(
         np.zeros(bounds.n), base_params, controller_files, bounds=bounds, save=False,
+        forward_looking_expectations=forward_looking_expectations,
     )
 
     outputs, policy_dicts = {}, {}
@@ -206,6 +224,7 @@ def run_top_policies(
         print(f"\n--- Policy {rank + 1}/{len(X_top)} ---")
         outputs[rank] = run_final_abm(
             x, base_params, controller_files, bounds=bounds, save=False,
+            forward_looking_expectations=forward_looking_expectations,
         )
         policy_dicts[rank] = dict(zip(bounds.names, x))
 
@@ -480,9 +499,11 @@ def main(
     n_best: int = N_BEST,
     results_dir: str = RESULTS_DIR,
     existing_calib_folder: str = None,
+    forward_looking_expectations: bool = None,
 ):
     out_folder, base_params, outputs, outputs_BAU, policy_dicts, Y_top, bounds = run_top_policies(
         n_best=n_best, results_dir=results_dir, existing_calib_folder=existing_calib_folder,
+        forward_looking_expectations=forward_looking_expectations,
     )
     plot_top_policies_dashboard(base_params, out_folder, outputs, outputs_BAU, policy_dicts, Y_top, dpi=200)
     plot_top_policies_tradeoff(base_params, out_folder, outputs, outputs_BAU, policy_dicts, bounds, dpi=300)

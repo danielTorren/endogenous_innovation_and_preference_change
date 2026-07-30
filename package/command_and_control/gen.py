@@ -46,10 +46,17 @@ WHAT EACH BAN DOES AND HOW THEY DIFFER
                            every ICE car on the road (new AND second-hand),
                            see controller._unpack_ice_driving_ban_parameters.
 
-Agents here are always forward_looking_expectations=True (baked into
-base_params_command_and_control.json) -- this experiment is about comparing
-policy STRINGENCY, not naive-vs-forward-looking anticipation (that comparison
-is package.car_ban's job). Forward-looking agents still only anticipate
+Agents here are always forward_looking_expectations=True for the FUTURE
+period only, set per-scenario in _command_and_control_scenario() below --
+exactly like package.car_ban's expectation_mode toggle. base_params_command_and_control.json
+deliberately does NOT set this key: calibration (Phase 1, 2001-2023 historical
+fit) must stay naive regardless, since the model's calibrated parameters
+assume naive/permanent expectations during that period (baking the flag into
+the base params file would apply it to calibration too and visibly break EV
+adoption during the historical fit -- confirmed the hard way). This
+experiment is about comparing policy STRINGENCY, not naive-vs-forward-looking
+anticipation (that comparison is package.car_ban's job). Forward-looking
+agents still only anticipate
 what the model already gives them a channel for: the driving ban's cost
 shock is discounted in advance via compute_discounted_indices' gas_cost_index
 path exactly as in car_ban; the sales/research bans are hard availability

@@ -195,18 +195,30 @@ def _single_seed_run(params: dict, controller_file: str) -> tuple:
     )
 
 
-def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
+def compute_bau_baseline(base_params: dict, controller_files: list,
+                          forward_looking_expectations: bool = None) -> dict:
     """
     Run BAU (all policies off) once across all seeds, keeping PER-SEED values
     (not means). Used to derive the scalar BAU reference points (mean across
     seeds) that optimisation.py's constraints are evaluated against — e.g.
     emissions_bau_ref = compute_bau_baseline(...)["emissions"].mean().
 
+    forward_looking_expectations : None (default) leaves base_params's own
+        setting untouched (naive, absent a setting there). Pass True/False to
+        override it for this Phase-2 (future-period) run only — see
+        run_policy_combination()'s docstring for why this never touches
+        calibration. Must match whatever run_policy_combination() calls are
+        being compared against this baseline, or the emissions/utility
+        constraints in optimisation.py end up comparing two different
+        expectation regimes against each other.
+
     Returns dict of per-seed arrays: {"log_utility", "emissions",
     "net_cost"}, each shape (n_seeds,), aligned by index to controller_files.
     """
     params = deepcopy(base_params)
     params = _reset_policies(params)
+    if forward_looking_expectations is not None:
+        params["forward_looking_expectations"] = forward_looking_expectations
 
     num_cores = get_num_workers()
     results = Parallel(n_jobs=num_cores, verbose=0)(
@@ -223,8 +235,20 @@ def compute_bau_baseline(base_params: dict, controller_files: list) -> dict:
 
 def get_or_create_bau_baseline(
     base_params: dict, controller_files: list, cache_path: str = None,
+    forward_looking_expectations: bool = None,
 ) -> dict:
-    """Cached wrapper around compute_bau_baseline() — same seeds, so it only needs computing once per calibration."""
+    """
+    Cached wrapper around compute_bau_baseline() — same seeds, so it only
+    needs computing once per calibration.
+
+    CACHE IS NOT EXPECTATION-MODE-AWARE: cache_path is keyed purely by path,
+    same as every other cache in this package (see run.py's
+    existing_calib_folder docstring for the same caveat re: calibration) —
+    switching forward_looking_expectations without also using a different
+    cache_path (or deleting the old cache file) will silently return a stale
+    baseline computed under the OTHER expectation mode. Use a distinct
+    results_dir per mode, or clear results_dir/Data/bau_baseline.npz first.
+    """
     if cache_path:
         import os
         if os.path.exists(cache_path):
@@ -232,7 +256,7 @@ def get_or_create_bau_baseline(
             data = np.load(cache_path)
             return {k: data[k] for k in ("log_utility", "emissions", "net_cost")}
 
-    baseline = compute_bau_baseline(base_params, controller_files)
+    baseline = compute_bau_baseline(base_params, controller_files, forward_looking_expectations)
 
     if cache_path:
         np.savez(cache_path, **baseline)
@@ -245,6 +269,7 @@ def run_policy_combination(
     base_params: dict,
     policy_dict: dict,
     controller_files: list,
+    forward_looking_expectations: bool = None,
 ) -> np.ndarray:
     """
     Run one policy combination across all pre-saved controller seeds in parallel.
@@ -252,12 +277,26 @@ def run_policy_combination(
     policy_dict: {policy_name: intensity_value, ...}
                  Policies with intensity=0 are left inactive.
 
+    forward_looking_expectations : None (default) leaves base_params's own
+        setting untouched (naive, absent a setting there — see firm.py /
+        socialNetworkUsers.py). Pass True/False to override it for THIS
+        Phase-2 (future-period) run only — base_params here is always the
+        object returned by get_or_create_calibration(), i.e. calibration
+        (Phase 1, 2001-2023 historical fit) has already happened using the
+        base_params_path JSON exactly as written, unaffected by this
+        argument. Baking forward_looking_expectations into that JSON instead
+        would apply it to calibration too and break the historical fit — see
+        package.command_and_control.gen's module docstring, which documents
+        hitting exactly this bug.
+
     Returns: shape (3,) array — [mean_log_utility, mean_emissions, mean_net_cost]
              All absolute — see module docstring for why BAU-relativity is
              handled downstream (in optimisation.py), not here.
     """
     params = deepcopy(base_params)
     params = _reset_policies(params)
+    if forward_looking_expectations is not None:
+        params["forward_looking_expectations"] = forward_looking_expectations
     for name, intensity in policy_dict.items():
         if intensity > 0:
             params = _update_policy_intensity(params, name, intensity)
@@ -288,12 +327,20 @@ def evaluate_lhs(
     controller_files: list,
     seed: int = 42,
     cache_path: str = None,
+    forward_looking_expectations: bool = None,
 ) -> tuple:
     """
     Generate an LHS design and evaluate each point with the ABM.
 
     If cache_path is given and the file exists, loads from cache instead of
-    re-running — useful since each ABM evaluation takes ~seconds.
+    re-running — useful since each ABM evaluation takes ~seconds. Note the
+    cache is NOT expectation-mode-aware (see get_or_create_bau_baseline's
+    docstring) — a cached LHS run from a naive session will be silently
+    reused for a forward-looking one unless cache_path (or results_dir)
+    differs, or the old file is deleted first.
+
+    forward_looking_expectations : see run_policy_combination()'s docstring
+        — forwarded unchanged, applies to Phase 2 only.
 
     Returns: X (n_samples, n_policies), Y (n_samples, 3)
     """
@@ -310,7 +357,7 @@ def evaluate_lhs(
     for i, x in enumerate(X):
         policy_dict = dict(zip(bounds.names, x))
         print(f"  LHS {i+1}/{n_samples}: {policy_dict}")
-        Y[i] = run_policy_combination(base_params, policy_dict, controller_files)
+        Y[i] = run_policy_combination(base_params, policy_dict, controller_files, forward_looking_expectations)
 
     if cache_path:
         np.savez(cache_path, X=X, Y=Y)

@@ -37,6 +37,19 @@ only Phase 2 runs are performed.
 The folder must contain a Calibration_runs/ sub-directory with
 controller_seed_*.pkl files, and a Data/base_params.pkl file.
 
+FORWARD-LOOKING EXPECTATIONS (POLICY PERIOD ONLY)
+----------------------------------------------------
+main()'s forward_looking_expectations argument turns on forward-looking
+agents for every Phase 2 evaluation (BAU baseline, every LHS point, every BO
+iteration) — never for Phase 1 calibration, which always runs naive
+regardless of this argument (see main()'s docstring for why: baking the flag
+into base_params_surrogate.json instead would apply it to the 2001-2023
+historical fit too and break it — package.command_and_control.gen's module
+docstring documents hitting exactly that bug). This is the same
+per-call-only pattern package.car_ban.gen and package.command_and_control.gen
+use for their own forward_looking_expectations toggle, and the same
+already-existing pattern in best_policies.run_final_abm().
+
 CONSTRAINED SINGLE-OBJECTIVE SEARCH
 -----------------------------------
 This is NOT a multi-objective trade-off search — there's one true objective
@@ -192,6 +205,25 @@ def _resolve_calib_folder(results_dir: str, existing_calib_folder: str = None):
         return None
 
 
+def _resolve_forward_looking_expectations(results_dir: str, forward_looking_expectations: bool = None):
+    """
+    forward_looking_expectations, if given (True or False, not just truthy),
+    always wins. Otherwise, look for the value main() persisted under
+    results_dir/Data from whatever surrogate optimisation run produced this
+    results_dir — same reuse pattern as _resolve_calib_folder(), so
+    best_policies.py evaluates a policy under the SAME expectation mode it
+    was optimised under without the caller having to pass it twice. Falls
+    back to None (naive) if nothing was ever persisted (e.g. results_dir
+    predates this option).
+    """
+    if forward_looking_expectations is not None:
+        return forward_looking_expectations
+    try:
+        return load_object(f"{results_dir}/Data", "forward_looking_expectations")
+    except FileNotFoundError:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -221,6 +253,7 @@ def main(
     n_lhs: int | None = None,
     n_bo: int | None = None,
     results_dir: str = RESULTS_DIR,
+    forward_looking_expectations: bool = None,
 ) -> tuple:
     """
     Full surrogate optimisation workflow.
@@ -244,6 +277,32 @@ def main(
                              None (default) uses "search.n_lhs" from opt_config_path.
     n_bo                   : number of active BO iterations (Phase 2 only).
                              None (default) uses "search.n_bo" from opt_config_path.
+    forward_looking_expectations : None (default) leaves base_params's own
+                             setting untouched (naive — base_params_surrogate.json
+                             does not set this key). Pass True to run every
+                             Phase-2 (future/policy period) evaluation —
+                             BAU baseline, every LHS point, every BO
+                             iteration — with forward-looking agents.
+                             Calibration (Phase 1, 2001-2023 historical fit)
+                             is UNAFFECTED regardless of this value: it
+                             always uses base_params_path/existing base_params
+                             exactly as saved, since the model's calibrated
+                             parameters assume naive expectations during that
+                             period (see package.command_and_control.gen's
+                             module docstring — baking the flag into the base
+                             params file instead of passing it here broke EV
+                             adoption during calibration the hard way).
+                             Persisted to results_dir/Data so a later
+                             package.surrogate.best_policies call against the
+                             same results_dir picks up the same mode
+                             automatically (see best_policies.run_top_policies).
+                             CACHES ARE NOT MODE-AWARE: lhs_data.npz,
+                             bo_data.npz and bau_baseline.npz under
+                             results_dir/Data are keyed only by path — switch
+                             results_dir (or delete those three files) when
+                             changing this value for a results_dir that's
+                             already been run, or you'll silently reuse
+                             evaluations from the other expectation regime.
 
     Returns
     -------
@@ -266,6 +325,8 @@ def main(
         print(f"  {name}: [{lo}, {hi}]")
     print(f"Constraints: emissions <= {emissions_frac:.0%} of BAU, "
           f"log_utility >= {utility_frac:.0%} of BAU, net_cost >= {cost_floor:.4g}")
+    mode_str = "naive (base_params default)" if forward_looking_expectations is None else str(forward_looking_expectations)
+    print(f"Phase 2 (future period) forward_looking_expectations: {mode_str} — calibration always runs naive")
 
     # ------------------------------------------------------------------
     # Step 1: Calibration — run once or reuse saved controllers
@@ -285,14 +346,21 @@ def main(
     # Persisted so best_policies.py (run right after this) can reuse these
     # exact controllers without the calib_folder path having to be passed in
     # by hand — this is the one legitimate same-session reuse, not the
-    # cross-invocation auto-detection removed above.
+    # cross-invocation auto-detection removed above. Same for
+    # forward_looking_expectations, so best_policies.py evaluates the
+    # policies this call found under the SAME expectation mode they were
+    # optimised under, without the caller having to remember to pass it twice.
     save_object(calib_folder, f"{results_dir}/Data", "calib_folder")
+    save_object(forward_looking_expectations, f"{results_dir}/Data", "forward_looking_expectations")
 
     # BAU baseline (all policies off), per-seed — the mean across seeds gives
     # the scalar reference points the emissions/utility constraints are
     # evaluated against (see optimisation.py). Cached like everything else.
     bau_cache = f"{results_dir}/Data/bau_baseline.npz"
-    bau_baseline = get_or_create_bau_baseline(base_params, controller_files, cache_path=bau_cache)
+    bau_baseline = get_or_create_bau_baseline(
+        base_params, controller_files, cache_path=bau_cache,
+        forward_looking_expectations=forward_looking_expectations,
+    )
     emissions_bau_ref = float(bau_baseline["emissions"].mean())
     log_utility_bau_ref = float(bau_baseline["log_utility"].mean())
     print(f"  BAU reference: log_utility={log_utility_bau_ref:.4g}  "
@@ -309,6 +377,7 @@ def main(
     X_lhs, Y_lhs = evaluate_lhs(
         bounds, n_lhs, base_params, controller_files,
         cache_path=lhs_cache,
+        forward_looking_expectations=forward_looking_expectations,
     )
     n_init = len(X_lhs)
     print(f"LHS complete: {n_init} points")
@@ -378,6 +447,7 @@ def main(
         utility_frac=utility_frac,
         cost_floor=cost_floor,
         cache_path=bo_cache,
+        forward_looking_expectations=forward_looking_expectations,
     )
     n_feas = _feasible_mask(Y_all, emissions_bau_ref, log_utility_bau_ref,
                              emissions_frac, utility_frac, cost_floor).sum()

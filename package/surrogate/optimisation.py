@@ -211,13 +211,21 @@ def active_bo_loop(
     utility_frac: float = DEFAULT_UTILITY_FRAC,
     cost_floor: float = DEFAULT_COST_FLOOR,
     cache_path: str = None,
+    forward_looking_expectations: bool = None,
 ) -> tuple:
     """
     Active Bayesian optimisation loop — constrained search for minimum-cost
     feasible policy (see module docstring).
 
     emissions_bau_ref, log_utility_bau_ref : scalar BAU references (mean across
-        seeds) from sampling.compute_bau_baseline() — required.
+        seeds) from sampling.compute_bau_baseline() — required. Must have been
+        computed with the SAME forward_looking_expectations value passed here,
+        or the constraints compare policy runs against a BAU baseline from a
+        different expectation regime.
+
+    forward_looking_expectations : see sampling.run_policy_combination()'s
+        docstring — forwarded unchanged to every ABM evaluation in this loop,
+        applies to Phase 2 (future period) only.
 
     Returns: (X_all, Y_all) — all evaluated points including the initial LHS.
     """
@@ -248,7 +256,7 @@ def active_bo_loop(
         print(f"  Proposed: { {k: round(v, 4) for k, v in policy_dict.items()} }")
 
         # Evaluate ABM
-        y_next = run_policy_combination(base_params, policy_dict, controller_files)
+        y_next = run_policy_combination(base_params, policy_dict, controller_files, forward_looking_expectations)
         print(f"  Result: log_utility={y_next[0]:.4g}  "
               f"emis={y_next[1]:.4g}  cost={y_next[2]:.4g}")
 
