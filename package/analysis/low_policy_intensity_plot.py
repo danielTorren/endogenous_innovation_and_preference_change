@@ -62,7 +62,10 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
     from scipy.stats import sem, t
     from matplotlib.lines import Line2D
 
-    time_steps = np.arange(base_params["duration_future"] - 1)
+    # duration_future, not duration_future - 1: load_in_controller now
+    # actually simulates the full requested duration (see its fixed
+    # off-by-one loop in package.resources.run).
+    time_steps = np.arange(base_params["duration_future"])
     start = base_params["duration_burn_in"] + base_params["duration_calibration"]
 
     policy_titles_local = {

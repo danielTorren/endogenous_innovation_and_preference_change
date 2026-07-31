@@ -274,7 +274,10 @@ def _label_for_rank(rank: int, policy_dict: dict, y_row: np.ndarray) -> str:
 def plot_top_policies_dashboard(
     base_params, fileName, outputs, outputs_BAU, policy_dicts, Y_top, dpi=300,
 ):
-    time_steps = np.arange(base_params["duration_future"] - 1)
+    # duration_future, not duration_future - 1: load_in_controller now
+    # actually simulates the full requested duration (see its fixed
+    # off-by-one loop in package.resources.run).
+    time_steps = np.arange(base_params["duration_future"])
     start = base_params["duration_burn_in"] + base_params["duration_calibration"]
 
     ranks = sorted(outputs.keys())
