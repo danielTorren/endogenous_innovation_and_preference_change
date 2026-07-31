@@ -20,8 +20,6 @@ from scipy import stats
 
 from package.resources.utility import load_object
 
-RESULTS_DIR = "results/command_and_control"
-
 METRICS = ("cost", "utility", "emissions", "ev_uptake", "sales")
 METRIC_LABELS = {
     "cost": "Cumulative net policy cost ($)",
@@ -100,7 +98,7 @@ def _plot_metric(metric, results, ban_years, stringency_levels, stringency_color
     return fig
 
 
-def plot_time_series(results: dict, scenarios: list, save_dir: str = f"{RESULTS_DIR}/Plots"):
+def plot_time_series(results: dict, scenarios: list, save_dir: str):
     """
     Saves one PNG per metric in METRICS to save_dir. Returns
     {metric: matplotlib.figure.Figure}.
@@ -118,7 +116,14 @@ def plot_time_series(results: dict, scenarios: list, save_dir: str = f"{RESULTS_
     return figs
 
 
-def main(results_dir: str = RESULTS_DIR):
+def main(results_dir: str):
+    """
+    results_dir : REQUIRED — the exact self-contained, timestamped folder
+        gen.main() printed/returned (e.g.
+        "results/command_and_control_14_53_52__30_07_2026"). There's no
+        shared fixed folder to fall back to any more — see gen.py's module
+        docstring.
+    """
     results = load_object(f"{results_dir}/Data", "command_and_control_results")
     scenarios = load_object(f"{results_dir}/Data", "scenarios")
     plot_time_series(results, scenarios, save_dir=f"{results_dir}/Plots")
@@ -126,4 +131,16 @@ def main(results_dir: str = RESULTS_DIR):
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    _results_dir = None
+    for _arg in sys.argv[1:]:
+        if _arg.startswith("--results_dir="):
+            _results_dir = _arg.split("=", 1)[1]
+    if _results_dir is None:
+        raise SystemExit(
+            "package.command_and_control.plot requires --results_dir=PATH -- the exact "
+            "folder gen.main() printed/returned, e.g.:\n"
+            "  python -m package.command_and_control.plot "
+            "--results_dir=results/command_and_control_14_53_52__30_07_2026"
+        )
+    main(_results_dir)

@@ -24,12 +24,29 @@ The ABM has two phases. The surrogate only ever runs Phase 2:
   N_seeds is set by base_params["seed_repetitions"] — the surrogate uses
   whatever number of seeds you already used for calibration.
 
+ONE SELF-CONTAINED, TIMESTAMPED FOLDER PER RUN
+--------------------------------------------------
+main() mints a fresh results/surrogate_optimisation_<timestamp> folder every
+call (results_dir=None, the default) — same naming convention as
+produce_name_datetime("surrogate_calibration")/("policy_test_future_sight").
+Calibration (unless existing_calib_folder is given — see below), the
+LHS/BO/BAU-baseline caches, the fitted surrogate, pareto.npz and every plot
+all live under that ONE folder — nothing is split across a separate
+calibration folder or a shared fixed path any more. This is what makes two
+different runs (different n_lhs, different forward_looking_expectations,
+changed policy bounds, ...) impossible to cross-contaminate: each run's own
+folder is unambiguous, and its name records exactly when it happened.
+Pass results_dir explicitly only to deliberately resume/extend one specific
+prior run.
+
 REUSING EXISTING CALIBRATION
 ------------------------------
 If you already have controller files from a previous run (e.g. from
-low_policy_intensity_gen.py), pass the folder path to main() via
-`existing_calib_folder`. The calibration phase is then skipped entirely —
-only Phase 2 runs are performed.
+low_policy_intensity_gen.py, package.car_ban, or an earlier surrogate call),
+pass that folder's path to main() via `existing_calib_folder`. The
+calibration phase is then skipped entirely — only Phase 2 runs are
+performed, still saved into THIS call's own (fresh, unless overridden)
+results_dir.
 
   Example (reusing from an existing experiment):
     X, Y = main(existing_calib_folder="results/endog_single_10_00_00__01_01_2026")
@@ -111,7 +128,7 @@ import glob
 import json
 import numpy as np
 
-from package.resources.utility import load_object, save_object
+from package.resources.utility import load_object, save_object, createFolder, produce_name_datetime
 from package.analysis.endogenous_policy_intensity_single_gen import set_up_calibration_runs
 from .sampling import (
     load_policy_bounds, evaluate_lhs, get_or_create_bau_baseline,
@@ -132,7 +149,17 @@ BASE_PARAMS_PATH = f"{_CONSTANTS_DIR}/base_params_surrogate.json"
 BOUNDS_PATH      = f"{_CONSTANTS_DIR}/policy_bounds_surrogate.json"
 PAIRWISE_PATH    = "package/surrogate/pair_wise_outcomes/pairwise_outcomes.pkl"
 OPT_CONFIG_PATH  = f"{_CONSTANTS_DIR}/optimisation_config.json"
-RESULTS_DIR      = "results/surrogate_optimisation"
+
+# Prefix for the fresh results/<prefix>_<timestamp> folder main() mints per
+# call when results_dir isn't given explicitly — same naming convention as
+# produce_name_datetime("surrogate_calibration")/("policy_test_future_sight").
+# No fixed RESULTS_DIR constant any more: a single shared, reused folder is
+# exactly what caused stale LHS/BO/BAU caches to silently get reloaded across
+# unrelated runs (config changes, different calibrations) — see git history /
+# the bug this replaced. Each main() call is now self-contained: calibration
+# + Data + Plots all live under the ONE folder it mints or is explicitly
+# pointed at, never split across a persistent shared path.
+RESULTS_PREFIX   = "surrogate_optimisation"
 
 # N_LHS/N_BO defaults live in optimisation_config.json's "search" section
 # (loaded fresh inside main() via load_optimisation_config, same as the
@@ -147,6 +174,7 @@ RESULTS_DIR      = "results/surrogate_optimisation"
 def get_or_create_calibration(
     base_params_path: str,
     existing_calib_folder: str = None,
+    target_folder: str = None,
 ) -> tuple:
     """
     Returns (controller_files, base_params, calib_folder).
@@ -156,6 +184,17 @@ def get_or_create_calibration(
 
     Otherwise calibration is run from scratch using base_params_path.
     The saved controllers are reusable for any future surrogate run.
+
+    target_folder : only used when existing_calib_folder is None. If given,
+        fresh calibration is written directly into target_folder (which must
+        already exist — see createFolder()) instead of a new sibling
+        results/surrogate_calibration_<timestamp> folder, and calib_folder
+        returned below IS target_folder. This is what lets a caller (e.g.
+        this module's own main(), package.car_ban.gen, package.command_and_control.gen)
+        keep calibration + everything downstream in ONE self-contained
+        timestamped folder rather than calibration living apart in its own
+        folder. None (default): behaves exactly as before, minting its own
+        results/surrogate_calibration_<timestamp> folder.
 
     WHAT THIS RUNS:
       existing_calib_folder given  →  nothing (just glob + load base_params)
@@ -181,7 +220,7 @@ def get_or_create_calibration(
     with open(base_params_path) as f:
         base_params = json.load(f)
     controller_files, base_params, calib_folder = set_up_calibration_runs(
-        base_params, "surrogate_calibration"
+        base_params, "surrogate_calibration", file_name=target_folder
     )
     n = len(controller_files)
     print(f"Phase 1 done. {n} controllers saved to {calib_folder}/Calibration_runs/")
@@ -228,11 +267,6 @@ def _resolve_forward_looking_expectations(results_dir: str, forward_looking_expe
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _setup_dirs(results_dir: str):
-    os.makedirs(f"{results_dir}/Data",  exist_ok=True)
-    os.makedirs(f"{results_dir}/Plots", exist_ok=True)
-
-
 def _train_test_split(X, Y, test_frac=0.2, seed=0):
     rng = np.random.default_rng(seed)
     idx = rng.permutation(len(X))
@@ -252,7 +286,7 @@ def main(
     pairwise_path: str = None,
     n_lhs: int | None = None,
     n_bo: int | None = None,
-    results_dir: str = RESULTS_DIR,
+    results_dir: str = None,
     forward_looking_expectations: bool = None,
 ) -> tuple:
     """
@@ -264,12 +298,14 @@ def main(
     bounds_path            : JSON policy bounds (defaults to package/surrogate/constants/policy_bounds_surrogate.json)
     opt_config_path        : JSON optimisation config — emissions/utility constraint fractions,
                              LHS/BO search budget (defaults to package/surrogate/constants/optimisation_config.json)
-    existing_calib_folder  : path to a previous run's folder that has Calibration_runs/
-                             controller_seed_*.pkl files — skips Phase 1 entirely.
-                             None (default): Phase 1 always runs fresh — this is never
-                             auto-detected from a prior call against the same results_dir,
-                             so changing calibration settings between runs can't silently
-                             pick up a stale calibration.
+    existing_calib_folder  : path to ANOTHER run's folder that has Calibration_runs/
+                             controller_seed_*.pkl files (e.g. from package.car_ban,
+                             package.variable_carbon_price, or a previous surrogate
+                             call) — skips Phase 1 entirely, reusing that calibration.
+                             None (default): Phase 1 always runs fresh, straight into
+                             results_dir (see results_dir below) — this is never
+                             auto-detected from a prior call, so changing calibration
+                             settings between runs can't silently pick up a stale one.
     pairwise_path          : path to pairwise_outcomes.pkl — STALE, do not use (see
                              sampling.load_pairwise_warmstart's docstring) until it's
                              regenerated with the log_utility metric.
@@ -277,6 +313,23 @@ def main(
                              None (default) uses "search.n_lhs" from opt_config_path.
     n_bo                   : number of active BO iterations (Phase 2 only).
                              None (default) uses "search.n_bo" from opt_config_path.
+    results_dir            : where THIS run's calibration (unless existing_calib_folder
+                             is given) + LHS/BO caches + surrogate + pareto.npz + plots
+                             all live — ONE self-contained, timestamped folder, same
+                             convention as produce_name_datetime("surrogate_calibration")/
+                             ("policy_test_future_sight"). None (default): mint a fresh
+                             results/surrogate_optimisation_<timestamp> folder every call
+                             — this is the normal case, and is what prevents a rerun
+                             (different n_lhs, different forward_looking_expectations,
+                             changed policy bounds, ...) from silently reloading another
+                             run's stale lhs_data.npz/bo_data.npz/bau_baseline.npz, which
+                             is exactly what used to happen when every call shared one
+                             fixed results/surrogate_optimisation folder. Pass an existing
+                             path explicitly ONLY to deliberately resume/extend that exact
+                             prior run (e.g. after an interrupted BO loop) — caches within
+                             a given results_dir are still keyed by path only (see
+                             evaluate_lhs/get_or_create_bau_baseline), so reusing one on
+                             purpose with a changed config is still the caller's own risk.
     forward_looking_expectations : None (default) leaves base_params's own
                              setting untouched (naive — base_params_surrogate.json
                              does not set this key). Pass True to run every
@@ -296,20 +349,22 @@ def main(
                              package.surrogate.best_policies call against the
                              same results_dir picks up the same mode
                              automatically (see best_policies.run_top_policies).
-                             CACHES ARE NOT MODE-AWARE: lhs_data.npz,
-                             bo_data.npz and bau_baseline.npz under
-                             results_dir/Data are keyed only by path — switch
-                             results_dir (or delete those three files) when
-                             changing this value for a results_dir that's
-                             already been run, or you'll silently reuse
-                             evaluations from the other expectation regime.
+                             Since results_dir defaults to a fresh folder every
+                             call, a different forward_looking_expectations
+                             naturally lands in its own folder too — the
+                             mode-mismatch risk described under results_dir
+                             above only applies if you explicitly reuse a path.
 
     Returns
     -------
     X_ranked, Y_ranked     : all feasible evaluated policies, sorted by ascending
                              net_cost (row 0 = cheapest feasible policy found)
     """
-    _setup_dirs(results_dir)
+    if results_dir is None:
+        results_dir = produce_name_datetime(RESULTS_PREFIX)
+    createFolder(results_dir)
+    print(f"Results folder for this run: {results_dir}")
+
     bounds = load_policy_bounds(bounds_path)
     cfg = load_optimisation_config(opt_config_path)
     emissions_frac = cfg["emissions_frac"]
@@ -335,8 +390,12 @@ def main(
     # existing_calib_folder is only used if the caller explicitly passed one —
     # no auto-detection from a prior call against this same results_dir, so
     # this always runs Phase 1 fresh unless you deliberately ask it not to.
+    # target_folder=results_dir: when calibration DOES run fresh, it's written
+    # straight into results_dir/Calibration_runs (calib_folder == results_dir)
+    # instead of a separate sibling folder — see get_or_create_calibration's
+    # docstring. Ignored when existing_calib_folder is given.
     controller_files, base_params, calib_folder = get_or_create_calibration(
-        base_params_path, existing_calib_folder
+        base_params_path, existing_calib_folder, target_folder=results_dir
     )
     n_seeds = len(controller_files)
     print(f"  Seeds (parallel future-period runs per evaluation): {n_seeds}")
@@ -497,6 +556,7 @@ def main(
     if len(X_ranked) == 0:
         print("No feasible policy found. Run more BO iterations or loosen the "
               "constraints in optimisation_config.json.")
+        print(f"\nEverything from this run (calibration, LHS/BO data, surrogate) is in: {results_dir}")
         return None, None
 
     header = f"{'#':<4} {'LogUtil':>14} {'Emissions':>14} {'NetCost':>14}  " + \
@@ -509,9 +569,9 @@ def main(
         print(f"{rank:<4} {y[0]:>14.4g} {y[1]:>14.4g} {y[2]:>14.4g}  {policy_str}")
 
     print(f"\nBest policy ({source}): net_cost={Y_ranked[0, 2]:.4g}")
-    print(f"Saved to {results_dir}/Data/pareto.npz")
-    print("Next: run `python -m package.surrogate.best_policies` to run the top "
-          "policies through the real ABM and produce time-series + trade-off plots.")
+    print(f"\nEverything from this run (calibration, LHS/BO data, surrogate, pareto.npz) is in: {results_dir}")
+    print(f"Next: run `python -m package.surrogate.best_policies` with results_dir='{results_dir}' "
+          "to run the top policies through the real ABM and produce time-series + trade-off plots.")
 
     return X_ranked, Y_ranked
 

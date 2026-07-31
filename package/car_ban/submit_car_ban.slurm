@@ -54,9 +54,10 @@ cd "$REPO_ROOT"
 
 uv sync
 
-# One command does calibration (Phase 1, skipped automatically on a rerun
-# against the same results/car_ban/Data/calib_folder.pkl) + every scenario
-# (Phase 2) + plotting.
+# One command does calibration (Phase 1, always fresh unless
+# EXISTING_CALIB_FOLDER is set below) + every scenario (Phase 2) + plotting,
+# all saved into ONE fresh results/car_ban_<timestamp> folder printed near
+# the top of this job's log -- see package/car_ban/gen.py's module docstring.
 #
 # To instead reuse a calibration already produced by
 # package.variable_carbon_price (the two base_params_*.json configs are

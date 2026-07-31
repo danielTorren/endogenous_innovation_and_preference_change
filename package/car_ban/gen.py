@@ -67,6 +67,17 @@ package.surrogate.run.get_or_create_calibration and reused across every
 package.resources.run.load_in_controller, so only the 144-month future
 period differs per scenario.
 
+ONE SELF-CONTAINED, TIMESTAMPED FOLDER PER RUN
+--------------------------------------------------
+main() mints a fresh results/car_ban_<timestamp> folder every call
+(results_dir=None, the default) — same convention as
+produce_name_datetime("surrogate_calibration")/("policy_test_future_sight").
+Calibration (unless existing_calib_folder is given), car_ban_results.pkl,
+scenarios.pkl and every plot all live under that ONE folder — nothing is
+split across a shared fixed results/car_ban path any more, so two different
+runs (changed ban years, changed expectation modes, a rerun after a model
+change) can never silently overwrite or cross-contaminate each other.
+
 OUTPUT
 --------
 For every (expectation_mode, scenario) pair, saves the full monthly time
@@ -98,7 +109,7 @@ import numpy as np
 from joblib import Parallel, delayed, load as joblib_load
 
 from package.resources.run import load_in_controller
-from package.resources.utility import save_object, get_num_workers
+from package.resources.utility import save_object, get_num_workers, createFolder, produce_name_datetime
 from package.surrogate.run import get_or_create_calibration
 
 # ---------------------------------------------------------------------------
@@ -107,7 +118,14 @@ from package.surrogate.run import get_or_create_calibration
 
 _CONSTANTS_DIR = "package/car_ban/constants"
 BASE_PARAMS_PATH = f"{_CONSTANTS_DIR}/base_params_car_ban.json"
-RESULTS_DIR = "results/car_ban"
+
+# Prefix for the fresh results/<prefix>_<timestamp> folder main() mints per
+# call when results_dir isn't given explicitly — same convention as
+# produce_name_datetime("surrogate_calibration")/("policy_test_future_sight").
+# No fixed RESULTS_DIR any more: calibration + Data + Plots for a given run
+# all live under that ONE self-contained folder (see main()), rather than a
+# shared path that a later run could silently overwrite or reuse stale data from.
+RESULTS_PREFIX = "car_ban"
 
 # controller.t_2030 = duration_burn_in + duration_calibration + 6*12, i.e. the
 # future period starts at year 2024 (see controller.unpack_controller_parameters).
@@ -234,11 +252,24 @@ def _run_scenario_all_seeds(base_params_future, scenario, controller_files):
 def main(
     base_params_path: str = BASE_PARAMS_PATH,
     existing_calib_folder: str = None,
-    results_dir: str = RESULTS_DIR,
+    results_dir: str = None,
     ban_years=BAN_YEARS,
     expectation_modes=EXPECTATION_MODES,
 ) -> dict:
-    os.makedirs(f"{results_dir}/Data", exist_ok=True)
+    """
+    results_dir : None (default) mints a fresh results/car_ban_<timestamp>
+        folder for THIS call — calibration (unless existing_calib_folder is
+        given), car_ban_results.pkl/scenarios.pkl, and every plot all live
+        under that ONE self-contained folder, so two different runs (changed
+        ban years, changed expectation modes, a rerun after a model change)
+        can never silently overwrite or cross-contaminate each other. Pass an
+        existing path explicitly only to deliberately resume/extend that
+        exact prior run.
+    """
+    if results_dir is None:
+        results_dir = produce_name_datetime(RESULTS_PREFIX)
+    createFolder(results_dir)
+    print(f"Results folder for this run: {results_dir}")
 
     print("=== Step 1: Calibration (shared across every scenario below) ===")
     # existing_calib_folder is only used if explicitly passed (e.g. to reuse
@@ -246,9 +277,12 @@ def main(
     # prior call against this same results_dir, so this always runs Phase 1
     # fresh unless you deliberately ask it not to. That avoids silently
     # reusing a stale calibration after changing calibration settings.
+    # target_folder=results_dir: a fresh calibration is written straight into
+    # results_dir/Calibration_runs (calib_folder == results_dir) instead of a
+    # separate sibling folder — ignored when existing_calib_folder is given.
     ran_fresh_calibration = existing_calib_folder is None
     controller_files, base_params, calib_folder = get_or_create_calibration(
-        base_params_path, existing_calib_folder
+        base_params_path, existing_calib_folder, target_folder=results_dir
     )
     n_seeds = len(controller_files)
 
@@ -280,8 +314,13 @@ def main(
     # Nothing downstream reuses this calibration, so don't leave it on disk —
     # but only if we created it this call; an explicitly-passed
     # existing_calib_folder belongs to another experiment and must be left alone.
+    # calib_folder == results_dir in the common (fresh) case, so this only
+    # clears the (large) Calibration_runs subfolder, leaving car_ban_results.pkl/
+    # scenarios.pkl/Plots untouched in the same self-contained folder.
     if ran_fresh_calibration:
         shutil.rmtree(Path(calib_folder) / "Calibration_runs", ignore_errors=True)
+
+    print(f"\nEverything from this run (results, plots) is in: {results_dir}")
 
     return results
 

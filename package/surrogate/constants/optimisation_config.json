@@ -3,8 +3,8 @@
 
     "constraints": {
         "_comment": "Both fractions are one-sided bounds vs. BAU — exceeding them (more decarbonisation, smaller utility loss) is fine and unconstrained; only the stated direction is enforced. net_cost_floor is the minimum acceptable net_cost (default 0: a policy can't be net income) — see optimisation.py.",
-        "emissions_max_fraction_of_bau": 0.70,
-        "utility_min_fraction_of_bau": 0.8,
+        "emissions_max_fraction_of_bau": 0.85,
+        "utility_min_fraction_of_bau": 0.6,
         "net_cost_floor": 10e6
     },
 

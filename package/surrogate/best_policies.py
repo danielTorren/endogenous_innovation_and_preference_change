@@ -50,7 +50,7 @@ from package.analysis.endogenous_policy_intensity_pair_plot import (
 from .sampling import PolicyBounds, load_policy_bounds
 from .run import (
     get_or_create_calibration, _resolve_calib_folder, _resolve_forward_looking_expectations,
-    BASE_PARAMS_PATH, BOUNDS_PATH, RESULTS_DIR,
+    BASE_PARAMS_PATH, BOUNDS_PATH,
 )
 
 N_BEST = 10
@@ -78,7 +78,7 @@ def run_final_abm(
     base_params: dict,
     controller_files: list,
     bounds: PolicyBounds = None,
-    results_dir: str = RESULTS_DIR,
+    results_dir: str = None,
     save: bool = True,
     tag: str = "optimal_policy",
     forward_looking_expectations: bool = None,
@@ -93,6 +93,10 @@ def run_final_abm(
     policy_vector : one row from X_ranked, or all-zeros for the BAU baseline
     controller_files : from get_or_create_calibration() — reuse the same ones
     bounds : PolicyBounds used during optimisation; defaults to loading from JSON
+    results_dir : only used when save=True — required in that case (there is
+          no shared default folder any more). Every caller in this file uses
+          save=False and does its own saving into its own self-contained
+          timestamped folder instead (see run_top_policies()).
     save : whether to pickle the output/policy_dict to results_dir/Data
     tag : filename prefix used when save=True — pass a distinct tag per call
           when running several policies so files don't overwrite each other
@@ -141,6 +145,8 @@ def run_final_abm(
     }
 
     if save:
+        if results_dir is None:
+            raise ValueError("run_final_abm(save=True) requires results_dir to be given.")
         save_object(output,      f"{results_dir}/Data", f"{tag}_output")
         save_object(policy_dict, f"{results_dir}/Data", f"{tag}_dict")
         print(f"Saved to {results_dir}/Data/{tag}_*.pkl")
@@ -167,8 +173,8 @@ def select_top_policies(X_ranked: np.ndarray, Y_ranked: np.ndarray, n_best: int 
 
 
 def run_top_policies(
+    results_dir: str,
     n_best: int = N_BEST,
-    results_dir: str = RESULTS_DIR,
     bounds_path: str = BOUNDS_PATH,
     base_params_path: str = BASE_PARAMS_PATH,
     existing_calib_folder: str = None,
@@ -178,6 +184,16 @@ def run_top_policies(
     Load the ranked feasible policies saved by run.py, run the BAU baseline
     and the top n_best (cheapest feasible) policies through the real ABM, and
     save the aggregated results — same pattern as low_policy_intensity_gen.py.
+
+    results_dir : REQUIRED — the exact self-contained, timestamped folder a
+        prior package.surrogate.run.main() call printed/returned (e.g.
+        "results/surrogate_optimisation_14_53_52__30_07_2026"). There is no
+        longer a shared default folder to fall back to on purpose: main()
+        now mints a fresh folder per call specifically so two different runs
+        (different bounds, different forward_looking_expectations, a rerun
+        after changing the model) can never be confused for each other or
+        silently cross-contaminate each other's cached data — pointing this
+        at the wrong run's folder is now an explicit mistake, not a silent one.
 
     forward_looking_expectations : None (default) auto-resolves to whatever
         value run.main() was called with for this same results_dir (persisted
@@ -190,6 +206,10 @@ def run_top_policies(
         never affected).
 
     Returns: (out_folder, base_params, outputs, outputs_BAU, policy_dicts, Y_top, bounds)
+             out_folder is a FRESH results/surrogate_top_policies_<timestamp>
+             folder for this evaluation's own dashboard/plots — same
+             "reads from one run, writes its own new timestamped folder"
+             pattern as package.policy_test_future_sight.
     """
     ranked_path = f"{results_dir}/Data/pareto.npz"
     data = np.load(ranked_path)
@@ -496,13 +516,18 @@ def plot_top_policies_tradeoff(
 # ---------------------------------------------------------------------------
 
 def main(
+    results_dir: str,
     n_best: int = N_BEST,
-    results_dir: str = RESULTS_DIR,
     existing_calib_folder: str = None,
     forward_looking_expectations: bool = None,
 ):
+    """
+    results_dir : REQUIRED — see run_top_policies()'s docstring. This is the
+        exact folder package.surrogate.run.main() printed/returned, e.g.
+        "results/surrogate_optimisation_14_53_52__30_07_2026".
+    """
     out_folder, base_params, outputs, outputs_BAU, policy_dicts, Y_top, bounds = run_top_policies(
-        n_best=n_best, results_dir=results_dir, existing_calib_folder=existing_calib_folder,
+        results_dir=results_dir, n_best=n_best, existing_calib_folder=existing_calib_folder,
         forward_looking_expectations=forward_looking_expectations,
     )
     plot_top_policies_dashboard(base_params, out_folder, outputs, outputs_BAU, policy_dicts, Y_top, dpi=200)
@@ -512,4 +537,18 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    # results_dir is required — the exact folder package.surrogate.run.main()
+    # printed/returned (e.g. results/surrogate_optimisation_14_53_52__30_07_2026).
+    import sys
+    _results_dir = None
+    for _arg in sys.argv[1:]:
+        if _arg.startswith("--results_dir="):
+            _results_dir = _arg.split("=", 1)[1]
+    if _results_dir is None:
+        raise SystemExit(
+            "package.surrogate.best_policies requires --results_dir=PATH -- the exact\n"
+            "folder package.surrogate.run.main() printed/returned, e.g.:\n"
+            "  python -m package.surrogate.best_policies "
+            "--results_dir=results/surrogate_optimisation_14_53_52__30_07_2026"
+        )
+    main(_results_dir)

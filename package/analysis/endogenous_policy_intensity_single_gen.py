@@ -153,13 +153,25 @@ def parallel_multi_run(params_dict: list[dict], save_path="calibrated_controller
     return controller_files  # Return list of file paths
 
 
-def set_up_calibration_runs(base_params, root):
+def set_up_calibration_runs(base_params, root, file_name=None):
+    """
+    file_name : if given, calibration is written directly into this
+        already-existing folder (its Calibration_runs/ subfolder — see
+        createFolder()) instead of minting a new results/<root>_<timestamp>
+        folder of its own. Used by callers that want ONE self-contained
+        timestamped folder covering calibration + everything downstream
+        (e.g. package.surrogate.run.get_or_create_calibration's
+        target_folder argument), rather than calibration living in its own
+        separate sibling folder. None (default, existing behaviour
+        unchanged): mint a fresh results/<root>_<timestamp> folder here.
+    """
 
     future_time_steps = base_params["duration_future"]
     base_params["duration_future"] = 0
 
     base_params_list = params_list_with_seed(base_params)
-    file_name = produce_name_datetime(root)
+    if file_name is None:
+        file_name = produce_name_datetime(root)
 
     createFolder(file_name)
 
