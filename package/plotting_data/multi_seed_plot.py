@@ -6,9 +6,10 @@ from matplotlib.lines import Line2D
 
 
 def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotation_height_prop=[0.2, 0.2, 0.2, 0.2]):
-    burn_in = base_params["duration_burn_in"]
-    no_carbon_price = base_params["duration_calibration"]
     ev_production_start_time = base_params["ev_production_start_time"]
+    # Policies start at the end of calibration, which is burn-in + calibration
+    # steps into the run (duration_calibration excludes the burn-in)
+    calibration_end_step = base_params["duration_burn_in"] + base_params["duration_calibration"]
 
     y_min, y_max = ax.get_ylim()
     annotation_height_0 = y_min + annotation_height_prop[0] * (y_max - y_min)
@@ -17,10 +18,11 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
     annotation_height_3 = y_min + annotation_height_prop[3] * (y_max - y_min)
 
     # EV Sale Start
-    ax.axvline(ev_production_start_time, color="black", linestyle=':')
-    ax.annotate("EV Sale Start", xy=(ev_production_start_time, annotation_height_0),
-                rotation=90, verticalalignment='center', horizontalalignment='right',
-                fontsize=8, color='black')
+    if ev_production_start_time > 0:
+        ax.axvline(ev_production_start_time, color="black", linestyle=':')
+        ax.annotate("EV Sale Start", xy=(ev_production_start_time, annotation_height_0),
+                    rotation=90, verticalalignment='center', horizontalalignment='right',
+                    fontsize=8, color='black')
 
     # EV Adoption Subsidy Start
     if base_params["EV_rebate_state"]:
@@ -32,7 +34,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 
     # Policy Start
     if base_params["duration_future"] > 0:
-        policy_start_time = no_carbon_price
+        policy_start_time = calibration_end_step
         ax.axvline(policy_start_time, color="black", linestyle='--')
         ax.annotate("Policy Start", xy=(policy_start_time, annotation_height_2),
                     rotation=90, verticalalignment='center', horizontalalignment='right',
@@ -40,7 +42,7 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
 
         # Policy End
         if base_params["duration_future"] >= 144:
-            policy_end_time = no_carbon_price + 144
+            policy_end_time = calibration_end_step + 144
             ax.axvline(policy_end_time, color="black", linestyle='--')
             ax.annotate("Policy End", xy=(policy_end_time, annotation_height_3),
                         rotation=90, verticalalignment='center', horizontalalignment='right',
@@ -59,7 +61,81 @@ def get_shape_safe(data):
         return "unknown type"
 
 
-def print_data_shapes(outputs):
+CALIBRATION_END_YEAR = 2024  # The end of calibration is Jan 2024
+
+
+def get_plot_window(base_params, total_steps):
+    """
+    Work out which steps to plot, and which step corresponds to Jan 2024.
+
+    Runs with a future period show only that period. Calibration-only runs
+    (duration_future == 0) have nothing after the end of calibration, so they
+    show the calibration period from the end of burn-in instead - otherwise
+    every panel slices an empty array and comes out blank.
+    """
+    calibration_end_step = base_params["duration_burn_in"] + base_params["duration_calibration"]
+
+    if base_params["duration_future"] > 0 and calibration_end_step < total_steps:
+        start_step = calibration_end_step
+    else:
+        start_step = base_params["duration_burn_in"]
+
+    # Never leave a window with no room in it (e.g. truncated output)
+    start_step = max(0, min(start_step, total_steps - 1))
+    return start_step, calibration_end_step
+
+
+def step_to_year(step, calibration_end_step):
+    return CALIBRATION_END_YEAR + (step - calibration_end_step) / 12
+
+
+def format_year_axis(axs, start_step, total_steps, calibration_end_step, spacing=5):
+    """Label the x axis in calendar years, ticking every `spacing` years."""
+    start_year = step_to_year(start_step, calibration_end_step)
+    end_year = step_to_year(total_steps, calibration_end_step)
+
+    first_tick = np.ceil(start_year / spacing) * spacing
+    tick_years = np.arange(first_tick, end_year + spacing, spacing)
+    tick_positions = calibration_end_step + (tick_years - CALIBRATION_END_YEAR) * 12
+
+    visible = (tick_positions >= start_step) & (tick_positions <= total_steps)
+    tick_positions = tick_positions[visible]
+    tick_labels = [str(int(y)) for y in tick_years[visible]]
+
+    for ax in axs:
+        ax.set_xlim(start_step, total_steps)
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels(tick_labels)
+        ax.set_xlabel("Year", fontsize=14)
+
+    return f"{start_year:.0f}-{end_year:.0f}"
+
+
+def plot_series_with_ci(ax, data, time_steps, start_step, color, linestyle='-', label=None, safe=False):
+    """
+    Mean across seeds with a 95% CI band, over the steps from `start_step` on.
+
+    `data` can be a tuple/list of per-seed series as well as an array, so it is
+    coerced first. With safe=True a failure is annotated on the axis rather than
+    raised, which the extra dashboard relies on for its optional metrics.
+    """
+    try:
+        sliced_data = np.asarray(data, dtype=float)[:, start_step:]
+        mean = np.nanmean(sliced_data, axis=0)
+        ci = sem(sliced_data, axis=0, nan_policy='omit') * t.ppf(0.975, df=sliced_data.shape[0] - 1)
+        ax.plot(time_steps, mean, color=color, linestyle=linestyle, label=label)
+        ax.fill_between(time_steps, mean - ci, mean + ci, color=color, alpha=0.2)
+        return True
+    except Exception as e:
+        if not safe:
+            raise
+        print(f"  ⚠ Failed to plot {label}: {str(e)}")
+        ax.text(0.5, 0.5, f'{label} unavailable', transform=ax.transAxes,
+                ha='center', va='center', fontsize=8, alpha=0.7)
+        return False
+
+
+def print_data_shapes(outputs, base_params):
     """Print shapes of all relevant data arrays for debugging with robust error handling"""
     print("\n" + "="*60)
     print("DATA SHAPES FOR DEBUGGING")
@@ -142,12 +218,20 @@ def print_data_shapes(outputs):
     print("--- Simulation Timeline ---")
     try:
         if "history_prop_EV" in outputs:
-            total_steps = outputs["history_prop_EV"].shape[1]
+            total_steps = np.asarray(outputs["history_prop_EV"]).shape[1]
+            start_step, calibration_end_step = get_plot_window(base_params, total_steps)
             print(f"Total steps in simulation: {total_steps}")
-            calibration_end_step = 456
-            print(f"Steps in future period (from step {calibration_end_step}): {total_steps - calibration_end_step}")
-            print(f"Future period years: {(total_steps - calibration_end_step) / 12:.1f} years")
-            print(f"Start year of future period: 2024")
+            print(f"Burn-in: {base_params['duration_burn_in']}, calibration: "
+                  f"{base_params['duration_calibration']}, future: {base_params['duration_future']}")
+            print(f"End of calibration (Jan {CALIBRATION_END_YEAR}) is step {calibration_end_step}")
+            if base_params["duration_future"] > 0:
+                print(f"Future period: {total_steps - calibration_end_step} steps "
+                      f"({(total_steps - calibration_end_step) / 12:.1f} years)")
+            else:
+                print("No future period - plotting the calibration period instead")
+            print(f"Plotting steps {start_step}-{total_steps} "
+                  f"({step_to_year(start_step, calibration_end_step):.0f}-"
+                  f"{step_to_year(total_steps, calibration_end_step):.0f})")
         else:
             print("Cannot determine timeline - history_prop_EV not found")
     except Exception as e:
@@ -158,22 +242,13 @@ def print_data_shapes(outputs):
 
 def plot_multi_seed_dashboard(base_params, fileName, outputs, dpi=200):
     fig, axs = plt.subplots(3, 2, figsize=(15, 12), sharex=True)
-    
-    # Define start index for future period (after calibration)
-    calibration_end_step = 456  # Step 456 = Jan 2024
-    total_steps = outputs["history_prop_EV"].shape[1]
-    time_steps = np.arange(calibration_end_step, total_steps)
-    
-    # Calculate actual years for x-axis (starting from 2024)
-    start_year = 2024
+
+    total_steps = np.asarray(outputs["history_prop_EV"]).shape[1]
+    start_step, calibration_end_step = get_plot_window(base_params, total_steps)
+    time_steps = np.arange(start_step, total_steps)
 
     def plot_line_with_ci(ax, data, color, linestyle='-', label=None):
-        # Slice data from future period start
-        sliced_data = data[:, calibration_end_step:]
-        mean = np.nanmean(sliced_data, axis=0)
-        ci = sem(sliced_data, axis=0, nan_policy='omit') * t.ppf(0.975, df=sliced_data.shape[0] - 1)
-        ax.plot(time_steps, mean, color=color, linestyle=linestyle, label=label)
-        ax.fill_between(time_steps, mean - ci, mean + ci, color=color, alpha=0.2)
+        plot_series_with_ci(ax, data, time_steps, start_step, color, linestyle, label)
 
     # --- EV Adoption and Sales Share
     ax = axs[0, 0]
@@ -222,23 +297,10 @@ def plot_multi_seed_dashboard(base_params, fileName, outputs, dpi=200):
         ax.set_ylabel("Cumulative Utility, bn $", fontsize=14)
     add_vertical_lines(ax, base_params, annotation_height_prop=[0.2, 0.2, 0.2, 0.2])
 
-    # --- X axis formatting (now showing years from 2024 onwards)
-    future_duration_years = (total_steps - calibration_end_step) / 12
-    all_tick_years = np.arange(start_year, start_year + future_duration_years + 5, 5)
-    all_tick_positions = calibration_end_step + (all_tick_years - start_year) * 12
-    
-    # Filter to only show ticks within the visible range
-    visible_mask = all_tick_positions <= total_steps
-    tick_positions = all_tick_positions[visible_mask]
-    tick_labels = [str(y) for y in all_tick_years[visible_mask]]
+    # --- X axis formatting, in calendar years
+    window = format_year_axis(axs[2], start_step, total_steps, calibration_end_step)
 
-    for ax in axs[2]:
-        ax.set_xlim(calibration_end_step, total_steps)
-        ax.set_xticks(tick_positions)
-        ax.set_xticklabels(tick_labels)
-        ax.set_xlabel("Year", fontsize=14)
-
-    fig.suptitle("Multi-Seed Single Run Dashboard (Future Period from 2024)", fontsize=16)
+    fig.suptitle(f"Multi-Seed Single Run Dashboard ({window})", fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     fig.savefig(f"{fileName}/Plots/multi_seed_dashboard.png", dpi=dpi)
     print(f"Saved to {fileName}/Plots/multi_seed_dashboard.png")
@@ -246,28 +308,13 @@ def plot_multi_seed_dashboard(base_params, fileName, outputs, dpi=200):
 
 def plot_multi_seed_dashboard_extra(base_params, fileName, outputs, dpi=200):
     fig, axs = plt.subplots(3, 2, figsize=(15, 12), sharex=True)
-    
-    # Define start index for future period (after calibration)
-    calibration_end_step = 456  # Step 456 = Jan 2024
-    total_steps = outputs["history_prop_EV"].shape[1]
-    time_steps = np.arange(calibration_end_step, total_steps)
-    
-    # Calculate actual years for x-axis (starting from 2024)
-    start_year = 2024
+
+    total_steps = np.asarray(outputs["history_prop_EV"]).shape[1]
+    start_step, calibration_end_step = get_plot_window(base_params, total_steps)
+    time_steps = np.arange(start_step, total_steps)
 
     def plot_line_with_ci(ax, data, color, linestyle='-', label=None):
-        try:
-            sliced_data = data[:, calibration_end_step:]
-            mean = np.nanmean(sliced_data, axis=0)
-            ci = sem(sliced_data, axis=0, nan_policy='omit') * t.ppf(0.975, df=sliced_data.shape[0] - 1)
-            ax.plot(time_steps, mean, color=color, linestyle=linestyle, label=label)
-            ax.fill_between(time_steps, mean - ci, mean + ci, color=color, alpha=0.2)
-            return True
-        except Exception as e:
-            print(f"  ⚠ Failed to plot {label}: {str(e)}")
-            ax.text(0.5, 0.5, f'{label} unavailable', transform=ax.transAxes, 
-                    ha='center', va='center', fontsize=8, alpha=0.7)
-            return False
+        return plot_series_with_ci(ax, data, time_steps, start_step, color, linestyle, label, safe=True)
 
     print("\n--- Plotting Extra Dashboard ---")
     
@@ -343,23 +390,26 @@ def plot_multi_seed_dashboard_extra(base_params, fileName, outputs, dpi=200):
     else:
         print("✗ history_total_profit not found")
     
-    if "history_mean_profit_margins_ICE" in outputs:
-        print(f"✓ Plotting history_mean_profit_margins_ICE (shape: {get_shape_safe(outputs['history_mean_profit_margins_ICE'])})")
-        if plot_line_with_ci(ax, outputs["history_mean_profit_margins_ICE"], '#D55E00', '--', 'ICE Margin'):
+    ax.set_ylabel("Total Profit, bn $", fontsize=14)
+
+    # Margins are fractions, so they get their own axis to be visible alongside
+    # profit in billions
+    ax_margin = ax.twinx()
+    for key, colour, linestyle, label in (
+        ("history_mean_profit_margins_ICE", '#D55E00', '--', 'ICE Margin'),
+        ("history_mean_profit_margins_EV", '#009E73', ':', 'EV Margin'),
+    ):
+        if key not in outputs:
+            print(f"✗ {key} not found")
+            continue
+        print(f"✓ Plotting {key} (shape: {get_shape_safe(outputs[key])})")
+        if plot_line_with_ci(ax_margin, outputs[key], colour, linestyle, label):
             has_data = True
-    else:
-        print("✗ history_mean_profit_margins_ICE not found")
-    
-    if "history_mean_profit_margins_EV" in outputs:
-        print(f"✓ Plotting history_mean_profit_margins_EV (shape: {get_shape_safe(outputs['history_mean_profit_margins_EV'])})")
-        if plot_line_with_ci(ax, outputs["history_mean_profit_margins_EV"], '#009E73', ':', 'EV Margin'):
-            has_data = True
-    else:
-        print("✗ history_mean_profit_margins_EV not found")
-    
-    ax.set_ylabel("Profit / Margins, bn $", fontsize=14)
+    ax_margin.set_ylabel("Mean Profit Margin", fontsize=12)
+
     if has_data:
-        ax.legend(loc='upper left', fontsize='small')
+        handles = ax.get_legend_handles_labels()[0] + ax_margin.get_legend_handles_labels()[0]
+        ax.legend(handles=handles, loc='upper left', fontsize='small')
     add_vertical_lines(ax, base_params, annotation_height_prop=[0.5, 0.2, 0.2, 0.2])
 
     # --- Mean Car Age
@@ -379,75 +429,41 @@ def plot_multi_seed_dashboard_extra(base_params, fileName, outputs, dpi=200):
     ax = axs[2, 1]
     has_data = False
     
-    if "history_upper_percentile_price_ICE_EV_arr" in outputs:
-        upper_shape = get_shape_safe(outputs["history_upper_percentile_price_ICE_EV_arr"])
-        print(f"✓ Plotting history_upper_percentile_price_ICE_EV_arr (shape: {upper_shape})")
-        try:
-            # Try different indexing strategies based on shape
-            if len(outputs["history_upper_percentile_price_ICE_EV_arr"].shape) == 3:
-                # Shape: (n_seeds, n_steps, n_percentiles_or_types)
-                upper_data = outputs["history_upper_percentile_price_ICE_EV_arr"][:, :, 1] * 1e-3
-                print(f"  → Using 3D indexing [:, :, 1], resulting shape: {upper_data.shape}")
-            elif len(outputs["history_upper_percentile_price_ICE_EV_arr"].shape) == 2:
-                # Shape: (n_seeds, n_steps)
-                upper_data = outputs["history_upper_percentile_price_ICE_EV_arr"] * 1e-3
-                print(f"  → Using 2D data directly, shape: {upper_data.shape}")
-            else:
-                upper_data = outputs["history_upper_percentile_price_ICE_EV_arr"] * 1e-3
-                print(f"  → Using data as is, shape: {get_shape_safe(upper_data)}")
-            
-            if plot_line_with_ci(ax, upper_data, '#009E73', '-', 'Upper Percentile EV'):
-                has_data = True
-        except Exception as e:
-            print(f"  ⚠ Error processing upper percentile data: {str(e)}")
-    else:
-        print("✗ history_upper_percentile_price_ICE_EV_arr not found")
-    
-    if "history_lower_percentile_price_ICE_EV_arr" in outputs:
-        lower_shape = get_shape_safe(outputs["history_lower_percentile_price_ICE_EV_arr"])
-        print(f"✓ Plotting history_lower_percentile_price_ICE_EV_arr (shape: {lower_shape})")
-        try:
-            # Try different indexing strategies based on shape
-            if len(outputs["history_lower_percentile_price_ICE_EV_arr"].shape) == 3:
-                # Shape: (n_seeds, n_steps, n_percentiles_or_types)
-                lower_data = outputs["history_lower_percentile_price_ICE_EV_arr"][:, :, 1] * 1e-3
-                print(f"  → Using 3D indexing [:, :, 1], resulting shape: {lower_data.shape}")
-            elif len(outputs["history_lower_percentile_price_ICE_EV_arr"].shape) == 2:
-                # Shape: (n_seeds, n_steps)
-                lower_data = outputs["history_lower_percentile_price_ICE_EV_arr"] * 1e-3
-                print(f"  → Using 2D data directly, shape: {lower_data.shape}")
-            else:
-                lower_data = outputs["history_lower_percentile_price_ICE_EV_arr"] * 1e-3
-                print(f"  → Using data as is, shape: {get_shape_safe(lower_data)}")
-            
-            if plot_line_with_ci(ax, lower_data, '#009E73', '--', 'Lower Percentile EV'):
-                has_data = True
-        except Exception as e:
-            print(f"  ⚠ Error processing lower percentile data: {str(e)}")
-    else:
-        print("✗ history_lower_percentile_price_ICE_EV_arr not found")
-    
-    ax.set_ylabel("EV Price Percentiles, k$", fontsize=14)
+    for key, linestyle, label in (
+        ("history_upper_percentile_price_ICE_EV_arr", '-', 'Upper Percentile EV'),
+        ("history_lower_percentile_price_ICE_EV_arr", '--', 'Lower Percentile EV'),
+    ):
+        if key not in outputs:
+            print(f"✗ {key} not found")
+            continue
+
+        arr = np.asarray(outputs[key], dtype=float)
+        print(f"✓ Plotting {key} (shape: {arr.shape})")
+        if arr.ndim == 4:
+            # (n_seeds, n_steps, new/used, ICE/EV) - take new EV, matching the
+            # mean price panel on the main dashboard
+            series = arr[:, :, 0, 1]
+            print(f"  → Using 4D indexing [:, :, 0, 1] (new EV), resulting shape: {series.shape}")
+        elif arr.ndim == 3:
+            # (n_seeds, n_steps, ICE/EV)
+            series = arr[:, :, 1]
+            print(f"  → Using 3D indexing [:, :, 1], resulting shape: {series.shape}")
+        else:
+            series = arr
+            print(f"  → Using data as is, shape: {series.shape}")
+
+        if plot_line_with_ci(ax, series * 1e-3, '#009E73', linestyle, label):
+            has_data = True
+
+    ax.set_ylabel("New EV Price Percentiles, k$", fontsize=14)
     if has_data:
         ax.legend(loc='upper right', fontsize='small')
     add_vertical_lines(ax, base_params, annotation_height_prop=[0.5, 0.2, 0.2, 0.2])
 
-    # --- X axis formatting (future period from 2024 onwards)
-    future_duration_years = (total_steps - calibration_end_step) / 12
-    all_tick_years = np.arange(start_year, start_year + future_duration_years + 5, 5)
-    all_tick_positions = calibration_end_step + (all_tick_years - start_year) * 12
-    
-    visible_mask = all_tick_positions <= total_steps
-    tick_positions = all_tick_positions[visible_mask]
-    tick_labels = [str(y) for y in all_tick_years[visible_mask]]
+    # --- X axis formatting, in calendar years
+    window = format_year_axis(axs[2], start_step, total_steps, calibration_end_step)
 
-    for ax in axs[2]:
-        ax.set_xlim(calibration_end_step, total_steps)
-        ax.set_xticks(tick_positions)
-        ax.set_xticklabels(tick_labels)
-        ax.set_xlabel("Year", fontsize=14)
-
-    fig.suptitle("Additional Metrics (Future Period from 2024)", fontsize=16)
+    fig.suptitle(f"Additional Metrics ({window})", fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     fig.savefig(f"{fileName}/Plots/multi_seed_dashboard_extra.png", dpi=dpi)
     print(f"\nSaved to {fileName}/Plots/multi_seed_dashboard_extra.png")
@@ -458,7 +474,7 @@ def main(fileName):
     outputs = load_object(fileName + "/Data", "outputs")
     
     # Print all data shapes before plotting
-    print_data_shapes(outputs)
+    print_data_shapes(outputs, base_params)
     
     # Plot dashboards
     plot_multi_seed_dashboard(base_params, fileName, outputs, dpi=200)
@@ -468,4 +484,6 @@ def main(fileName):
 
 
 if __name__ == "__main__":
-    main(fileName="results/multi_seed_20_42_13__28_04_2026")
+    main(fileName="results/multi_seed_15_49_15__04_08_2026")
+
+    #multi_seed_15_49_15__04_08_2026

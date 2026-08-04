@@ -409,10 +409,16 @@ def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotatio
                     rotation=90, verticalalignment='center', horizontalalignment='right',
                     fontsize=8, color='black')
 
-# Example usage
-if __name__ == "__main__":
-    
-    fileName = "results/multi_seed_single_11_18_45__23_04_2026"#multi_seed_single_00_03_21__27_03_2025"
+
+def main(fileName = "results/multi_seed_single_11_18_45__23_04_2026"):
+    """
+    Main function to generate and save combined plots.
+    """
+
     base_params = load_object(fileName + "/Data", "base_params")
     
     plot_combined_figures(base_params, fileName)
+
+# Example usage
+if __name__ == "__main__":
+    main(fileName="results/multi_seed_single_11_18_45__23_04_2026")

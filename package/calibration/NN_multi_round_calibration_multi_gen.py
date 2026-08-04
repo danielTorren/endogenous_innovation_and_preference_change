@@ -8,6 +8,7 @@ from sbi.utils.user_input_checks import (
 )
 import json
 import numpy as np
+from copy import deepcopy
 from functools import partial
 from package.resources.utility import (
     produce_name_datetime,
@@ -45,18 +46,27 @@ def run_single_simulation(theta, base_params, param_list):
     """
 
     #print("theta", theta)
+    # Work on a copy: writing theta straight into the caller's dict leaks back
+    # into the parent process whenever joblib runs in-process (num_workers == 1),
+    # leaving the last-evaluated theta -- and the whole calibration_data payload
+    # that generate_data() attaches -- baked into what main() later pickles as
+    # "base_params". At num_workers > 1 each task gets a pickled copy so the
+    # parent happened to stay clean, i.e. the bug was invisible on the cluster
+    # and only showed up on a single-core run.
+    params = deepcopy(base_params)
+
     # Update the parameters from theta
     for i, param in enumerate(param_list):
         subdict = param["subdict"]
         name = param["name"]
-        base_params[subdict][name] = theta[i].item()
+        params[subdict][name] = theta[i].item()
 
     # Run the market simulation
-    controller = generate_data(base_params)
+    controller = generate_data(params)
 
     # Compute summary statistics
     arr_history = np.asarray(controller.social_network.history_prop_EV)
-    data_to_fit = convert_data(arr_history, base_params)
+    data_to_fit = convert_data(arr_history, params)
 
     return data_to_fit
 
@@ -72,6 +82,12 @@ def main(
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
+
+    # Snapshot before the seed loop starts overwriting base_params["seed"] --
+    # this is what gets saved, so base_params.pkl reflects the configuration
+    # the run was launched with rather than whatever the last seed happened
+    # to be (previously it always read seed = seed_repetitions).
+    base_params_save = deepcopy(base_params)
 
     total_runs = num_rounds*num_simulations* base_params["seed_repetitions"]
     print("TOTAL RUNS: ", total_runs)
@@ -110,7 +126,10 @@ def main(
     for i in range(num_rounds):
         print("ROUND: ", i+1, "/", num_rounds)
 
-        # For each round, we run multiple seeds and append results
+        # For each round, we run multiple seeds and collect the results. These
+        # are appended to `inference` ONCE, after the seed loop -- see below.
+        theta_all, x_all = [], []
+
         for seed in seeds:
 
             # Update base params for this seed
@@ -123,18 +142,38 @@ def main(
             sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=prior_returns_numpy)
             check_sbi_inputs(sim_for_seed, prior)
 
-            # Run simulations for this seed
+            # Run simulations for this seed.
+            # `seed` here pins sbi's OWN randomness (the theta draw from the
+            # proposal, and the per-batch seeds it hands its workers) -- it is
+            # unrelated to base_params["seed"], which is what actually drives
+            # the ABM. It must differ per call: passing one value to every
+            # iteration would make all 64 seed-batches draw IDENTICAL thetas.
             theta, x = simulate_for_sbi(
                 sim_for_seed,
                 proposal,
                 num_simulations=num_simulations,
                 num_workers=get_num_workers(),
-                simulation_batch_size=1
+                simulation_batch_size=1,
+                seed=int(i * 10_000 + seed)
             )
 
-            # Append simulations and train incrementally
-            inference.append_simulations(theta, x, proposal=proposal)
-        
+            theta_all.append(theta)
+            x_all.append(x)
+
+        # Append ONCE per round, not once per seed. sbi stamps every
+        # append_simulations() call that carries a non-prior proposal with
+        # max(_data_round_index) + 1, so appending inside the seed loop made it
+        # believe it was on round 64 after round 2 and round 128 after round 3.
+        # All seed-batches in a round were drawn from the SAME proposal, so they
+        # genuinely are one round; concatenating keeps _data_round_index at
+        # [0, 1, 2]. Training is unchanged (same atomic-loss path, same
+        # start_idx, same _proposal_roundwise[-1]) -- this just stops
+        # discard_prior_samples / non-atomic MDN losses, which branch on
+        # self._round, from silently misbehaving if they are ever switched on.
+        inference.append_simulations(
+            torch.cat(theta_all), torch.cat(x_all), proposal=proposal
+        )
+
         # After collecting simulations from all seeds in this round, train the density estimator
         density_estimator = inference.train()
         posterior = inference.build_posterior(density_estimator)
@@ -149,10 +188,10 @@ def main(
     save_object(posterior, fileName + "/Data", "posterior")
     save_object(prior, fileName + "/Data", "prior")
     save_object(parameters_list, fileName + "/Data", "var_dict")
-    save_object(base_params, fileName + "/Data", "base_params")
+    save_object(base_params_save, fileName + "/Data", "base_params")
     save_object(x_o, fileName + "/Data", "x_o")
     
-    samples = posterior.sample((200000,), x=x_o)
+    samples = posterior.sample((100000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
@@ -164,8 +203,8 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.1, 1.2]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2.5, 2.7]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.3]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2.5, 3]},
     ]
     main(
         parameters_list=parameters_list,
@@ -173,5 +212,5 @@ if __name__ == "__main__":
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
         num_simulations=64,
-        num_rounds= 2
+        num_rounds= 3
     )
