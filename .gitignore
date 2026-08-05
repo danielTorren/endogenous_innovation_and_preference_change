@@ -16,3 +16,14 @@ sbi-logs/
 .claude/
 slurm_logs/*
 !slurm_logs/.gitkeep
+
+# LaTeX build artifacts (keep .tex and .pdf)
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.bbl
+*.blg

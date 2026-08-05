@@ -86,8 +86,7 @@ def main(
     return fileName
 
 if __name__ == "__main__":
-    #main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
-    fileName = main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed_test_lower_fuel_tank.json")
+    fileName = main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
 
     """
     Will also plot stuff at the same time for convieniency

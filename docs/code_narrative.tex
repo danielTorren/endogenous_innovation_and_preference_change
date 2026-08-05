@@ -1,0 +1,730 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{authblk}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=4pt,
+  rulecolor=\color{gray!50},
+  backgroundcolor=\color{gray!5},
+  columns=fullflexible,
+  keepspaces=true,
+  language=Python,
+  keywordstyle=\color{blue!60!black},
+  commentstyle=\color{gray!70!black}\itshape,
+  stringstyle=\color{green!40!black},
+}
+
+% Long \texttt identifiers must be allowed to break, or they overrun the
+% measure in body text and in table cells.
+\usepackage{seqsplit}
+\newcommand{\code}[1]{\texttt{\seqsplit{#1}}}
+\newcommand{\file}[1]{\texttt{\seqsplit{#1}}}
+
+\emergencystretch=3em
+
+\title{Code Narrative\\[0.4em]
+\large An implementation guide to the agent-based model of\\
+\emph{Driving in the wrong direction? Modelling policy mixes for EV adoption}}
+\date{}
+% Define authors with affiliation numbers
+\author[1,2]{Miquel Bassart i Loré}
+\author[3,4,5]{Daniel Torren-Peraire}
+
+% Define affiliations matching the numbers
+\affil[1]{Universität Bielefeld}
+\affil[2]{Université Paris 1 Panthéon-Sorbonne}
+\affil[3]{Universitat Autònoma de Barcelona}
+\affil[4]{Università Ca' Foscari Venezia}
+\affil[5]{International Institute for Applied Systems Analysis}
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+This document is a guided tour of the code that implements the agent-based model
+of the paper. It is organised to follow the model, one time step from beginning to end, then each
+submodule in the order the paper introduces it and states throughout which
+function implements which equation. Section~\ref{sec:notation} gives a symbol-to-variable
+map, and Section~\ref{sec:extensions} documents mechanisms that exist in the code
+but are switched off in every configuration used for the paper.
+\end{abstract}
+
+\bigskip
+\hrule
+
+\section{Orientation}
+
+\subsection{Layout}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Directory & Contents \\
+\midrule
+\file{package/model/} & The model itself: agents, landscapes, orchestration \\
+\file{package/resources/} & Run harness (\code{generate\_data}, \code{load\_in\_controller}) and I/O helpers \\
+\file{package/constants/} & \code{base\_params\_*.json} experiment configurations, \code{vary\_*.json} sweep definitions \\
+\file{package/analysis/} & The paper's policy experiments (Section 4) \\
+\file{package/generating\_data/} & Calibration, sensitivity and robustness runners \\
+\file{package/plotting\_data/} & Figure scripts paired with the runners \\
+\file{package/calibration/} & Empirical data assembly and simulation-based-inference calibration \\
+\file{package/calibration\_data/} & California input series \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Running the model}
+
+Dependencies are managed with \code{uv} (Python 3.13+); \code{uv sync} creates the
+environment. Scripts resolve configuration paths relative to the repository root
+and use absolute imports, so they are invoked as modules from the root:
+
+\begin{lstlisting}[language=bash]
+uv run python -m package.generating_data.calibration_gen
+\end{lstlisting}
+
+Each \code{*\_gen.py} script writes a timestamped directory under \code{results/}
+and most call their matching \code{*\_plot.py} immediately afterwards. The
+repository \code{README.md} carries the full map from paper figure to script and
+configuration file.
+
+\subsection{The single-run entry point}
+
+Every experiment ultimately calls \code{generate\_data(parameters)} in
+\file{package/resources/run.py}. It loads the pickled California input series,
+derives the total horizon, constructs a \code{Controller}, and steps it to the end:
+
+\begin{lstlisting}
+parameters["time_steps_max"] = (parameters["duration_burn_in"]
+                                + parameters["duration_calibration"]
+                                + parameters["duration_future"])
+controller = Controller(parameters)
+while controller.t_controller < parameters["time_steps_max"]:
+    controller.next_step()
+return controller
+\end{lstlisting}
+
+The returned \code{Controller} \emph{is} the result: all recorded time series hang
+off it (Section~\ref{sec:outputs}), and experiment scripts pickle it or extract
+the series they need. \file{run.py} also holds a family of
+\code{*\_parallel\_run} wrappers that map \code{generate\_data} over a list of
+parameter dictionaries with \code{joblib}, each returning a different projection
+of the results; these are what the experiment scripts actually call.
+
+\section{One time step}
+\label{sec:step}
+
+\code{Controller.next\_step()} is short, and its order is the model's update
+sequence:
+
+\begin{lstlisting}
+def next_step(self):
+    self.update_time_series_data()
+    self.cars_on_sale_all_firms = self.update_firms()
+    self.second_hand_cars = self.get_second_hand_cars()
+    self.consider_ev_vec, self.new_bought_vehicles = self.update_social_network()
+    self.manage_saves()
+    self.t_controller += 1
+\end{lstlisting}
+
+This maps one-to-one onto the numbered sequence in the paper's Figure~1:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}clX@{}}
+\toprule
+Step & Paper & Code \\
+\midrule
+0 & Exogenous variables and policies update & \code{update\_time\_series\_data()} \\
+1 & Firms receive user and competitor information & \code{FirmManager.next\_step()} receives \code{consider\_ev\_vec} and \code{new\_bought\_vehicles} from the previous step \\
+2 & Firms update product mix and prices & \code{Firm.choose\_cars\_segments()}, fired with probability $\theta$ \\
+3 & Firms innovate & \code{Firm.innovate()}, fired with probability $\iota$ \\
+4 & Used market scraps and reprices & \code{SecondHandMerchant.next\_step()} \\
+5 & Users choose to keep, buy new, or buy used & \code{SocialNetworkUsers.update\_VehicleUsers()} \\
+6 & Emissions are calculated & \code{update\_emisisons()}, within the user update \\
+7 & Social parameters update for the next step & \code{calculate\_ev\_adoption()} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Two ordering details matter. First, firms act on information from the previous
+period. \code{consider\_ev\_vec} and \code{new\_bought\_vehicles} are returned by
+the user update at the \emph{end} of a step and consumed by the firm update at the
+\emph{start} of the next, which makes the market-research channel a lag
+rather than an instantaneous feedback. Second, EV consideration is recomputed
+after all purchases are settled, so a user's threshold is evaluated against the
+network state their own purchase has already contributed to.
+
+\subsection{Exogenous inputs and policy application}
+
+\code{update\_time\_series\_data()} indexes precomputed vectors at
+\code{t\_controller} rather than recomputing paths per step. It sets the carbon
+price, the effective gasoline cost, the grid emissions intensity, the electricity
+price net of subsidy and gross of carbon price, the new and used EV rebates, and
+the production subsidy. It also flips the EV research and production switches when
+their start times arrive:
+
+\begin{lstlisting}
+if self.t_controller == self.ev_research_start_time:
+    for firm in self.firm_manager.firms_list:
+        firm.ev_research_bool = True
+        firm.list_technology_memory = (firm.list_technology_memory_ICE
+                                       + firm.list_technology_memory_EV)
+\end{lstlisting}
+
+The electricity price shows the two policy channels composing:
+\begin{lstlisting}
+self.electricity_price = (self.electricity_price_vec[t] * (1 - subsidy_prop)
+                          + self.carbon_price * self.electricity_emissions_intensity)
+\end{lstlisting}
+The subsidy scales the pre-tax price; the carbon price is added on top of the
+subsidised price, weighted by grid carbon intensity. Because intensity falls over
+the policy period under the assumed linear decarbonisation, the carbon price
+component of electricity shrinks as the grid cleans up, while the gasoline
+component does not.
+
+Policy values arrive as time series built by
+\code{gen\_time\_series\_calibration\_scenarios\_policies()} from the
+\code{parameters\_policies} block: \code{States} switches each instrument on or
+off, \code{Values} sets its intensity. Instruments are applied from January 2024
+at full intensity and held constant, so the series are step functions.
+
+\section{Object model}
+
+\code{Controller} owns the whole simulation and is the only object that knows the
+calendar. It constructs and holds:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Object & Responsibility \\
+\midrule
+\code{SocialNetworkUsers} & The whole user population as vectors, plus the network and the choice machinery \\
+\code{FirmManager} & The firm population, market segmentation, and the competition statistics $W_{s,t}$ \\
+\code{Firm} $\times J$ & One manufacturer: technology memory, product mix, pricing, innovation \\
+\code{NKModel\_ICE}, \code{NKModel\_EV} & The two technology landscapes \\
+\code{SecondHandMerchant} & The consolidated used car dealer and its stock \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Note that users are \emph{not} individual objects in the hot path.
+\code{SocialNetworkUsers} holds population attributes as NumPy vectors
+(\code{beta\_vec}, \code{gamma\_vec}, \code{chi\_vec}, \code{d\_vec}) and evaluates
+utility as a users-by-vehicles matrix; \code{VehicleUser} is a thin record used
+for bookkeeping. Cars come in two kinds, and the distinction is load-bearing:
+\code{CarModel} is a \emph{design} on sale (an attribute vector and a price, not a
+physical car), while \code{PersonalCar} is an \emph{instance} that exists only once
+a design is bought, since production is on demand. Both carry
+\code{transportType}, which is \code{2} for ICEVs and \code{3} for EVs, a
+convention worth memorising, as it appears in masks throughout the code.
+
+\section{Car users}
+
+\subsection{Choice set construction (Eq.~1)}
+
+Two mechanisms restrict what a user may choose. Activation: with probability
+$\eta$ (\code{prob\_switch\_car}) a user considers replacing their car at all;
+otherwise their only option is what they already own. EV consideration: users
+whose imitation threshold is not met cannot see EVs.
+
+The second is implemented as a mask rather than by building per-user lists.
+\code{gen\_mask()} constructs a users-by-vehicles boolean matrix by outer product,
+and \code{masking\_options()} sets masked entries to $-\infty$ before
+exponentiation:
+
+\begin{lstlisting}
+not_ev_vec = np.array([v.transportType == 2 for v in vehicles], dtype=bool)
+consider_ev_all_vehicles = np.outer(consider_ev_vec == 1, ones)
+dont_consider_evs_on_ev = np.outer(consider_ev_vec == 0, not_ev_vec)
+ev_mask_matrix = (consider_ev_all_vehicles | dont_consider_evs_on_ev).astype(int)
+\end{lstlisting}
+
+A user who considers EVs gets every vehicle; a user who does not gets only ICEVs.
+This is Eq.~1's case split, vectorised.
+
+\subsection{Utility (Eq.~2--4)}
+
+\code{vectorised\_calculate\_utility\_new\_cars()} and its second-hand counterpart
+evaluate Eq.~2 as a matrix. The four terms are willingness to pay for quality with
+diminishing returns $\alpha$, willingness to pay for range with diminishing
+returns $\zeta$ (range being battery or tank size times efficiency, depreciated by
+age), lifecycle emissions priced at $\gamma_i$, and lifecycle costs.
+
+The discounted-sum terms of Eq.~3 and Eq.~4 share a single helper,
+\code{\_lifecycle\_cost\_term()}, which implements the closed-form geometric series
+of the naive-expectations case: a user assumes today's energy price and emissions
+intensity persist indefinitely, so the infinite discounted sum collapses to
+\[
+D_i \frac{(1+r)(1-\delta_{a,t})\,c_{a,t}}{\omega_{a,t}\,(r - \delta_{a,t} - r\delta_{a,t})}.
+\]
+The purchase-price term is present only when the evaluated car is not the user's
+own, and it is net of the expected sale price of the car being replaced.
+
+Because a user's own car is always in the choice set, its utility is computed by a
+separate path (\code{generate\_utilities\_current()}) with a small cache
+(\code{\_build\_cv\_cache()}, \code{\_update\_cv\_cache\_row()}) so that owned-car
+utility is not rebuilt from scratch each step.
+
+\subsection{Logit choice (Eq.~5)}
+
+Choice is sampled from the masked, exponentiated utilities. Users are activated
+sequentially in random order, because a used car can only be bought once and the
+stock must be updated between choices. \code{masking\_options()} subtracts the
+row maximum before exponentiating for numerical stability, and
+\code{user\_chooses()} samples from the unnormalised cumulative distribution:
+
+\begin{lstlisting}
+cumsum = np.cumsum(individual_specific_util_kappa)
+choice_index = int(np.searchsorted(cumsum, u_draw * cumsum[-1], side='right'))
+\end{lstlisting}
+
+Scaling the uniform draw by \code{cumsum[-1]} avoids normalising the row, which is
+where the $\kappa$-weighted denominator of Eq.~5 would otherwise be formed. If a
+user has no admissible option, which happens only in the first steps, they keep
+their current car.
+
+The consequences of a choice are handled in the same function: the replaced car is
+transferred to the used car dealer at its purchase price, unless it is an
+initialisation car or already at scrap value, in which case it leaves the
+simulation.
+
+\subsection{Social imitation (Eq.~6--7)}
+
+\code{create\_network()} builds a Watts--Strogatz small-world graph from
+\code{SW\_network\_density} and \code{SW\_prob\_rewire}, stored as a normalised
+adjacency matrix. \code{calculate\_ev\_adoption()} computes each user's
+neighbourhood EV share and compares it against \code{chi\_vec}, returning the
+binary \code{consider\_ev\_vec} that gates the next step's choice sets.
+
+Thresholds are drawn from a beta distribution in \code{gen\_chi()}, with a fixed
+\code{proportion\_zero\_target} (0.5\%) of the population pinned at $\chi_i = 0$ so
+that contagion has a seed. Note that the threshold is a gate on
+\emph{consideration}, not on choice: a user above their threshold still has to
+prefer an EV on utility grounds, which is the behaviour--attitude gap the paper
+discusses.
+
+\section{Car supply}
+
+\subsection{Segmentation (Appendix A.2.1)}
+
+\code{FirmManager} partitions the population into segments on willingness to pay
+for quality (\code{num\_beta\_segments}, $R^\beta = 8$) and for emissions reduction
+(\code{num\_gamma\_segments}, $R^\gamma = 2$), crossed with the binary EV
+consideration state. Each segment is represented by preference parameters at the
+corresponding quantile, giving the representative consumer profiles that firms
+price against.
+
+\subsection{Competition state (Eq.~9)}
+
+\code{update\_W\_immediate()} computes the current $\kappa$-weighted sum of
+lifetime utilities on offer per segment, and
+\code{update\_market\_data\_moving\_average()} maintains the twelve-month moving
+average that becomes $W_{s,t}$. Crucially, for segments that do not consider EVs
+only ICE cars enter the sum, matching Eq.~9's case split. The result is passed
+down to firms as \code{W\_vec} together with \code{I\_s\_t\_vec}, the segment
+populations.
+
+\subsection{Optimal pricing (Eq.~10)}
+
+\code{Firm.calc\_optimal\_price\_cars()} implements Eq.~10 directly, including its
+Lambert~$\mathbb{W}$ term, as a cars-by-segments matrix operation:
+
+\begin{lstlisting}
+U = term1 + term2 + term3 + term4          # utility at P = marginal cost
+exp_input = (self.kappa * U - 1) - np.log(self.W_vec[np.newaxis, :])
+LW = lambertw(np.exp(exp_input), 0).real
+P = C_m_cost[:, np.newaxis] + (1.0 + LW) / self.kappa
+\end{lstlisting}
+
+Two subsidies enter here, and they enter differently. This is exactly the
+distributional distinction the paper draws between a production subsidy and a
+purchase rebate:
+
+\begin{lstlisting}
+C_m_cost[ev_mask]  = np.maximum(0, C_m[ev_mask] - self.production_subsidy)
+C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask]
+                                - (self.production_subsidy + self.rebate
+                                   + self.rebate_calibration))
+\end{lstlisting}
+
+\code{C\_m\_cost} is the cost the firm actually bears, and it sets the price floor.
+\code{C\_m\_price} is the cost relevant to the consumer's perceived price, and it
+enters the utility term. The production subsidy appears in both, so the firm
+captures part of it as rent; the rebate appears only in the second, so it passes
+through to the buyer. Both are floored at zero, which is the zero-lower-bound the
+paper describes and the mechanism behind the finding that stacking a rebate on a
+production subsidy only inflates profits once the bound binds.
+
+\subsection{Product mix (Appendix A.2.2)}
+
+\code{choose\_cars\_segments()} implements the sequential heuristic: build the
+segments-by-technologies expected-profit matrix
+(\code{set\_utility\_and\_profit\_grid\_production()},
+\code{calc\_predicted\_profit\_segments\_production()}), repeatedly take the most
+profitable cell, add that technology at that segment's optimal price, delete the
+segment row, lock the price for that technology across remaining segments, and
+recompute, repeating until \code{max\_cars\_prod} ($Y^+$) is reached or the matrix
+empties.
+Locking the price is what allows a design to serve several segments at one price
+while being less competitive in the poorer ones.
+
+The whole procedure fires only with probability $\theta$
+(\code{prob\_change\_production}), representing price rigidity and information
+delay.
+
+\subsection{Innovation (Eq.~11--15)}
+
+\code{innovate()} fires with probability $\iota$ (\code{prob\_innovate}), which is
+how failed innovation is represented. It builds the candidate set of Eq.~11 from
+unexplored technologies at Hamming distance one from the current search location
+on each landscape, plus the current locations themselves so that not searching
+remains an option (\code{generate\_neighbouring\_technologies()},
+\code{gen\_neighbour\_strings()}). Candidates are scored by expected profit at
+their best segment (\code{calc\_predicted\_profit\_segments\_research()}) and one
+is drawn by a logit with research intensity $\lambda$
+(\code{select\_car\_lambda\_research()}), balancing exploration against
+exploitation.
+
+Memory follows Eq.~14--15. \code{update\_memory\_timer()} increments a per-technology
+idle counter, zeroed for anything researched or in production, and
+\code{update\_memory\_len()} evicts the longest-idle technology not in production
+once \code{memory\_cap} ($M^+$) is exceeded.
+
+\subsection{NK landscapes (Supplementary 3.1)}
+
+\file{nkModel\_ICE.py} and \file{nkModel\_EV.py} are near-identical, differing in
+dimensionality: both map an $N$-bit string with epistasis $K$ to attributes, but
+the EV landscape carries battery size as an additional attribute, so ICE has three
+attributes and EV four. \code{generate\_fitness\_landscape()} builds the
+contribution tables, and \code{calculate\_fitness\_vectorized()} evaluates
+attributes for many strings at once. Attribute ranges and the cost-attribute
+correlations $\rho$ come from the configuration.
+
+Landscapes are constructed once per run by
+\code{setup\_ICE\_landscape()}/\code{setup\_EV\_landscape()} and shared across
+firms, so firms differ only in where they have searched, which is the source of
+emergent specialisation. \code{find\_min\_fitness\_string()} provides the
+initialisation point: firms start one Hamming step from the worst technology
+evaluated at the median segment.
+
+\section{Used car market (Eq.~16--21)}
+
+\code{SecondHandMerchant} is the single consolidated dealer. Its pricing heuristic
+(\code{calc\_car\_price\_heuristic()}) implements Eq.~18--20: normalise quality,
+efficiency and battery size by the maxima over new cars, find each used car's
+nearest new design in that space, take its price net of rebates, and depreciate by
+age at the type-specific monthly rate \code{delta\_P} ($\xi$):
+
+\begin{lstlisting}
+closest_prices = np.maximum(first_hand_prices[closest_idxs]
+                            - (self.rebate_calibration + self.rebate), 0)
+adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
+\end{lstlisting}
+
+Because EVs depreciate faster than ICEVs ($\xi$ of 0.87\% against 1.16\% monthly),
+the used EV stock holds value differently, which is what makes the used EV rebate
+weak early in the transition: there is very little used EV stock to subsidise.
+
+\code{update\_stock\_contents()} applies the markup $\mu$ to form purchase prices
+(Eq.~16), scraps cars priced below scrap value $F$ (Eq.~21), and enforces the two
+computational bounds: \code{max\_num\_cars\_prop} ($V^+$, the stock ceiling, 10\% of
+population) and \code{age\_limit\_second\_hand} ($T^+$, months unsold before
+scrapping). The dealer also refreshes owned-car fuel costs from the current
+gas price each step, which is why a driving-cost shock reaches second-hand cars
+too.
+
+\section{Run structure and controller reuse}
+\label{sec:phases}
+
+A run has three phases, measured in months and set by configuration:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+Phase & Length & Purpose \\
+\midrule
+\code{duration\_burn\_in} & 180 & ICEV-only market reaches a steady state; EV research and production are disabled \\
+\code{duration\_calibration} & 276 & 2001--2023, matched against California data \\
+\code{duration\_future} & 144 & 2024--2035 policy period, extended to 2050 for the stability analysis \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\code{manage\_burn\_in()}, \code{manage\_calibration()} and \code{manage\_scenario()}
+switch the exogenous regime between phases. Burn-in uses \code{next\_step\_burn\_in}
+variants on the firm side, which update product mix without the EV machinery.
+
+The important performance property is that the first two phases are computed once
+and reused. \code{setup\_continued\_run\_future()} takes an already-calibrated
+controller, applies a new future-period policy configuration, and
+\code{load\_in\_controller()} continues stepping from where calibration ended:
+
+\begin{lstlisting}
+def load_in_controller(controller_load, base_params_future):
+    base_params_future["time_steps_max"] = (controller_load.duration_burn_in
+                                           + controller_load.duration_calibration
+                                           + base_params_future["duration_future"])
+    controller_load.setup_continued_run_future(base_params_future)
+    while controller_load.t_controller < base_params_future["time_steps_max"]:
+        controller_load.next_step()
+    return controller_load
+\end{lstlisting}
+
+Policy scenarios are therefore deep copies of one calibrated controller, which is
+what makes a Bayesian optimisation over policy intensity affordable: 456 months of
+burn-in and calibration are not re-simulated per candidate intensity. It also
+means every policy scenario shares an identical history up to December 2023, so
+differences between scenarios are attributable to policy rather than to
+stochastic divergence before it.
+
+\section{Policy instruments}
+
+The five instruments of the paper enter at different points, summarised here
+because the entry point determines the economics:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Instrument & Where it acts \\
+\midrule
+Carbon price & Added to gasoline and electricity cost per kWh, weighted by emissions intensity, in \code{update\_time\_series\_data()}. Affects all users every month. \\
+Electricity subsidy & Scales the pre-tax electricity price. Affects EV users every month. \\
+New EV rebate & Reduces the consumer-facing cost term \code{C\_m\_price} in pricing; floored at zero. One-off at purchase. \\
+Used EV rebate & Reduces used EV prices in the dealer's heuristic and in second-hand utility. One-off at purchase. \\
+Production subsidy & Reduces both \code{C\_m\_cost} and \code{C\_m\_price}, so firms retain part of it. One-off at purchase. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Net public cost is accumulated as \emph{policy distortion} on each actor and
+aggregated by \code{calc\_total\_policy\_distortion()} and
+\code{calc\_net\_policy\_distortion()}, the latter negated so that a positive value
+is a cost to the public purse. Carbon price revenue and subsidy outlays therefore
+net against each other, which is how the near-budget-neutral carbon-price-plus-
+electricity-subsidy combination arises.
+
+Note that the calibration-period rebates, the simplified federal and state EV
+incentives of 2010--2023, are carried by separate
+\code{rebate\_calibration}/\code{used\_rebate\_calibration} series so that they can
+be switched off independently of the policy-period instruments, as the paper's
+experimental design requires.
+
+\section{Calibration}
+
+Calibration proceeds in the layers the paper describes.
+
+\code{calibration\_data\_inputs.py} assembles the California series (vehicle
+population, EV sales, gasoline and electricity prices, grid emissions intensity,
+CPI) into the pickled object \code{generate\_data} loads;
+\code{calibration\_data\_outputs.py} formats the observed targets.
+\code{fit\_distance.py} fits the monthly distance-driven distribution.
+
+Analytically determined parameters are computed inside the controller rather than
+configured. \code{calc\_beta\_median()} solves for the median willingness to pay
+for quality such that the optimal price of an average ICEV targeted at an average
+consumer equals the observed average price; \code{generate\_beta\_values\_quintiles()}
+then distributes it across the population by the Californian income
+distribution, so richer agents get higher $\beta_i$. The remaining population
+draws are \code{gen\_distance()}, \code{gen\_chi()}, \code{gen\_nu()} and
+\code{gen\_gamma()}.
+
+The innovativeness threshold distribution is calibrated by simulation-based
+inference in \code{NN\_multi\_round\_calibration\_multi\_gen.py}, which uses
+\code{sbi} to fit the beta distribution parameters \code{a\_chi} and \code{b\_chi}
+against 2010--2023 EV uptake over multiple rounds. Consumer intensity of choice
+$\kappa$ and the efficiency depreciation rate $\delta$ are set by grid search
+against the target ranges for price, market concentration and car age.
+
+\section{Outputs}
+\label{sec:outputs}
+
+Recording is opt-in and thinned. \code{save\_timeseries\_data\_state} enables it and
+\code{compression\_factor\_state} sets the stride, so long multi-seed runs can
+record sparsely or not at all. Each object has a
+\code{set\_up\_time\_series\_*}/\code{save\_timeseries\_*} pair, and
+\code{Controller.manage\_saves()} drives them.
+
+Series live on the object that owns the quantity: adoption, prices, emissions,
+utility and car age on \code{social\_network}; concentration, profit and margins on
+\code{firm\_manager}. The scalar summaries used as optimisation targets and table
+entries are computed on demand (\code{calc\_EV\_prop()},
+\code{calc\_mean\_car\_age()}, \code{calc\_last\_step\_HHI()},
+\code{calc\_price\_range\_ice()}), and the aggregation helpers in \file{run.py}
+select which of these to return across a parameter sweep.
+
+\section{Extensions present in the code but not used in the paper}
+\label{sec:extensions}
+
+The model contains three optional mechanisms that are disabled by default and
+switched off in every configuration in this repository. They produce no result
+reported in the paper. Each is guarded so that omitting its parameter reproduces
+the published behaviour exactly; they are retained as a foundation for follow-up
+work on command-and-control policy and on policy anticipation.
+
+\subsection{ICE bans}
+
+The paper restricts itself to market-based instruments and explicitly excludes
+command-and-control policy. Three independent ban levers are nevertheless
+implemented, each expressed as months after the end of burn-in, the same
+convention as \code{ev\_production\_start\_time}, and each defaulting to
+\code{None}, meaning never:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Parameter & Effect \\
+\midrule
+\code{ICE\_research\_ban\_time} & Firms may no longer research or improve ICE technology. \code{innovate()} stops generating ICE candidates. Existing ICE designs stay in memory and remain sellable. \\
+\code{ICE\_sales\_ban\_time} & Firms may no longer offer new ICEVs. \code{choose\_cars\_segments()} drops ICE from the candidate pool, and \code{next\_step()} immediately flushes any ICE design left on sale rather than waiting for the next $\theta$ roll. Already-sold ICEVs remain drivable and resellable. \\
+\code{ICE\_driving\_ban\_time}, \code{ICE\_driving\_ban\_penalty} & A per-unit penalty added to effective ICE fuel cost from the ban date onward, folded into \code{gas\_cost\_effective\_vec}. Reaches second-hand ICEVs, since the dealer refreshes fuel costs from the same series. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The three are additive, so research-only, research-plus-sales, and
+research-plus-sales-plus-driving scenarios can all be configured. The design
+choice worth noting is that the driving ban is a cost shock rather than a
+prohibition: it therefore flows through the existing utility-driven choice
+mechanism and requires no new decision rule on either side of the market, whereas
+the sales and research bans are hard constraints on firms' choice sets. All three
+validate that EV research or production has already begun before the ban binds.
+The active flags are recomputed every step from the configured times rather than
+latched by a one-shot equality test, so they survive
+\code{setup\_continued\_run\_future()} re-deriving them for a new scenario.
+
+\subsection{Forward-looking expectations}
+
+\code{forward\_looking\_expectations} (default \code{False}) switches agents away
+from the naive expectations of the paper, under which the current energy price and
+emissions intensity are assumed to persist and the discounted sum collapses to the
+closed form of Section~\ref{sec:step}. With the flag on, agents instead discount
+the actual known future path.
+
+\code{compute\_discounted\_indices()} precomputes present-value indices by backward
+recursion, $\mathrm{Index}(t) = z_t + q\,\mathrm{Index}(t+1)$, once per run rather
+than per agent, so the switch costs nothing per utility evaluation. Unrolling the
+recursion with a constant $z_t$ reproduces the naive closed form exactly, so it is
+a strict generalisation. With the flag off the indices are still computed but
+never read by the utility formulas.
+
+The boundary condition is the subtle part. A flat-hold extension past the
+simulated horizon would be wrong for the carbon price specifically, because
+\code{calculate\_price\_at\_time()} returns zero once the policy period ends: the
+schedule is coded to stop, not to persist. Since \code{duration\_future} typically
+ends at the policy horizon, a flat hold would have a forward-looking agent treat a
+temporary tax as permanent at its peak rate. The carbon component is therefore
+extended using its own schedule, while base energy prices and the decarbonisation
+trend are extended by holding their final value, which for those series is the
+correct continuation rather than an approximation.
+
+This is the channel through which forward-looking agents would anticipate an
+announced ban or a scheduled carbon price before it arrives, over a horizon
+implied by the model's own discount and depreciation rates rather than by a
+separate anticipation parameter.
+
+\subsection{Carbon price schedules and the research subsidy}
+
+\code{calculate\_growth()} supports \code{flat}, \code{linear}, \code{quadratic}
+and \code{exponential} carbon price paths via \code{Carbon\_price\_state}. Every
+configuration here uses \code{flat}, matching the paper's constant-intensity
+design, but the other schedules are the hook for time-varying schemes such as the
+EU~ETS. A sixth policy lever, \code{Research\_subsidy}, is present in the policy
+state dictionary but is not among the five instruments analysed.
+
+\section{Implementation notes}
+
+\paragraph{Vectorisation.} The hot path is the users-by-vehicles utility matrix,
+rebuilt each step. Utility, masking, exponentiation and pricing are all matrix
+operations; the only per-agent Python loop is the sequential choice itself, which
+cannot be vectorised because used car stock must update between choices.
+
+\paragraph{Randomness and reproducibility.} Two seeds are separated deliberately.
+\code{seed\_inputs} governs structural draws (landscapes, network, population
+attributes), and \code{seed} governs run-time stochasticity: activation,
+innovation and production rolls, and choice draws. \code{handle\_seed()}
+distributes \code{RandomState} instances to each component. Fixing
+\code{seed\_inputs} while varying \code{seed} therefore isolates behavioural noise
+from structural variation, which is what multi-seed experiments exploit.
+
+\paragraph{Parallelism.} Monte Carlo replication is parallel across seeds via
+\code{joblib}, with worker count from \code{get\_num\_workers()}. Everything is
+CPU-bound; \code{torch} is present only because \code{sbi} requires it for the
+inference-based calibration, and is pinned to a CPU-only build.
+
+\paragraph{Cost.} A single run is 600 months of a 3{,}000-user, 16-firm market with
+two NK landscapes. The policy experiments dominate total cost, since each Bayesian
+optimisation iteration is 64 seeded runs of the future period; controller reuse
+(Section~\ref{sec:phases}) is what keeps this tractable.
+
+\section{Symbol-to-variable map}
+\label{sec:notation}
+
+\begin{longtable}{@{}p{0.13\textwidth}p{0.47\textwidth}p{0.32\textwidth}@{}}
+\toprule
+Symbol & Code & Location \\
+\midrule
+\endfirsthead
+\toprule
+Symbol & Code & Location \\
+\midrule
+\endhead
+$\beta_i$ & \code{beta\_vec}, \code{beta\_s\_values} & social network, firm segments \\
+$\gamma_i$ & \code{gamma\_vec}, \code{gamma\_s\_values} & social network, firm segments \\
+$\nu$ & \code{nu} & vehicle user parameters \\
+$\alpha$, $\zeta$ & \code{alpha}, \code{zeta} & vehicle user parameters \\
+$\kappa$ & \code{kappa} & vehicle user parameters \\
+$\chi_i$ & \code{chi\_vec}; \code{a\_chi}, \code{b\_chi} & social network \\
+$D_i$ & \code{d\_vec}; \code{d\_mean} & social network; firm \\
+$r$ & \code{r} & vehicle user parameters \\
+$\delta$ & \code{delta} & ICE/EV parameters \\
+$\xi$ & \code{delta\_P} & ICE/EV parameters \\
+$\eta$ & \code{prob\_switch\_car} & social network \\
+$\iota$ & \code{prob\_innovate} & firm \\
+$\theta$ & \code{prob\_change\_production} & firm \\
+$\lambda$ & \code{lambda} & firm \\
+$\mu$ & \code{mu} & second-hand market \\
+$M^+$ & \code{memory\_cap} & firm \\
+$Y^+$ & \code{max\_cars\_prod} & firm \\
+$V^+$ & \code{max\_num\_cars\_prop} & second-hand market \\
+$T^+$ & \code{age\_limit\_second\_hand} & second-hand market \\
+$F$ & \code{scrap\_price} & second-hand market \\
+$N$, $K$ & \code{N}, \code{K} & ICE/EV landscape \\
+$E$ & \code{production\_emissions} & ICE/EV parameters \\
+$J$, $I$ & \code{J}, \code{num\_individuals} & firm manager, social network \\
+$R^\beta$, $R^\gamma$ & \code{num\_beta\_segments}, \code{num\_gamma\_segments} & firm manager \\
+$\rho_{WS}$, $p_{WS}$ & \code{SW\_network\_density}, \code{SW\_prob\_rewire} & social network \\
+$Q_{a,t}$, $\omega_{a,t}$, $B_{a,t}$ & \code{Quality\_a\_t}, \code{Eff\_omega\_a\_t}, \code{B} & car attribute dicts \\
+$L_{a,t}$ & \code{L\_a\_t} & car objects \\
+$z_{v,t}$ & \code{transportType} (2 = ICE, 3 = EV) & car objects \\
+$\upsilon_{v,t}$ & \code{owner\_id} & car objects \\
+$x_{i,t}$ & \code{consider\_ev\_vec} & social network \\
+$\psi_{i,t}$ & \code{vehicle\_chosen} & \code{user\_chooses()} \\
+$U_{a,i,t}$ & \code{utilities\_matrix} & social network \\
+$W_{s,t}$ & \code{W\_vec}, \code{W\_segment} & firm manager \\
+$I_{s,t}$ & \code{I\_s\_t\_vec} & firm manager \\
+$P^*_{s,m,t}$ & \code{optimal\_price\_segments} & car objects \\
+$M_{j,t}$ & \code{list\_technology\_memory} & firm \\
+$M^{RD}_{j,t}$ & \code{generate\_neighbouring\_technologies()} & firm \\
+$T_{m,j,t}$ & \code{update\_memory\_timer()} & firm \\
+\bottomrule
+\end{longtable}
+
+\end{document}
