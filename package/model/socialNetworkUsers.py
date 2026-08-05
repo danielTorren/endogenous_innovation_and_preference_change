@@ -338,7 +338,10 @@ class Social_Network:
         # history_utility_individual_always buffer below. prep_counters() itself
         # stays gated exactly as before; it only resets state used by the
         # optional full history tracking, which this doesn't touch.
-        __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
+        # Only the vector is used here (not the (N,N) -inf choice matrix, which
+        # generate_utilities_current would build and this call site would discard),
+        # so call the vector-only helper directly to skip that O(N^2) allocation.
+        full_CV_utility_vec = self._compute_current_utility_vec(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
 
@@ -576,10 +579,6 @@ class Social_Network:
         # Step 4: Compute row-wise max only for valid rows for numerical stability
         row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
-        # Further mask to remove -np.inf values
-        filtered_values = masked_utilities[valid_rows]  # Subset based on valid_rows mask
-        filtered_values = filtered_values[np.isfinite(filtered_values)]  # Keeps only finite values
-
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
 
         # Step 6: Exponentiate, directly filling only valid entries
@@ -724,6 +723,11 @@ class Social_Network:
             term = d_vec*(numerator/(Eff*age_factor*(self.r - delta - self.r*delta)))
         return np.minimum(term, MAX_LIFECYCLE_COST_TERM)
 
+    def _compute_current_utility_vec(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):
+        """Utility for keeping the current vehicle (no choice-matrix scaffold)."""
+        age_factor = (1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
+        return beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec, d_vec, age_factor)
+
     def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):# -> NDArray:
         """
         Compute utility values for users keeping their current vehicle.
@@ -736,12 +740,11 @@ class Social_Network:
             tuple: (utility matrix, utility vector)
         """
 
-        age_factor = (1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
-        U_a_i_t_vec = beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec, d_vec, age_factor)
+        U_a_i_t_vec = self._compute_current_utility_vec(vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec)
 
         # Initialize the matrix with -np.inf
-        CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
-        
+        CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its
+
         # Set the diagonal values
         np.fill_diagonal(CV_utilities_matrix, U_a_i_t_vec)
 

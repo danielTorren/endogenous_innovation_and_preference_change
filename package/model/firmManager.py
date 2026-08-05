@@ -3,7 +3,7 @@ import numpy as np
 from package.model.carModel import CarModel
 from package.model.personalCar import PersonalCar
 from package.model.firm import Firm
-from collections import defaultdict
+from collections import defaultdict, Counter
 import itertools
 
 class Firm_Manager:
@@ -57,6 +57,7 @@ class Firm_Manager:
 
         self.all_segment_codes = list(itertools.product(range(self.num_beta_segments), range(self.num_gamma_segments), range(2)))
         self.num_segments = len(self.all_segment_codes)
+        self._segment_code_to_idx = {code: i for i, code in enumerate(self.all_segment_codes)}
 
         #landscapes
         self.landscape_ICE = ICE_landscape
@@ -274,15 +275,33 @@ class Firm_Manager:
         for segment in self.all_segment_codes:
             segment_W[segment] = self.min_W#RESET THEM INCASE
         
-        #UPDATE U MAX
+        # Flatten (segment, U) across all cars, preserving the same car-major /
+        # dict-order iteration the two loops below used to use, so the vectorised
+        # max/sum reproduce identical (bit-for-bit) results.
+        seg_idx_list = []
+        U_list = []
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                    if U > self.market_data[segment]["maxU"]:
-                            self.market_data[segment]["maxU"] = U
+                seg_idx_list.append(self._segment_code_to_idx[segment])
+                U_list.append(U)
 
-        for car in self.cars_on_sale_all_firms:
-            for segment, U in car.car_utility_segments_U.items():
-                segment_W[segment] += self.calc_exp(U)
+        if seg_idx_list:
+            seg_idx_arr = np.asarray(seg_idx_list, dtype=np.int64)
+            U_arr = np.asarray(U_list, dtype=np.float64)
+
+            #UPDATE U MAX -- max is order-independent, safe to vectorise directly
+            maxU_arr = np.asarray([self.market_data[code]["maxU"] for code in self.all_segment_codes], dtype=np.float64)
+            np.maximum.at(maxU_arr, seg_idx_arr, U_arr)
+            for code, m in zip(self.all_segment_codes, maxU_arr):
+                self.market_data[code]["maxU"] = float(m)
+
+            # Sum of exp(kappa*U) per segment, seeded at min_W exactly like the
+            # scalar loop was, so np.add.at accumulates in the same order and
+            # produces the same float sums (not just the same mathematical value).
+            W_arr = np.full(self.num_segments, self.min_W, dtype=np.float64)
+            np.add.at(W_arr, seg_idx_arr, self.calc_exp(U_arr))
+            for code, idx in self._segment_code_to_idx.items():
+                segment_W[code] = W_arr[idx]
 
         maxU_vec = np.asarray([self.market_data[code]["maxU"] for code in self.all_segment_codes])
 
@@ -298,13 +317,11 @@ class Firm_Manager:
         Returns:
             tuple: (array of segment sizes, array of choice denominators)
         """
-        segment_counts = defaultdict(int)
-        for i in range(self.num_individuals):
-            b_idx = self.beta_segment_idx[i]
-            g_idx = self.gamma_segment_idx[i]
-            e_idx = self.consider_ev_vec[i]
-            code = (b_idx, g_idx, e_idx)
-            segment_counts[code] += 1
+        segment_counts = Counter(zip(
+            self.beta_segment_idx.tolist(),
+            self.gamma_segment_idx.tolist(),
+            self.consider_ev_vec.tolist(),
+        ))
 
         for code in self.market_data.keys():
             # Append current values to history
