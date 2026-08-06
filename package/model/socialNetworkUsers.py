@@ -338,7 +338,12 @@ class Social_Network:
         # history_utility_individual_always buffer below. prep_counters() itself
         # stays gated exactly as before; it only resets state used by the
         # optional full history tracking, which this doesn't touch.
-        __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec)
+        # build_matrix=False: only the vector is used here (the caller discards
+        # the matrix), and building it means allocating and -inf-filling a
+        # num_individuals x num_individuals matrix every single timestep just to
+        # write its diagonal — ~20% of total runtime at num_individuals=3000,
+        # for a result that is immediately thrown away.
+        __, full_CV_utility_vec = self.generate_utilities_current(CV_vehicle_dict_vecs, self.beta_vec, self.gamma_vec, self.d_vec, self.nu_vec, build_matrix=False)
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.prep_counters()
 
@@ -576,10 +581,6 @@ class Social_Network:
         # Step 4: Compute row-wise max only for valid rows for numerical stability
         row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
-        # Further mask to remove -np.inf values
-        filtered_values = masked_utilities[valid_rows]  # Subset based on valid_rows mask
-        filtered_values = filtered_values[np.isfinite(filtered_values)]  # Keeps only finite values
-
         exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
 
         # Step 6: Exponentiate, directly filling only valid entries
@@ -653,7 +654,7 @@ class Social_Network:
 
                 #SET THE UTILITY TO 0 of that second hand car
                 utilities_kappa[:, choice_index] = 0#THIS STOPS OTHER INDIVIDUALS FROM BUYING SECOND HAND CAR THAT YOU BOUGHT, VERY IMPORANT LINE
-                
+
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
                 user.vehicle = vehicle_chosen
@@ -724,24 +725,33 @@ class Social_Network:
             term = d_vec*(numerator/(Eff*age_factor*(self.r - delta - self.r*delta)))
         return np.minimum(term, MAX_LIFECYCLE_COST_TERM)
 
-    def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec):# -> NDArray:
+    def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec, build_matrix=True):# -> NDArray:
         """
         Compute utility values for users keeping their current vehicle.
 
         Args:
             vehicle_dict_vecs (dict): Feature matrix for current vehicles.
             beta_vec, gamma_vec, d_vec, nu_vec (np.ndarray): User-specific parameters.
+            build_matrix (bool): If False, skip building the (n x n) diagonal
+                matrix and return None in its place. The matrix exists only so
+                that the current-car block of the switcher choice matrix is
+                diagonal (each user may only pick their OWN current car); the
+                all-users call site needs the vector alone, and allocating an
+                n x n array there is pure waste.
 
         Returns:
-            tuple: (utility matrix, utility vector)
+            tuple: (utility matrix or None, utility vector)
         """
 
         age_factor = (1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
         U_a_i_t_vec = beta_vec*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec, d_vec, age_factor)
 
+        if not build_matrix:
+            return None, U_a_i_t_vec
+
         # Initialize the matrix with -np.inf
-        CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its 
-        
+        CV_utilities_matrix = np.full((len(U_a_i_t_vec), len(U_a_i_t_vec)), -np.inf)#its
+
         # Set the diagonal values
         np.fill_diagonal(CV_utilities_matrix, U_a_i_t_vec)
 
