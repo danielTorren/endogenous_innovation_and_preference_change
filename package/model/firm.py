@@ -740,12 +740,9 @@ class Firm:
         # Raw profit
         raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
-        # Expected profit, if ice car then apply the discriminatory tax
-        expected_profit = np.where(
-            is_ev_mask[:, np.newaxis],
-            raw_profit,
-            raw_profit
-        )
+        # Expected profit (previously branched on is_ev_mask via np.where, but
+        # both branches were identical -- collapsed to the shared expression).
+        expected_profit = raw_profit
 
         # Apply zero profit for segments that can't buy EVs
         expected_profit = np.where(
@@ -820,11 +817,9 @@ class Firm:
 
         raw_profits = profit_per_sale * I_s_t_values * utility_proportions
 
-        updated_profits = np.where(
-            selected_vehicle.transportType == 3,
-            raw_profits,
-            raw_profits
-        )
+        # Previously branched on transportType via np.where, but both
+        # branches were identical -- collapsed to the shared expression.
+        updated_profits = raw_profits
 
         return updated_profits
     

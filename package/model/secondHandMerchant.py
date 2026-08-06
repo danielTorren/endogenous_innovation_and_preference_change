@@ -183,8 +183,14 @@ class SecondHandMerchant:
             - Enforce max inventory constraint.
         """
             
-        #check len of list    
-        for vehicle in self.cars_on_sale:       
+        #check len of list
+        # Rebuilt in one pass rather than calling list.remove() while iterating
+        # over the same list: mutating a list mid-for-loop shifts later
+        # elements into the just-vacated slot, which the iterator then skips
+        # over -- so two adjacent over-age cars would previously leave the
+        # second one stuck in stock past its age limit.
+        retained_cars_on_sale = []
+        for vehicle in self.cars_on_sale:
             if vehicle.second_hand_counter > self.age_limit_second_hand:
 
                 # Capture emissions before removal
@@ -196,7 +202,9 @@ class SecondHandMerchant:
                 self.age_second_hand_car_removed.append(vehicle.L_a_t)
                 self.assets -= vehicle.cost_second_hand_merchant
                 self.scrap_loss += vehicle.cost_second_hand_merchant
-                self.cars_on_sale.remove(vehicle)
+            else:
+                retained_cars_on_sale.append(vehicle)
+        self.cars_on_sale = retained_cars_on_sale
 
         data_dicts_second_hand = self.gen_vehicle_dict_vecs_second_hand(self.cars_on_sale)
         # Calculate the price vector

@@ -191,7 +191,7 @@ def main(
     save_object(base_params_save, fileName + "/Data", "base_params")
     save_object(x_o, fileName + "/Data", "x_o")
     
-    samples = posterior.sample((100000,), x=x_o)
+    samples = posterior.sample((200000,), x=x_o)
     log_probability_samples = posterior.log_prob(samples, x=x_o)
     max_log_prob_index = log_probability_samples.argmax()
     best_sample = samples[max_log_prob_index]
@@ -203,14 +203,14 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.5]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2, 2.7]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.9, 1.3]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2.2, 3.5]},
     ]
     main(
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN_lower_fuel.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output", 
-        num_simulations=64, 
-        num_rounds= 2
+        num_simulations=128, 
+        num_rounds= 3
     )
