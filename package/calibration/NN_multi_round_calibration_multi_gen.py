@@ -20,21 +20,22 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 import multiprocessing
 
-def convert_data(data_to_fit, base_params):
+MATCH_START_YEAR = 2020
+MATCH_END_YEAR = 2023
+STOCK_MONTH_OFFSET = 3   # APRIL index, matches the EV stock (population) data
+SALES_MONTH_OFFSET = 11  # DECEMBER index, matches the EV sales data
 
-    # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
-    # Define the starting and ending indices for the years 2010 to 2022
-    start_year = 2016
-    end_year = 2023
+def convert_data(data_to_fit, base_params, month_offset, start_year=MATCH_START_YEAR, end_year=MATCH_END_YEAR):
 
-    # Calculate the average of the last three months of each year
+    # Assuming `data_to_fit` is a numpy array representing monthly data from 2001 onwards.
+    # Pull one month's value per year, for the last few years only, since that's
+    # all we're calibrating against.
     averages = []
 
-    #print("filtered_data", filtered_data)
     for year in range(start_year, end_year + 1):
         year_start_index = (year - 2001) * 12 + base_params["duration_burn_in"]#ADD ON THE BURN IN PERIOD TO THE START
-        april_idx = year_start_index + 3  # APRIL index
-        averages.append(data_to_fit[april_idx])
+        month_idx = year_start_index + month_offset
+        averages.append(data_to_fit[month_idx])
 
     averages_array = np.array(averages)
 
@@ -64,9 +65,15 @@ def run_single_simulation(theta, base_params, param_list):
     # Run the market simulation
     controller = generate_data(params)
 
-    # Compute summary statistics
-    arr_history = np.asarray(controller.social_network.history_prop_EV)
-    data_to_fit = convert_data(arr_history, params)
+    # Compute summary statistics: EV stock proportion and EV sales proportion,
+    # both restricted to the last few years of the run.
+    arr_history_stock = np.asarray(controller.social_network.history_prop_EV)
+    arr_history_sales = np.asarray(controller.firm_manager.history_past_new_bought_vehicles_prop_ev)
+
+    stock_data_to_fit = convert_data(arr_history_stock, params, STOCK_MONTH_OFFSET)
+    sales_data_to_fit = convert_data(arr_history_sales, params, SALES_MONTH_OFFSET)
+
+    data_to_fit = np.concatenate([stock_data_to_fit, sales_data_to_fit])
 
     return data_to_fit
 
@@ -95,14 +102,16 @@ def main(
     # Load observed data
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
-    EV_stock_prop_2016_23 = EV_stock_prop_2010_23[6:]
+    EV_stock_prop_2020_23 = EV_stock_prop_2010_23[-4:]  # last 4 years only
+    EV_sales_prop_2020_23 = calibration_data_output["EV Sales Prop"]  # already just 2020-2023
 
     root = "NN_calibration_multi"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-    # Observed data
-    x_o = torch.tensor(EV_stock_prop_2016_23, dtype=torch.float32)
+    # Observed data: EV stock proportion followed by EV sales proportion, both last 4 years
+    x_o_data = np.concatenate([EV_stock_prop_2020_23, EV_sales_prop_2020_23])
+    x_o = torch.tensor(x_o_data, dtype=torch.float32)
 
     # Define the prior
     low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -183,7 +192,10 @@ def main(
     createFolder(fileName)
 
     # Save results
-    match_data = {"EV_stock_prop_2016_23": EV_stock_prop_2016_23}
+    match_data = {
+        "EV_stock_prop_2020_23": EV_stock_prop_2020_23,
+        "EV_sales_prop_2020_23": EV_sales_prop_2020_23,
+    }
     save_object(match_data, fileName + "/Data", "match_data")
     save_object(posterior, fileName + "/Data", "posterior")
     save_object(prior, fileName + "/Data", "prior")
