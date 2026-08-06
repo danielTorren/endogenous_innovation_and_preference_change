@@ -203,12 +203,12 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.3]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.5]},
         {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2.5, 3]},
     ]
     main(
         parameters_list=parameters_list,
-        BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
+        BASE_PARAMS_LOAD="package/constants/base_params_NN_lower_fuel.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
         num_simulations=64,
