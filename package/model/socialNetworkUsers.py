@@ -51,7 +51,9 @@ class Social_Network:
         self.gamma_segment_vec = parameters_social_network["gamma_segment_vals"] 
 
         self.history_prop_EV = []
-        
+
+        self._init_zip_tracking(parameters_social_network)
+
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
@@ -86,6 +88,7 @@ class Social_Network:
 
         self.random_state = parameters_social_network["random_state"]
         self.seed_inputs = parameters_social_network["seed_inputs"]
+        self.seed_network = parameters_social_network.get("seed_network", self.seed_inputs)
 
         self.mu =  parameters_vehicle_user["mu"]
         self.r = parameters_vehicle_user["r"]
@@ -120,6 +123,75 @@ class Social_Network:
         self._build_cv_cache()
 
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
+
+    def _init_zip_tracking(self, parameters_social_network):
+        """
+        Per-zip EV stock and per-zip new-vehicle sales histories.
+
+        Only active when controller.setup_synthetic_population() has attached a
+        zip_index (i.e. the empirical zip-level population is in use). Without
+        it self.zip_index is None and every hook below is a single `is None`
+        test per timestep, so the parametric path is unaffected.
+
+        Recorded at ZIP granularity, not stratum granularity, deliberately:
+        zip is the finest unit the observed data comes at, everything coarser
+        (strata for the dispersion statistic, state totals, the train/test zip
+        subsets used by package/validation) is a sum over zips computed
+        afterwards. One source of truth, and validation splits that hold out
+        zips need no changes in here at all.
+
+        These are always on rather than gated behind save_timeseries_data_state
+        because they ARE the calibration target, exactly like history_prop_EV.
+        Cost is three np.bincount calls over num_individuals per timestep.
+        """
+        self.zip_index = parameters_social_network.get("zip_index")
+        if self.zip_index is None:
+            self.num_zips = 0
+            return
+
+        self.num_zips = int(parameters_social_network["num_zips"])
+        self.zip_agent_counts = np.bincount(self.zip_index, minlength=self.num_zips)
+
+        # EV stock: one (num_zips,) count per timestep. The per-zip DENOMINATOR
+        # is zip_agent_counts and is constant, because every agent owns exactly
+        # one vehicle at all times in this model.
+        self.history_zip_EV_stock = []
+
+        # New-vehicle sales flow this timestep, per zip. Reset each timestep in
+        # update_VehicleUsers, incremented in user_chooses, appended in next_step.
+        self.history_zip_new_sales = []
+        self.history_zip_new_sales_EV = []
+
+        # Second-hand purchases, tracked separately so that a real "sales"
+        # series which is actually ALL registrations (new + used) can be matched
+        # by setting parameters_zip_data.sales_include_used, without changing
+        # what the new-car series means.
+        self.history_zip_used_sales = []
+        self.history_zip_used_sales_EV = []
+
+        self._reset_zip_sales_counters()
+
+    def _reset_zip_sales_counters(self):
+        if self.zip_index is None:
+            return
+        z = self.num_zips
+        self._zip_new_sales = np.zeros(z, dtype=np.int32)
+        self._zip_new_sales_EV = np.zeros(z, dtype=np.int32)
+        self._zip_used_sales = np.zeros(z, dtype=np.int32)
+        self._zip_used_sales_EV = np.zeros(z, dtype=np.int32)
+
+    def _append_zip_history(self):
+        """Called once per timestep from next_step, after all choices are made."""
+        if self.zip_index is None:
+            return
+        is_ev = (self._cv_cache["transportType"] == 3)
+        self.history_zip_EV_stock.append(
+            np.bincount(self.zip_index, weights=is_ev, minlength=self.num_zips).astype(np.int32)
+        )
+        self.history_zip_new_sales.append(self._zip_new_sales)
+        self.history_zip_new_sales_EV.append(self._zip_new_sales_EV)
+        self.history_zip_used_sales.append(self._zip_used_sales)
+        self.history_zip_used_sales_EV.append(self._zip_used_sales_EV)
 
     def init_initial_state(self, parameters_social_network):
         """
@@ -250,7 +322,17 @@ class Social_Network:
                 network (nx.Graph): NetworkX graph object representing the social network.
         """
 
-        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.seed_inputs)#FIX THE NETWORK STRUCTURE
+        # seed_network, not seed_inputs: the wiring is now separable from the NK
+        # landscape draw (see controller.handle_seed). Defaults to seed_inputs,
+        # so behaviour is unchanged unless seed_network is set explicitly.
+        #
+        # Which AGENT sits at which ring index is decided upstream by
+        # SyntheticPopulation._homophilous_order -- that placement, not this
+        # call, is what makes the network homophilous. The rewiring probability
+        # here is applied afterwards and is untouched, so ~prob_rewire of every
+        # agent's edges stay uniformly random long-range bridges at any
+        # homophily strength.
+        network = nx.watts_strogatz_graph(n=self.num_individuals, k=self.SW_K, p=self.prob_rewire, seed=self.seed_network)#FIX THE NETWORK STRUCTURE
 
         adjacency_matrix = nx.to_numpy_array(network)
         self.sparse_adjacency_matrix = sp.csr_matrix(adjacency_matrix)
@@ -301,6 +383,7 @@ class Social_Network:
 
         self.new_bought_vehicles = []#track list of new vehicles
         self.second_hand_bought = 0#track number of second hand bought
+        self._reset_zip_sales_counters()#per-zip sales flow for this timestep
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
         
         #########################################################
@@ -661,6 +744,12 @@ class Social_Network:
                 self.second_hand_merchant.remove_car(vehicle_chosen)#REmove it last in case of issue of removing and the obeject disappearing
                 self.second_hand_merchant.income += user.vehicle.price
 
+                if self.zip_index is not None:
+                    z = self.zip_index[person_index]
+                    self._zip_used_sales[z] += 1
+                    if vehicle_chosen.transportType == 3:
+                        self._zip_used_sales_EV[z] += 1
+
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_second_hand.append(user.vehicle.price)
                     self.buy_second_hand_car+= 1
@@ -673,6 +762,13 @@ class Social_Network:
                     self.net_policy_distortion -= adopt_sub    
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
+
+                if self.zip_index is not None:
+                    z = self.zip_index[person_index]
+                    self._zip_new_sales[z] += 1
+                    if vehicle_chosen.transportType == 3:
+                        self._zip_new_sales_EV[z] += 1
+
                 personalCar_id = self.id_generator.get_new_id()
                 user.vehicle = PersonalCar(personalCar_id, vehicle_chosen.firm, user.user_id, vehicle_chosen.component_string, vehicle_chosen.parameters, vehicle_chosen.attributes_fitness, vehicle_chosen.price)
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
@@ -1442,6 +1538,7 @@ class Social_Network:
         """
         self.EV_users_count = int(np.sum(self._cv_cache["transportType"] == 3))
         self.history_prop_EV.append(self.EV_users_count / self.num_individuals)
+        self._append_zip_history()
 
     def calc_price_mean_max_min(self):
         """

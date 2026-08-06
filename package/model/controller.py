@@ -10,6 +10,7 @@ from package.model.firmManager import Firm_Manager
 from package.model.centralizedIdGenerator import IDGenerator
 from package.model.secondHandMerchant import SecondHandMerchant
 from package.model.socialNetworkUsers import Social_Network
+from package.model.synthetic_population import SyntheticPopulation
 
 import numpy as np
 import itertools
@@ -276,9 +277,36 @@ class Controller:
         #Seed for inputs
         self.random_state_inputs = np.random.RandomState(self.parameters_controller["seed_inputs"])
         self.parameters_social_network["seed_inputs"] = self.parameters_controller["seed_inputs"]
-        self.parameters_ICE["random_state_inputs"] = self.random_state_inputs
-        self.parameters_EV["random_state_inputs"] = self.random_state_inputs
         self.parameters_firm_manager["random_state_input"] = self.random_state_inputs
+
+        # seed_inputs used to drive the NK landscapes, the network wiring, the
+        # firm manager and (via the same stream) the agent draws all at once,
+        # which made them impossible to vary independently. Measured on the
+        # parametric config, 24 draws of seed_inputs move the 2023 EV stock share
+        # over 0.0033 to 0.416 -- so which of those four things is responsible
+        # matters a great deal, and pinning "the landscape" was not previously
+        # expressible at all.
+        #
+        # seed_landscape : the two NK technology landscapes
+        # seed_network   : the Watts-Strogatz wiring (see socialNetworkUsers.create_network)
+        # seed_population: which households are drawn (see setup_synthetic_population)
+        #
+        # All three default to seed_inputs, so every existing config keeps its
+        # exact behaviour and the fallback path stays bit-for-bit identical.
+        seed_landscape = self.parameters_controller.get(
+            "seed_landscape", self.parameters_controller["seed_inputs"])
+        seed_network = self.parameters_controller.get(
+            "seed_network", self.parameters_controller["seed_inputs"])
+        self.parameters_social_network["seed_network"] = seed_network
+
+        if seed_landscape == self.parameters_controller["seed_inputs"]:
+            # unchanged: landscapes share the seed_inputs stream, in the same
+            # position and order as before
+            self.random_state_landscape = self.random_state_inputs
+        else:
+            self.random_state_landscape = np.random.RandomState(seed_landscape)
+        self.parameters_ICE["random_state_inputs"] = self.random_state_landscape
+        self.parameters_EV["random_state_inputs"] = self.random_state_landscape
 
         #Variable stuff
         self.random_state = np.random.RandomState(self.parameters_controller["seed"])
@@ -297,6 +325,8 @@ class Controller:
         """
         self.num_individuals = self.parameters_social_network["num_individuals"]
         self.ev_adoption_state_vec = np.zeros(self.num_individuals)
+
+        self.setup_synthetic_population()
 
         #########################################
         #GENERATING DISTANCES
@@ -348,12 +378,83 @@ class Controller:
         self.gamma_segment_vals = np.array(gamma_values)
 
 
+    def setup_synthetic_population(self):
+        """
+        Optional zip-level empirical population, replacing the five parametric
+        per-agent draws below.
+
+        Backward compatible: absent "parameters_synthetic_population" (or
+        "use": false inside it) => self.synth_pop is None and every gen_*
+        method below takes its original branch, bit-for-bit, including the
+        exact consumption order of random_state_inputs.
+
+        seed_population is deliberately SEPARATE from seed_inputs. seed_inputs
+        also seeds the two NK landscapes, the social network wiring and the
+        firm manager (see handle_seed), so it cannot be varied to isolate
+        population-sample uncertainty. Defaults to seed_inputs when absent, so
+        a config that does not know about it still works.
+        """
+        self.parameters_synthetic_population = self.parameters_controller.get(
+            "parameters_synthetic_population")
+        use = (self.parameters_synthetic_population is not None
+               and self.parameters_synthetic_population.get("use", True))
+
+        if not use:
+            # Homophily needs per-agent income AND geography. The parametric path
+            # has a lognormal income draw but no zip and no coordinates, so
+            # spatial homophily is impossible and income-only homophily would be
+            # a silently different, weaker mechanism under the same parameter
+            # name. Fail loudly instead.
+            if self.parameters_social_network.get("homophily_strength", 0.0) != 0.0:
+                raise ValueError(
+                    "homophily_strength > 0 requires the zip-level synthetic population: "
+                    "set parameters_synthetic_population.use = true. On the parametric path "
+                    "agents have no zip and no coordinates, so there is no geography to be "
+                    "homophilous over."
+                )
+            self.synth_pop = None
+            return
+
+        seed_population = self.parameters_controller.get(
+            "seed_population", self.parameters_controller["seed_inputs"])
+
+        # Homophily lives in parameters_social_network, not in
+        # parameters_synthetic_population, because it is a CALIBRATED behavioural
+        # parameter (like a_chi/b_chi) rather than a property of the input file.
+        # Defaults reproduce the uniformly random placement used before.
+        self.homophily_strength = self.parameters_social_network.get("homophily_strength", 0.0)
+        self.homophily_spatial_weight = self.parameters_social_network.get(
+            "homophily_spatial_weight", 0.5)
+
+        self.synth_pop = SyntheticPopulation(
+            self.parameters_synthetic_population,
+            self.num_individuals,
+            seed_population,
+            homophily_strength=self.homophily_strength,
+            homophily_spatial_weight=self.homophily_spatial_weight,
+        )
+
+        # Hand the geography to the social network so it can record per-zip EV
+        # stock and per-zip new-vehicle sales, which is what gets compared
+        # against the observed zip-level data.
+        self.parameters_social_network["zip_index"] = self.synth_pop.zip_index
+        self.parameters_social_network["num_zips"] = self.synth_pop.num_zips
+        self.parameters_social_network["strata_index"] = self.synth_pop.strata_index
+        self.parameters_social_network["num_strata"] = self.synth_pop.num_strata
+
     def gen_distance(self):
         """
         Generate driving distance vector (d_vec) using a fitted Poisson distribution.
         Derived from empirical California vehicle travel data.
         """
-                
+        if self.synth_pop is not None:
+            # Empirical household VMT, jointly distributed with income rather
+            # than an independent Poisson on six aggregate survey bins.
+            self.d_vec = self.synth_pop.gen_d_vec()
+            self.parameters_social_network["d_vec"] = self.d_vec
+            return
+
+
         #data from https://www.energy.ca.gov/data-reports/surveys/california-vehicle-survey/vehicle-miles-traveled-fuel-type
         bin_centers = np.array([
             335.2791667,
@@ -385,6 +486,19 @@ class Controller:
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
 
+        if self.synth_pop is not None:
+            # rho_age = 0 (the default) reproduces the independent draw below
+            # exactly in distribution: the Beta(a_chi,b_chi) marginal and the
+            # zero-injection are unchanged, only the coupling to age is new.
+            self.rho_age = self.parameters_social_network.get("rho_age", 0.0)
+            self.chi_vec = self.synth_pop.gen_chi_vec(
+                self.a_chi, self.b_chi, self.chi_max,
+                self.proportion_zero_target, self.rho_age,
+            )
+            self.proportion_zero_chi = np.mean(self.chi_vec == 0)
+            self.parameters_social_network["chi_vec"] = self.chi_vec
+            return
+
         # Step 1: Generate continuous Beta distribution
         innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
 
@@ -404,6 +518,24 @@ class Controller:
         """
         Generate constant nu vector representing vehicle range preference.
         """
+        if self.synth_pop is not None:
+            # a_rural = 0 (the default) gives the homogeneous vector below.
+            # NOTE: firms only ever see median(nu_vec) (calc_beta_median and
+            # setup_firm_parameters), i.e. they do not segment on range
+            # preference. That is left as is on purpose: adding nu to the
+            # segmentation multiplies the current 32 firm segments and costs
+            # more runtime than the extra realism buys.
+            self.a_rural = self.parameters_social_network.get("a_rural", 0.0)
+            self.nu_vec = self.synth_pop.gen_nu_vec(
+                self.parameters_social_network["nu"],
+                self.a_rural,
+                self.parameters_social_network["nu_epsilon"],
+            )
+            self.nu_median = np.median(self.nu_vec)
+            self.parameters_social_network["nu_median"] = self.nu_median
+            self.parameters_social_network["nu_vec"] = self.nu_vec
+            return
+
         self.nu_vec = np.asarray([self.parameters_social_network["nu"]] * self.num_individuals)
         self.nu_median = np.median(self.nu_vec)
         self.parameters_social_network["nu_median"] = self.nu_median
@@ -422,9 +554,21 @@ class Controller:
             raise Exception("r <= delta/(1-delta)), raise r or lower delta")
         
         self.WTP_E_mean = self.parameters_social_network["WTP_E_mean"]
-        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]     
-        WTP_E_vec_unclipped = self.random_state_inputs.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
-        self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)     
+        self.WTP_E_sd = self.parameters_social_network["WTP_E_sd"]
+        if self.synth_pop is not None:
+            # rho_pol = 0 (the default) reproduces the clipped-normal draw
+            # below in distribution; only the coupling to political leaning is
+            # new. gamma_vec then inherits the income-VMT correlation too,
+            # because it divides by the empirical d_vec.
+            self.rho_pol = self.parameters_social_network.get("rho_pol", 0.0)
+            self.WTP_E_vec = self.synth_pop.gen_WTP_E_vec(
+                self.WTP_E_mean, self.WTP_E_sd,
+                self.parameters_social_network["gamma_epsilon"],
+                self.rho_pol,
+            )
+        else:
+            WTP_E_vec_unclipped = self.random_state_inputs.normal(loc = self.WTP_E_mean, scale = self.WTP_E_sd, size = self.num_individuals)
+            self.WTP_E_vec = np.clip(WTP_E_vec_unclipped, a_min = self.parameters_social_network["gamma_epsilon"], a_max = np.inf)
         self.gamma_vec = (self.WTP_E_vec/self.d_vec)*((r - delta - r*delta)/((1+r)*(1-delta)))
 
         self.num_gamma_segments = self.parameters_firm_manager["num_gamma_segments"]
@@ -443,12 +587,20 @@ class Controller:
         """
         #BETA
         self.beta_multiplier = self.parameters_social_network.get("beta_multiplier", 1)#PURPOSE IS TO TEST THE ROLE OF BETA DISTRIBUTIONS
-        median_beta = self.calc_beta_median()*self.beta_multiplier 
+        median_beta = self.calc_beta_median()*self.beta_multiplier
         #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
-        incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
-        median_income = np.median(incomes)
-        self.beta_vec = median_beta*(median_income/incomes)
-        self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+        if self.synth_pop is not None:
+            # eps_beta = 1 (the default) is the hard-coded exponent used below.
+            # No shuffle here: agent order carries the zip mapping, so
+            # shuffling beta alone would decouple each agent from its own
+            # income, VMT and zip. See SyntheticPopulation.gen_beta_vec.
+            self.eps_beta = self.parameters_social_network.get("eps_beta", 1.0)
+            self.beta_vec = self.synth_pop.gen_beta_vec(median_beta, self.eps_beta)
+        else:
+            incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
+            median_income = np.median(incomes)
+            self.beta_vec = median_beta*(median_income/incomes)
+            self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
 
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         # Calculate the bin edges using quantiles

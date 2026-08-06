@@ -16,3 +16,7 @@ sbi-logs/
 .claude/
 slurm_logs/*
 !slurm_logs/.gitkeep
+
+# derived fast-load cache written by synthetic_population.load_population;
+# regenerated automatically whenever the source CSV is newer
+*.cache.npz
