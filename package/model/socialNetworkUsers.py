@@ -52,6 +52,27 @@ class Social_Network:
 
         self.history_prop_EV = []
 
+        # State-level purchase FLOW, always on, exactly like history_prop_EV and
+        # for the same reason: it is a calibration target. Four scalars appended
+        # per timestep, so the cost is nothing.
+        #
+        # This exists because the pre-existing aggregate sales counters
+        # (new_cars_bought / new_EV_cars_bought -> history_new_car_bought /
+        # history_new_EV_cars_bought) are incremented inside update_counters(),
+        # which only runs under save_timeseries_data_state. Fitting the observed
+        # EV sales share therefore used to force save_timeseries_data_state = 1
+        # on every calibration run, which records per-individual arrays every
+        # timestep and is far more expensive than the calibration needs.
+        #
+        # Deliberately NOT reset in controller.setup_continued_run_future(),
+        # matching history_prop_EV: both run continuously across burn-in,
+        # calibration and future, and the year->index mapping in
+        # summary_stats.month_index() assumes that.
+        self.history_new_sales = []
+        self.history_new_sales_EV = []
+        self.history_used_sales = []
+        self.history_used_sales_EV = []
+
         self._init_zip_tracking(parameters_social_network)
 
         # Initialize parameters
@@ -147,6 +168,7 @@ class Social_Network:
         self.zip_index = parameters_social_network.get("zip_index")
         if self.zip_index is None:
             self.num_zips = 0
+            self._reset_sales_counters()#state-level scalars still need initialising
             return
 
         self.num_zips = int(parameters_social_network["num_zips"])
@@ -169,9 +191,21 @@ class Social_Network:
         self.history_zip_used_sales = []
         self.history_zip_used_sales_EV = []
 
-        self._reset_zip_sales_counters()
+        self._reset_sales_counters()
 
-    def _reset_zip_sales_counters(self):
+    def _reset_sales_counters(self):
+        """
+        Purchase-flow counters for the timestep about to run. Called from
+        update_VehicleUsers before any choice is made.
+
+        The state-level scalars are reset unconditionally; the per-zip vectors
+        only when the empirical zip population is in use.
+        """
+        self._new_sales = 0
+        self._new_sales_EV = 0
+        self._used_sales = 0
+        self._used_sales_EV = 0
+
         if self.zip_index is None:
             return
         z = self.num_zips
@@ -180,8 +214,13 @@ class Social_Network:
         self._zip_used_sales = np.zeros(z, dtype=np.int32)
         self._zip_used_sales_EV = np.zeros(z, dtype=np.int32)
 
-    def _append_zip_history(self):
+    def _append_flow_history(self):
         """Called once per timestep from next_step, after all choices are made."""
+        self.history_new_sales.append(self._new_sales)
+        self.history_new_sales_EV.append(self._new_sales_EV)
+        self.history_used_sales.append(self._used_sales)
+        self.history_used_sales_EV.append(self._used_sales_EV)
+
         if self.zip_index is None:
             return
         is_ev = (self._cv_cache["transportType"] == 3)
@@ -383,7 +422,7 @@ class Social_Network:
 
         self.new_bought_vehicles = []#track list of new vehicles
         self.second_hand_bought = 0#track number of second hand bought
-        self._reset_zip_sales_counters()#per-zip sales flow for this timestep
+        self._reset_sales_counters()#state and per-zip sales flow for this timestep
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
         
         #########################################################
@@ -744,6 +783,10 @@ class Social_Network:
                 self.second_hand_merchant.remove_car(vehicle_chosen)#REmove it last in case of issue of removing and the obeject disappearing
                 self.second_hand_merchant.income += user.vehicle.price
 
+                self._used_sales += 1
+                if vehicle_chosen.transportType == 3:
+                    self._used_sales_EV += 1
+
                 if self.zip_index is not None:
                     z = self.zip_index[person_index]
                     self._zip_used_sales[z] += 1
@@ -762,6 +805,10 @@ class Social_Network:
                     self.net_policy_distortion -= adopt_sub    
             
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
+
+                self._new_sales += 1
+                if vehicle_chosen.transportType == 3:
+                    self._new_sales_EV += 1
 
                 if self.zip_index is not None:
                     z = self.zip_index[person_index]
@@ -1538,7 +1585,7 @@ class Social_Network:
         """
         self.EV_users_count = int(np.sum(self._cv_cache["transportType"] == 3))
         self.history_prop_EV.append(self.EV_users_count / self.num_individuals)
-        self._append_zip_history()
+        self._append_flow_history()
 
     def calc_price_mean_max_min(self):
         """

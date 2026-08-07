@@ -20,6 +20,20 @@ from package.resources.utility import (
 from package.resources.run import generate_data
 import multiprocessing
 
+# The observed EV_Sales.xlsx carries four annual values, 2020-2023 (see
+# calibration_data_outputs.load_in_output_data). Same years as
+# summary_stats.DEFAULT_SPEC["sales_years"], deliberately: the two calibrations
+# must not disagree about what "the sales target" is.
+SALES_YEARS = [2020, 2021, 2022, 2023]
+
+BASE_YEAR = 2001   # calendar year of controller timestep 0, post burn-in
+
+
+def _month_index(year, month, base_params):
+    """Controller timestep for a calendar year/month. Same convention as convert_data."""
+    return (year - BASE_YEAR) * 12 + base_params["duration_burn_in"] + (month - 1)
+
+
 def convert_data(data_to_fit, base_params):
 
     # Assuming `data_to_fit` is a numpy array of size (272,) representing monthly data from 2001 to 2022
@@ -40,7 +54,58 @@ def convert_data(data_to_fit, base_params):
 
     return averages_array
 
-def run_single_simulation(theta, base_params, param_list):
+
+def convert_sales(sn, base_params, years=SALES_YEARS, include_used=False):
+    """
+    Annual EV share of vehicle sales, from the ALWAYS-ON state-level flow
+    counters on the social network.
+
+    Reads history_new_sales / history_new_sales_EV, which are recorded
+    regardless of save_timeseries_data_state -- see the comment next to their
+    initialisation in socialNetworkUsers.__init__. The older
+    history_new_car_bought / history_new_EV_cars_bought pair cannot be used
+    here: those are filled from update_counters(), which only runs under
+    save_timeseries_data_state = 1, and turning that on to get four numbers
+    would also record a per-individual array for every quantity at every
+    timestep.
+
+    SUMMED over the twelve months of the calendar year, not sampled at a
+    snapshot month like the stock series is. The observed series is annual, and
+    a single month of model sales at num_individuals = 3000 would be mostly
+    Monte Carlo noise.
+
+    include_used=True adds second-hand purchases, for the case where the
+    observed "sales" figure is really all registrations. The California series
+    is new-vehicle sales, so the default is False.
+    """
+    if include_used:
+        ev = np.asarray(sn.history_new_sales_EV, dtype=np.float64) + np.asarray(sn.history_used_sales_EV, dtype=np.float64)
+        tot = np.asarray(sn.history_new_sales, dtype=np.float64) + np.asarray(sn.history_used_sales, dtype=np.float64)
+    else:
+        ev = np.asarray(sn.history_new_sales_EV, dtype=np.float64)
+        tot = np.asarray(sn.history_new_sales, dtype=np.float64)
+
+    n_hist = len(tot)
+    out = []
+    for year in years:
+        start = _month_index(year, 1, base_params)
+        if start < 0 or start + 12 > n_hist:
+            raise IndexError(
+                f"sales year {year} needs timesteps {start}..{start + 11} but the simulated "
+                f"history is {n_hist} long. duration_calibration is too short for SALES_YEARS, "
+                f"or duration_burn_in is inconsistent with BASE_YEAR."
+            )
+        denom = tot[start:start + 12].sum()
+        # A year with no new-car sales at all should not happen at these
+        # population sizes, but NPE requires finite inputs, and 0.0 is what "no
+        # EV activity observed" means for a share.
+        out.append(ev[start:start + 12].sum() / denom if denom > 0 else 0.0)
+
+    return np.array(out)
+
+
+def run_single_simulation(theta, base_params, param_list, include_sales=True,
+                          sales_include_used=False):
     """
     Runs a single simulation for the given parameters theta and base_params.
     """
@@ -68,6 +133,11 @@ def run_single_simulation(theta, base_params, param_list):
     arr_history = np.asarray(controller.social_network.history_prop_EV)
     data_to_fit = convert_data(arr_history, params)
 
+    if include_sales:
+        sales = convert_sales(controller.social_network, params,
+                              include_used=sales_include_used)
+        data_to_fit = np.concatenate([data_to_fit, sales])
+
     return data_to_fit
 
 def main(
@@ -76,8 +146,21 @@ def main(
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
         num_simulations=100,
-        num_rounds = 3
+        num_rounds = 3,
+        include_sales=True,
+        sales_include_used=False
     ) -> str:
+    """
+    Args:
+        include_sales: append the four annual EV sales shares (2020-2023) to the
+            eight April stock shares, giving a 12-dim target. On by default: the
+            sales series was already loaded by calibration_data_outputs.py and
+            then discarded, and it is the flow moment, so it separates "EVs are
+            accumulating because they were bought years ago" from "EVs are being
+            bought now" in a way the stock series alone cannot.
+        sales_include_used: count second-hand purchases in the sales share too.
+            Leave False for the California new-vehicle series.
+    """
 
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
@@ -97,12 +180,27 @@ def main(
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
     EV_stock_prop_2016_23 = EV_stock_prop_2010_23[6:]
 
+    EV_sales_prop = np.asarray(calibration_data_output["EV Sales Prop"], dtype=np.float64)
+    if include_sales and len(EV_sales_prop) != len(SALES_YEARS):
+        raise ValueError(
+            f"'EV Sales Prop' has {len(EV_sales_prop)} values but SALES_YEARS is {SALES_YEARS}. "
+            f"Rebuild the target with calibration_data_outputs.py, or adjust SALES_YEARS."
+        )
+
     root = "NN_calibration_multi"
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
     # Observed data
-    x_o = torch.tensor(EV_stock_prop_2016_23, dtype=torch.float32)
+    if include_sales:
+        x_o_np = np.concatenate([EV_stock_prop_2016_23, EV_sales_prop])
+    else:
+        x_o_np = np.asarray(EV_stock_prop_2016_23, dtype=np.float64)
+    x_o = torch.tensor(x_o_np, dtype=torch.float32)
+
+    dim_names = ([f"stock_{y}" for y in range(2016, 2024)]
+                 + ([f"sales_{y}" for y in SALES_YEARS] if include_sales else []))
+    print(f"fitting {len(dim_names)} dims: {dim_names}")
 
     # Define the prior
     low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -136,7 +234,10 @@ def main(
             base_params["seed"] = seed
 
             # Create a simulator partial with these seeded params
-            seeded_simulator = partial(run_single_simulation, base_params=base_params, param_list=parameters_list)
+            seeded_simulator = partial(run_single_simulation, base_params=base_params,
+                                       param_list=parameters_list,
+                                       include_sales=include_sales,
+                                       sales_include_used=sales_include_used)
 
             # Process the simulator once per seed
             sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=prior_returns_numpy)
@@ -183,7 +284,15 @@ def main(
     createFolder(fileName)
 
     # Save results
-    match_data = {"EV_stock_prop_2016_23": EV_stock_prop_2016_23}
+    # match_data keeps the stock key under its old name so existing plotting
+    # scripts still load; the sales entries and dim_names are additive.
+    match_data = {
+        "EV_stock_prop_2016_23": EV_stock_prop_2016_23,
+        "EV_sales_prop": EV_sales_prop,
+        "include_sales": include_sales,
+        "sales_years": SALES_YEARS,
+        "dim_names": dim_names,
+    }
     save_object(match_data, fileName + "/Data", "match_data")
     save_object(posterior, fileName + "/Data", "posterior")
     save_object(prior, fileName + "/Data", "prior")

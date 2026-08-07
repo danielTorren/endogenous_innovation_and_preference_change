@@ -41,29 +41,22 @@ def main(fileName):
         OUTPUTS_LOAD_ROOT (str): Root path for loading calibration data.
         OUTPUTS_LOAD_NAME (str): File name for calibration data.
     """
-    # Load observed data
+    # Load observed data.
+    #
+    # Prefer the x_o the run itself saved, rather than rebuilding it from
+    # match_data: the target is no longer always the eight stock values --
+    # NN_multi_round_calibration_multi_gen appends the four annual sales shares
+    # when include_sales is on -- and reconstructing an 8-dim x_o for a
+    # posterior trained on 12 dims fails inside log_prob with a shape error.
+    # Fall back to the old reconstruction for runs saved before x_o existed.
+    try:
+        x_o = load_object(fileName + "/Data", "x_o")
+    except FileNotFoundError:
+        match_data = load_object(fileName + "/Data", "match_data")
+        x_o = torch.tensor(match_data["EV_stock_prop_2016_23"], dtype=torch.float32)
 
-    match_data = load_object(fileName + "/Data", "match_data")
-
-
-    # Extract observed statistics
-    EV_stock_prop_2016_23 = match_data["EV_stock_prop_2016_23"]
-    #median_distance_traveled = match_data["median_distance_traveled"]
-    #median_age = match_data["median_age"]
-    #median_price = match_data["median_price"]
-
-    # Convert data to tensors
-    EV_stock_prop_2016_23_tensor = torch.tensor(EV_stock_prop_2016_23, dtype=torch.float32)
-    #median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
-    #median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
-    #median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
-
-    # Reconstruct x_o by concatenating the tensors
-    #x_o = torch.cat((EV_stock_prop_2016_22_tensor, 
-    #                 median_distance_traveled_tensor, 
-    #                 median_age_tensor, 
-    #                 median_price_tensor), dim=0)
-    x_o = EV_stock_prop_2016_23_tensor
+    if not torch.is_tensor(x_o):
+        x_o = torch.tensor(x_o, dtype=torch.float32)
 
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
@@ -110,5 +103,5 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_11_08_28__20_03_2025",
+        fileName="results/NN_calibration_multi_18_07_42__06_08_2026",
     )
