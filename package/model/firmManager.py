@@ -37,6 +37,14 @@ class Firm_Manager:
         self.HHI_past_new_bought_vehicles_history = []
         self.margin_past_new_bought_vehicles_history = []
 
+        # EV share of new sales. Recorded every step by update_EV_sales(),
+        # independently of save_timeseries_data_state, because the calibration
+        # matches against it and does not want the rest of the time series
+        # overhead. Mirrors social_network.history_prop_EV, which is likewise
+        # always on. set_up_time_series_firm_manager() still clears it, so a
+        # continued future run restarts the series exactly as before.
+        self.history_past_new_bought_vehicles_prop_ev = []
+
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
         self.carbon_price = parameters_firm_manager["carbon_price"]
@@ -533,11 +541,6 @@ class Firm_Manager:
         Store historical data for current time step across firm and market variables.
         Tracks metrics like profit, HHI, car attributes, and EV adoption.
         """
-        if self.past_new_bought_vehicles:
-            self.history_past_new_bought_vehicles_prop_ev.append(sum([1 for car in self.past_new_bought_vehicles if car.transportType == 3])/len(self.past_new_bought_vehicles))
-        else:
-            self.history_past_new_bought_vehicles_prop_ev.append(np.nan)
-
         # Extract research type history for each firm (last 12 years, or fewer if not available)
         research_history = [firm.history_research_type[-12:] for firm in self.firms_list]
 
@@ -694,6 +697,21 @@ class Firm_Manager:
 
 #####################################################################################################################
 
+    def update_EV_sales(self):
+        """
+        Record the EV proportion of the vehicles bought in the previous step, and append it to the history.
+
+        Called from next_step() rather than save_timeseries_data_firm_manager()
+        so the calibration gets this series without switching on
+        save_timeseries_data_state. past_new_bought_vehicles is set immediately
+        before this call and is not touched again during the step, so the value
+        stored at index t is identical to what the old save path recorded.
+        """
+        if self.past_new_bought_vehicles:
+            self.history_past_new_bought_vehicles_prop_ev.append(sum([1 for car in self.past_new_bought_vehicles if car.transportType == 3])/len(self.past_new_bought_vehicles))
+        else:
+            self.history_past_new_bought_vehicles_prop_ev.append(np.nan)
+
     def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  production_subsidy,  rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0, ice_sales_ban_active=False, ice_research_ban_active=False):
         """
         Advance firms by one simulation step, considering updated policies and user behavior.
@@ -703,6 +721,7 @@ class Firm_Manager:
         """
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
+        self.update_EV_sales()
         self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles, self.production_subsidy)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
         self.profit_cumulative += self.total_profit
 

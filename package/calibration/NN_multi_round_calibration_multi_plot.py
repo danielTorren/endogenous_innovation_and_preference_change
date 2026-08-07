@@ -5,6 +5,33 @@ from package.plotting_data.single_experiment_plot import save_and_show
 import torch
 from torch import multiprocessing
 
+def reconstruct_x_o(match_data):
+    """
+    Rebuild the observed summary statistic vector from a saved match_data dict.
+
+    Handles both layouts, since older runs are still being plotted:
+      - current: EV stock proportion then EV sales proportion, concatenated in
+        that order (the order the gen script builds x_o in).
+      - legacy: a single EV stock series under whatever year range that run
+        used (e.g. "EV_stock_prop_2016_23"), with no sales channel at all.
+
+    Args:
+        match_data (dict): Observed data saved alongside the posterior.
+
+    Returns:
+        torch.Tensor: Observed data, matching the trained posterior's x layout.
+    """
+    stock_keys = sorted(k for k in match_data if k.startswith("EV_stock_prop"))
+    sales_keys = sorted(k for k in match_data if k.startswith("EV_sales_prop"))
+
+    if not stock_keys:
+        raise KeyError(f"no EV stock series in match_data; keys were {sorted(match_data)}")
+
+    parts = [match_data[k] for k in stock_keys + sales_keys]
+    print("x_o built from:", stock_keys + sales_keys)
+
+    return torch.cat([torch.tensor(p, dtype=torch.float32) for p in parts], dim=0)
+
 def plot_results(fileName, posterior_samples, param_bounds, param_names):
     """
     Plots results for posterior samples, dynamically handling multiple parameters.
@@ -45,19 +72,7 @@ def main(fileName):
 
     match_data = load_object(fileName + "/Data", "match_data")
 
-
-    # Extract observed statistics: EV stock proportion and EV sales proportion,
-    # both restricted to the last 4 years (2020-2023).
-    EV_stock_prop_2020_23 = match_data["EV_stock_prop_2020_23"]
-    EV_sales_prop_2020_23 = match_data["EV_sales_prop_2020_23"]
-
-    # Convert data to tensors
-    EV_stock_prop_2020_23_tensor = torch.tensor(EV_stock_prop_2020_23, dtype=torch.float32)
-    EV_sales_prop_2020_23_tensor = torch.tensor(EV_sales_prop_2020_23, dtype=torch.float32)
-
-    # Reconstruct x_o by concatenating the tensors, matching the order used
-    # when generating the calibration data (stock then sales).
-    x_o = torch.cat((EV_stock_prop_2020_23_tensor, EV_sales_prop_2020_23_tensor), dim=0)
+    x_o = reconstruct_x_o(match_data)
 
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
@@ -104,7 +119,7 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_12_43_09__06_08_2026",
+        fileName="results/NN_calibration_multi_18_07_42__06_08_2026",
     )
 #NN_calibration_multi_12_43_09__06_08_2026
 #NN_calibration_multi_11_08_28__20_03_2025

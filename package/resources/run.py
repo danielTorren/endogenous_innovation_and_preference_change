@@ -301,112 +301,71 @@ def parallel_run_sa_ev(params_dict: list[dict]):
 
 #########################################################################################
 
+# Keys stacked into a (n_seeds, n_steps, ...) array across seeds. Everything else
+# stays a per-seed list, because the per-seed entries are ragged.
+MULTI_SEED_ARRAY_KEYS = (
+    "history_driving_emissions",
+    "history_production_emissions",
+    "history_total_emissions",
+    "history_prop_EV",
+    "history_lower_percentile_price_ICE_EV",
+    "history_upper_percentile_price_ICE_EV",
+    "history_mean_price_ICE_EV",
+    "history_median_price_ICE_EV",
+    "history_total_utility",
+    "history_market_concentration",
+    "history_total_profit",
+    "history_mean_car_age",
+    "history_past_new_bought_vehicles_prop_ev",
+)
+
+
 def generate_multi_seed(params: dict):
     """
-    Generates sensitivity output from input parameters.
-    Assumes `generate_data` is a defined function that returns
-    an object with the required attributes.
+    Run one seed and return every output the multi-seed plots need, keyed by name.
+
+    `cars_on_sale` is a SNAPSHOT of the final time step (the car objects still on
+    sale when the run ends), not a time series.
     """
     data = generate_data(params)
-    return (
-        data.social_network.history_driving_emissions,#Emmissions flow
-        data.social_network.history_production_emissions,#Emmissions flow
-        data.social_network.history_total_emissions,#Emmissions flow
-        data.social_network.history_prop_EV, 
-        data.social_network.history_car_age, 
-        data.social_network.history_lower_percentile_price_ICE_EV,
-        data.social_network.history_upper_percentile_price_ICE_EV,
-        data.social_network.history_mean_price_ICE_EV,
-        data.social_network.history_median_price_ICE_EV, 
-        data.social_network.history_total_utility,
-        data.firm_manager.history_market_concentration,
-        data.firm_manager.history_total_profit, 
-        data.social_network.history_quality_ICE, 
-        data.social_network.history_quality_EV, 
-        data.social_network.history_efficiency_ICE, 
-        data.social_network.history_efficiency_EV, 
-        data.social_network.history_production_cost_ICE, 
-        data.social_network.history_production_cost_EV, 
-        data.firm_manager.history_mean_profit_margins_ICE,
-        data.firm_manager.history_mean_profit_margins_EV,
-        data.social_network.history_mean_car_age,
-        data.firm_manager.history_past_new_bought_vehicles_prop_ev
-    )
+    social_network = data.social_network
+    firm_manager = data.firm_manager
+    return {
+        "history_driving_emissions": social_network.history_driving_emissions,#Emmissions flow
+        "history_production_emissions": social_network.history_production_emissions,#Emmissions flow
+        "history_total_emissions": social_network.history_total_emissions,#Emmissions flow
+        "history_prop_EV": social_network.history_prop_EV,
+        "history_car_age": social_network.history_car_age,
+        "history_lower_percentile_price_ICE_EV": social_network.history_lower_percentile_price_ICE_EV,
+        "history_upper_percentile_price_ICE_EV": social_network.history_upper_percentile_price_ICE_EV,
+        "history_mean_price_ICE_EV": social_network.history_mean_price_ICE_EV,
+        "history_median_price_ICE_EV": social_network.history_median_price_ICE_EV,
+        "history_total_utility": social_network.history_total_utility,
+        "history_market_concentration": firm_manager.history_market_concentration,
+        "history_total_profit": firm_manager.history_total_profit,
+        "history_quality_ICE": social_network.history_quality_ICE,
+        "history_quality_EV": social_network.history_quality_EV,
+        "history_efficiency_ICE": social_network.history_efficiency_ICE,
+        "history_efficiency_EV": social_network.history_efficiency_EV,
+        "history_production_cost_ICE": social_network.history_production_cost_ICE,
+        "history_production_cost_EV": social_network.history_production_cost_EV,
+        "history_mean_profit_margins_ICE": firm_manager.history_mean_profit_margins_ICE,
+        "history_mean_profit_margins_EV": firm_manager.history_mean_profit_margins_EV,
+        "history_mean_car_age": social_network.history_mean_car_age,
+        "history_past_new_bought_vehicles_prop_ev": firm_manager.history_past_new_bought_vehicles_prop_ev,
+        "cars_on_sale": firm_manager.cars_on_sale_all_firms,
+    }
 
 def parallel_run_multi_seed(params_list):
+    """Run every seed and collect the outputs into one dict of seed-major data."""
     num_cores = get_num_workers()
     #res = [generate_multi_seed(i) for i in params_list]
     res = Parallel(n_jobs=num_cores, verbose=10)(
         delayed(generate_multi_seed)(params) for params in params_list
     )
-    
-    # Unpack the results
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions,#Emmissions flow
-        history_prop_EV, 
-        history_car_age, 
-        history_lower_percentile_price_ICE_EV,
-        history_upper_percentile_price_ICE_EV,
-        history_mean_price_ICE_EV,
-        history_median_price_ICE_EV, 
-        history_total_utility, 
-        history_market_concentration,
-        history_total_profit, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev 
-    ) = zip(*res)
-    
-    # Return results as arrays where applicable
-    return (
-        np.asarray(history_driving_emissions_arr),#Emmissions flow
-        np.asarray(history_production_emissions_arr),
-        np.asarray(history_total_emissions),#Emmissions flow
-        np.asarray(history_prop_EV), 
-        np.asarray(history_car_age), 
-        np.asarray(history_lower_percentile_price_ICE_EV),
-        np.asarray(history_upper_percentile_price_ICE_EV),
-        np.asarray(history_mean_price_ICE_EV),
-        np.asarray(history_median_price_ICE_EV), 
-        np.asarray(history_total_utility), 
-        np.asarray(history_market_concentration),
-        np.asarray(history_total_profit),
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        np.asarray(history_mean_car_age),
-        np.asarray(history_past_new_bought_vehicles_prop_ev)
-    )
 
-#########################################################################################
+    outputs = {key: [run[key] for run in res] for key in res[0]}
+    for key in MULTI_SEED_ARRAY_KEYS:
+        outputs[key] = np.asarray(outputs[key])
 
-def generate_multi_seed_cars(params: dict):
-    """
-    Generates sensitivity output from input parameters.
-    Assumes `generate_data` is a defined function that returns
-    an object with the required attributes.
-    """
-    data = generate_data(params)
-    return data.firm_manager.cars_on_sale_all_firms
-
-def parallel_run_multi_seed_cars(params_list):
-    num_cores = get_num_workers()
-    cars_on_sale_list = Parallel(n_jobs=num_cores, verbose=10)(
-        delayed(generate_multi_seed_cars)(params) for params in params_list
-    )
-
-    return cars_on_sale_list
+    return outputs

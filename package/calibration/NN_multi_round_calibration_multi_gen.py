@@ -215,8 +215,8 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 2]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2, 3.5]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1, 2]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2, 3]},
     ]
     main(
         parameters_list=parameters_list,
