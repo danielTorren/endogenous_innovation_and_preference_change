@@ -7,6 +7,7 @@ from package.resources.utility import (
     get_num_workers,
 )
 import shutil  # Cleanup
+import sys
 from pathlib import Path  # Path handling
 from copy import deepcopy
 from package.resources.run import load_in_controller
@@ -475,8 +476,17 @@ def main(fileNames,
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
 
 if __name__ == "__main__":
+    # fileNames = the results/endog_pair_<timestamp> folder(s) produced by
+    # package.analysis.endogenous_policy_intensity_pair_gen, whose
+    # Data/pairwise_outcomes files get merged here. Pass one or more on the
+    # command line to override the hardcoded default below -- that default is
+    # just the folder last used interactively and does not exist on a fresh
+    # checkout, so submit_low_policy_intensity_gen.slurm always passes
+    # $PAIRWISE_FOLDERS explicitly.
+    file_names = sys.argv[1:] or ["results/endog_pair_00_19_42__30_03_2026"]
+    print("Loading pairwise outcomes from:", file_names)
     main(
-        fileNames=["results/endog_pair_00_19_42__30_03_2026"],
+        fileNames=file_names,
         min_ev_uptake = 0.94,
         max_ev_uptake = 0.96#0.96
     )
