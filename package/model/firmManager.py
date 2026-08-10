@@ -59,6 +59,13 @@ class Firm_Manager:
 
         self.init_car_age_mean = parameters_firm_manager["init_car_age_mean"]
         self.init_car_age_std = parameters_firm_manager["init_car_age_std"]
+        # Initial cars are flagged init_car=1, which bars them from the second-hand
+        # market (see socialNetworkUsers.replace_vehicle): their owners discard them
+        # instead of selling. That makes an aged initial fleet self-destroying, because
+        # an old unsellable car is replaced sooner than a new one and the stock is
+        # never recirculated. Set this to 1 to let the initial stock be resold like
+        # any other car, so a stationary initial age distribution actually persists.
+        self.init_cars_sellable = parameters_firm_manager.get("init_cars_sellable", 0)
 
         self.ev_production_bool = 0
         self.production_subsidy = 0
@@ -79,6 +86,37 @@ class Firm_Manager:
         #calculate the inital attributes of all the cars on sale
         self.cars_on_sale_all_firms = self.generate_cars_on_sale_all_firms()
              
+    def gen_init_car_ages(self):
+        """
+        Draw the age of each vehicle in the initial car stock.
+
+        Starting every vehicle at age 0 makes the whole fleet one perfectly
+        synchronised cohort. The replacement hazard rises with age, so that
+        cohort retires together and keeps re-retiring together, which shows up
+        as a damped oscillation in mean car age with a period equal to the mean
+        holding time. The burn-in is shorter than two such periods, so the
+        oscillation is still running through the calibration window. Drawing
+        from the stationary age distribution instead removes it.
+
+        With `init_car_age_std` at 0 the draw is uniform over
+        [0, 2*init_car_age_mean], which is the stationary age distribution of a
+        renewal process whose holding times are spread evenly around
+        `init_car_age_mean`. A positive `init_car_age_std` switches to a normal
+        draw clipped at 0, for a more tightly-peaked initial fleet.
+
+        Returns:
+            np.ndarray: Integer age in months for each of `num_individuals` cars.
+        """
+        if self.init_car_age_mean <= 0:
+            return np.zeros(self.num_individuals, dtype=int)
+
+        if self.init_car_age_std > 0:
+            ages = self.random_state_input.normal(self.init_car_age_mean, self.init_car_age_std, self.num_individuals)
+        else:
+            ages = self.random_state_input.uniform(0, 2*self.init_car_age_mean, self.num_individuals)
+
+        return np.clip(ages, 0, None).astype(int)
+
     def gen_initial_cars(self):
         """
         Generate initial old car stock for simulation.
@@ -87,15 +125,17 @@ class Firm_Manager:
             list: List of PersonalCar instances representing the initial car stock.
         """
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
+        ages = self.gen_init_car_ages()
+        init_car_flag = 0 if self.init_cars_sellable else 1
 
         car_list = []
         for i, car in enumerate(model_choices):
             personalCar_id = self.id_generator.get_new_id()
-            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=1)
-            car_real.L_a_t = 0
+            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=init_car_flag)
+            car_real.L_a_t = int(ages[i])
             car_list.append(car_real)
 
-        self.old_cars = car_list   
+        self.old_cars = car_list
         return self.old_cars
     
 
