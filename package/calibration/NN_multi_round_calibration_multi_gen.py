@@ -224,5 +224,5 @@ if __name__ == "__main__":
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output", 
         num_simulations=128, 
-        num_rounds= 3
+        num_rounds= 2
     )

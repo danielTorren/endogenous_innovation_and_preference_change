@@ -637,11 +637,26 @@ class Social_Network:
         # Record the chosen vehicle
         vehicle_chosen = available_and_current_vehicles_list[choice_index]
 
+        # A car is aged exactly once per month, by whoever held it at the START
+        # of that month (see the update_timer_L_a_t() calls at the end of this
+        # method and in secondHandMerchant.update_age_stock_prices_and_emissions_intensity).
+        # A car bought from the merchant was already aged this step by the
+        # merchant -- get_second_hand_cars() runs before update_social_network()
+        # in controller.next_step() -- so it must NOT be aged again here.
+        acquired_from_merchant = False
+
         # Handle consequences of the choice
         if user.user_id != vehicle_chosen.owner_id:  # New vehicle, not currently owned
             # Transfer the user's current vehicle to the second-hand merchant, if any
             if isinstance(user.vehicle, PersonalCar):#YOU SELL YOUR CAR?
-                if (user.vehicle.init_car) or (user.vehicle.cost_second_hand_merchant == self.scrap_price) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD 
+                # The seller held this car for the whole month, so it is aged
+                # here. Previously user.vehicle was rebound to the newly
+                # acquired car before the update_timer_L_a_t() call at the end
+                # of this method, so a car being sold silently skipped a month
+                # -- which is why stocked cars read exactly one month too young
+                # for their whole time on the second-hand market.
+                user.vehicle.update_timer_L_a_t()
+                if (user.vehicle.init_car) or (user.vehicle.cost_second_hand_merchant == self.scrap_price) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD
                     user.vehicle.owner_id = -99#send to shadow realm
                     user.vehicle = None
                 else:
@@ -666,6 +681,7 @@ class Social_Network:
                 vehicle_chosen.owner_id = user.user_id
                 vehicle_chosen.scenario = "current_car"
                 user.vehicle = vehicle_chosen
+                acquired_from_merchant = True#already aged by the merchant this step
                 self.second_hand_merchant.remove_car(vehicle_chosen)#REmove it last in case of issue of removing and the obeject disappearing
                 self.second_hand_merchant.income += user.vehicle.price
 
@@ -692,8 +708,11 @@ class Social_Network:
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.keep_car +=1#KEEP CURRENT CAR
 
-        # Update the age or timer of the chosen vehicle
-        user.vehicle.update_timer_L_a_t()
+        # Update the age or timer of the chosen vehicle. Skipped for a car just
+        # bought off the merchant, which the merchant already aged this step;
+        # a kept car, and a newly produced one, are aged here.
+        if not acquired_from_merchant:
+            user.vehicle.update_timer_L_a_t()
 
         return vehicle_chosen, user.vehicle, choice_index, utilities_kappa
     

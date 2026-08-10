@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from scipy.special import lambertw
 from package.model.carModel import CarModel
@@ -96,8 +97,14 @@ class Firm:
 
         self.lambda_exp = parameters_firm["lambda"]
 
-        self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
-        self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
+        # Shared PROTOTYPE cache, keyed by component string: one entry per design,
+        # built once and never handed out directly. gen_neighbour_carsModel()
+        # returns a per-firm shallow copy of the prototype, so the expensive
+        # design data (NK attributes, neighbour strings) is computed once for the
+        # whole market while each firm keeps its OWN price/utility/profit state.
+        # See gen_neighbour_carsModel() for why that separation matters.
+        self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]
+        self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]
 
         self.ICE_landscape = self.parameters_firm["ICE_landscape"]
         self.EV_landscape = self.parameters_firm["EV_landscape"]
@@ -557,8 +564,28 @@ class Firm:
         """
         Generate CarModel instances for neighboring technology strings.
 
+        Each firm gets its OWN instance per design. The repo holds a prototype
+        per component string purely as a cache, and is never handed out: it
+        would otherwise make one Python object serve every firm that has ever
+        even considered that design, so a firm's own pricing/production step
+        would silently overwrite the price, segment utilities, expected profits
+        and choosen_tech_bool of a car a DIFFERENT firm currently has on sale,
+        and `car.firm` would point at whichever firm touched it last (breaking
+        per-firm profit attribution and the HHI built on top of it).
+
+        copy.copy, not deepcopy: the shallow copy deliberately keeps sharing the
+        read-only design data (attributes_fitness, inverted_tech_strings,
+        nk_landscape, parameters), which is the whole point of the cache and is
+        never mutated per firm. deepcopy would clone the entire NK landscape and
+        fork its random state -- ~2700x slower than simply reconstructing the
+        model, which is presumably why copying was dropped in the first place.
+        Every attribute a firm DOES write is rebound below so that no mutable
+        state is shared. `price` is deliberately left unset, matching a
+        freshly-constructed CarModel (CarModel.__init__ does not set it either);
+        it is assigned later by select_car_lambda_production().
+
         Returns:
-            list: List of CarModel instances.
+            list: List of CarModel instances, one fresh instance per firm.
         """
         neighbouring_technologies = []
 
@@ -568,18 +595,29 @@ class Firm:
             universal_model_repo = self.universal_model_repo_EV
 
         for tech_string in tech_strings:
-            if tech_string in universal_model_repo.keys():
-                tech_to_add = universal_model_repo[tech_string]
-            else:
-                tech_to_add = CarModel(
+            prototype = universal_model_repo.get(tech_string)
+            if prototype is None:
+                prototype = CarModel(
                     component_string=tech_string,
                     nk_landscape = nk_landscape,
                     parameters = parameters_car
                 )
-                universal_model_repo[tech_string] = tech_to_add
+                universal_model_repo[tech_string] = prototype
 
-            unique_tech_id = self.id_generator.get_new_id()
-            tech_to_add.unique_id = unique_tech_id
+            tech_to_add = copy.copy(prototype)
+
+            #REBIND EVERY PIECE OF PER-FIRM MUTABLE STATE
+            tech_to_add.optimal_price_segments = {}
+            tech_to_add.B_segments = {}
+            tech_to_add.car_utility_segments_U = {}
+            tech_to_add.expected_profit_segments = {}
+            tech_to_add.expected_profit = 0
+            tech_to_add.actual_profit = 0
+            tech_to_add.choosen_tech_bool = False
+            tech_to_add.timer = 0
+            tech_to_add.__dict__.pop("price", None)#as if freshly constructed
+
+            tech_to_add.unique_id = self.id_generator.get_new_id()
             tech_to_add.firm = self
             neighbouring_technologies.append(tech_to_add)
 
