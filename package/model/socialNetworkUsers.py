@@ -51,7 +51,15 @@ class Social_Network:
         self.gamma_segment_vec = parameters_social_network["gamma_segment_vals"] 
 
         self.history_prop_EV = []
-        
+
+        # Mean age (months) of the owned fleet, recorded every step by
+        # update_mean_car_age() independently of save_timeseries_data_state,
+        # because the calibration matches against it. Deliberately NOT the same
+        # quantity as history_mean_car_age, which is gated behind the save path
+        # and averages only the vehicles CHOSEN this step (i.e. switchers), not
+        # the whole fleet.
+        self.history_mean_car_age_fleet = []
+
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
@@ -1470,6 +1478,21 @@ class Social_Network:
         self.EV_users_count = int(np.sum(self._cv_cache["transportType"] == 3))
         self.history_prop_EV.append(self.EV_users_count / self.num_individuals)
 
+    def update_mean_car_age(self):
+        """
+        Record the mean age, in months, of the currently owned fleet.
+
+        Reads the maintained _cv_cache (kept in sync per switcher by
+        _update_cv_cache_row and per non-switcher by the L_a_t increment), so
+        this costs one array mean per step rather than a pass over 3000 objects.
+        Equivalent to calc_mean_car_age(), which the sensitivity analysis calls
+        once at the end of a run.
+
+        Called from next_step() right beside update_EV_stock(), so index t of
+        history_mean_car_age_fleet lines up with index t of history_prop_EV.
+        """
+        self.history_mean_car_age_fleet.append(float(np.mean(self._cv_cache["L_a_t"])))
+
     def calc_price_mean_max_min(self):
         """
         Compute mean, min, and max prices among new cars.
@@ -1571,7 +1594,8 @@ class Social_Network:
         self.consider_ev_vec, self.ev_adoption_vec = self.calculate_ev_adoption(ev_type=3)#BASED ON CONSUMPTION PREVIOUS TIME STEP
 
         self.update_EV_stock()
-        
+        self.update_mean_car_age()
+
         self.t_social_network +=1
         
         return self.consider_ev_vec, self.new_bought_vehicles #self.chosen_vehicles instead of self.current_vehicles as firms can count pofits

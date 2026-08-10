@@ -45,6 +45,14 @@ class Firm_Manager:
         # continued future run restarts the series exactly as before.
         self.history_past_new_bought_vehicles_prop_ev = []
 
+        # Market concentration of new-car sales revenue, recorded every step by
+        # update_HHI() for the same reason as the series above: the calibration
+        # matches against it and does not want the rest of the time series
+        # overhead. self.HHI is seeded here so calc_last_step_HHI() is safe to
+        # call on a run that never got past burn-in.
+        self.HHI = 0
+        self.history_HHI = []
+
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
         self.carbon_price = parameters_firm_manager["carbon_price"]
@@ -493,8 +501,10 @@ class Firm_Manager:
         Returns:
             float: Herfindahl-Hirschman Index.
         """
-        HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
-        return HHI
+        # Read, don't recompute: update_HHI() already advanced the 12-step
+        # rolling window this step, and calculate_market_concentration()
+        # mutates that window.
+        return self.HHI
 
     def set_up_time_series_firm_manager(self):
         """
@@ -534,6 +544,7 @@ class Firm_Manager:
         self.history_prop_ICE_research = []
 
         self.history_past_new_bought_vehicles_prop_ev = []
+        self.history_HHI = []
 
 
     def save_timeseries_data_firm_manager(self):
@@ -572,7 +583,8 @@ class Firm_Manager:
         self.EV_users_count = sum(1 if car.transportType == 3 else 0 for car in  self.cars_on_sale_all_firms)
         self.history_prop_EV.append(self.EV_users_count/len(self.cars_on_sale_all_firms))
     
-        self.HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
+        # self.HHI is already set for this step by update_HHI() in next_step();
+        # recomputing here would advance the rolling purchase window twice.
         profit_margin_ICE, profit_margin_EV = self.calc_profit_margin(self.past_new_bought_vehicles)
 
         if profit_margin_EV:
@@ -712,6 +724,26 @@ class Firm_Manager:
         else:
             self.history_past_new_bought_vehicles_prop_ev.append(np.nan)
 
+    def update_HHI(self):
+        """
+        Compute this step's market concentration and append it to the history.
+
+        This is now the ONLY per-step call to calculate_market_concentration().
+        That method mutates the 12-step rolling purchase window
+        (HHI_past_new_bought_vehicles_history), so calling it a second time in
+        the same step would push the same purchase list in twice and halve the
+        effective window; save_timeseries_data_firm_manager() and
+        calc_last_step_HHI() therefore read self.HHI instead of recomputing it.
+
+        Called from next_step() straight after update_EV_sales(), so index t of
+        history_HHI lines up with index t of
+        history_past_new_bought_vehicles_prop_ev and of
+        social_network.history_prop_EV -- which is what lets the calibration
+        address all of them with one month-offset convention.
+        """
+        self.HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
+        self.history_HHI.append(self.HHI)
+
     def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  production_subsidy,  rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0, ice_sales_ban_active=False, ice_research_ban_active=False):
         """
         Advance firms by one simulation step, considering updated policies and user behavior.
@@ -722,6 +754,7 @@ class Firm_Manager:
         self.t_firm_manager += 1
         self.past_new_bought_vehicles = new_bought_vehicles
         self.update_EV_sales()
+        self.update_HHI()
         self.total_profit = self.calc_total_profits(self.past_new_bought_vehicles, self.production_subsidy)#NEED TO CALC TOTAL PROFITS NOW before the cars on sale change?
         self.profit_cumulative += self.total_profit
 
