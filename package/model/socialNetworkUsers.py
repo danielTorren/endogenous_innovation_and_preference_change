@@ -513,9 +513,17 @@ class Social_Network:
         # Find the closest first-hand car for each second-hand car
         closest_idxs = np.argmin(distances, axis=1)
 
-        # Get the prices of the closest first-hand cars
-        #closest_prices = first_hand_prices[closest_idxs]
-        closest_prices = np.maximum(first_hand_prices[closest_idxs] - (self.rebate_calibration + self.rebate),0)
+        # Get the prices of the closest first-hand cars. The EV rebate only
+        # exists on EVs (see the transportType == 3 gate on rebate_vec used for
+        # the buy-side utility), so it may only be netted off an EV anchor
+        # price. Matching is on (Quality, Efficiency, B), and B separates the
+        # drivetrains (fuel tank vs battery), so a used ICE matches an ICE
+        # anchor essentially always; deducting the EV rebate there collapsed
+        # every ICE trade-in onto the scrap floor and cancelled the subsidy's
+        # own effect on turnover.
+        matched_is_ev = vehicle_dict_vecs_new_cars["transportType"][closest_idxs] == 3
+        rebate_deduction = np.where(matched_is_ev, self.rebate_calibration + self.rebate, 0.0)
+        closest_prices = np.maximum(first_hand_prices[closest_idxs] - rebate_deduction, 0)
 
         # Adjust prices based on car age and depreciation
         adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
