@@ -18,7 +18,7 @@
                                    # justified would have risked an OOM kill.
                                    # Scale this WITH --cpus-per-task, not with the draw count:
                                    # budget ~0.8 GB per worker plus ~4 GB for the parent.
-#SBATCH --time=24:00:00           # 2 rounds x 8192 draws = 16,384 ABM runs, dispatched as 2 flat
+#SBATCH --time=12:00:00           # 2 rounds x 8192 draws = 16,384 ABM runs, dispatched as 2 flat
                                    # waves of 8192 tasks over 128 workers (64 deep per worker).
                                    # Estimated 4-7 h; the deep queue means wall time now tracks the
                                    # MEAN draw cost rather than the slowest draw in each wave.

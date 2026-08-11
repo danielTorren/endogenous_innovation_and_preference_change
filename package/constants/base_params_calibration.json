@@ -56,7 +56,7 @@
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.00194,
+        "delta": 0.001836,
         "delta_P": 0.0087,
         "transportType": 2,
         "mean_Price": 60000,
@@ -74,7 +74,7 @@
         "K": 3,
         "A": 4,
         "rho":[1,0,0,0],
-        "delta_P":0.0116,
+        "delta_P":0.0198,
         "production_emissions":14000,
         "transportType": 3,
         "min_Efficiency": 2.73,
@@ -85,7 +85,7 @@
         "max_Cost": 70000
     },
     "parameters_firm_manager": {
-        "J": 16,
+        "J": 10,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
@@ -105,8 +105,8 @@
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.239, 
-        "b_chi": 2.947,
+        "a_chi": 1.222, 
+        "b_chi": 3.003,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -120,7 +120,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.25e-4,
+        "kappa": 2.365e-4,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
