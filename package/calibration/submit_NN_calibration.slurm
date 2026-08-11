@@ -6,9 +6,18 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=128        # Free to set independently of anything in the Python now --
                                    # see the note below. get_num_workers() reads it for joblib n_jobs.
-#SBATCH --mem=256G                 # ~311 MB peak RSS per worker x 128 workers = ~40 GB, plus the
-                                   # parent process and torch. Scale this WITH --cpus-per-task,
-                                   # not with the simulation count.
+#SBATCH --mem=128G                 # MEASURED per worker: 338 MB is import baseline alone (133 MB
+                                   # numpy/scipy/networkx/matplotlib, +205 MB torch+sbi, pulled in
+                                   # because run_single_simulation lives in a module that imports
+                                   # them); settled RSS during a sim is 395-472 MB and peak working
+                                   # set over several sims is ~760 MB. So 128 workers x ~0.76 GB
+                                   # = ~97 GB, plus 2-4 GB parent (torch, sbi, the 500k-sample
+                                   # posterior draw and its log_prob). 128G leaves ~25% headroom.
+                                   # An earlier comment here claimed 311 MB per worker; that was
+                                   # the import baseline mistaken for the peak, and the 64G it
+                                   # justified would have risked an OOM kill.
+                                   # Scale this WITH --cpus-per-task, not with the draw count:
+                                   # budget ~0.8 GB per worker plus ~4 GB for the parent.
 #SBATCH --time=24:00:00           # 2 rounds x 8192 draws = 16,384 ABM runs, dispatched as 2 flat
                                    # waves of 8192 tasks over 128 workers (64 deep per worker).
                                    # Estimated 4-7 h; the deep queue means wall time now tracks the
