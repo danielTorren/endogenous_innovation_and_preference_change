@@ -85,7 +85,7 @@
         "max_Cost": 70000
     },
     "parameters_firm_manager": {
-        "J": 16,
+        "J": 10,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
@@ -120,7 +120,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 1.893e-4,
+        "kappa": 0.0001893,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,

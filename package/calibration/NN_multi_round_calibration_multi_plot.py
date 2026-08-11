@@ -100,6 +100,9 @@ def main(fileName):
     # Load observed data
 
     match_data = load_object(fileName + "/Data", "match_data")
+    base_params = load_object(fileName + "/Data", "base_params")
+    print(base_params)
+    
 
     x_o = load_x_o(fileName, match_data)
 
@@ -148,9 +151,11 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_12_41_07__11_08_2026",
+        fileName="results/sbi_single_seed_15_38_23__11_08_2026",
     )
-
+    #sbi_single_seed_14_23_24__11_08_2026
+    #sbi_single_seed_15_18_22__11_08_2026
+    #sbi_single_seed_15_38_23__11_08_2026
     #NN_calibration_multi_12_41_07__11_08_2026 - OLD EFFICICENCY
     #NN_calibration_multi_12_25_22__11_08_2026 - UPDATED efficiency 
     #NN_calibration_multi_08_14_47__07_08_2026
