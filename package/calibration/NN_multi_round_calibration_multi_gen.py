@@ -1,15 +1,11 @@
 import torch
 from sbi.utils import BoxUniform
-from sbi.inference import NPE, simulate_for_sbi
-from sbi.utils.user_input_checks import (
-    check_sbi_inputs,
-    process_prior,
-    process_simulator,
-)
+from sbi.inference import NPE
+from sbi.utils.user_input_checks import process_prior
 import json
 import numpy as np
 from copy import deepcopy
-from functools import partial
+from joblib import Parallel, delayed
 from package.resources.utility import (
     produce_name_datetime,
     save_object,
@@ -18,7 +14,6 @@ from package.resources.utility import (
     get_num_workers
 )
 from package.resources.run import generate_data
-import multiprocessing
 
 MATCH_START_YEAR = 2020
 MATCH_END_YEAR = 2023
@@ -106,9 +101,13 @@ def convert_data_period_mean(annual_values):
     """
     return np.array([np.mean(annual_values)])
 
-def run_single_simulation(theta, base_params, param_list):
+def run_single_simulation(theta, seed, base_params, param_list):
     """
-    Runs a single simulation for the given parameters theta and base_params.
+    Runs one ABM simulation at parameter vector `theta` and ABM seed `seed`.
+
+    One task = one (theta, seed) pair. The seed is applied here rather than
+    baked into a per-seed partial in the caller, which is what lets a whole
+    round be dispatched as a single flat joblib fan-out (see simulate_round).
     """
 
     #print("theta", theta)
@@ -121,11 +120,15 @@ def run_single_simulation(theta, base_params, param_list):
     # and only showed up on a single-core run.
     params = deepcopy(base_params)
 
+    # ABM seed for this draw. Controller.handle_seed() turns this into the
+    # RandomState driving the social network, firms and the second-hand market.
+    params["seed"] = int(seed)
+
     # Update the parameters from theta
     for i, param in enumerate(param_list):
         subdict = param["subdict"]
         name = param["name"]
-        params[subdict][name] = theta[i].item()
+        params[subdict][name] = float(theta[i])
 
     # Run the market simulation
     controller = generate_data(params)
@@ -156,28 +159,113 @@ def run_single_simulation(theta, base_params, param_list):
 
     return data_to_fit
 
+
+def simulate_round(proposal, base_params, param_list, num_draws, seeds, torch_seed):
+    """
+    Draw `num_draws` thetas from `proposal` and simulate all of them in ONE
+    flat joblib fan-out. Returns (theta, x) ready for append_simulations().
+
+    Replaces the old per-seed loop over sbi's simulate_for_sbi(). That version
+    split a round into `len(seeds)` sequential waves of `num_simulations` tasks
+    each, and since --cpus-per-task was set equal to num_simulations every wave
+    ran exactly one task per worker with nothing queued behind it. A wave could
+    therefore not finish before its SLOWEST draw did, and ABM cost varies ~2x
+    with theta, so ~25% of the allocation sat idle -- once per wave, 64 waves
+    per round.
+
+    Here all num_draws tasks go into a single Parallel() call, so with
+    num_draws >> n_jobs each worker pulls its next draw the moment it finishes
+    one and the runtime spread averages out across the whole round. There is
+    one barrier per round instead of one per seed.
+
+    Statistically this is identical to the old loop: those per-seed batches were
+    all drawn from the same `proposal`, so they were already one round of draws
+    from one distribution (which is why append_simulations() was called once per
+    round on the concatenation). Every draw still gets a unique theta run at
+    exactly one seed; there is no replication of a theta across seeds.
+
+    Seeds are assigned round-robin (draw j gets seeds[j % len(seeds)]), so with
+    num_draws = num_simulations x len(seeds) every seed carries exactly
+    num_simulations draws, the same split as the old per-seed loop. theta is
+    drawn independently of j, so round-robin induces no correlation between
+    theta and seed. What has changed is only that the seed no longer gates
+    DISPATCH: all num_draws tasks are in flight as one pool, rather than being
+    forced through len(seeds) sequential barriers.
+    """
+    # Pins the theta draw only. Both the prior (BoxUniform) and the round-2+
+    # proposal (a posterior with default x set) sample through torch's global
+    # RNG, and the ABM itself never touches a global RNG -- it runs off the
+    # np.random.RandomState objects that Controller.handle_seed() builds from
+    # params["seed"] / params["seed_inputs"]. So seeding torch here is enough
+    # to make a round reproducible, and it is unrelated to the ABM seeds.
+    torch.manual_seed(torch_seed)
+
+    theta = proposal.sample((num_draws,))
+    theta_np = np.asarray(theta.cpu().numpy(), dtype=np.float64)
+
+    # np.resize tiles cyclically: seeds 1..64 repeated until num_draws is filled.
+    seed_per_draw = np.resize(np.asarray(seeds), num_draws)
+
+    num_workers = get_num_workers()
+    print(f"  {num_draws} draws over {len(seeds)} seeds on {num_workers} workers "
+          f"({num_draws / num_workers:.1f} tasks per worker)")
+
+    # batch_size=1 defeats joblib's auto-batching. Auto only groups tasks when
+    # they are very short, which ABM runs are not, but pinning it makes the
+    # dynamic one-task-at-a-time queue that gives the load balancing explicit.
+    x_list = Parallel(n_jobs=num_workers, batch_size=1, verbose=10)(
+        delayed(run_single_simulation)(
+            theta_np[j], seed_per_draw[j], base_params, param_list
+        )
+        for j in range(num_draws)
+    )
+
+    x = torch.as_tensor(np.stack(x_list), dtype=torch.float32)
+    theta = torch.as_tensor(theta_np, dtype=torch.float32)
+
+    return theta, x
+
+
 def main(
         parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN_multi_round.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_simulations=100,
+        num_simulations=128,
         num_rounds = 3
     ) -> str:
+    """
+    num_simulations is the number of draws PER SEED, so a round generates
+    num_simulations x base_params["seed_repetitions"] (theta, x) training pairs
+    and each of the seeds carries exactly num_simulations of them.
+
+    Note this is a per-seed count, not a per-round one: it is the "this many
+    draws for each of my seeds" knob. It no longer has any relationship to
+    --cpus-per-task, because a round is dispatched as one flat fan-out of all
+    num_simulations x seed_repetitions tasks (see simulate_round).
+    """
 
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
 
-    # Snapshot before the seed loop starts overwriting base_params["seed"] --
-    # this is what gets saved, so base_params.pkl reflects the configuration
-    # the run was launched with rather than whatever the last seed happened
-    # to be (previously it always read seed = seed_repetitions).
+    # Snapshot of the launched configuration, saved as base_params.pkl. The ABM
+    # seed is now set per task inside run_single_simulation() on its own deepcopy,
+    # so this dict is never mutated, but the snapshot is kept as a guard against
+    # a future edit reintroducing in-place writes.
     base_params_save = deepcopy(base_params)
 
-    total_runs = num_rounds*num_simulations* base_params["seed_repetitions"]
-    print("TOTAL RUNS: ", total_runs)
-    
+    seeds = np.arange(1, base_params["seed_repetitions"] + 1)
+
+    # Total draws in one round. Divides exactly by len(seeds) by construction,
+    # so the round-robin seed assignment in simulate_round() is perfectly
+    # balanced: num_simulations draws for every seed.
+    num_draws_per_round = num_simulations * len(seeds)
+
+    total_runs = num_rounds * num_draws_per_round
+    print(f"TOTAL RUNS: {total_runs} "
+          f"({num_rounds} rounds x {len(seeds)} seeds x {num_simulations} draws per seed)")
+
     # Load observed data
     calibration_data_output = load_object(OUTPUTS_LOAD_ROOT, OUTPUTS_LOAD_NAME)
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
@@ -219,69 +307,38 @@ def main(
     # Process the prior
     prior, num_parameters, prior_returns_numpy = process_prior(prior)
 
-    # We won't define the simulator fully yet; we will define it per seed
-    # after updating base_params with that seed.
-
     # Initialize inference object
     inference = NPE(prior=prior)
 
     posteriors = []
     proposal = prior
 
-    seeds = np.arange(1, base_params["seed_repetitions"]+1)
-
     for i in range(num_rounds):
         print("ROUND: ", i+1, "/", num_rounds)
 
-        # For each round, we run multiple seeds and collect the results. These
-        # are appended to `inference` ONCE, after the seed loop -- see below.
-        theta_all, x_all = [], []
-
-        for seed in seeds:
-
-            # Update base params for this seed
-            base_params["seed"] = seed
-
-            # Create a simulator partial with these seeded params
-            seeded_simulator = partial(run_single_simulation, base_params=base_params, param_list=parameters_list)
-
-            # Process the simulator once per seed
-            sim_for_seed = process_simulator(seeded_simulator, prior, is_numpy_simulator=prior_returns_numpy)
-            check_sbi_inputs(sim_for_seed, prior)
-
-            # Run simulations for this seed.
-            # `seed` here pins sbi's OWN randomness (the theta draw from the
-            # proposal, and the per-batch seeds it hands its workers) -- it is
-            # unrelated to base_params["seed"], which is what actually drives
-            # the ABM. It must differ per call: passing one value to every
-            # iteration would make all 64 seed-batches draw IDENTICAL thetas.
-            theta, x = simulate_for_sbi(
-                sim_for_seed,
-                proposal,
-                num_simulations=num_simulations,
-                num_workers=get_num_workers(),
-                simulation_batch_size=1,
-                seed=int(i * 10_000 + seed)
-            )
-
-            theta_all.append(theta)
-            x_all.append(x)
-
-        # Append ONCE per round, not once per seed. sbi stamps every
-        # append_simulations() call that carries a non-prior proposal with
-        # max(_data_round_index) + 1, so appending inside the seed loop made it
-        # believe it was on round 64 after round 2 and round 128 after round 3.
-        # All seed-batches in a round were drawn from the SAME proposal, so they
-        # genuinely are one round; concatenating keeps _data_round_index at
-        # [0, 1, 2]. Training is unchanged (same atomic-loss path, same
-        # start_idx, same _proposal_roundwise[-1]) -- this just stops
-        # discard_prior_samples / non-atomic MDN losses, which branch on
-        # self._round, from silently misbehaving if they are ever switched on.
-        inference.append_simulations(
-            torch.cat(theta_all), torch.cat(x_all), proposal=proposal
+        # One flat fan-out for the whole round: num_draws_per_round unique
+        # thetas, ABM seeds cycled round-robin across them. See simulate_round().
+        theta, x = simulate_round(
+            proposal,
+            base_params,
+            parameters_list,
+            num_draws=num_draws_per_round,
+            seeds=seeds,
+            # Pins the theta draw for this round only, and must differ per round
+            # or every round would redraw the same thetas. Unrelated to the ABM
+            # seeds, which come from `seeds`.
+            torch_seed=int(i * 10_000 + 1),
         )
 
-        # After collecting simulations from all seeds in this round, train the density estimator
+        # Exactly ONE append_simulations() per round. sbi stamps every call that
+        # carries a non-prior proposal with max(_data_round_index) + 1, so
+        # appending per seed-batch (as the old inner loop invited) made it
+        # believe it was on round 64 after round 2. One call per round keeps
+        # _data_round_index at [0, 1, 2], which is what discard_prior_samples
+        # and the non-atomic MDN losses branch on if they are ever switched on.
+        inference.append_simulations(theta, x, proposal=proposal)
+
+        # Train the density estimator on everything collected so far
         density_estimator = inference.train()
         posterior = inference.build_posterior(density_estimator)
         posteriors.append(posterior)
@@ -330,7 +387,9 @@ if __name__ == "__main__":
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
-        OUTPUTS_LOAD_NAME="calibration_data_output", 
-        num_simulations=128, 
+        OUTPUTS_LOAD_NAME="calibration_data_output",
+        # Draws PER SEED. With seed_repetitions = 64 this is 8192 draws per
+        # round. Raise it freely: it no longer has to relate to --cpus-per-task.
+        num_simulations=128,
         num_rounds= 2
     )
