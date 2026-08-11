@@ -61,7 +61,7 @@
         "transportType": 2,
         "mean_Price": 60000,
         "min_Efficiency": 0.79,
-        "max_Efficiency": 2.3175,
+        "max_Efficiency": 3.09,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
