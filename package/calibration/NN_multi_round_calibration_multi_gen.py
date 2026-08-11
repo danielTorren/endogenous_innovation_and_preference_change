@@ -160,6 +160,27 @@ def run_single_simulation(theta, seed, base_params, param_list):
     return data_to_fit
 
 
+# How many replacement passes simulate_round() will spend trying to turn a
+# non-finite draw into a finite one before giving up and raising. Each pass
+# redraws only the offending slots, so a pass is cheap; the cap exists to stop
+# a systematically-NaN region of the prior from looping forever.
+MAX_INVALID_RESAMPLE_PASSES = 5
+
+
+def _simulate_batch(theta_np, seed_per_draw, base_params, param_list, num_workers):
+    """One flat joblib fan-out over a (theta, seed) list. Returns x as an array."""
+    # batch_size=1 defeats joblib's auto-batching. Auto only groups tasks when
+    # they are very short, which ABM runs are not, but pinning it makes the
+    # dynamic one-task-at-a-time queue that gives the load balancing explicit.
+    x_list = Parallel(n_jobs=num_workers, batch_size=1, verbose=10)(
+        delayed(run_single_simulation)(
+            theta_np[j], seed_per_draw[j], base_params, param_list
+        )
+        for j in range(len(theta_np))
+    )
+    return np.asarray(np.stack(x_list), dtype=np.float64)
+
+
 def simulate_round(proposal, base_params, param_list, num_draws, seeds, torch_seed):
     """
     Draw `num_draws` thetas from `proposal` and simulate all of them in ONE
@@ -210,17 +231,60 @@ def simulate_round(proposal, base_params, param_list, num_draws, seeds, torch_se
     print(f"  {num_draws} draws over {len(seeds)} seeds on {num_workers} workers "
           f"({num_draws / num_workers:.1f} tasks per worker)")
 
-    # batch_size=1 defeats joblib's auto-batching. Auto only groups tasks when
-    # they are very short, which ABM runs are not, but pinning it makes the
-    # dynamic one-task-at-a-time queue that gives the load balancing explicit.
-    x_list = Parallel(n_jobs=num_workers, batch_size=1, verbose=10)(
-        delayed(run_single_simulation)(
-            theta_np[j], seed_per_draw[j], base_params, param_list
-        )
-        for j in range(num_draws)
-    )
+    x_arr = _simulate_batch(theta_np, seed_per_draw, base_params, param_list, num_workers)
 
-    x = torch.as_tensor(np.stack(x_list), dtype=torch.float32)
+    # Non-finite x must never reach append_simulations(). A single NaN row kills
+    # inference.train() outright on the multi-round path: NPE-C's atomic loss
+    # calls assert_all_finite() on the posterior evaluation, so it raises
+    # "NaN/Inf present in posterior eval" rather than degrading gracefully.
+    #
+    # sbi's own lever, exclude_invalid_x=True, is NOT the fix here. It defaults
+    # to True in round 0 and False afterwards precisely because, in its words,
+    # "for multi-round SNPE (atomic), discarding invalid simulations gives
+    # systematically wrong results" -- the atomic loss needs the retained
+    # samples to be a fair draw from the proposal, and dropping rows breaks that
+    # (as well as unbalancing the per-seed counts).
+    #
+    # Resampling instead keeps both invariants: the slot stays filled, and it
+    # keeps its original ABM seed so every seed still carries exactly
+    # num_simulations draws. Formally this makes those slots draws from the
+    # proposal truncated to the region that simulates finitely, which is a
+    # negligible distortion at the observed rate (1 bad draw in 8192) and is
+    # strictly better than the alternatives of training on NaN or dropping rows.
+    bad = ~np.isfinite(x_arr).all(axis=1)
+
+    for attempt in range(1, MAX_INVALID_RESAMPLE_PASSES + 1):
+        if not bad.any():
+            break
+
+        idx = np.flatnonzero(bad)
+        print(f"  WARNING: {idx.size} of {num_draws} draws produced non-finite x; "
+              f"resampling them (pass {attempt}/{MAX_INVALID_RESAMPLE_PASSES})")
+        for j in idx:
+            names = [p["name"] for p in param_list]
+            offending = ", ".join(f"{n}={v:.6g}" for n, v in zip(names, theta_np[j]))
+            print(f"    draw {j} (seed {seed_per_draw[j]}): {offending} -> x = {x_arr[j]}")
+
+        replacement = np.asarray(
+            proposal.sample((idx.size,)).cpu().numpy(), dtype=np.float64
+        )
+        replacement_x = _simulate_batch(
+            replacement, seed_per_draw[idx], base_params, param_list, num_workers
+        )
+
+        theta_np[idx] = replacement
+        x_arr[idx] = replacement_x
+        bad = ~np.isfinite(x_arr).all(axis=1)
+
+    if bad.any():
+        raise RuntimeError(
+            f"{int(bad.sum())} draws still produced non-finite x after "
+            f"{MAX_INVALID_RESAMPLE_PASSES} resample passes. This is no longer a "
+            "rare numerical accident -- a whole region of the proposal is "
+            "simulating badly. Investigate before training on it."
+        )
+
+    x = torch.as_tensor(x_arr, dtype=torch.float32)
     theta = torch.as_tensor(theta_np, dtype=torch.float32)
 
     return theta, x
@@ -378,10 +442,10 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.5, 8]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.5, 8]},
-        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.0005, 0.0035]},
-        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 8e-4]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 5]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.8, 5]},
+        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.001, 0.003]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 6e-4]},
     ]
     main(
         parameters_list=parameters_list,
