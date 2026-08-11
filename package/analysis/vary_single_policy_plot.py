@@ -99,7 +99,7 @@ def main(file_name):
     policy_list = load_object(file_name + "/Data", "policy_list")
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
     base_params = load_object(file_name + "/Data", "base_params")
-    
+    print(base_params)
 
     measures_dict = {
         "EV Uptake": 0,
@@ -160,4 +160,4 @@ def main(file_name):
 
     plt.show()
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_07_53_22__10_08_2026")#vary_single_policy_gen_16_43_02__06_03_2025
+    main(file_name="results/vary_single_policy_gen_19_53_15__11_08_2026")#vary_single_policy_gen_16_43_02__06_03_2025

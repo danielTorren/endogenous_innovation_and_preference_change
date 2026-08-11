@@ -60,7 +60,7 @@ def main(
     save_object(data_array_margins, fileName + "/Data","data_array_margins")
 
     print(fileName)
-    return params_list
+    return fileName
 
 if __name__ == "__main__":
     results = main(
