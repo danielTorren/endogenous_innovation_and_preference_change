@@ -45,13 +45,17 @@ class Firm_Manager:
         # continued future run restarts the series exactly as before.
         self.history_past_new_bought_vehicles_prop_ev = []
 
-        # Market concentration of new-car sales revenue, recorded every step by
+        # Market concentration of new-car UNIT sales, recorded every step by
         # update_HHI() for the same reason as the series above: the calibration
         # matches against it and does not want the rest of the time series
         # overhead. self.HHI is seeded here so calc_last_step_HHI() is safe to
-        # call on a run that never got past burn-in.
+        # call on a run that never got past burn-in. history_HHI_revenue is the
+        # revenue-weighted variant, kept for reporting only (see
+        # calculate_market_concentration).
         self.HHI = 0
         self.history_HHI = []
+        self.HHI_revenue = 0
+        self.history_HHI_revenue = []
 
         self.J = int(round(parameters_firm_manager["J"]))
         self.N = int(round(parameters_firm_manager["N"]))
@@ -387,7 +391,11 @@ class Firm_Manager:
     
     def calculate_market_share(self, firm, past_new_bought_vehicles, total_sales):
         """
-        Calculate a firm's market share from total sales.
+        Calculate a firm's REVENUE share of new-car sales.
+
+        Used only by the revenue-weighted HHI reported alongside the unit-share
+        HHI (see calculate_market_concentration_revenue). The calibrated measure
+        is the unit-share one.
 
         Args:
             firm (Firm): Firm instance.
@@ -395,7 +403,7 @@ class Firm_Manager:
             total_sales (float): Total revenue from all sales.
 
         Returns:
-            float: Firm's market share.
+            float: Firm's revenue market share.
         """
         # Calculate total sales for the specified firm by summing prices of cars sold by this firm
         firm_sales = sum(car.price for car in past_new_bought_vehicles if car.firm == firm)
@@ -406,13 +414,32 @@ class Firm_Manager:
 
     def calculate_market_concentration(self, new_bought_vehicles):
         """
-        Compute Herfindahl-Hirschman Index (HHI) for market concentration based on past purchases.
+        Compute the Herfindahl-Hirschman Index (HHI) of new-car sales over a
+        trailing 12-month window, from UNIT sales shares.
+
+        A firm's share is its count of cars sold divided by all cars sold, so a
+        $70k car and a $20k car each count once. This is the measure the
+        calibration target comes from: Grieco, Murry & Yurukoglu (2024) compute
+        HHI "at the parent company level" from Wards make-model UNIT sales
+        (falling from over 2500 to around 1200 on the 0-10000 scale, i.e. 0.25
+        to 0.12 as a fraction), and their C4 index is likewise a share of units.
+
+        This used to be a REVENUE share HHI (each car weighted by its price),
+        which is a different object: it measures concentration of industry
+        turnover, and it moves with within-firm pricing even when every firm
+        sells exactly as many cars as before. That variant is kept as
+        calculate_market_concentration_revenue() and reported alongside, but it
+        is not what 0.11-0.18 refers to.
+
+        NOTE: this method MUTATES the 12-month rolling window, so it must be
+        called at most once per step -- see update_HHI().
 
         Args:
-            new_bought_vehicles (list): Vehicles sold this time step.
+            new_bought_vehicles (list): Vehicles sold this time step, one entry
+                per unit sold.
 
         Returns:
-            float: HHI index value.
+            float: HHI as a fraction (bounded below by 1/J for J equal firms).
         """
 
         # Append the new purchases to history
@@ -425,17 +452,45 @@ class Firm_Manager:
         # Flatten the list to get all purchases from the last 12 time steps
         all_purchases = list(itertools.chain(*self.HHI_past_new_bought_vehicles_history))
 
-        # Calculate total market sales over the last 12 time steps
-        total_sales = sum(car.price for car in all_purchases)
+        # Total UNITS sold over the last 12 time steps
+        total_units = len(all_purchases)
 
         # If no sales, return HHI as zero
+        if total_units == 0:
+            return 0
+
+        # Units per firm, then the sum of squared unit shares. Counting in one
+        # pass keys on firm_id (Firm defines no __eq__, so this is the same
+        # identity comparison the revenue version does, without the J passes).
+        units_per_firm = defaultdict(int)
+        for car in all_purchases:
+            units_per_firm[car.firm.firm_id] += 1
+
+        HHI = sum((units / total_units) ** 2 for units in units_per_firm.values())
+
+        return HHI
+
+    def calculate_market_concentration_revenue(self):
+        """
+        Revenue-weighted HHI over the same trailing 12-month window.
+
+        Reported for comparison only; the calibrated measure is the unit-share
+        HHI in calculate_market_concentration(). Reads the rolling window that
+        method already advanced this step rather than appending to it again.
+
+        Returns:
+            float: Revenue-share HHI as a fraction.
+        """
+        all_purchases = list(itertools.chain(*self.HHI_past_new_bought_vehicles_history))
+
+        total_sales = sum(car.price for car in all_purchases)
         if total_sales == 0:
             return 0
 
-        # Calculate the HHI by summing the squares of market shares for each firm
-        HHI = sum(self.calculate_market_share(firm, all_purchases, total_sales) ** 2 for firm in self.firms_list)
-
-        return HHI
+        return sum(
+            self.calculate_market_share(firm, all_purchases, total_sales) ** 2
+            for firm in self.firms_list
+        )
 
     def calc_profit_margin(self, new_bought_vehicles):
         """
@@ -545,6 +600,7 @@ class Firm_Manager:
 
         self.history_past_new_bought_vehicles_prop_ev = []
         self.history_HHI = []
+        self.history_HHI_revenue = []
 
 
     def save_timeseries_data_firm_manager(self):
@@ -740,9 +796,16 @@ class Firm_Manager:
         history_past_new_bought_vehicles_prop_ev and of
         social_network.history_prop_EV -- which is what lets the calibration
         address all of them with one month-offset convention.
+
+        self.HHI is the UNIT-share HHI (the calibrated measure). The
+        revenue-weighted variant is recorded next to it, from the same window,
+        for reporting only.
         """
         self.HHI = self.calculate_market_concentration(self.past_new_bought_vehicles)
         self.history_HHI.append(self.HHI)
+
+        self.HHI_revenue = self.calculate_market_concentration_revenue()
+        self.history_HHI_revenue.append(self.HHI_revenue)
 
     def next_step(self, carbon_price, consider_ev_vec, new_bought_vehicles,  gas_price, electricity_price, electricity_emissions_intensity, rebate,  production_subsidy,  rebate_calibration, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0, ice_sales_ban_active=False, ice_research_ban_active=False):
         """

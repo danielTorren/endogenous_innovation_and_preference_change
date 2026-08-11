@@ -44,11 +44,13 @@ def plot_emissions_tradeoffs_from_outcomes(
         single_outcomes,
         outcomes_BAU,
         file_name,
-        min_ev_uptake=0.9, 
-        max_ev_uptake=1.0, 
-        dpi=300
+        min_ev_uptake=0.9,
+        max_ev_uptake=1.0,
+        dpi=300,
+        insets=True,
+        plot_name="emissions_tradeoff"
         ):
-    
+
     fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
     # --- Setup
     okabe_ito_colors = ['#E69F00','#009E73', '#56B4E9', '#F0E442', 
@@ -64,43 +66,44 @@ def plot_emissions_tradeoffs_from_outcomes(
     scale_small = 1
     ########################################################################################
 
-    # --- Create zoom-in inset axes for the top plot
-    axins = inset_axes(ax_top, width="70%", height="45%", 
-                    bbox_to_anchor=(0.01, 0.52, 1, 1),
-                    bbox_transform=ax_top.transAxes,
-                    loc='lower left'
-                    )
-    
+    # --- Zoom windows
     e_min = 0.125
     e_max = 0.15#0.145
     c_min = -0.08
     c_max = 0.3
 
-    axins.set_xlim( e_min, e_max)
-    axins.set_ylim(c_min, c_max)
-
-    axins.set_xticks([])
-    axins.set_yticks([])
-
-    ##########################################################################################
-
-    # --- Create zoom-in inset axes for the top plot
-    axins2 = inset_axes(ax_bottom, width="30%", height="30%", 
-                    bbox_to_anchor=(0.15, 0.01, 1, 1),
-                    bbox_transform=ax_bottom.transAxes,
-                    loc='lower left'
-                    )
-    
     e_min2 = 0.131
     e_max2 = 0.135
     u_min = 72
     u_max = 78
 
-    axins2.set_xlim(e_min2, e_max2)
-    axins2.set_ylim(u_min, u_max)
+    axins = axins2 = None
+    if insets:
+        # --- Create zoom-in inset axes for the top plot
+        axins = inset_axes(ax_top, width="70%", height="45%",
+                        bbox_to_anchor=(0.01, 0.52, 1, 1),
+                        bbox_transform=ax_top.transAxes,
+                        loc='lower left'
+                        )
 
-    axins2.set_xticks([])
-    axins2.set_yticks([])
+        axins.set_xlim( e_min, e_max)
+        axins.set_ylim(c_min, c_max)
+
+        axins.set_xticks([])
+        axins.set_yticks([])
+
+        # --- Create zoom-in inset axes for the bottom plot
+        axins2 = inset_axes(ax_bottom, width="30%", height="30%",
+                        bbox_to_anchor=(0.15, 0.01, 1, 1),
+                        bbox_transform=ax_bottom.transAxes,
+                        loc='lower left'
+                        )
+
+        axins2.set_xlim(e_min2, e_max2)
+        axins2.set_ylim(u_min, u_max)
+
+        axins2.set_xticks([])
+        axins2.set_yticks([])
 
     ##########################################################################################
     
@@ -132,9 +135,9 @@ def plot_emissions_tradeoffs_from_outcomes(
     ax_top.scatter(bau_em, bau_cost, s=scale_marker, color='black', edgecolor='black', label="BAU")
     ax_bottom.scatter(bau_em, bau_ut, s=scale_marker, color='black', edgecolor='black')
     # Also plot BAU on the inset axes
-    if e_min <= bau_em <= e_max and c_min <= bau_cost <= c_max :
+    if insets and e_min <= bau_em <= e_max and c_min <= bau_cost <= c_max :
         axins.scatter(bau_em, bau_cost, s=scale_marker*scale_small, color='black', edgecolor='black')
-    if e_min2 <= bau_em <= e_max2 and u_min <= bau_ut <= u_max :
+    if insets and e_min2 <= bau_em <= e_max2 and u_min <= bau_ut <= u_max :
         axins2.scatter(bau_em, bau_ut, s=scale_marker*scale_small, color='black', edgecolor='black')
 
     for (policy1, policy2), results in pairwise_outcomes_complied.items():
@@ -173,14 +176,14 @@ def plot_emissions_tradeoffs_from_outcomes(
                 ax_top.scatter(e, c, s=size2, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
                 
                 # --- Plot in inset axes if within zoom range
-                if e_min <= e <= e_max and c_min <= c <= c_max :
+                if insets and e_min <= e <= e_max and c_min <= c <= c_max :
                     axins.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
                     axins.scatter(e, c, s=scale_marker*scale_small, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
                     axins.scatter(e, c, s=size1*scale_small, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
                     axins.scatter(e, c, s=size2*scale_small, marker=half_circle_marker(180, 360), color=color2, edgecolor="black", zorder=2)
 
                 # --- Plot in inset axes if within zoom range
-                if e_min2 <= e <= e_max2 and u_min <= u <= u_max :
+                if insets and e_min2 <= e <= e_max2 and u_min <= u <= u_max :
                     axins2.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
                     axins2.scatter(e, u, s=scale_marker*scale_small, marker=full_circle_marker(), facecolor='none', edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
                     axins2.scatter(e, u, s=size1*scale_small, marker=half_circle_marker(0, 180), color=color1, edgecolor="black", zorder=2)
@@ -220,12 +223,12 @@ def plot_emissions_tradeoffs_from_outcomes(
             ax_top.scatter(e, c, s=size, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
             
             # --- Plot in inset axes if within zoom range
-            if e_min <= e <= e_max and c_min <= c <= c_max :
+            if insets and e_min <= e <= e_max and c_min <= c <= c_max :
                 axins.errorbar(e, c, xerr=e_err, yerr=c_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
                 axins.scatter(e, c, s=size*scale_small, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
-            
+
             # --- Plot in inset axes if within zoom range
-            if e_min2 <= e <= e_max2 and u_min <= u <= u_max :
+            if insets and e_min2 <= e <= e_max2 and u_min <= u <= u_max :
                 axins2.errorbar(e, u, xerr=e_err, yerr=u_err, fmt='none', ecolor='gray', alpha=0.5, zorder=1)
                 axins2.scatter(e, u, s=size*scale_small, marker=full_circle_marker(), color=color, edgecolor="black", zorder=2)
 
@@ -239,9 +242,10 @@ def plot_emissions_tradeoffs_from_outcomes(
     #axins.set_title('Zoom', fontsize=10)
     
     # Draw box in main plot showing zoom area
-    from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-    mark_inset(ax_top, axins, loc1=3, loc2=4, fc="none", ec="0.5")
-    mark_inset(ax_bottom, axins2, loc1=2, loc2=3, fc="none", ec="0.5")
+    if insets:
+        from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+        mark_inset(ax_top, axins, loc1=3, loc2=4, fc="none", ec="0.5")
+        mark_inset(ax_bottom, axins2, loc1=2, loc2=3, fc="none", ec="0.5")
 
 
     # --- Labels
@@ -279,31 +283,34 @@ def plot_emissions_tradeoffs_from_outcomes(
 
     # --- Save
     os.makedirs(f"{file_name}/Plots/emissions_tradeoffs", exist_ok=True)
-    plt.tight_layout()
-    plt.savefig(f"{file_name}/Plots/emissions_tradeoffs/emissions_tradeoff.png", dpi=dpi)
+    fig.tight_layout()
+    fig.savefig(f"{file_name}/Plots/emissions_tradeoffs/{plot_name}.png", dpi=dpi)
 
 
-def main(fileNames, fileName_BAU, fileNames_single_policies):
-    #EDNOGENOSU SINGLE POLICY
-    single_policy_outcomes = load_object(f"{fileNames_single_policies}/Data", "policy_outcomes")
-
-    #PAIRS OF POLICY 
+def main(fileNames):
+    """
+    fileNames : list of endog_pair folders. The FIRST one must be a folder made
+        by the current endogenous_policy_intensity_pair_gen, so it also holds
+        base_params, outcomes_BAU and single_policy_outcomes. Extra folders
+        contribute their pairwise_outcomes only.
+    """
     fileName = fileNames[0]
+
     base_params = load_object(f"{fileName}/Data", "base_params")
-    
+
+    #BAU AND ENDOGENOUS SINGLE POLICY, from the same run as the pairs
+    outcomes_BAU = load_object(f"{fileName}/Data", "outcomes_BAU")
+    single_policy_outcomes = load_object(f"{fileName}/Data", "single_policy_outcomes")
+
+
     file_name = produce_name_datetime("all_policies")
     createFolder(file_name)
 
     pairwise_outcomes_complied = {}
     
-    if len(fileNames) == 1:
-        pairwise_outcomes_complied = load_object(f"{fileName}/Data", "pairwise_outcomes")
-    else:
-        for fileName in fileNames:
-            pairwise_outcomes = load_object(f"{fileName}/Data", "pairwise_outcomes")
-            pairwise_outcomes_complied.update(pairwise_outcomes)
-
-    outcomes_BAU = load_object(f"{fileName_BAU}/Data", "outcomes")
+    for folder in fileNames:
+        pairwise_outcomes = load_object(f"{folder}/Data", "pairwise_outcomes")
+        pairwise_outcomes_complied.update(pairwise_outcomes)
 
     #pairwise_outcomes_complied = {k: v for k, v in pairwise_outcomes_complied.items() if set(k) == {"Electricity_subsidy", "Adoption_subsidy"}}
 
@@ -311,11 +318,21 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
     min_ev_uptake = 0.94
     max_ev_uptake = 0.96
 
+    # With zoom insets
     plot_emissions_tradeoffs_from_outcomes(base_params, pairwise_outcomes_complied, single_policy_outcomes, outcomes_BAU,
                                             file_name,
-                                            min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300)
+                                            min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300,
+                                            insets=True, plot_name="emissions_tradeoff")
+
+    # Same figure, no zoom insets
+    plot_emissions_tradeoffs_from_outcomes(base_params, pairwise_outcomes_complied, single_policy_outcomes, outcomes_BAU,
+                                            file_name,
+                                            min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300,
+                                            insets=False, plot_name="emissions_tradeoff_no_inset")
 
     save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
+    save_object(single_policy_outcomes, file_name + "/Data", "single_policy_outcomes")
+    save_object(outcomes_BAU, file_name + "/Data", "outcomes_BAU")
     save_object(base_params, file_name + "/Data", "base_params")
 
     plt.show()
@@ -323,7 +340,5 @@ def main(fileNames, fileName_BAU, fileNames_single_policies):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_00_19_42__30_03_2026"],
-        fileName_BAU="results/BAU_runs_13_38_11__31_03_2026",
-        fileNames_single_policies = "results/endog_single_13_57_18__31_03_2026"
+        fileNames=["results/endog_pair_00_19_42__30_03_2026"]
     )

@@ -9,11 +9,19 @@ def reconstruct_x_o(match_data):
     """
     Rebuild the observed summary statistic vector from a saved match_data dict.
 
-    Handles both layouts, since older runs are still being plotted:
-      - current: EV stock proportion then EV sales proportion, concatenated in
-        that order (the order the gen script builds x_o in).
+    Handles the layouts still being plotted:
+      - current: EV stock proportion, EV sales proportion, then the extra scalar
+        moments under "extra_scalar_targets" -- the order the gen script builds
+        x_o in. That is mean fleet age alone now; runs made while new-car HHI was
+        also a moment carry two entries there, and both work unchanged because
+        the block is concatenated whatever its length.
+      - older: EV stock then EV sales only, with no extra moments.
       - legacy: a single EV stock series under whatever year range that run
         used (e.g. "EV_stock_prop_2016_23"), with no sales channel at all.
+
+    Runs whose x layout is not recoverable this way (e.g. the intermediate
+    version that repeated the age and HHI targets once per year) save the tensor
+    itself as "x_o" -- load_x_o() prefers that.
 
     Args:
         match_data (dict): Observed data saved alongside the posterior.
@@ -28,9 +36,30 @@ def reconstruct_x_o(match_data):
         raise KeyError(f"no EV stock series in match_data; keys were {sorted(match_data)}")
 
     parts = [match_data[k] for k in stock_keys + sales_keys]
-    print("x_o built from:", stock_keys + sales_keys)
+    used = stock_keys + sales_keys
 
-    return torch.cat([torch.tensor(p, dtype=torch.float32) for p in parts], dim=0)
+    if "extra_scalar_targets" in match_data:
+        parts.append(match_data["extra_scalar_targets"])
+        used.append("extra_scalar_targets")
+
+    print("x_o built from:", used)
+
+    return torch.cat([torch.tensor(p, dtype=torch.float32).reshape(-1) for p in parts], dim=0)
+
+
+def load_x_o(fileName, match_data):
+    """
+    Return the run's observed vector, preferring the saved tensor.
+
+    The gen script saves x_o directly, so use that when it is there and fall back
+    to rebuilding it from match_data for runs that predate it.
+    """
+    try:
+        x_o = load_object(fileName + "/Data", "x_o")
+        print("x_o loaded from saved tensor, shape", tuple(x_o.shape))
+        return x_o
+    except FileNotFoundError:
+        return reconstruct_x_o(match_data)
 
 def plot_results(fileName, posterior_samples, param_bounds, param_names):
     """
@@ -72,7 +101,7 @@ def main(fileName):
 
     match_data = load_object(fileName + "/Data", "match_data")
 
-    x_o = reconstruct_x_o(match_data)
+    x_o = load_x_o(fileName, match_data)
 
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")

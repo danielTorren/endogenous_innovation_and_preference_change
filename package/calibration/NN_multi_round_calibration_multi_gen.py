@@ -26,19 +26,33 @@ MATCH_NUM_YEARS = MATCH_END_YEAR - MATCH_START_YEAR + 1
 STOCK_MONTH_OFFSET = 3   # APRIL index, matches the EV stock (population) data
 SALES_MONTH_OFFSET = 11  # DECEMBER index, matches the EV sales data
 
-# Two extra moments beyond EV stock and EV sales.
+# One extra moment beyond EV stock and EV sales: mean fleet age.
 #
-# Both are published as RANGES, but NPE conditions on a single observation x_o,
-# so each is matched at its interval midpoint and the range is kept only for
-# reporting / post-hoc filtering of posterior samples:
-#   mean fleet age    120-144 months (10-12 years) -> 132
-#   new-car sales HHI 0.11-0.18                    -> 0.145
+# It is published as a RANGE (120-144 months, i.e. 10-12 years) but NPE conditions
+# on a single observation x_o, so it is matched at the interval midpoint (132) and
+# the range is kept only for reporting / post-hoc filtering of posterior samples.
 #
-# The age series is divided by AGE_SCALE so every component of x is O(1). sbi
-# z-scores x per dimension anyway, so this is for legibility rather than for
-# the fit; what DOES change the fit is dimension count -- see main().
+# It contributes exactly ONE component to x: the mean over the matched years
+# (MATCH_START_YEAR..MATCH_END_YEAR), not one component per year. sbi z-scores x
+# per dimension, so relative weight in the summary vector is carried by dimension
+# COUNT rather than by scale -- one component keeps age a weak constraint (1 of 9
+# dimensions) and leaves the EV stock and EV sales series (4 dimensions each)
+# doing most of the calibration. The range is not resolved year by year in the
+# source data anyway, so a per-year block would repeat the same target four times
+# and quadruple its weight for no new information.
+#
+# The age component is divided by AGE_SCALE so every component of x is O(1).
+#
+# New-car HHI is deliberately NOT a calibration moment. Measured on this model,
+# unit-share HHI is a near-deterministic function of the number of firms,
+# HHI ~= 1.3/J (measured 0.084, 0.101, 0.132, 0.158 at J = 16, 12, 10, 8), and it
+# does not respond to max_cars_prod (0.126-0.137 across Y+ = 2..20, less than the
+# across-seed spread at fixed Y+). So it identifies J and nothing else, which is
+# better handled by setting J directly: the observed 0.11-0.18 (Grieco, Murry &
+# Yurukoglu 2024, Figure II panel b, a unit-sales parent-company HHI) implies a
+# numbers-equivalent of 1/HHI ~= 7-9 firms, and J = 10 puts the model mid-range.
+# firm_manager.history_HHI is still recorded every step for reporting.
 AGE_TARGET_RANGE = (120.0, 144.0)
-HHI_TARGET_RANGE = (0.11, 0.18)
 AGE_SCALE = 132.0
 
 
@@ -69,10 +83,9 @@ def convert_data_annual_mean(data_to_fit, base_params, start_year=MATCH_START_YE
 
     Used for mean fleet age. Age is a stock, and the published "average age of
     vehicles in operation" is an annual figure, so a 12-month mean is both the
-    right comparison and far less seed-noisy than a single monthly snapshot.
-    HHI does not need this: it is already computed over a trailing 12-month
-    window (see firmManager.calculate_market_concentration), so its December
-    value spans exactly that calendar year.
+    right comparison and far less seed-noisy than a single monthly snapshot. The
+    EV stock and sales blocks do not use this: each is matched at the single month
+    its source data refers to (see STOCK_MONTH_OFFSET / SALES_MONTH_OFFSET).
     """
     means = []
 
@@ -81,6 +94,17 @@ def convert_data_annual_mean(data_to_fit, base_params, start_year=MATCH_START_YE
         means.append(np.mean(data_to_fit[start:start + 12]))
 
     return np.array(means)
+
+
+def convert_data_period_mean(annual_values):
+    """
+    Collapse a per-year array to the single mean over the matched years.
+
+    Used for the mean fleet age moment, which enters x as one component (see the
+    AGE comment at the top of this file). Returned as a length-1 array so it
+    concatenates with the per-year blocks unchanged.
+    """
+    return np.array([np.mean(annual_values)])
 
 def run_single_simulation(theta, base_params, param_list):
     """
@@ -107,27 +131,27 @@ def run_single_simulation(theta, base_params, param_list):
     controller = generate_data(params)
 
     # Compute summary statistics, all restricted to the last few years of the
-    # run: EV stock proportion, EV sales proportion, mean fleet age and new-car
-    # market concentration. All four series are appended once per step from
-    # social_network.next_step()/firm_manager.next_step() regardless of
-    # save_timeseries_data_state, so they share one index base and the same
-    # month-offset convention applies to each.
+    # run: EV stock proportion, EV sales proportion and mean fleet age. All three
+    # series are appended once per step from social_network.next_step()/
+    # firm_manager.next_step() regardless of save_timeseries_data_state, so they
+    # share one index base and the same month-offset convention applies to each.
     arr_history_stock = np.asarray(controller.social_network.history_prop_EV)
     arr_history_sales = np.asarray(controller.firm_manager.history_past_new_bought_vehicles_prop_ev)
     arr_history_age = np.asarray(controller.social_network.history_mean_car_age_fleet)
-    arr_history_HHI = np.asarray(controller.firm_manager.history_HHI)
 
     stock_data_to_fit = convert_data(arr_history_stock, params, STOCK_MONTH_OFFSET)
     sales_data_to_fit = convert_data(arr_history_sales, params, SALES_MONTH_OFFSET)
-    age_data_to_fit = convert_data_annual_mean(arr_history_age, params) / AGE_SCALE
-    HHI_data_to_fit = convert_data(arr_history_HHI, params, SALES_MONTH_OFFSET)
+
+    # Age: one component, the mean over the matched years.
+    age_data_to_fit = convert_data_period_mean(
+        convert_data_annual_mean(arr_history_age, params)
+    ) / AGE_SCALE
 
     # ORDER MATTERS: must match how x_o is assembled in main().
     data_to_fit = np.concatenate([
         stock_data_to_fit,
         sales_data_to_fit,
         age_data_to_fit,
-        HHI_data_to_fit,
     ])
 
     return data_to_fit
@@ -164,27 +188,28 @@ def main(
     fileName = produce_name_datetime(root)
     print("fileName:", fileName)
 
-    # Targets for the two extra moments. Flat across years: neither the fleet
-    # age range nor the HHI range is resolved year by year in the source data,
-    # so the same midpoint is repeated. Repeating it over MATCH_NUM_YEARS rather
-    # than collapsing to a single component keeps the four blocks of x the same
-    # length, which keeps their relative weight in the summary vector equal --
-    # sbi z-scores x per dimension, so weight is carried by dimension COUNT, not
-    # by scale. If the EV moments end up dominated, collapse these two blocks to
-    # one component each (a 4-year mean) rather than rescaling them.
-    age_target = np.full(MATCH_NUM_YEARS, np.mean(AGE_TARGET_RANGE) / AGE_SCALE)
-    HHI_target = np.full(MATCH_NUM_YEARS, np.mean(HHI_TARGET_RANGE))
+    # Target for the age moment: the midpoint of the published range, as ONE
+    # component, matched against the simulation's mean over the same years
+    # (convert_data_period_mean). A flat target needs no per-year resolution, and
+    # one component keeps the moment a weak constraint -- see the AGE comment at
+    # the top of this file.
+    age_target = np.array([np.mean(AGE_TARGET_RANGE) / AGE_SCALE])
 
-    # Observed data, last 4 years: EV stock proportion, EV sales proportion,
-    # mean fleet age (scaled), new-car HHI.
+    # Observed data: EV stock proportion and EV sales proportion, one value per
+    # year for the last 4 years, then mean fleet age (scaled), one value.
+    # 4 + 4 + 1 = 9 components.
     # ORDER MATTERS: must match run_single_simulation().
     x_o_data = np.concatenate([
         EV_stock_prop_2020_23,
         EV_sales_prop_2020_23,
         age_target,
-        HHI_target,
     ])
+    assert x_o_data.size == 2 * MATCH_NUM_YEARS + 1, (
+        f"x_o has {x_o_data.size} components, expected {2 * MATCH_NUM_YEARS + 1}; "
+        "the observed EV series and run_single_simulation() must agree"
+    )
     x_o = torch.tensor(x_o_data, dtype=torch.float32)
+    print("x_o (stock 4, sales 4, age 1):", x_o_data)
 
     # Define the prior
     low_bounds = torch.tensor([p["bounds"][0] for p in parameters_list])
@@ -268,10 +293,13 @@ def main(
     match_data = {
         "EV_stock_prop_2020_23": EV_stock_prop_2020_23,
         "EV_sales_prop_2020_23": EV_sales_prop_2020_23,
-        # Ranges, not just the midpoints fed to NPE: keep them so posterior
-        # samples can be checked against the whole interval afterwards.
+        # The scalar components actually fed to NPE, in x order after the two EV
+        # blocks. Named so the plotting script can rebuild x_o from match_data
+        # alone (see NN_multi_round_calibration_multi_plot.reconstruct_x_o).
+        "extra_scalar_targets": [float(age_target[0])],
+        # The range, not just the midpoint fed to NPE: kept so posterior samples
+        # can be checked against the whole interval afterwards.
         "mean_car_age_range_months": AGE_TARGET_RANGE,
-        "HHI_range": HHI_TARGET_RANGE,
         "age_scale": AGE_SCALE,
     }
     save_object(match_data, fileName + "/Data", "match_data")
@@ -293,16 +321,16 @@ def main(
 
 if __name__ == "__main__":
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1, 5]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [1, 5]},
-        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.001, 0.003]},
-        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 6e-4]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.5, 8]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.5, 8]},
+        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.0005, 0.0035]},
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 8e-4]},
     ]
     main(
         parameters_list=parameters_list,
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output", 
-        num_simulations=256, 
+        num_simulations=128, 
         num_rounds= 2
     )

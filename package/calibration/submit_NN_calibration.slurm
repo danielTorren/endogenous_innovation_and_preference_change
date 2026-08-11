@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64        # MUST match "num_simulations" in the __main__ block of
+#SBATCH --cpus-per-task=128        # MUST match "num_simulations" in the __main__ block of
                                    # NN_multi_round_calibration_multi_gen.py -- see the note below.
 #SBATCH --mem=64G                 # measured ~311 MB peak RSS per worker x 64 = ~20 GB, plus
                                    # the parent process and torch; 64G leaves comfortable headroom
