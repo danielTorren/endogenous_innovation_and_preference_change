@@ -80,13 +80,15 @@ def plot_single_ev_prop(folder, real_data, dpi=200):
     print(f"Plot saved to: {save_path}")
     plt.show()
 
-def main():
-    # Update this path to your specific results folder
-    target_folder = "results/sen_vary_max_num_cars_prop_00_13_31__17_04_2026"
-    
+def main(target_folder=None):
+    # Pass the results folder as an argument, or fall back to this path
+    if target_folder is None:
+        target_folder = "results/sen_vary_max_num_cars_prop_00_13_31__17_04_2026"
+
     real_data = load_object("package/calibration_data", "calibration_data_output")["EV Prop"]
-    
+
     plot_single_ev_prop(target_folder, real_data)
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv[1] if len(sys.argv) > 1 else None)
