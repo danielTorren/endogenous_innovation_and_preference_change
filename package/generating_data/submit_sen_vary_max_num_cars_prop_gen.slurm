@@ -4,13 +4,22 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_vary_single.json
-#SBATCH --mem=32G                 # only data_array_ev_prop is kept (5 x 64 x 600 floats); the per-run
-                                   # price/margin arrays are returned but discarded unreshaped. Half the
-                                   # 64G the timeseries-heavy jobs need. Trim from `seff <jobid>`.
-#SBATCH --time=01:00:00           # 5 values x 64 seeds = 320 runs at 600 steps each (duration_future=144)
-                                   # -> 5 sequential 64-wide batches, ~26 s per batch, so ~3 min of real
-                                   # work. Padded generously against a busy node; trim from seff.
+#SBATCH --cpus-per-task=16        # DELIBERATELY BELOW seed_repetitions=64, unlike the other gen jobs.
+                                   # get_num_workers() takes this as joblib's n_jobs, so it also caps how
+                                   # many model instances are alive at once -- the only lever on peak
+                                   # memory here. See the --mem note below.
+#SBATCH --mem=128G                 # 8G per worker. base_params_vary_single.json sets
+                                   # save_timeseries_data_state=1, so every worker holds full per-step
+                                   # history for 600 steps (duration_future=144, vs the 456 of the
+                                   # calibration-only jobs). On top of that the sweep's top value is
+                                   # max_num_cars_prop=2, i.e. a second-hand fleet of 2 x 3000 = 6000 cars
+                                   # against the default 0.1 -> 300, a 20x bigger fleet held per worker.
+                                   # joblib dispatches in order, so the last 64 tasks are ALL the 6000-car
+                                   # case running at once. 64 workers x 32G total (0.5G each) was OOM-killed;
+                                   # this is 16x the per-worker headroom. Trim from `seff <jobid>`.
+#SBATCH --time=02:00:00           # 5 values x 64 seeds = 320 runs at 600 steps each -> 20 sequential
+                                   # 16-wide batches at ~26 s per run, so ~9 min of real work. Padded
+                                   # generously against a busy node; trim from seff.
 #SBATCH --partition=generic        # default partition on jupyter-torrenperaire (see `sinfo`); CPU-only, 10-day limit
 
 # Single-node: joblib fans out across CPUs on this one machine, there is no
@@ -21,6 +30,16 @@
 # (constants/vary_single_max_num_cars_prop.json) against
 # constants/base_params_vary_single.json. Both are the values hardcoded in the
 # gen script's __main__ block -- edit the JSONs, not this file, to change them.
+#
+# This job is memory-bound, not CPU-bound: the max_num_cars_prop=2 tasks each
+# carry a 20x oversized second-hand fleet with full timeseries history. If it
+# is OOM-killed again, halve --cpus-per-task before raising --mem -- fewer
+# concurrent workers cuts peak memory proportionally and only costs wall-clock,
+# of which this job uses very little. Note that save_timeseries_data_state
+# cannot simply be turned off: history_mean_price_ICE_EV and
+# history_mean_profit_margins_ICE, which generate_multi() returns, are recorded
+# inside save_timeseries_data_social_network / _firm_manager and would come back
+# empty (history_prop_EV, the only output actually saved here, is always on).
 
 set -euo pipefail
 
