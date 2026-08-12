@@ -5,12 +5,12 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64        # match "seed_repetitions" in the base_params saved inside the pair-gen folder
-#SBATCH --mem=64G                # DOUBLE the other three jobs on purpose: this script sets
+#SBATCH --mem=32G                # DOUBLE the other three jobs on purpose: this script sets
                                    # save_timeseries_data_state=1 and duration_future=312, so every one of
                                    # the 64 workers holds full per-step history arrays, and each scenario's
                                    # 64 of them are then stacked into one dict before being pickled.
                                    # Check `seff <jobid>` after the first run and trim.
-#SBATCH --time=02:00:00           # Phase 1: 64 calibration runs (duration_future forced to 0)
+#SBATCH --time=01:00:00           # Phase 1: 64 calibration runs (duration_future forced to 0)
                                    # Phase 2: BAU + ~10 low-intensity pairs + carbon tax + adoption subsidy
                                    # = ~13 sequential 64-wide batches, but at duration_future=312 rather
                                    # than 144, so each batch costs ~2x a pair-gen batch.
