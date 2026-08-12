@@ -36,18 +36,18 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_repetitions": 64,
+    "seed_repetitions": 1,
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "seed": 10,
+    "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time":0,
     "ev_production_start_time": 0,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -70,13 +70,13 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.0,
                 "Carbon_price_state": "flat"
             },
-            "Electricity_subsidy":0.76,
-            "Adoption_subsidy":36875.57,
+            "Electricity_subsidy":0.5,
+            "Adoption_subsidy":18390.801,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":30548.21
+            "Production_subsidy":58150
             
         }
     },

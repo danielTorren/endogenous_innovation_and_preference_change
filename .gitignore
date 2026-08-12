@@ -16,3 +16,4 @@ sbi-logs/
 .claude/
 slurm_logs/*
 !slurm_logs/.gitkeep
+*.tex.bak
