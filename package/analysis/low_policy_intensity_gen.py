@@ -117,6 +117,104 @@ def single_policy_with_seeds(params, controller_files):
     )
 
 
+def run_scenario(params, controller_files):
+    """
+    Run one scenario across the shared calibrated seeds and pack the histories
+    the plotting code reads. BAU, each low-intensity pair and each single-policy
+    reference all want exactly this dict, so they all go through here.
+    """
+    (
+        history_driving_emissions_arr,#Emmissions flow
+        history_production_emissions_arr,
+        history_total_emissions_arr,#Emmissions flow
+        history_prop_EV_arr,
+        history_car_age_arr,
+        history_lower_percentile_price_ICE_EV_arr,
+        history_upper_percentile_price_ICE_EV_arr,
+        history_mean_price_ICE_EV_arr,
+        history_median_price_ICE_EV_arr,
+        history_total_utility_arr,
+        history_market_concentration_arr,
+        history_total_profit_arr,
+        history_quality_ICE,
+        history_quality_EV,
+        history_efficiency_ICE,
+        history_efficiency_EV,
+        history_production_cost_ICE,
+        history_production_cost_EV,
+        history_mean_profit_margins_ICE,
+        history_mean_profit_margins_EV,
+        history_mean_car_age,
+        history_past_new_bought_vehicles_prop_ev,
+        history_policy_net_cost,
+        history_total_utility_bottom,
+        history_ev_adoption_rate_bottom
+    ) = single_policy_with_seeds(params, controller_files)
+
+    return {
+        "history_driving_emissions": history_driving_emissions_arr,
+        "history_production_emissions": history_production_emissions_arr,
+        "history_total_emissions": history_total_emissions_arr,
+        "history_prop_EV": history_prop_EV_arr,
+        "history_total_utility": history_total_utility_arr,
+        "history_market_concentration": history_market_concentration_arr,
+        "history_total_profit": history_total_profit_arr,
+        "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
+        "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
+        "history_policy_net_cost": history_policy_net_cost,
+        "history_mean_car_age": history_mean_car_age,
+        "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
+        "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
+        "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
+        "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
+        "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
+        "history_total_utility_bottom": history_total_utility_bottom,
+        "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
+    }
+
+
+# Single-policy reference trajectories drawn on top of the pairs in Figure 5.
+# policy name -> the Data/<name> the plotting script loads it back from. Their
+# intensities are NOT hardcoded here: they are read from the pair-gen run's
+# single_policy_outcomes, so they always match the endogenous single-policy
+# solution of the very run whose pairs are being plotted.
+SINGLE_POLICY_REFERENCES = {
+    "Carbon_price": "outputs_carbon_tax",
+    "Adoption_subsidy": "outputs_adoption_subsidy",
+}
+
+# Used only for pair-gen folders too old to carry single_policy_outcomes. These
+# are the values that were hardcoded here before, from a long-superseded run.
+FALLBACK_SINGLE_POLICY_INTENSITIES = {
+    "Carbon_price": 0.910,
+    "Adoption_subsidy": 36875.57,
+}
+
+
+def load_single_policy_intensities(fileName_load):
+    """
+    Endogenous single-policy intensities from the pair-gen run, i.e. the
+    intensity of each instrument on its own that hits the EV uptake target.
+    """
+    try:
+        single_policy_outcomes = load_object(f"{fileName_load}/Data", "single_policy_outcomes")
+    except FileNotFoundError:
+        print(f"[!] No single_policy_outcomes in {fileName_load}/Data -- falling back to the old "
+              f"hardcoded intensities {FALLBACK_SINGLE_POLICY_INTENSITIES}. These do NOT match this "
+              f"run and the single-policy lines in Figure 5 will be inconsistent with its pairs.")
+        return dict(FALLBACK_SINGLE_POLICY_INTENSITIES)
+
+    intensities = {}
+    for policy in SINGLE_POLICY_REFERENCES:
+        if policy in single_policy_outcomes:
+            intensities[policy] = single_policy_outcomes[policy]["optimized_intensity"]
+        else:
+            intensities[policy] = FALLBACK_SINGLE_POLICY_INTENSITIES[policy]
+            print(f"[!] '{policy}' missing from single_policy_outcomes -- falling back to "
+                  f"{intensities[policy]}")
+    return intensities
+
+
 def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
     # Collect all policies and initialize min/max ranges
     policy_ranges = {}
@@ -223,56 +321,7 @@ def main(fileNames,
 
     #RESET TO B SURE
     #RUN BAU
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr, 
-        history_car_age_arr, 
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr, 
-        history_total_utility_arr, 
-        history_market_concentration_arr,
-        history_total_profit_arr, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost,
-        history_total_utility_bottom,
-        history_ev_adoption_rate_bottom
-
-    ) = single_policy_with_seeds(base_params, controller_files)
-
-    outputs_BAU = {
-            "history_driving_emissions": history_driving_emissions_arr,
-            "history_production_emissions": history_production_emissions_arr,
-            "history_total_emissions": history_total_emissions_arr,
-            "history_prop_EV": history_prop_EV_arr,
-            "history_total_utility": history_total_utility_arr,
-            "history_market_concentration": history_market_concentration_arr,
-            "history_total_profit": history_total_profit_arr,
-            "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
-            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_policy_net_cost": history_policy_net_cost,
-            "history_mean_car_age": history_mean_car_age,
-            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
-            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
-            "history_total_utility_bottom": history_total_utility_bottom,
-            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
-    }
+    outputs_BAU = run_scenario(base_params, controller_files)
 
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
     print("DONE BAU")
@@ -293,55 +342,7 @@ def main(fileNames,
         params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
         params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
-        (
-            history_driving_emissions_arr,#Emmissions flow
-            history_production_emissions_arr,
-            history_total_emissions_arr,#Emmissions flow
-            history_prop_EV_arr, 
-            history_car_age_arr, 
-            history_lower_percentile_price_ICE_EV_arr,
-            history_upper_percentile_price_ICE_EV_arr,
-            history_mean_price_ICE_EV_arr,
-            history_median_price_ICE_EV_arr, 
-            history_total_utility_arr, 
-            history_market_concentration_arr,
-            history_total_profit_arr, 
-            history_quality_ICE, 
-            history_quality_EV, 
-            history_efficiency_ICE, 
-            history_efficiency_EV, 
-            history_production_cost_ICE, 
-            history_production_cost_EV, 
-            history_mean_profit_margins_ICE,
-            history_mean_profit_margins_EV,
-            history_mean_car_age,
-            history_past_new_bought_vehicles_prop_ev,
-            history_policy_net_cost,
-            history_total_utility_bottom,
-            history_ev_adoption_rate_bottom
-        ) = single_policy_with_seeds(params_policy, controller_files)
-
-        outputs[(policy1, policy2)] = {
-            "history_driving_emissions": history_driving_emissions_arr,
-            "history_production_emissions": history_production_emissions_arr,
-            "history_total_emissions": history_total_emissions_arr,
-            "history_prop_EV": history_prop_EV_arr,
-            "history_total_utility": history_total_utility_arr,
-            "history_market_concentration": history_market_concentration_arr,
-            "history_total_profit": history_total_profit_arr,
-            "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
-            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_policy_net_cost": history_policy_net_cost,
-            "history_mean_car_age": history_mean_car_age,
-            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
-            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
-            "history_total_utility_bottom": history_total_utility_bottom,
-            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
-        }
+        outputs[(policy1, policy2)] = run_scenario(params_policy, controller_files)
 
     save_object(outputs, root_folder + "/Data", "outputs")
     save_object(base_params, root_folder + "/Data", "base_params")
@@ -349,127 +350,24 @@ def main(fileNames,
 
     ######################################################################################################
     #SINGLE POLICIES
+    #
+    # Reference trajectory for each instrument on its own, at the intensity the
+    # pair-gen run endogenously solved for. Previously these two intensities were
+    # hardcoded here (and again in low_policy_intensity_plot.py), so they silently
+    # went stale every time the pair-gen was re-run against new calibration
+    # parameters -- the single-policy lines in Figure 5 then described a different
+    # model than the pairs drawn beside them.
 
-    #RUN THE CARBON TAX
-    base_params_carbon_tax = deepcopy(base_params)
-    base_params_carbon_tax["parameters_policies"]["States"]["Carbon_price"] = 1
-    base_params_carbon_tax["parameters_policies"]["Values"]["Carbon_price"]["Carbon_price"] = 0.910
-    #RESET TO B SURE
-    #RUN BAU
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr, 
-        history_car_age_arr, 
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr, 
-        history_total_utility_arr, 
-        history_market_concentration_arr,
-        history_total_profit_arr, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost,
-        history_total_utility_bottom,
-        history_ev_adoption_rate_bottom
+    single_policy_intensities = load_single_policy_intensities(fileName_load)
+    save_object(single_policy_intensities, root_folder + "/Data", "single_policy_intensities")
 
-    ) = single_policy_with_seeds(base_params_carbon_tax, controller_files)
+    for policy, save_name in SINGLE_POLICY_REFERENCES.items():
+        intensity = single_policy_intensities[policy]
+        print(f"Running single policy {policy} at intensity {intensity}")
 
-    outputs_carbon_tax= {
-            "history_driving_emissions": history_driving_emissions_arr,
-            "history_production_emissions": history_production_emissions_arr,
-            "history_total_emissions": history_total_emissions_arr,
-            "history_prop_EV": history_prop_EV_arr,
-            "history_total_utility": history_total_utility_arr,
-            "history_market_concentration": history_market_concentration_arr,
-            "history_total_profit": history_total_profit_arr,
-            "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
-            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_policy_net_cost": history_policy_net_cost,
-            "history_mean_car_age": history_mean_car_age,
-            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
-            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
-            "history_total_utility_bottom": history_total_utility_bottom,
-            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
-    }
-
-    save_object(outputs_carbon_tax, root_folder + "/Data", "outputs_carbon_tax")
-    print("DONE SINGLE CARBON TAX")
-
-
-    #RUN THE ADOPTION SUBSIDY
-    base_params_adoption_subsidy = deepcopy(base_params)
-    base_params_adoption_subsidy["parameters_policies"]["States"]["Adoption_subsidy"] = 1
-    base_params_adoption_subsidy["parameters_policies"]["Values"]["Adoption_subsidy"] = 36875.57
-    #RESET TO B SURE
-    #RUN BAU
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr, 
-        history_car_age_arr, 
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr, 
-        history_total_utility_arr, 
-        history_market_concentration_arr,
-        history_total_profit_arr, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost,
-        history_total_utility_bottom,
-        history_ev_adoption_rate_bottom
-
-    ) = single_policy_with_seeds(base_params_adoption_subsidy, controller_files)
-
-    outputs_adoption_subsidy= {
-            "history_driving_emissions": history_driving_emissions_arr,
-            "history_production_emissions": history_production_emissions_arr,
-            "history_total_emissions": history_total_emissions_arr,
-            "history_prop_EV": history_prop_EV_arr,
-            "history_total_utility": history_total_utility_arr,
-            "history_market_concentration": history_market_concentration_arr,
-            "history_total_profit": history_total_profit_arr,
-            "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
-            "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_policy_net_cost": history_policy_net_cost,
-            "history_mean_car_age": history_mean_car_age,
-            "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
-            "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
-            "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-            "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-            "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
-            "history_total_utility_bottom": history_total_utility_bottom,
-            "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
-    }
-
-    save_object(outputs_adoption_subsidy, root_folder + "/Data", "outputs_adoption_subsidy")
-    print("DONE SINGLE Adoption Subsidy")
+        params_single = update_policy_intensity(deepcopy(base_params), policy, intensity)
+        save_object(run_scenario(params_single, controller_files), root_folder + "/Data", save_name)
+        print(f"DONE SINGLE {policy}")
 
     #######################################################################################################
     #DELETE CALIBRATION RUNS

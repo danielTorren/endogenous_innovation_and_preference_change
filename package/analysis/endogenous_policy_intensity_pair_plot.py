@@ -340,5 +340,5 @@ def main(fileNames):
 
 if __name__ == "__main__":
     main(
-        fileNames=["results/endog_pair_00_19_42__30_03_2026"]
+        fileNames=["results/endog_pair_21_27_48__11_08_2026"]
     )

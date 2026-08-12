@@ -16,6 +16,20 @@ from scipy import stats
 from package.resources.utility import load_object
 
 
+# property_varied is not unique on its own: the EV and the ICE landscape
+# complexity are both stored as "K", so panels i and j would both read "K".
+# Disambiguate with the sub-dictionary the parameter lives in.
+DISPLAY_NAMES = {
+    ("parameters_EV", "K"): "K_EV",
+    ("parameters_ICE", "K"): "K_ICE",
+}
+
+
+def _display_name(vary_single):
+    key = (vary_single.get("subdict"), vary_single["property_varied"])
+    return DISPLAY_NAMES.get(key, vary_single["property_varied"])
+
+
 def _plot_panel(ax, base_params, data_array, property_list, name_property, real_data):
     num_values = data_array.shape[0]
     num_seeds = data_array.shape[1]
@@ -62,9 +76,10 @@ def plot_fig6_combined(panel_folders, output_folder=None, dpi=300):
         data_array_ev_prop = load_object(f"{folder}/Data", "data_array_ev_prop")
         vary_single = load_object(f"{folder}/Data", "vary_single")
 
+        name_property = _display_name(vary_single)
         _plot_panel(ax, base_params, data_array_ev_prop, vary_single["property_list"],
-                    vary_single["property_varied"], real_data)
-        ax.set_title(f"{letter}) {vary_single['property_varied']}", loc="left", fontweight="bold")
+                    name_property, real_data)
+        ax.set_title(f"{letter}) {name_property}", loc="left", fontweight="bold")
 
     fig.supxlabel("Time Step")
     fig.supylabel("EV Uptake Proportion")
