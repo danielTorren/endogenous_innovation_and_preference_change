@@ -82,7 +82,7 @@ if __name__ == "__main__":
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 36,
-        "max_num_cars_prop": 0.1,
+        "max_num_cars_prop": 0.5,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
     },

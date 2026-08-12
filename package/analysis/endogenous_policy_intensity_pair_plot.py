@@ -287,6 +287,234 @@ def plot_emissions_tradeoffs_from_outcomes(
     fig.savefig(f"{file_name}/Plots/emissions_tradeoffs/{plot_name}.png", dpi=dpi)
 
 
+POLICY_TITLES = {
+    "Carbon_price": "Carbon Price",
+    "Electricity_subsidy": "Electricity Subsidy",
+    "Adoption_subsidy": "New Car Rebate",
+    "Adoption_subsidy_used": "Used Car Rebate",
+    "Production_subsidy": "Production Subsidy"
+}
+
+
+def _collect_records(base_params, pairwise_outcomes_complied, single_outcomes,
+                     min_ev_uptake, max_ev_uptake):
+    """Collect every plotted point once, plus the per-policy intensity ranges."""
+    prob_switch = base_params["parameters_social_network"]["prob_switch_car"]
+    records = []
+    policy_ranges = {}
+
+    def _bump(policy, value):
+        r = policy_ranges.setdefault(policy, {"min": 0, "max": 0})
+        r["max"] = max(r["max"], value)
+
+    for (policy1, policy2), results in pairwise_outcomes_complied.items():
+        policy_ranges.setdefault(policy1, {"min": 0, "max": 0})
+        policy_ranges.setdefault(policy2, {"min": 0, "max": 0})
+        for entry in results:
+            if not (min_ev_uptake <= entry["mean_ev_uptake"] <= max_ev_uptake):
+                continue
+
+            entry["emissions_cumulative"] = entry["emissions_cumulative_driving"] + entry["emissions_cumulative_production"]
+            emissions_array = np.array(entry["emissions_cumulative"]) * 1e-9
+            utility_array = np.array(entry["utility_cumulative"]) / prob_switch * 1e-9
+            cost_array = np.array(entry["net_cost"]) * 1e-9
+            n_seeds = len(emissions_array)
+
+            _bump(policy1, entry["policy1_value"])
+            _bump(policy2, entry["policy2_value"])
+
+            records.append(dict(
+                kind="pair",
+                e=entry["mean_emissions_cumulative"] * 1e-9,
+                u=entry["mean_utility_cumulative"] / prob_switch * 1e-9,
+                c=entry["mean_net_cost"] * 1e-9,
+                e_err=1.96 * np.std(emissions_array) / np.sqrt(n_seeds),
+                u_err=1.96 * np.std(utility_array) / np.sqrt(n_seeds),
+                c_err=1.96 * np.std(cost_array) / np.sqrt(n_seeds),
+                policy1=policy1, policy2=policy2,
+                p1_val=entry["policy1_value"], p2_val=entry["policy2_value"],
+            ))
+
+    for policy, entry in single_outcomes.items():
+        if not (min_ev_uptake <= entry["mean_EV_uptake"] <= max_ev_uptake):
+            continue
+
+        entry["emissions_cumulative"] = entry["emissions_cumulative_driving"] + entry["emissions_cumulative_production"]
+        emissions_array = np.array(entry["emissions_cumulative"]) * 1e-9
+        utility_array = np.array(entry["utility_cumulative"]) / prob_switch * 1e-9
+        cost_array = np.array(entry["net_cost"]) * 1e-9
+        n_seeds = len(emissions_array)
+
+        records.append(dict(
+            kind="single",
+            e=entry["mean_emissions_cumulative"] * 1e-9,
+            u=entry["mean_utility_cumulative"] / prob_switch * 1e-9,
+            c=entry["mean_net_cost"] * 1e-9,
+            e_err=1.96 * np.std(emissions_array) / np.sqrt(n_seeds),
+            u_err=1.96 * np.std(utility_array) / np.sqrt(n_seeds),
+            c_err=1.96 * np.std(cost_array) / np.sqrt(n_seeds),
+            policy1=policy, policy2=policy,
+            p1_val=None, p2_val=None,
+        ))
+
+    return records, policy_ranges
+
+
+def _draw_record(ax, rec, y_key, policy_colors, policy_ranges, scale_marker, scale=1.0):
+    """Draw one record on ax, with emissions on x and y_key ('c' or 'u') on y."""
+    x, y = rec["e"], rec[y_key]
+    y_err = rec["c_err"] if y_key == "c" else rec["u_err"]
+
+    ax.errorbar(x, y, xerr=rec["e_err"], yerr=y_err, fmt='none',
+                ecolor='gray', alpha=0.5, zorder=1)
+
+    if rec["kind"] == "single":
+        color = policy_colors.get(rec["policy1"], 'gray')
+        ax.scatter(x, y, s=scale_marker * scale, marker=full_circle_marker(),
+                   color=color, edgecolor="black", zorder=2)
+        return
+
+    size1 = scale_marker_size(rec["p1_val"], rec["policy1"], policy_ranges, scale_marker) * scale
+    size2 = scale_marker_size(rec["p2_val"], rec["policy2"], policy_ranges, scale_marker) * scale
+    ax.scatter(x, y, s=scale_marker * scale, marker=full_circle_marker(), facecolor='none',
+               edgecolor='black', linewidth=1, linestyle="--", alpha=0.5)
+    ax.scatter(x, y, s=size1, marker=half_circle_marker(0, 180),
+               color=policy_colors[rec["policy1"]], edgecolor="black", zorder=2)
+    ax.scatter(x, y, s=size2, marker=half_circle_marker(180, 360),
+               color=policy_colors[rec["policy2"]], edgecolor="black", zorder=2)
+
+
+def plot_emissions_tradeoffs_zoom(
+        base_params,
+        pairwise_outcomes_complied,
+        single_outcomes,
+        outcomes_BAU,
+        file_name,
+        min_ev_uptake=0.9,
+        max_ev_uptake=1.0,
+        dpi=300,
+        e_lims=(0.12, 0.17),
+        c_lims=(-0.05, 0.3),
+        u_lims=None,
+        inset_policies=("Production_subsidy", "Adoption_subsidy"),
+        inset_bbox_top=(0.04, 0.76, 0.20, 0.20),
+        inset_bbox_bottom=(0.04, 0.78, 0.20, 0.18),
+        plot_name="emissions_tradeoff_zoom"
+        ):
+    """
+    Zoomed version of the trade-off figure. The main axes are cropped to
+    e_lims / c_lims (utility left on autoscale unless u_lims is given), and each
+    panel carries an inset that shows the inset_policies pair points which fall
+    outside that crop. The inset is a callout of off-scale data, not a
+    magnification, so it keeps its own tick labels.
+    """
+    okabe_ito_colors = ['#E69F00', '#009E73', '#56B4E9', '#F0E442',
+                        '#0072B2', '#D55E00', '#CC79A7', '#000000']
+    color_map = ListedColormap(okabe_ito_colors)
+    all_policies = sorted({p for pair in pairwise_outcomes_complied for p in pair})
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
+
+    scale_marker = 350
+    scale_inset = 0.35
+
+    records, policy_ranges = _collect_records(
+        base_params, pairwise_outcomes_complied, single_outcomes,
+        min_ev_uptake, max_ev_uptake)
+    for policy in all_policies:
+        policy_ranges.setdefault(policy, {"min": 0, "max": 0})
+
+    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
+
+    # --- Main panels
+    for rec in records:
+        _draw_record(ax_top, rec, "c", policy_colors, policy_ranges, scale_marker)
+        _draw_record(ax_bottom, rec, "u", policy_colors, policy_ranges, scale_marker)
+
+    bau_em = outcomes_BAU["mean_emissions_cumulative"] * 1e-9
+    bau_ut = outcomes_BAU["mean_utility_cumulative"] / base_params["parameters_social_network"]["prob_switch_car"] * 1e-9
+    bau_cost = outcomes_BAU["mean_net_cost"] * 1e-9
+    ax_top.scatter(bau_em, bau_cost, s=scale_marker, color='black', edgecolor='black', label="BAU")
+    ax_bottom.scatter(bau_em, bau_ut, s=scale_marker, color='black', edgecolor='black')
+
+    ax_top.set_xlim(*e_lims)
+    ax_top.set_ylim(*c_lims)
+    ax_bottom.set_xlim(*e_lims)
+    if u_lims is not None:
+        ax_bottom.set_ylim(*u_lims)
+
+    # --- Off-scale callout insets
+    inset_set = set(inset_policies)
+    inset_recs = [r for r in records
+                  if r["kind"] == "pair" and {r["policy1"], r["policy2"]} == inset_set]
+
+    def _out_of_window(rec, y_key, y_lims):
+        inside_x = e_lims[0] <= rec["e"] <= e_lims[1]
+        inside_y = True if y_lims is None else (y_lims[0] <= rec[y_key] <= y_lims[1])
+        return not (inside_x and inside_y)
+
+    def _add_inset(ax, y_key, y_lims, bbox):
+        selected = [r for r in inset_recs if _out_of_window(r, y_key, y_lims)]
+        if not selected:
+            return None
+        axins = ax.inset_axes(bbox)
+        for rec in selected:
+            _draw_record(axins, rec, y_key, policy_colors, policy_ranges,
+                         scale_marker, scale=scale_inset)
+
+        # Limits cover the means and their confidence intervals, so the CI bars
+        # stay inside the box instead of reading as crosshairs.
+        xs = [r["e"] for r in selected]
+        ys = [r[y_key] for r in selected]
+        y_errs = [r["c_err"] if y_key == "c" else r["u_err"] for r in selected]
+        x_lo = min(r["e"] - r["e_err"] for r in selected)
+        x_hi = max(r["e"] + r["e_err"] for r in selected)
+        y_lo = min(y - err for y, err in zip(ys, y_errs))
+        y_hi = max(y + err for y, err in zip(ys, y_errs))
+        x_pad = max(0.15 * (x_hi - x_lo), 0.002)
+        y_pad = max(0.15 * (y_hi - y_lo), 0.01 if y_key == "c" else 0.2)
+        axins.set_xlim(x_lo - x_pad, x_hi + x_pad)
+        axins.set_ylim(y_lo - y_pad, y_hi + y_pad)
+        # Two ticks at the data extremes rather than at the means: in a box this
+        # small, means sit too close together and their labels overlap.
+        axins.set_xticks([round(x_lo, 3), round(x_hi, 3)])
+        axins.set_yticks([round(y_lo, 2), round(y_hi, 2)] if y_key == "c"
+                         else [round(y_lo, 1), round(y_hi, 1)])
+        axins.tick_params(axis='both', labelsize=6, pad=1.5, length=2)
+        for spine in axins.spines.values():
+            spine.set_edgecolor("0.4")
+            spine.set_linestyle((0, (4, 2)))
+        return axins
+
+    _add_inset(ax_top, "c", c_lims, inset_bbox_top)
+    _add_inset(ax_bottom, "u", u_lims, inset_bbox_bottom)
+
+    # --- Labels
+    ax_top.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)
+    ax_bottom.set_ylabel("Cumulative Utility, bn $", fontsize=16)
+    ax_bottom.set_xlabel("Cumulative Emissions, MTCO2", fontsize=16)
+
+    # --- Legend
+    legend_elements = [Patch(facecolor=policy_colors[policy], edgecolor='black',
+                             label=f"{POLICY_TITLES[policy]} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+                       for policy in all_policies]
+    legend_elements += [Patch(facecolor='black', edgecolor='black', label='BAU')]
+    legend_elements += [
+        plt.Line2D([0], [0], color="grey", alpha=0.5, linestyle='-', label='95% Confidence Interval'),
+        plt.Line2D([0], [0], marker=half_circle_marker(0, 180), color='gray',
+                   markerfacecolor='gray', markeredgecolor='black', linestyle='None',
+                   label='Low Intensity', markersize=8),
+        plt.Line2D([0], [0], marker=half_circle_marker(0, 180), color='gray',
+                   markerfacecolor='gray', markeredgecolor='black', linestyle='None',
+                   label='High Intensity', markersize=12),
+    ]
+    ax_bottom.legend(handles=legend_elements, loc='lower right', fontsize=10)
+
+    # --- Save
+    os.makedirs(f"{file_name}/Plots/emissions_tradeoffs", exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(f"{file_name}/Plots/emissions_tradeoffs/{plot_name}.png", dpi=dpi)
+
+
 def main(fileNames):
     """
     fileNames : list of endog_pair folders. The FIRST one must be a folder made
@@ -329,6 +557,14 @@ def main(fileNames):
                                             file_name,
                                             min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300,
                                             insets=False, plot_name="emissions_tradeoff_no_inset")
+
+    # Zoomed figure with an off-scale callout inset for Production Subsidy + New Car Rebate
+    plot_emissions_tradeoffs_zoom(base_params, pairwise_outcomes_complied, single_policy_outcomes, outcomes_BAU,
+                                  file_name,
+                                  min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300,
+                                  e_lims=(0.12, 0.17), c_lims=(-0.05, 0.3), u_lims=None,
+                                  inset_policies=("Production_subsidy", "Adoption_subsidy"),
+                                  plot_name="emissions_tradeoff_zoom")
 
     save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
     save_object(single_policy_outcomes, file_name + "/Data", "single_policy_outcomes")
