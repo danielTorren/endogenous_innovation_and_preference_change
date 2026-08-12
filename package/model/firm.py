@@ -331,21 +331,27 @@ class Firm:
 
         U = np.full((num_cars, self.num_segments), -np.inf)
 
-        # Broadcasting car data to match (num_cars, num_segments)
-        Q_values = np.tile(car_data["Quality_a_t"][:, np.newaxis], (1, self.num_segments))
-        c_values = np.tile(car_data["fuel_cost_c"][:, np.newaxis], (1, self.num_segments))
-        omega_values = np.tile(car_data["Eff_omega_a_t"][:, np.newaxis], (1, self.num_segments))
-        e_values = np.tile(car_data["e_t"][:, np.newaxis], (1, self.num_segments))
-        cost_index_values = np.tile(car_data["cost_index"][:, np.newaxis], (1, self.num_segments))
-        emissions_index_values = np.tile(car_data["emissions_index"][:, np.newaxis], (1, self.num_segments))
-        E_new_values = np.tile(car_data["emissions"][:, np.newaxis], (1, self.num_segments))
-        delta_values = np.tile(car_data["delta"][:, np.newaxis], (1, self.num_segments))
-        transport_types = np.tile(car_data["transportType"][:, np.newaxis], (1, self.num_segments))
-        B_values = np.tile(car_data["B"][:, np.newaxis], (1, self.num_segments))
+        # Broadcasting car data to match (num_cars, num_segments).
+        # np.broadcast_to gives a read-only stride-0 view instead of np.tile's
+        # materialised copy. Every one of these is only ever read, and read
+        # exactly once, through a boolean mask -- which selects the same values
+        # from a view as from a copy. P_adjust_values is left as a real array
+        # because it is written to below.
+        shape = (num_cars, self.num_segments)
+        Q_values = np.broadcast_to(car_data["Quality_a_t"][:, np.newaxis], shape)
+        c_values = np.broadcast_to(car_data["fuel_cost_c"][:, np.newaxis], shape)
+        omega_values = np.broadcast_to(car_data["Eff_omega_a_t"][:, np.newaxis], shape)
+        e_values = np.broadcast_to(car_data["e_t"][:, np.newaxis], shape)
+        cost_index_values = np.broadcast_to(car_data["cost_index"][:, np.newaxis], shape)
+        emissions_index_values = np.broadcast_to(car_data["emissions_index"][:, np.newaxis], shape)
+        E_new_values = np.broadcast_to(car_data["emissions"][:, np.newaxis], shape)
+        delta_values = np.broadcast_to(car_data["delta"][:, np.newaxis], shape)
+        transport_types = np.broadcast_to(car_data["transportType"][:, np.newaxis], shape)
+        B_values = np.broadcast_to(car_data["B"][:, np.newaxis], shape)
 
         # Broadcast segment parameters to match (num_cars, num_segments)
-        beta_s_broadcast = np.tile(self.beta_s_values, (num_cars, 1))
-        gamma_s_broadcast = np.tile(self.gamma_s_values, (num_cars, 1))
+        beta_s_broadcast = np.broadcast_to(self.beta_s_values, shape)
+        gamma_s_broadcast = np.broadcast_to(self.gamma_s_values, shape)
 
         # Initialize P_adjust and valid_mask
         P_adjust_values = np.zeros((num_cars, self.num_segments))

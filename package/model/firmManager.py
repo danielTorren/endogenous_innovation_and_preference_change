@@ -190,8 +190,40 @@ class Firm_Manager:
 
         self.beta_bins = beta_bins
         self.gamma_bins = gamma_bins
-        self.beta_segment_idx = np.digitize(self.beta_vec, self.beta_bins) - 1  
-        self.gamma_segment_idx = np.digitize(self.gamma_vec, self.gamma_bins) - 1  
+        self.beta_segment_idx = np.digitize(self.beta_vec, self.beta_bins) - 1
+        self.gamma_segment_idx = np.digitize(self.gamma_vec, self.gamma_bins) - 1
+
+        # Precomputed flat segment index, for _count_segments(). beta and gamma
+        # segments are fixed for the whole run (they come from the fixed
+        # preference draws and the fixed quantile bins), so only the EV term
+        # varies per timestep.
+        #
+        # np.digitize returns len(bins) for a value equal to the top bin edge,
+        # so an index can land outside [0, num_segments) -- the individual
+        # holding the maximum beta, for one. Those fall into segment codes that
+        # are not in all_segment_codes, so the original counted them into a
+        # defaultdict entry that was never read back. in_range reproduces that
+        # exactly by dropping them.
+        self._segment_in_range = (
+            (self.beta_segment_idx >= 0) & (self.beta_segment_idx < self.num_beta_segments)
+            & (self.gamma_segment_idx >= 0) & (self.gamma_segment_idx < self.num_gamma_segments)
+        )
+        # Matches the ordering of itertools.product(beta, gamma, ev)
+        self._segment_flat_base = 2*(self.gamma_segment_idx + self.num_gamma_segments*self.beta_segment_idx)
+
+    def _count_segments(self):
+        """
+        Count individuals per segment code.
+
+        Returns:
+            np.ndarray: Counts indexed to match all_segment_codes.
+
+        Replaces a per-individual Python loop that unboxed three NumPy scalars,
+        built a tuple and hashed it, num_individuals times per timestep. Integer
+        counting, so the result is exact.
+        """
+        flat = self._segment_flat_base + self.consider_ev_vec
+        return np.bincount(flat[self._segment_in_range], minlength=self.num_segments)
 
     def calc_exp(self, U):
         """
@@ -228,22 +260,14 @@ class Firm_Manager:
             }
 
         # 2) Count how many individuals fall into each segment code
-        segment_counts = defaultdict(int)
-
-        for i in range(self.num_individuals):
-            b_idx = self.beta_segment_idx[i]         # in [0..4]
-            g_idx = self.gamma_segment_idx[i]            # in [0..1]
-            e_idx = self.consider_ev_vec[i]          # in [0..1]
-            seg_code = (b_idx, g_idx, e_idx)
-
-            segment_counts[seg_code] += 1
+        segment_counts = self._count_segments()
 
         # 3) Compute midpoints for each segment
         for i, code in enumerate(self.all_segment_codes):
             b_idx, g_idx, e_idx = code
 
             if (e_idx == 0) or (e_idx == 1 and self.ev_production_bool):
-                self.market_data[code]["I_s_t"] = segment_counts[code]#IS NOT AN EV SEGMENT or CAN PRODUCE EVS AND THE SEGMENT ALLOWS IT
+                self.market_data[code]["I_s_t"] = int(segment_counts[i])#IS NOT AN EV SEGMENT or CAN PRODUCE EVS AND THE SEGMENT ALLOWS IT
             else:
                 self.market_data[code]["I_s_t"] = 0#CANT PRODUCE AN EV
         
@@ -266,10 +290,11 @@ class Firm_Manager:
                         self.market_data[code]["maxU"] = U
 
 
+        kappa = self.kappa
         for firm in self.firms_list:
             for car in firm.cars_on_sale:
                 for code, U in car.car_utility_segments_U.items():
-                        segment_W[code] += self.calc_exp(U)
+                        segment_W[code] += np.exp(kappa*U)
 
         # 6) Store the U_sum in market_data
         for code in self.all_segment_codes:
@@ -295,14 +320,23 @@ class Firm_Manager:
             segment_W[segment] = self.min_W#RESET THEM INCASE
         
         #UPDATE U MAX
+        # The two passes below were separate loops over the same cars and the
+        # same per-car segment dicts. They are independent of each other -- the
+        # W sum never reads maxU -- so running them together visits each (car,
+        # segment) pair once instead of twice. Each still sees the same values
+        # in the same order, so the running max and the running sum are
+        # unchanged.
+        # calc_exp is inlined here rather than called: it is a two-line wrapper
+        # invoked once per (car, segment) pair per timestep, so the Python call
+        # and the self.kappa lookup dominated the arithmetic it performs.
+        market_data = self.market_data
+        kappa = self.kappa
         for car in self.cars_on_sale_all_firms:
             for segment, U in car.car_utility_segments_U.items():
-                    if U > self.market_data[segment]["maxU"]:
-                            self.market_data[segment]["maxU"] = U
+                    if U > market_data[segment]["maxU"]:
+                            market_data[segment]["maxU"] = U
 
-        for car in self.cars_on_sale_all_firms:
-            for segment, U in car.car_utility_segments_U.items():
-                segment_W[segment] += self.calc_exp(U)
+                    segment_W[segment] += np.exp(kappa*U)
 
         maxU_vec = np.asarray([self.market_data[code]["maxU"] for code in self.all_segment_codes])
 
@@ -318,39 +352,37 @@ class Firm_Manager:
         Returns:
             tuple: (array of segment sizes, array of choice denominators)
         """
-        segment_counts = defaultdict(int)
-        for i in range(self.num_individuals):
-            b_idx = self.beta_segment_idx[i]
-            g_idx = self.gamma_segment_idx[i]
-            e_idx = self.consider_ev_vec[i]
-            code = (b_idx, g_idx, e_idx)
-            segment_counts[code] += 1
+        segment_counts = self._count_segments()
+        code_positions = {code: i for i, code in enumerate(self.all_segment_codes)}
 
         for code in self.market_data.keys():
+            entry = self.market_data[code]
             # Append current values to history
             #SEGMENT COUNTS
             e_idx = code[2]
             if (e_idx == 0) or (e_idx == 1 and self.ev_production_bool):
-                count = segment_counts[code]#IS NOT AN EV SEGMENT or CAN PRODUCE EVS AND THE SEGMENT ALLOWS IT
+                count = int(segment_counts[code_positions[code]])#IS NOT AN EV SEGMENT or CAN PRODUCE EVS AND THE SEGMENT ALLOWS IT
             else:
                 count = 0#CANT PRODUCE AN EV
-            self.market_data[code]["history_I_s_t"].append(count)
 
-            self.market_data[code]["history_W"].append(W_segment[code])
+            history_I_s_t = entry["history_I_s_t"]
+            history_W = entry["history_W"]
+            history_I_s_t.append(count)
+            history_W.append(W_segment[code])
 
             # Trim history to the last N time steps
-            if len(self.market_data[code]["history_I_s_t"]) > self.time_steps_tracking_market_data:
-                self.market_data[code]["history_I_s_t"].pop(0)
-            if len(self.market_data[code]["history_W"]) > self.time_steps_tracking_market_data:
-                self.market_data[code]["history_W"].pop(0)
+            if len(history_I_s_t) > self.time_steps_tracking_market_data:
+                history_I_s_t.pop(0)
+            if len(history_W) > self.time_steps_tracking_market_data:
+                history_W.pop(0)
 
             # Calculate moving averages
-            moving_avg_I_s_t = np.mean(self.market_data[code]["history_I_s_t"])
-            moving_avg_W = np.mean(self.market_data[code]["history_W"])
+            moving_avg_I_s_t = np.mean(history_I_s_t)
+            moving_avg_W = np.mean(history_W)
 
             # Store the moving averages
-            self.market_data[code]["I_s_t"] = moving_avg_I_s_t
-            self.market_data[code]["W"] = moving_avg_W
+            entry["I_s_t"] = moving_avg_I_s_t
+            entry["W"] = moving_avg_W
         
         I_s_t_vec = np.asarray([self.market_data[code]["I_s_t"] for code in self.all_segment_codes])
         W_vec = np.asarray([self.market_data[code]["W"] for code in self.all_segment_codes])

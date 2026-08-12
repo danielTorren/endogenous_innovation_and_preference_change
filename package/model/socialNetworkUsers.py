@@ -7,6 +7,7 @@ import numpy as np
 from package.model.personalCar import PersonalCar
 from package.model.VehicleUser import VehicleUser
 from package.model.carModel import CarModel
+from package.model.secondHandMerchant import _attr_array
 
 # Safety bound for _lifecycle_cost_term — see that method's docstring. Far
 # above any value the model's realistic (non-extreme-policy) parameter
@@ -381,15 +382,25 @@ class Social_Network:
         step_utility_buffer = np.zeros(self.num_individuals)
         step_utility_buffer[non_switcher_indices] = full_CV_utility_vec[non_switcher_indices]
 
-        for person_index in non_switcher_indices:
-            user = self.vehicleUsers_list[person_index]
-            user.vehicle.update_timer_L_a_t()
+        # The save-state test is loop-invariant, so it is evaluated once here
+        # rather than once per agent per timestep (two attribute lookups and a
+        # modulo each). Splitting on it also leaves the common calibration path
+        # -- saving off -- as a bare ageing loop over Python ints.
+        vehicle_users = self.vehicleUsers_list
+        saving_this_step = bool(self.save_timeseries_data_state) and (self.t_social_network % self.compression_factor_state == 0)
 
-            if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+        if saving_this_step:
+            for person_index in non_switcher_indices.tolist():
+                user = vehicle_users[person_index]
+                user.vehicle.update_timer_L_a_t()
+
                 self.keep_car += 1
                 utility = full_CV_utility_vec[person_index]
                 driven_distance = self.d_vec[person_index]
                 self.update_counters(person_index, user.vehicle, driven_distance, utility)
+        else:
+            for person_index in non_switcher_indices.tolist():
+                vehicle_users[person_index].vehicle.update_timer_L_a_t()
 
         self._cv_cache["L_a_t"][non_switcher_indices] += 1
 
@@ -408,17 +419,12 @@ class Social_Network:
 
         self.second_hand_merchant_offer_price = self.calc_offer_prices_heursitic(self.NC_vehicle_dict_vecs, CV_filtered_vechicles_dicts, CV_filtered_vehicles)
 
-        # pass those indices to generate_utilities
-        utilities_buying_matrix_switchers, buying_vehicles_list = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price, self.sub_d_vec, self.sub_nu_vec)
+        # pass those indices to generate_utilities. It allocates the full
+        # (switchers x new+second_hand+current) matrix and fills the buy-side
+        # blocks in place, so only the small current-car block is copied here.
+        self.utilities_matrix_switchers, buying_vehicles_list, num_buying_columns = self.generate_utilities(self.sub_beta_vec, self.sub_gamma_vec, self.second_hand_merchant_offer_price, self.sub_d_vec, self.sub_nu_vec, extra_columns=utilities_current_matrix.shape[1])
 
-        # Preallocate the final utilities and distance matrices
-        total_columns = utilities_buying_matrix_switchers.shape[1] + utilities_current_matrix.shape[1]#number of cars which is new+secodn hand + current in the switchers
-
-        self.utilities_matrix_switchers = np.empty((num_switchers, total_columns))
-
-        # Assign matrices directly
-        self.utilities_matrix_switchers[:, :utilities_buying_matrix_switchers.shape[1]] = utilities_buying_matrix_switchers
-        self.utilities_matrix_switchers[:, utilities_buying_matrix_switchers.shape[1]:] = utilities_current_matrix
+        self.utilities_matrix_switchers[:, num_buying_columns:] = utilities_current_matrix
 
         # Combine the list of vehicles
         available_and_current_vehicles_list = buying_vehicles_list + CV_filtered_vehicles# ITS CURRENT VEHICLES AND NOT FILTERED VEHCILES AS THE SHUFFLING INDEX DOENST ACCOUNT FOR THE FILTERING
@@ -426,10 +432,14 @@ class Social_Network:
         utilities_kappa = self.masking_options(self.utilities_matrix_switchers, available_and_current_vehicles_list, self.consider_ev_vec[switcher_indices])
 
         #########################################################################################################################
-        # Create a mapping from global to reduced indices
-        global_to_reduced = {global_idx: local_idx for local_idx, global_idx in enumerate(switcher_indices)}
+        # Create a mapping from global to reduced indices. Built over plain
+        # Python ints (.tolist()) rather than NumPy scalars: the keys compare
+        # and hash the same either way, but boxing a NumPy scalar for every
+        # dict operation and every list index below is not free.
+        switcher_indices_list = switcher_indices.tolist()
+        global_to_reduced = {global_idx: local_idx for local_idx, global_idx in enumerate(switcher_indices_list)}
         # Translate shuffle_indices to reduced indices
-        shuffle_indices_reduced = [global_to_reduced[idx] for idx in shuffle_indices]
+        shuffle_indices_reduced = [global_to_reduced[idx] for idx in shuffle_indices.tolist()]
 
         #########################################################################################################################
 
@@ -438,9 +448,9 @@ class Social_Network:
 
         for i, reduced_index in enumerate(shuffle_indices_reduced):
             # Map the reduced index back to the global index
-            global_index = switcher_indices[reduced_index]
+            global_index = switcher_indices_list[reduced_index]
 
-            user = self.vehicleUsers_list[global_index]  # Use the global index to access the user
+            user = vehicle_users[global_index]  # Use the global index to access the user
             vehicle_chosen, user_vehicle, vehicle_chosen_index, utilities_kappa = self.user_chooses(
                 global_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_index, index_current_cars_start, _u_draws[i]
             )
@@ -458,14 +468,20 @@ class Social_Network:
                 carbon_price_paid = (self.carbon_price*user.vehicle.e_t*driven_distance)/user.vehicle.Eff_omega_a_t
                 self.policy_distortion += carbon_price_paid
                 self.net_policy_distortion += carbon_price_paid
-            
-            utility = self.utilities_matrix_switchers[reduced_index][vehicle_chosen_index]
+
+            # Single scalar fetch. The chained [row][col] form built a throwaway
+            # 1-D view object of the whole row first, once per switcher.
+            utility = self.utilities_matrix_switchers[reduced_index, vehicle_chosen_index]
             self.utility_cumulative += utility
             step_utility_buffer[global_index] = utility
 
-            if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
+            if saving_this_step:
 
                 self.update_counters(global_index, vehicle_chosen, driven_distance, utility)
+
+        # Drop the cars sold out of the merchant's stock during the loop above.
+        # remove_car() only marked them; see SecondHandMerchant.compact_stock.
+        self.second_hand_merchant.compact_stock()
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow_history.append(self.emissions_flow)
@@ -564,12 +580,17 @@ class Social_Network:
         # Generate individual masks based on vehicle type and user conditions
         # Create a boolean vector where True indicates that a vehicle is NOT an EV (non-EV)
         not_ev_vec = np.array([vehicle.transportType == 2 for vehicle in available_and_current_vehicles_list], dtype=bool)
-        ones = np.ones(len(not_ev_vec), dtype=bool)
-        consider_ev_all_vehicles = np.outer(consider_ev_vec == 1, ones)#DO CONSIDER EVS #THIS IS TOO GET THE CORRECT SHAPE ie PEOPLE BY CARS
-        dont_consider_evs_on_ev = np.outer(consider_ev_vec == 0, not_ev_vec)#This part masks EVs (False for EVs) only for individuals who do not consider EVs
 
-        # Create an outer product to apply the EV consideration across all cars
-        ev_mask_matrix = (consider_ev_all_vehicles | dont_consider_evs_on_ev).astype(int)
+        # A user who considers EVs may pick anything; one who does not may pick
+        # only non-EVs. That is exactly `considers_i OR not_ev_j`, which the
+        # original built as two full (people x cars) outer products that were
+        # then OR-ed -- consider_ev_vec is 0/1, so `== 1` and `== 0` are
+        # complementary and the second product only ever contributes on the
+        # rows the first one left False. One broadcast gives the same matrix.
+        # Kept as bool rather than cast to int: the only consumers are
+        # np.where and np.any, both of which read it as a truth value, and the
+        # int64 cast made the mask eight times larger than it needs to be.
+        ev_mask_matrix = (consider_ev_vec == 1)[:, np.newaxis] | not_ev_vec
 
         return ev_mask_matrix
 
@@ -594,14 +615,27 @@ class Social_Network:
         # Step 3: Identify valid rows (at least one non -inf value)
         valid_rows = np.any(combined_mask, axis=1)
 
-        # Step 4: Compute row-wise max only for valid rows for numerical stability
-        row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
+        if valid_rows.all():
+            # Fast path -- the normal case, since any user who does not
+            # consider EVs still has every ICE available, so a row is only
+            # invalid in the degenerate all-EV-market case. Every row is kept,
+            # so the boolean-index copy in, the copy out, and the zero-filled
+            # destination are all pure overhead: the same three steps are done
+            # in place on the one array instead, over four fewer full-size
+            # (switchers x cars) buffers.
+            row_max_utilities = np.max(masked_utilities, axis=1, keepdims=True)
+            np.subtract(masked_utilities, row_max_utilities, out=masked_utilities)
+            masked_utilities *= self.kappa
+            utilities_kappa = np.exp(masked_utilities, out=masked_utilities)
+        else:
+            # Step 4: Compute row-wise max only for valid rows for numerical stability
+            row_max_utilities = np.max(masked_utilities[valid_rows], axis=1, keepdims=True)
 
-        exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
+            exp_input = self.kappa * (masked_utilities[valid_rows] - row_max_utilities)
 
-        # Step 6: Exponentiate, directly filling only valid entries
-        utilities_kappa = np.zeros_like(utilities_matrix)
-        utilities_kappa[valid_rows] = np.exp(exp_input)
+            # Step 6: Exponentiate, directly filling only valid entries
+            utilities_kappa = np.zeros_like(utilities_matrix)
+            utilities_kappa[valid_rows] = np.exp(exp_input)
 
         # Consolidate NaN guard here so user_chooses doesn't need per-row checks
         if np.isnan(utilities_kappa).any():
@@ -628,16 +662,25 @@ class Social_Network:
         # Select individual-specific utilities (NaNs already handled in masking_options)
         individual_specific_util_kappa = utilities_kappa[reduced_person_index]
 
+        # Cumulative sum as unnormalised CDF; sample by scaling u_draw to [0, total].
+        # Computed before the switching clause rather than inside it, because
+        # the total already answers the clause's question. Every entry is
+        # exp() of a non-positive number or an exact zero written by the mask /
+        # already-sold paths, so the row is non-negative, and a running sum of
+        # non-negative values is zero only if every value is zero. Testing the
+        # total is therefore identical to np.any(...) and saves a second full
+        # pass over the row for every switcher, every timestep.
+        cumsum = np.cumsum(individual_specific_util_kappa)
+        total_util_kappa = cumsum[-1]
+
         #SWICHING_CLAUSE
-        if not np.any(individual_specific_util_kappa):#NO car option all zero, THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
+        if total_util_kappa == 0:#NO car option all zero, THIS SHOULD ONLY REALLY BE TRIGGERED RIGHT AT THE START
             #keep current car
             choice_index = index_current_cars_start + reduced_person_index
             if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                 self.zero_util_count += 1
         else:
-            # Cumulative sum as unnormalised CDF; sample by scaling u_draw to [0, total]
-            cumsum = np.cumsum(individual_specific_util_kappa)
-            choice_index = int(np.searchsorted(cumsum, u_draw * cumsum[-1], side='right'))
+            choice_index = int(np.searchsorted(cumsum, u_draw * total_util_kappa, side='right'))
             # Clamp against floating-point overshoot
             if choice_index >= len(available_and_current_vehicles_list):
                 choice_index = len(available_and_current_vehicles_list) - 1
@@ -752,13 +795,25 @@ class Social_Network:
         """
         delta = vehicle_dict_vecs["delta"]
         Eff = vehicle_dict_vecs["Eff_omega_a_t"]
+        # Accumulated in place. The first product already allocates the full
+        # (switchers x cars) result; every later step rewrites that same buffer
+        # instead of allocating another one, which is what the original
+        # expression did five times over. Each rewrite is the same IEEE
+        # operation on the same operands (only the argument order of the
+        # commutative products is flipped), so the result is bit-for-bit what
+        # the original expression produced.
         if self.forward_looking_expectations:
-            numerator = vehicle_dict_vecs["cost_index"] + gamma_vec*vehicle_dict_vecs["emissions_index"]
-            term = d_vec*(numerator/(Eff*age_factor))
+            term = gamma_vec*vehicle_dict_vecs["emissions_index"]
+            term += vehicle_dict_vecs["cost_index"]
+            term /= (Eff*age_factor)
+            term *= d_vec
         else:
-            numerator = (1+self.r)*(1-delta)*(vehicle_dict_vecs["fuel_cost_c"] + gamma_vec*vehicle_dict_vecs["e_t"])
-            term = d_vec*(numerator/(Eff*age_factor*(self.r - delta - self.r*delta)))
-        return np.minimum(term, MAX_LIFECYCLE_COST_TERM)
+            term = gamma_vec*vehicle_dict_vecs["e_t"]
+            term += vehicle_dict_vecs["fuel_cost_c"]
+            term *= (1+self.r)*(1-delta)
+            term /= (Eff*age_factor*(self.r - delta - self.r*delta))
+            term *= d_vec
+        return np.minimum(term, MAX_LIFECYCLE_COST_TERM, out=term)
 
     def generate_utilities_current(self, vehicle_dict_vecs, beta_vec, gamma_vec, d_vec, nu_vec, build_matrix=True):# -> NDArray:
         """
@@ -834,43 +889,43 @@ class Social_Network:
         """
         return self._cv_cache
 
-    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+    def generate_utilities(self, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec, extra_columns=0):
         """
         Compute utility values for all switchers over new and second-hand cars.
 
+        Args:
+            extra_columns (int): Number of trailing columns to leave
+                uninitialised for the caller's current-car block. The buy-side
+                blocks are written straight into this one array, so the
+                second-hand block -- by far the largest -- is now materialised
+                once instead of being built, copied here, and copied again into
+                the caller's combined matrix.
+
         Returns:
-            tuple: (utility matrix, list of vehicle objects)
+            tuple: (utility matrix, list of vehicle objects, number of buy columns)
         """
 
-        # Generate utilities
-        #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
-        NC_utilities = self.vectorised_calculate_utility_new_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec)
-
-        # Calculate the total columns needed for utilities 
-        total_columns = NC_utilities.shape[1]
-
-        if self.second_hand_cars:
-            SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_second_hand(self.second_hand_cars)
-            SH_utilities = self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec)
-            total_columns += SH_utilities.shape[1]
+        # Calculate the total columns needed for utilities
+        num_new_cars = len(self.new_cars)
+        num_second_hand = len(self.second_hand_cars) if self.second_hand_cars else 0
+        total_columns = num_new_cars + num_second_hand
 
         # Preallocate arrays with the total required columns
         num_individuals_switchers = len(beta_vec)
-        utilities_matrix = np.empty((num_individuals_switchers, total_columns))
+        utilities_matrix = np.empty((num_individuals_switchers, total_columns + extra_columns))
 
-        # Fill in preallocated arrays with submatrices
-        col_idx = 0#start the counter at zero then increase as you set things up
-        utilities_matrix[:, col_idx:col_idx + NC_utilities.shape[1]] = NC_utilities
-
-        col_idx += NC_utilities.shape[1]
+        # Generate utilities directly into their column blocks
+        #self.NC_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_new_cars(self.new_cars)
+        self.vectorised_calculate_utility_new_cars(self.NC_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec, out=utilities_matrix[:, :num_new_cars])
 
         if self.second_hand_cars:
-            utilities_matrix[:, col_idx:col_idx + SH_utilities.shape[1]] = SH_utilities
+            SH_vehicle_dict_vecs = self.gen_vehicle_dict_vecs_second_hand(self.second_hand_cars)
+            self.vectorised_calculate_utility_second_hand_cars(SH_vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec, out=utilities_matrix[:, num_new_cars:total_columns])
             car_options = self.new_cars + self.second_hand_cars
         else:
             car_options = self.new_cars
 
-        return utilities_matrix, car_options
+        return utilities_matrix, car_options, total_columns
 
     def filter_vehicle_dict_for_switchers(
         self,
@@ -901,7 +956,7 @@ class Social_Network:
         """
 
         # 1) Build an array of owner IDs for each vehicle in the same order used in vehicle_dict_vecs
-        owner_ids = np.array([vehicle.owner_id for vehicle in list_vehicles], dtype=int)
+        owner_ids = _attr_array(list_vehicles, "owner_id", np.int64)
 
         # 2) Create a boolean mask that is True if the owner is in switcher_indices
         #    (Note: np.isin will check for membership in switcher_indices)
@@ -968,19 +1023,22 @@ class Social_Network:
         Returns:
             dict: Dictionary of vehicle attributes.
         """
-        # Extract properties using list comprehensions
-        quality_a_t = np.array([vehicle.Quality_a_t for vehicle in list_vehicles])
-        eff_omega_a_t = np.array([vehicle.Eff_omega_a_t for vehicle in list_vehicles])
-        price = np.array([vehicle.price for vehicle in list_vehicles])
-        fuel_cost_c = np.array([vehicle.fuel_cost_c for vehicle in list_vehicles])
-        e_t = np.array([vehicle.e_t for vehicle in list_vehicles])
-        cost_index = np.array([vehicle.cost_index for vehicle in list_vehicles])
-        emissions_index = np.array([vehicle.emissions_index for vehicle in list_vehicles])
-        l_a_t = np.array([vehicle.L_a_t for vehicle in list_vehicles])
-        transport_type = np.array([vehicle.transportType for vehicle in list_vehicles])
-        delta = np.array([vehicle.delta for vehicle in list_vehicles])
+        # Extract properties. _attr_array (np.fromiter over a C-level
+        # attrgetter) rather than np.array over a list comprehension -- same
+        # values and dtypes, about half the time, and this walks the entire
+        # second-hand stock eleven times every timestep.
+        quality_a_t = _attr_array(list_vehicles, "Quality_a_t")
+        eff_omega_a_t = _attr_array(list_vehicles, "Eff_omega_a_t")
+        price = _attr_array(list_vehicles, "price")
+        fuel_cost_c = _attr_array(list_vehicles, "fuel_cost_c")
+        e_t = _attr_array(list_vehicles, "e_t")
+        cost_index = _attr_array(list_vehicles, "cost_index")
+        emissions_index = _attr_array(list_vehicles, "emissions_index")
+        l_a_t = _attr_array(list_vehicles, "L_a_t", np.int64)
+        transport_type = _attr_array(list_vehicles, "transportType", np.int64)
+        delta = _attr_array(list_vehicles, "delta")
         used_rebate_vec = np.where(transport_type == 3, self.used_rebate_calibration + self.used_rebate, 0)
-        B = np.array([vehicle.B for vehicle in list_vehicles])
+        B = _attr_array(list_vehicles, "B")
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
@@ -999,41 +1057,72 @@ class Social_Network:
 
         return vehicle_dict_vecs
 
-    def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+    def vectorised_calculate_utility_second_hand_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec, out=None):
         """
         Compute user utilities for second-hand car options.
+
+        Args:
+            out (np.ndarray): Optional (switchers x cars) destination to write
+                the result into, so the caller's final choice matrix can be
+                filled directly instead of building a separate block and
+                copying it in.
 
         Returns:
             np.ndarray: Utility matrix for second-hand options.
         """
-        price_difference_raw = vehicle_dict_vecs["price"][:, np.newaxis] -  vehicle_dict_vecs["used_rebate"][:, np.newaxis]
+        # Built directly in (switchers x cars) orientation. The original formed
+        # the (cars x switchers) price difference and transposed it, so every
+        # subsequent term was accumulated across a transposed (column-major)
+        # view -- the worst possible traversal order for an array this size.
+        # -(net_price - offer) == offer - net_price exactly (IEEE negation is
+        # exact and rounding is symmetric), so the values are unchanged.
+        net_price = np.maximum(0, vehicle_dict_vecs["price"] - vehicle_dict_vecs["used_rebate"])
 
-        price_difference = np.maximum(0, price_difference_raw) - second_hand_merchant_offer_price
-
-        price_difference_T = price_difference.T
+        if out is None:
+            U_a_i_t_matrix = second_hand_merchant_offer_price[:, np.newaxis] - net_price
+        else:
+            U_a_i_t_matrix = out
+            np.subtract(second_hand_merchant_offer_price[:, np.newaxis], net_price, out=U_a_i_t_matrix)
 
         age_factor = (1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
-        U_a_i_t_matrix  = -price_difference_T + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec[:, np.newaxis], d_vec[:, np.newaxis], age_factor)
+
+        # One scratch buffer, reused for both rank-1 terms, then accumulated in
+        # the same left-to-right order as the original single expression.
+        scratch = beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha
+        U_a_i_t_matrix += scratch
+        np.multiply(nu_vec[:, np.newaxis], (vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_factor)**self.zeta, out=scratch)
+        U_a_i_t_matrix += scratch
+        U_a_i_t_matrix -= self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec[:, np.newaxis], d_vec[:, np.newaxis], age_factor)
 
         return U_a_i_t_matrix
-    
-    def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec):
+
+    def vectorised_calculate_utility_new_cars(self, vehicle_dict_vecs, beta_vec, gamma_vec, second_hand_merchant_offer_price, d_vec, nu_vec, out=None):
         """
         Compute user utilities for new car options.
+
+        Args:
+            out (np.ndarray): Optional (switchers x cars) destination, as above.
 
         Returns:
             np.ndarray: Utility matrix for new car options.
         """
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
-        price_difference_raw = (vehicle_dict_vecs["price"][:, np.newaxis] - vehicle_dict_vecs["rebate"][:, np.newaxis])  # Apply rebate
+        # Same untransposed, in-place accumulation as the second-hand version.
+        net_price = np.maximum(0, vehicle_dict_vecs["price"] - vehicle_dict_vecs["rebate"])
 
-        #print("diff", np.maximum(0, price_difference_raw) )
-        
-        price_difference = np.maximum(0, price_difference_raw) - second_hand_merchant_offer_price
+        if out is None:
+            U_a_i_t_matrix = second_hand_merchant_offer_price[:, np.newaxis] - net_price
+        else:
+            U_a_i_t_matrix = out
+            np.subtract(second_hand_merchant_offer_price[:, np.newaxis], net_price, out=U_a_i_t_matrix)
 
-        price_difference_T = price_difference.T
-
-        U_a_i_t_matrix  = -price_difference_T - gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta - self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec[:, np.newaxis], d_vec[:, np.newaxis])
+        scratch = gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"]
+        U_a_i_t_matrix -= scratch
+        np.multiply(beta_vec[:, np.newaxis], vehicle_dict_vecs["Quality_a_t"]**self.alpha, out=scratch)
+        U_a_i_t_matrix += scratch
+        np.multiply(nu_vec[:, np.newaxis], (vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta, out=scratch)
+        U_a_i_t_matrix += scratch
+        U_a_i_t_matrix -= self._lifecycle_cost_term(vehicle_dict_vecs, gamma_vec[:, np.newaxis], d_vec[:, np.newaxis])
 
         return U_a_i_t_matrix# Shape: (num_individuals, num_vehicles)
     
@@ -1521,16 +1610,28 @@ class Social_Network:
         """
         Update the fuel cost and emissions intensity of currently owned vehicles.
         """
+        # Loop-invariant lookups hoisted: this walks all num_individuals owned
+        # vehicles every timestep, so each self.<attr> inside the body cost one
+        # dict lookup per vehicle per timestep for a value that never changes
+        # within the loop.
+        gas_price = self.gas_price
+        gas_cost_index = self.gas_cost_index
+        gas_emissions_index = self.gas_emissions_index
+        electricity_price = self.electricity_price
+        electricity_emissions_intensity = self.electricity_emissions_intensity
+        electricity_cost_index = self.electricity_cost_index
+        electricity_emissions_index = self.electricity_emissions_index
+
         for car in self.current_vehicles:
             if car.transportType == 2:#ICE
-                car.fuel_cost_c = self.gas_price
-                car.cost_index = self.gas_cost_index
-                car.emissions_index = self.gas_emissions_index
+                car.fuel_cost_c = gas_price
+                car.cost_index = gas_cost_index
+                car.emissions_index = gas_emissions_index
             elif car.transportType == 3:
-                car.fuel_cost_c = self.electricity_price
-                car.e_t = self.electricity_emissions_intensity
-                car.cost_index = self.electricity_cost_index
-                car.emissions_index = self.electricity_emissions_index
+                car.fuel_cost_c = electricity_price
+                car.e_t = electricity_emissions_intensity
+                car.cost_index = electricity_cost_index
+                car.emissions_index = electricity_emissions_index
 
         ice_mask = self._cv_cache["transportType"] == 2
         ev_mask  = self._cv_cache["transportType"] == 3
