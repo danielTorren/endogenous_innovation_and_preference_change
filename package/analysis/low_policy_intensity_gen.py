@@ -8,6 +8,7 @@ from package.resources.utility import (
 )
 import shutil  # Cleanup
 import sys
+from operator import attrgetter
 from pathlib import Path  # Path handling
 from copy import deepcopy
 from package.resources.run import load_in_controller
@@ -15,162 +16,67 @@ from joblib import Parallel, delayed, load
 import multiprocessing
 
 
+# Histories collected from every scenario run, as
+#   saved output key -> attribute path on the finished controller.
+#
+# This is the whole contract between the workers and everything downstream:
+# each worker returns exactly these, keyed by name, and single_policy_with_seeds
+# stacks them across seeds under the same names. Add an entry to collect more.
+#
+# It is deliberately NOT everything the model records. The per-entity histories
+# (history_car_age, which appends all 3000 car ages EVERY step, plus the
+# quality / efficiency / production-cost ones, which append a per-car-on-sale
+# array each step) used to be returned too and then thrown away by both callers.
+# At 768 steps and 64 seeds that was gigabytes shipped from the workers back to
+# the parent for nothing, and it OOM-killed the job. Do not re-add one unless
+# something actually reads it.
+SCENARIO_HISTORIES = {
+    "history_driving_emissions": "social_network.history_driving_emissions",
+    "history_production_emissions": "social_network.history_production_emissions",
+    "history_total_emissions": "social_network.history_total_emissions",
+    "history_prop_EV": "social_network.history_prop_EV",
+    "history_lower_percentile_price_ICE_EV_arr": "social_network.history_lower_percentile_price_ICE_EV",
+    "history_upper_percentile_price_ICE_EV_arr": "social_network.history_upper_percentile_price_ICE_EV",
+    "history_mean_price_ICE_EV_arr": "social_network.history_mean_price_ICE_EV",
+    "history_median_price_ICE_EV_arr": "social_network.history_median_price_ICE_EV",
+    "history_total_utility": "social_network.history_total_utility",
+    "history_total_utility_bottom": "social_network.history_total_utility_bottom",
+    "history_ev_adoption_rate_bottom": "social_network.history_ev_adoption_rate_bottom",
+    "history_mean_car_age": "social_network.history_mean_car_age",
+    "history_market_concentration": "firm_manager.history_market_concentration",
+    "history_total_profit": "firm_manager.history_total_profit",
+    "history_mean_profit_margins_ICE": "firm_manager.history_mean_profit_margins_ICE",
+    "history_mean_profit_margins_EV": "firm_manager.history_mean_profit_margins_EV",
+    "history_past_new_bought_vehicles_prop_ev": "firm_manager.history_past_new_bought_vehicles_prop_ev",
+    "history_policy_net_cost": "history_policy_net_cost",
+}
+
+
 def single_policy_simulation(params, controller_file):
     """
-    Run a single simulation and return EV uptake and policy distortion.
+    Run a single simulation and return the SCENARIO_HISTORIES time series.
     """
     controller = load(controller_file)  # Load fresh controller
     data = load_in_controller(controller, params)
-    return (
-        data.social_network.history_driving_emissions,#Emmissions flow
-        data.social_network.history_production_emissions,#Emmissions flow
-        data.social_network.history_total_emissions,#Emmissions flow
-        data.social_network.history_prop_EV, 
-        data.social_network.history_car_age, 
-        data.social_network.history_lower_percentile_price_ICE_EV,
-        data.social_network.history_upper_percentile_price_ICE_EV,
-        data.social_network.history_mean_price_ICE_EV,
-        data.social_network.history_median_price_ICE_EV, 
-        data.social_network.history_total_utility,
-        data.firm_manager.history_market_concentration,
-        data.firm_manager.history_total_profit, 
-        data.social_network.history_quality_ICE, 
-        data.social_network.history_quality_EV, 
-        data.social_network.history_efficiency_ICE, 
-        data.social_network.history_efficiency_EV, 
-        data.social_network.history_production_cost_ICE, 
-        data.social_network.history_production_cost_EV, 
-        data.firm_manager.history_mean_profit_margins_ICE,
-        data.firm_manager.history_mean_profit_margins_EV,
-        data.social_network.history_mean_car_age,
-        data.firm_manager.history_past_new_bought_vehicles_prop_ev,
-        data.history_policy_net_cost,
-        data.social_network.history_total_utility_bottom,
-        data.social_network.history_ev_adoption_rate_bottom
-    )
+    return {name: attrgetter(path)(data) for name, path in SCENARIO_HISTORIES.items()}
+
 
 def single_policy_with_seeds(params, controller_files):
     """
-    Run policy scenarios using pre-saved controllers for consistency.
+    Run one scenario across the pre-saved controllers (one per seed, for
+    consistency) and stack each history across seeds.
+
+    Returns {history name: array of shape (n_seeds, n_steps, ...)} -- the exact
+    dict that gets pickled as outputs_BAU / outputs[pair] / outputs_<policy>.
     """
     num_cores = get_num_workers()
     res = Parallel(n_jobs=num_cores, verbose=0)(
         delayed(single_policy_simulation)(params, controller_files[i % len(controller_files)])
         for i in range(len(controller_files))
     )
-    
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr, 
-        history_car_age_arr, 
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr, 
-        history_total_utility_arr, 
-        history_market_concentration_arr,
-        history_total_profit_arr, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost,
-        history_total_utility_bottom,
-        history_ev_adoption_rate_bottom
-    ) = zip(*res)
 
-        # Return results as arrays where applicable
-    return (
-        np.asarray(history_driving_emissions_arr),#Emmissions flow
-        np.asarray(history_production_emissions_arr),
-        np.asarray(history_total_emissions_arr),#Emmissions flow
-        np.asarray(history_prop_EV_arr), 
-        np.asarray(history_car_age_arr), 
-        np.asarray(history_lower_percentile_price_ICE_EV_arr),
-        np.asarray(history_upper_percentile_price_ICE_EV_arr),
-        np.asarray(history_mean_price_ICE_EV_arr),
-        np.asarray(history_median_price_ICE_EV_arr), 
-        np.asarray(history_total_utility_arr), 
-        np.asarray(history_market_concentration_arr),
-        np.asarray(history_total_profit_arr),
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        np.asarray(history_mean_car_age),
-        np.asarray(history_past_new_bought_vehicles_prop_ev),
-        np.asarray(history_policy_net_cost),
-        np.asarray(history_total_utility_bottom),
-        np.asarray(history_ev_adoption_rate_bottom)
-    )
-
-
-def run_scenario(params, controller_files):
-    """
-    Run one scenario across the shared calibrated seeds and pack the histories
-    the plotting code reads. BAU, each low-intensity pair and each single-policy
-    reference all want exactly this dict, so they all go through here.
-    """
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr,
-        history_car_age_arr,
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr,
-        history_total_utility_arr,
-        history_market_concentration_arr,
-        history_total_profit_arr,
-        history_quality_ICE,
-        history_quality_EV,
-        history_efficiency_ICE,
-        history_efficiency_EV,
-        history_production_cost_ICE,
-        history_production_cost_EV,
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev,
-        history_policy_net_cost,
-        history_total_utility_bottom,
-        history_ev_adoption_rate_bottom
-    ) = single_policy_with_seeds(params, controller_files)
-
-    return {
-        "history_driving_emissions": history_driving_emissions_arr,
-        "history_production_emissions": history_production_emissions_arr,
-        "history_total_emissions": history_total_emissions_arr,
-        "history_prop_EV": history_prop_EV_arr,
-        "history_total_utility": history_total_utility_arr,
-        "history_market_concentration": history_market_concentration_arr,
-        "history_total_profit": history_total_profit_arr,
-        "history_mean_profit_margins_ICE": history_mean_profit_margins_ICE,
-        "history_mean_profit_margins_EV": history_mean_profit_margins_EV,
-        "history_policy_net_cost": history_policy_net_cost,
-        "history_mean_car_age": history_mean_car_age,
-        "history_lower_percentile_price_ICE_EV_arr": history_lower_percentile_price_ICE_EV_arr,
-        "history_upper_percentile_price_ICE_EV_arr": history_upper_percentile_price_ICE_EV_arr,
-        "history_mean_price_ICE_EV_arr": history_mean_price_ICE_EV_arr,
-        "history_median_price_ICE_EV_arr": history_median_price_ICE_EV_arr,
-        "history_past_new_bought_vehicles_prop_ev": history_past_new_bought_vehicles_prop_ev,
-        "history_total_utility_bottom": history_total_utility_bottom,
-        "history_ev_adoption_rate_bottom": history_ev_adoption_rate_bottom
-    }
+    return {name: np.asarray([seed_result[name] for seed_result in res])
+            for name in SCENARIO_HISTORIES}
 
 
 # Single-policy reference trajectories drawn on top of the pairs in Figure 5.
@@ -321,7 +227,7 @@ def main(fileNames,
 
     #RESET TO B SURE
     #RUN BAU
-    outputs_BAU = run_scenario(base_params, controller_files)
+    outputs_BAU = single_policy_with_seeds(base_params, controller_files)
 
     save_object(outputs_BAU, root_folder + "/Data", "outputs_BAU")
     print("DONE BAU")
@@ -342,7 +248,7 @@ def main(fileNames,
         params_policy = update_policy_intensity(params_policy, policy1, policy1_value)
         params_policy = update_policy_intensity(params_policy, policy2, policy2_value)
 
-        outputs[(policy1, policy2)] = run_scenario(params_policy, controller_files)
+        outputs[(policy1, policy2)] = single_policy_with_seeds(params_policy, controller_files)
 
     save_object(outputs, root_folder + "/Data", "outputs")
     save_object(base_params, root_folder + "/Data", "base_params")
@@ -366,7 +272,8 @@ def main(fileNames,
         print(f"Running single policy {policy} at intensity {intensity}")
 
         params_single = update_policy_intensity(deepcopy(base_params), policy, intensity)
-        save_object(run_scenario(params_single, controller_files), root_folder + "/Data", save_name)
+        save_object(single_policy_with_seeds(params_single, controller_files),
+                    root_folder + "/Data", save_name)
         print(f"DONE SINGLE {policy}")
 
     #######################################################################################################

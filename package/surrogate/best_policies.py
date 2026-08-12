@@ -132,17 +132,20 @@ def run_final_abm(
 
     results = single_policy_with_seeds(params, controller_files)
 
-    output = {
-        "history_driving_emissions":              results[0],
-        "history_production_emissions":           results[1],
-        "history_total_emissions":                results[2],
-        "history_prop_EV":                        results[3],
-        "history_total_utility":                  results[9],
-        "history_mean_price_ICE_EV_arr":          results[7],
-        "history_policy_net_cost":                results[22],
-        "history_mean_car_age":                   results[20],
-        "history_past_new_bought_vehicles_prop_ev": results[21],
-    }
+    # single_policy_with_seeds returns {history name: (n_seeds, n_steps, ...)},
+    # keyed by SCENARIO_HISTORIES. This used to index the same data positionally
+    # off a 25-tuple, which silently broke whenever that tuple changed shape.
+    output = {name: results[name] for name in (
+        "history_driving_emissions",
+        "history_production_emissions",
+        "history_total_emissions",
+        "history_prop_EV",
+        "history_total_utility",
+        "history_mean_price_ICE_EV_arr",
+        "history_policy_net_cost",
+        "history_mean_car_age",
+        "history_past_new_bought_vehicles_prop_ev",
+    )}
 
     if save:
         if results_dir is None:

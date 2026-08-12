@@ -4,16 +4,26 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64        # match "seed_repetitions" in the base_params saved inside the pair-gen folder
-#SBATCH --mem=32G                # DOUBLE the other three jobs on purpose: this script sets
-                                   # save_timeseries_data_state=1 and duration_future=312, so every one of
-                                   # the 64 workers holds full per-step history arrays, and each scenario's
-                                   # 64 of them are then stacked into one dict before being pickled.
-                                   # Check `seff <jobid>` after the first run and trim.
-#SBATCH --time=01:00:00           # Phase 1: 64 calibration runs (duration_future forced to 0)
+#SBATCH --cpus-per-task=16        # DELIBERATELY BELOW seed_repetitions=64. get_num_workers() feeds this to
+                                   # joblib as n_jobs, so it is also the cap on how many models are alive at
+                                   # once -- the main lever on peak memory. 64 workers on 32G (0.5G each) was
+                                   # OOM-killed on the first BAU scenario; the calibration phase before it,
+                                   # which forces duration_future=0 and pickles each controller straight out,
+                                   # finished fine in 34 s.
+#SBATCH --mem=128G                 # 8G per worker, 16x the per-worker headroom that just failed. This script
+                                   # sets save_timeseries_data_state=1 and duration_future=312, so each
+                                   # worker accumulates ~768 steps of history. The workers now only ship
+                                   # back the 18 series in SCENARIO_HISTORIES; the per-entity ones
+                                   # (history_car_age, ~18MB a run on its own, plus quality / efficiency /
+                                   # production cost) are still RECORDED in the model but no longer
+                                   # pickled home and stacked 64-deep in the parent, which is what blew up
+                                   # before. This is therefore a generous first estimate rather than a
+                                   # measured one -- read the real number off `seff <jobid>` and trim.
+#SBATCH --time=03:00:00           # Phase 1: 64 calibration runs (duration_future forced to 0) -- measured
+                                   # 34 s at 64-wide, so ~2.5 min at 16-wide.
                                    # Phase 2: BAU + ~10 low-intensity pairs + carbon tax + adoption subsidy
-                                   # = ~13 sequential 64-wide batches, but at duration_future=312 rather
-                                   # than 144, so each batch costs ~2x a pair-gen batch.
+                                   # = ~13 scenarios x 64 seeds at duration_future=312. At 16 workers that
+                                   # is 4 batches per scenario, ~25-40 min total. Padded; trim from seff.
 #SBATCH --partition=generic        # default partition on jupyter-torrenperaire (see `sinfo`); CPU-only, 10-day limit
 
 # Single-node: joblib fans out across CPUs on this one machine, there is no
