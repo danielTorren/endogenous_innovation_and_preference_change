@@ -1,7 +1,7 @@
 {
-    "seed_repetitions": 12,
-    "duration_burn_in_research": 0,
-    "duration_burn_in": 180,
+    "seed_repetitions": 64,
+    "duration_burn_in_research": 180,
+    "duration_burn_in": 90,
     "duration_calibration": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
@@ -46,7 +46,7 @@
     "parameters_second_hand":{
         "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.5,
-        "burn_in_second_hand_market": 12,
+        "burn_in_second_hand_market": 0,
         "scrap_price": 669.8
     },
     "parameters_ICE":{
@@ -57,7 +57,7 @@
         "rho":[1,0.5,0],
         "stretch_Quality": 1.0,
         "stretch_Efficiency": 1.0,
-        "stretch_Cost": 2.0,
+        "stretch_Cost": 1.75,
         "production_emissions":10000,
         "delta": 0.00222,
         "delta_P": 0.0087,
@@ -78,7 +78,7 @@
         "A": 4,
         "rho":[1,0.5,0,0.5],
         "stretch_Efficiency": 1.0,
-        "stretch_Cost": 2.0,
+        "stretch_Cost": 1.75,
         "stretch_Battery_size": 3.0,
         "delta_P":0.0116,
         "production_emissions":14000,
@@ -92,8 +92,12 @@
     },
     "parameters_firm_manager": {
         "J": 10,
-        "init_car_age_mean": 0,
-        "init_car_age_std": 0,
+        "init_car_age_mean": 192,
+        "init_car_age_std": 129,
+        "init_car_age_max": 600,
+        "init_car_sellable": true,
+        "init_firm_placement": "worst_pool",
+        "init_firm_pool_prop": 0.05,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 8,

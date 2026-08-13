@@ -684,11 +684,34 @@ def plot_calibration_targets(base_params, fileName, outputs, dpi=200):
     ax.plot(time_steps, mean_width, color=C_ORANGE, label="used price spread, p90 - p10")
     ax.fill_between(time_steps, mean_width - ci_width, mean_width + ci_width, color=C_ORANGE, alpha=0.15)
     q_end, p_end = _final_mean(mean_qual), _final_mean(mean_width)
-    ax.set_title(f"Used market: quality spread vs price spread\n"
-                 f"final year \\${q_end:,.0f} vs \\${p_end:,.0f}  "
-                 f"(ratio {q_end/p_end:.2f}, want order 1)", fontsize=13)
     ax.set_ylabel("Dollars", fontsize=14)
     ax.set_ylim(0, max(np.nanpercentile(mean_width, 95), np.nanpercentile(mean_qual, 95))*1.6)
+
+    # The ratio itself, on a twin axis. The two dollar series show where it comes
+    # from, but only the ratio is comparable across runs, and it is what has to
+    # stay near 1 -- so it gets a drawn line and a target rather than a number in
+    # the title. It is the check on compressing stretch_Cost: that pulls the
+    # new-car price IQR down towards target, but it can do so by flattening the
+    # quality-cost ladder instead of tightening the market, and only this panel
+    # tells the two apart. Ratio near 1 means trading down to a cheaper car costs
+    # real utility; well below 1 means it is nearly free and the fleet churns.
+    ax_r = ax.twinx()
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio_series = qual_spread/np.where(used_width == 0, np.nan, used_width)
+    mean_ratio, ci_ratio = mean_and_ci(ratio_series)
+    ax_r.axhline(1.0, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    ax_r.plot(time_steps, mean_ratio, color=C_PINK, linewidth=1.8,
+              label="quality / price ratio (right axis)")
+    ax_r.fill_between(time_steps, mean_ratio - ci_ratio, mean_ratio + ci_ratio,
+                      color=C_PINK, alpha=0.15)
+    ax_r.set_ylabel("Quality spread / price spread", fontsize=12)
+    ax_r.set_ylim(0, max(2.0, np.nanpercentile(mean_ratio, 95)*1.3))
+    # Own legend: the shared loop below only walks axs.flat, so the twin would
+    # otherwise be unlabelled.
+    ax_r.legend(loc="upper right", fontsize=10)
+    ax.set_title(f"Used market: quality spread vs price spread\n"
+                 f"final year \\${q_end:,.0f} vs \\${p_end:,.0f}  "
+                 f"(ratio {_final_mean(mean_ratio):.2f}, want order 1)", fontsize=13)
 
     # ---- 3. HHI ------------------------------------------------------------
     ax = axs[1, 0]

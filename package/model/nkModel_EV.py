@@ -135,6 +135,11 @@ class NKModel_EV:
         min_fitness = fitness_values[min_index]
         min_fitness_string = binary_strings[min_index]
 
+        # The sampled designs ranked worst-first. Placing every firm one bit-flip
+        # from min_fitness_string puts them all in a single basin; this lets them
+        # be spread across the bad end of the landscape instead.
+        self.sampled_strings_ranked = binary_strings[np.argsort(fitness_values)]
+
         # Populate attributes_dict
         attributes_dict = dict(zip(binary_strings, attributes_list))
 

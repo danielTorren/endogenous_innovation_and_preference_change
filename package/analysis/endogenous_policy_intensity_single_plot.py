@@ -185,4 +185,4 @@ def main(file_name):
 
 
 if __name__ == "__main__":
-    main(file_name="results/endog_single_19_34_26__11_08_2026")
+    main(file_name="results/endog_pair_15_10_05__13_08_2026")

@@ -16,6 +16,12 @@ import itertools
 from scipy.stats import lognorm
 from copy import deepcopy
 
+# Offset used to derive a dedicated substream for initial-condition draws (fleet
+# ages, firm placement) from `seed`. Kept separate from self.random_state so that
+# switching the new initialisation on does not consume draws from -- and thereby
+# shift -- the stream every other component shares.
+INIT_SEED_OFFSET = 100000
+
 class Controller:
     """
     Controller class orchestrates interactions between agents in a vehicle market simulation
@@ -289,6 +295,14 @@ class Controller:
         self.parameters_social_network["random_state"] = self.random_state
         self.parameters_firm["random_state"] = self.random_state
         self.parameters_second_hand["random_state"] = self.random_state
+
+        #Initial conditions get their own substream off `seed`, so that the fleet
+        #age draw and the firm placement draw vary across replicates (the NK
+        #landscape stays pinned to seed_inputs) without shifting self.random_state.
+        self.random_state_init = np.random.RandomState(
+            self.parameters_controller["seed"] + INIT_SEED_OFFSET
+        )
+        self.parameters_firm_manager["random_state_init"] = self.random_state_init
 
     def gen_users_parameters(self):
         """

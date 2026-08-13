@@ -83,7 +83,7 @@ if __name__ == "__main__":
     "parameters_second_hand":{
         "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.5,
-        "burn_in_second_hand_market": 12,
+        "burn_in_second_hand_market": 0,
         "scrap_price": 669.8
     },
     "parameters_ICE":{
@@ -129,8 +129,12 @@ if __name__ == "__main__":
     },
     "parameters_firm_manager": {
         "J": 10,
-        "init_car_age_mean": 0,
-        "init_car_age_std": 0,
+        "init_car_age_mean": 192,
+        "init_car_age_std": 129,
+        "init_car_age_max": 600,
+        "init_car_sellable": True,
+        "init_firm_placement": "worst_pool",
+        "init_firm_pool_prop": 0.05,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 8,
