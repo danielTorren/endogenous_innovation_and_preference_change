@@ -54,7 +54,10 @@
         "N": 15,
         "K": 3,
         "A": 3,
-        "rho":[1,0,0],
+        "rho":[1,0.5,0.25],
+        "stretch_Quality": 3.0,
+        "stretch_Efficiency": 1.0,
+        "stretch_Cost": 3.0,
         "production_emissions":10000,
         "delta": 0.00222,
         "delta_P": 0.0087,
@@ -65,7 +68,7 @@
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 5000,
+        "min_Cost": 15000,
         "max_Cost": 70000
     }, 
     "parameters_EV":{
@@ -73,7 +76,10 @@
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0,0,0],
+        "rho":[1,0.5,0.25,0.75],
+        "stretch_Efficiency": 1.0,
+        "stretch_Cost": 3.0,
+        "stretch_Battery_size": 3.0,
         "delta_P":0.0116,
         "production_emissions":14000,
         "transportType": 3,
@@ -81,7 +87,7 @@
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 5000,
+        "min_Cost": 15000,
         "max_Cost": 70000
     },
     "parameters_firm_manager": {

@@ -34,9 +34,13 @@ class Controller:
 
         self.unpack_controller_parameters(parameters_controller)
         
-        self.parameters_EV["delta"] = self.parameters_ICE["delta"] 
-        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
+        self.parameters_EV["delta"] = self.parameters_ICE["delta"]
+        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
         self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
+        # Quality is compared ACROSS drivetrains in the choice utility, so the two
+        # landscapes must share the whole quality mapping, not just its bounds.
+        # See the stretch_vec comment in nkModel_ICE.
+        self.parameters_EV["stretch_Quality"] = self.parameters_ICE.get("stretch_Quality", 1.0)
 
         self.handle_seed()
 

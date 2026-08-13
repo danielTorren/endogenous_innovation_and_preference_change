@@ -71,6 +71,35 @@ class Social_Network:
         # the whole fleet.
         self.history_mean_car_age_fleet = []
 
+        # Calibration-target diagnostics, recorded every step by
+        # record_calibration_targets() independently of save_timeseries_data_state,
+        # for the same reason as history_mean_car_age_fleet above: they are matched
+        # against observed target ranges, so they must survive a run with the
+        # timeseries save path off.
+        #   history_new_car_price_quantiles  [p25, p50, p75] of prices PAID for new
+        #       cars over a trailing 12-month window. Transaction prices, not
+        #       list prices, because the target (Grieco, Murry & Yurukoglu 2024,
+        #       25th pct $32,359 / 75th pct $57,785) is a transaction distribution.
+        #   history_used_car_price_quantiles [p10, p50, p90] of prices PAID used,
+        #       same window. The comparator for the quality spread below.
+        #   history_used_stock_quality_spread  median_beta * sd(Q**alpha) over the
+        #       current second-hand stock, in dollars. This is how much of a
+        #       utility difference the whole quality range of the used stock is
+        #       worth to a median consumer. While it is small next to the used
+        #       PRICE range, trading down for cash stays profitable and the fleet
+        #       churns; the two series are meant to be read against each other.
+        self.history_new_car_price_quantiles = []
+        self.history_used_car_price_quantiles = []
+        self.history_used_stock_quality_spread = []
+        # Trailing-window buffers of transaction prices, one list per step, capped
+        # at 12 steps. The per-step lists are appended to in user_chooses()
+        # outside the save gate and rolled into the window by
+        # record_calibration_targets().
+        self._new_price_window = []
+        self._used_price_window = []
+        self._new_prices_this_step = []
+        self._used_prices_this_step = []
+
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
         self.init_initial_state(parameters_social_network)
@@ -355,6 +384,10 @@ class Social_Network:
 
         self.new_bought_vehicles = []#track list of new vehicles
         self.second_hand_bought = 0#track number of second hand bought
+        # Transaction prices for this step, collected regardless of the save
+        # gate -- see record_calibration_targets().
+        self._new_prices_this_step = []
+        self._used_prices_this_step = []
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
         
         #########################################################
@@ -781,6 +814,8 @@ class Social_Network:
                 self.second_hand_merchant.remove_car(vehicle_chosen)#REmove it last in case of issue of removing and the obeject disappearing
                 self.second_hand_merchant.income += user.vehicle.price
 
+                self._used_prices_this_step.append(user.vehicle.price)#always-on, see record_calibration_targets
+
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_second_hand.append(user.vehicle.price)
                     self.buy_second_hand_car+= 1
@@ -795,6 +830,9 @@ class Social_Network:
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
                 user.vehicle = PersonalCar(personalCar_id, vehicle_chosen.firm, user.user_id, vehicle_chosen.component_string, vehicle_chosen.parameters, vehicle_chosen.attributes_fitness, vehicle_chosen.price)
+
+                self._new_prices_this_step.append(user.vehicle.price)#always-on, see record_calibration_targets
+
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_new.append(user.vehicle.price)
                     self.buy_new_car+=1
@@ -1640,6 +1678,46 @@ class Social_Network:
         """
         self.history_mean_car_age_fleet.append(float(np.mean(self._cv_cache["L_a_t"])))
 
+    def record_calibration_targets(self):
+        """
+        Record the transaction-price and quality-spread diagnostics.
+
+        See the history_* declarations in __init__ for what each series is and
+        which observed target it is compared against. Called from next_step()
+        beside update_mean_car_age(), so index t lines up across all of them.
+
+        Quantiles are taken over a trailing 12-month window of transactions
+        rather than the current step, because a single month's new-car sales are
+        few enough (a couple of hundred out of 3000 agents) that per-step
+        quantiles are mostly sampling noise.
+
+        NaN is recorded for a window with no transactions in it, which is the
+        honest value: there is no price distribution to report. Downstream plots
+        must therefore be NaN-tolerant.
+        """
+        self._new_price_window.append(self._new_prices_this_step)
+        self._used_price_window.append(self._used_prices_this_step)
+        if len(self._new_price_window) > 12:
+            self._new_price_window.pop(0)
+            self._used_price_window.pop(0)
+
+        new_prices = [p for step in self._new_price_window for p in step]
+        used_prices = [p for step in self._used_price_window for p in step]
+
+        self.history_new_car_price_quantiles.append(
+            list(np.percentile(new_prices, [25, 50, 75])) if new_prices else [np.nan]*3)
+        self.history_used_car_price_quantiles.append(
+            list(np.percentile(used_prices, [10, 50, 90])) if used_prices else [np.nan]*3)
+
+        # Dollar value, to a median consumer, of the whole quality range on offer
+        # in the used stock. Compared against the used price range recorded above.
+        if self.second_hand_cars:
+            quality = _attr_array(self.second_hand_cars, "Quality_a_t")
+            spread = self.beta_median*float(np.std(quality**self.alpha))
+        else:
+            spread = np.nan
+        self.history_used_stock_quality_spread.append(spread)
+
     def calc_price_mean_max_min(self):
         """
         Compute mean, min, and max prices among new cars.
@@ -1754,6 +1832,7 @@ class Social_Network:
 
         self.update_EV_stock()
         self.update_mean_car_age()
+        self.record_calibration_targets()
 
         self.t_social_network +=1
         

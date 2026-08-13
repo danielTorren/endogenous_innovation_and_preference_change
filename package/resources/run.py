@@ -317,6 +317,11 @@ MULTI_SEED_ARRAY_KEYS = (
     "history_total_profit",
     "history_mean_car_age",
     "history_past_new_bought_vehicles_prop_ev",
+    # Calibration-target diagnostics — see Social_Network.record_calibration_targets.
+    "history_mean_car_age_fleet",
+    "history_new_car_price_quantiles",
+    "history_used_car_price_quantiles",
+    "history_used_stock_quality_spread",
 )
 
 
@@ -354,6 +359,14 @@ def generate_multi_seed(params: dict):
         "history_mean_car_age": social_network.history_mean_car_age,
         "history_past_new_bought_vehicles_prop_ev": firm_manager.history_past_new_bought_vehicles_prop_ev,
         "cars_on_sale": firm_manager.cars_on_sale_all_firms,
+        # Calibration-target diagnostics — see Social_Network.record_calibration_targets.
+        # history_mean_car_age_fleet is the WHOLE-FLEET mean age, which is what the
+        # 10-12 year target refers to; history_mean_car_age above averages only the
+        # vehicles chosen this step.
+        "history_mean_car_age_fleet": social_network.history_mean_car_age_fleet,
+        "history_new_car_price_quantiles": social_network.history_new_car_price_quantiles,
+        "history_used_car_price_quantiles": social_network.history_used_car_price_quantiles,
+        "history_used_stock_quality_spread": social_network.history_used_stock_quality_spread,
     }
 
 def parallel_run_multi_seed(params_list):
