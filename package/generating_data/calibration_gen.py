@@ -33,6 +33,7 @@ SAVED_KEYS = (
     "history_new_car_price_quantiles",
     "history_used_car_price_quantiles",
     "history_used_stock_quality_spread",
+    "history_purchase_counts",
 )
 
 

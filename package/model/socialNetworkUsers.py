@@ -47,6 +47,13 @@ class Social_Network:
 
         self.d_vec = parameters_social_network["d_vec"]
 
+        # Consideration-set sizes: how many new / second-hand cars a switcher
+        # actually evaluates. None (or a value >= the number available) means the
+        # whole market, which is the original behaviour. See
+        # apply_consideration_sets for why this exists.
+        self.num_new_considered = parameters_social_network.get("num_new_considered", None)
+        self.num_second_hand_considered = parameters_social_network.get("num_second_hand_considered", None)
+
         # Agent income, aligned with beta_vec (see controller.gen_beta). Read
         # only for distributional reporting -- no choice or pricing logic uses
         # it. Optional so that parameter dicts written before it existed still
@@ -88,9 +95,19 @@ class Social_Network:
         #       worth to a median consumer. While it is small next to the used
         #       PRICE range, trading down for cash stays profitable and the fleet
         #       churns; the two series are meant to be read against each other.
+        #   history_purchase_counts  [new, used, opportunities] per step, raw counts.
+        #       "opportunities" is the number of agents who got to choose this step
+        #       (the switchers), so the two ratios the calibration targets are
+        #           used share of purchases = used / (new + used)
+        #           P(buy | opportunity)    = (new + used) / opportunities
+        #       Kept as raw counts rather than pre-computed ratios so a trailing
+        #       window can be applied downstream without weighting artefacts:
+        #       a ratio of sums is not the mean of per-step ratios.
         self.history_new_car_price_quantiles = []
         self.history_used_car_price_quantiles = []
         self.history_used_stock_quality_spread = []
+        self.history_purchase_counts = []
+        self.num_switchers_this_step = 0
         # Trailing-window buffers of transaction prices, one list per step, capped
         # at 12 steps. The per-step lists are appended to in user_chooses()
         # outside the save gate and rolled into the window by
@@ -398,6 +415,11 @@ class Social_Network:
         num_switchers = len(switcher_indices)
         non_switcher_indices = np.where(~switch_draws)[0]  # e.g., [0, 1, 3, 4, 6, ...]
 
+        # Denominator of P(buy | opportunity), so recorded outside the save gate.
+        # self.num_switchers below is the same number but is gated, and is left
+        # alone because the existing instrumentation reads it.
+        self.num_switchers_this_step = num_switchers
+
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow = 0#MEASURIBNG THE FLOW
             self.zero_util_count = 0#tracking if are people actually choosing or beign forced to choose the same
@@ -508,6 +530,8 @@ class Social_Network:
         available_and_current_vehicles_list = buying_vehicles_list + CV_filtered_vehicles# ITS CURRENT VEHICLES AND NOT FILTERED VEHCILES AS THE SHUFFLING INDEX DOENST ACCOUNT FOR THE FILTERING
 
         utilities_kappa = self.masking_options(self.utilities_matrix_switchers, available_and_current_vehicles_list, self.consider_ev_vec[switcher_indices])
+
+        self.apply_consideration_sets(utilities_kappa, len(self.new_cars), num_buying_columns)
 
         #########################################################################################################################
         # Create a mapping from global to reduced indices. Built over plain
@@ -720,6 +744,60 @@ class Social_Network:
             np.nan_to_num(utilities_kappa, nan=0.0, copy=False)
 
         return utilities_kappa
+
+    def apply_consideration_sets(self, utilities_kappa, num_new, num_buying_columns):
+        """
+        Restrict each switcher to a random subset of the cars on offer.
+
+        A buyer does not evaluate every listing in the market. Without this, the
+        share going to each channel is driven by how many COLUMNS it has rather
+        than by how attractive its cars are: the used block is ~1500 columns
+        against ~46 new ones, and with a logit scale of 1/kappa the sheer count
+        decides the split. Worse, the best of ~1500 used cars beats the agent's
+        own car by an order-statistics margin regardless of how good that car is,
+        which is what drives the fleet to change hands roughly annually.
+
+        Each agent gets an independent sample, redrawn every step, because the
+        alternative -- one shared sample per timestep -- is not a search friction
+        but simply a smaller market, and it concentrates contention on whoever
+        happens to choose first in the shuffle.
+
+        Implemented as a mask on the already-exponentiated matrix rather than by
+        gathering a narrower one: a zero entry can never be selected by the
+        cumulative-sum draw in user_chooses, so this is behaviourally identical to
+        sampling while leaving the global column indexing, the shared vehicle
+        list, and the second-hand contention logic untouched. It therefore costs
+        the same to build the matrix as before; narrowing it is a later
+        optimisation, not a correctness requirement.
+
+        The current-car columns (from num_buying_columns on) are never masked --
+        keeping your own car is always an option.
+
+        Args:
+            utilities_kappa: (switchers x columns) exponentiated utilities, modified in place.
+            num_new: number of leading columns that are new cars.
+            num_buying_columns: total new + second-hand columns.
+        """
+        if self.num_new_considered is None and self.num_second_hand_considered is None:
+            return
+
+        num_rows = utilities_kappa.shape[0]
+        if num_rows == 0:
+            return
+
+        blocks = ((0, num_new, self.num_new_considered),
+                  (num_new, num_buying_columns, self.num_second_hand_considered))
+
+        for start, stop, num_considered in blocks:
+            width = stop - start
+            if num_considered is None or width <= num_considered:
+                continue
+            # Per row, keep the num_considered columns with the smallest random
+            # keys: a uniform sample without replacement. argpartition is O(width)
+            # per row rather than the O(width log width) of a full sort.
+            keys = self.random_state.rand(num_rows, width)
+            dropped = np.argpartition(keys, num_considered, axis=1)[:, num_considered:]
+            np.put_along_axis(utilities_kappa[:, start:stop], dropped, 0.0, axis=1)
 
     def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start, u_draw):
         """
@@ -1695,6 +1773,12 @@ class Social_Network:
         honest value: there is no price distribution to report. Downstream plots
         must therefore be NaN-tolerant.
         """
+        # The price buffers double as the purchase counters: one entry is appended
+        # per transaction in user_chooses, outside the save gate.
+        self.history_purchase_counts.append(
+            [len(self._new_prices_this_step), len(self._used_prices_this_step),
+             self.num_switchers_this_step])
+
         self._new_price_window.append(self._new_prices_this_step)
         self._used_price_window.append(self._used_prices_this_step)
         if len(self._new_price_window) > 12:

@@ -322,6 +322,7 @@ MULTI_SEED_ARRAY_KEYS = (
     "history_new_car_price_quantiles",
     "history_used_car_price_quantiles",
     "history_used_stock_quality_spread",
+    "history_purchase_counts",
 )
 
 
@@ -367,6 +368,7 @@ def generate_multi_seed(params: dict):
         "history_new_car_price_quantiles": social_network.history_new_car_price_quantiles,
         "history_used_car_price_quantiles": social_network.history_used_car_price_quantiles,
         "history_used_stock_quality_spread": social_network.history_used_stock_quality_spread,
+        "history_purchase_counts": social_network.history_purchase_counts,
     }
 
 def parallel_run_multi_seed(params_list):

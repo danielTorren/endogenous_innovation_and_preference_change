@@ -37,6 +37,29 @@ TARGET_NEW_PRICE_P75 = 57784.66
 TARGET_HHI = (0.11, 0.18)
 TARGET_FLEET_AGE_YEARS = (10, 12)
 
+# Transaction-volume and channel-mix targets, built from US light-vehicle data.
+# 2023: 15.46M new (NADA Market Beat), 19.0M used RETAIL and 35.9M used in total
+# including wholesale (Cox Automotive), 286M vehicles in operation at Jan 2024
+# (S&P Global Mobility).
+#
+# Which used figure applies is a modelling choice, and it moves the target a lot.
+# The model has one merchant intermediating every used sale, and each transaction
+# puts a car with a new end user, so wholesale dealer-to-dealer moves should be
+# excluded while private-party sales should be included. Retail-only gives a used
+# share of 19.0/(19.0+15.46) = 0.55; all used transactions give 0.70; the paper's
+# own cited figure (74%) sits at the broad end. The band spans that disagreement
+# and the midpoint assumes retail plus roughly 12M private-party sales.
+TARGET_USED_SHARE = (0.55, 0.74)
+TARGET_USED_SHARE_MID = 0.67
+
+# P(a given car changes owner in a year). Transactions over fleet: (15.46 + 31)/286
+# = 0.16 on the mid definition, 0.12 retail-only, 0.18 counting wholesale. It also
+# agrees with the ownership-duration route, since S&P Global Mobility report
+# ownership of five years or less for nearly two thirds of Americans, i.e. a mean
+# near six years, giving 1/6 = 0.17.
+TARGET_PROB_BUY = (0.12, 0.18)
+TARGET_PROB_BUY_MID = 0.16
+
 # Okabe-Ito, as used by the dashboards below.
 C_BLUE, C_ORANGE, C_GREEN, C_PINK = "#0072B2", "#D55E00", "#009E73", "#CC79A7"
 C_TARGET = "#666666"
@@ -608,8 +631,29 @@ def plot_calibration_targets(base_params, fileName, outputs, dpi=200):
     hhi = np.asarray(outputs["history_market_concentration"], dtype=float)[:, burn_in:]
     age_years = np.asarray(outputs["history_mean_car_age_fleet"], dtype=float)[:, burn_in:] / 12
 
+    # Purchase counts -> the two ratio targets. Rolling 12-month RATIO OF SUMS,
+    # not a mean of per-step ratios: months with few transactions would otherwise
+    # get the same weight as busy ones, and a month with zero purchases has an
+    # undefined used share.
+    counts = np.asarray(outputs["history_purchase_counts"], dtype=float)[:, burn_in:, :]
+    win = np.ones(12)
+    def roll(x):
+        return np.apply_along_axis(lambda v: np.convolve(v, win, mode="valid"), 1, x)
+    r_new, r_used, r_opp = roll(counts[:, :, 0]), roll(counts[:, :, 1]), roll(counts[:, :, 2])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        used_share = r_used/(r_new + r_used)
+        # Transactions per vehicle per year is the OBSERVABLE, so that is what the
+        # target band applies to. Dividing by switch opportunities instead would
+        # compare against a quantity that only exists inside the model, since the
+        # opportunity rate IS the prob_switch_car assumption. The two coincide at
+        # prob_switch_car = 1/12 (one opportunity per agent per year) and diverge
+        # as soon as it is recalibrated, which is the whole point of the panel.
+        turnover = (r_new + r_used)/base_params["parameters_social_network"]["num_individuals"]
+        prob_buy = (r_new + r_used)/r_opp
+    ratio_steps = np.arange(len(win) - 1, len(win) - 1 + used_share.shape[1])
+
     time_steps = np.arange(new_q.shape[1])
-    fig, axs = plt.subplots(2, 2, figsize=(16, 9))
+    fig, axs = plt.subplots(3, 2, figsize=(16, 13))
 
     # ---- 1. New-car transaction prices vs the observed p25-p75 -------------
     ax = axs[0, 0]
@@ -668,6 +712,40 @@ def plot_calibration_targets(base_params, fileName, outputs, dpi=200):
     ax.set_ylabel("Age, years", fontsize=14)
     ax.set_ylim(0, max(TARGET_FLEET_AGE_YEARS[1]*1.3, np.nanpercentile(mean, 95)*1.3))
 
+    # ---- 5. Used share of purchases -----------------------------------------
+    ax = axs[2, 0]
+    _target_band(ax, *TARGET_USED_SHARE, "Observed range (definition-dependent)")
+    ax.axhline(TARGET_USED_SHARE_MID, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    mean, ci = mean_and_ci(used_share)
+    ax.plot(ratio_steps, mean, color=C_ORANGE, label="used / (new + used), 12-mo")
+    ax.fill_between(ratio_steps, mean - ci, mean + ci, color=C_ORANGE, alpha=0.2)
+    ax.set_title(f"Used share of purchases\nfinal-year {_final_mean(mean):.3f} "
+                 f"vs target {TARGET_USED_SHARE_MID:.2f} "
+                 f"({TARGET_USED_SHARE[0]:.2f}-{TARGET_USED_SHARE[1]:.2f})", fontsize=13)
+    ax.set_ylabel("Share of purchases", fontsize=14)
+    ax.set_ylim(0, 1)
+
+    # ---- 6. Transaction volume ---------------------------------------------
+    # The banded series is the observable. P(buy | opportunity) is drawn alongside
+    # as a diagnostic, unbanded, because it is what the choice model can actually
+    # move: turnover = 12 * prob_switch_car * P(buy | opportunity), so if P(buy)
+    # bottoms out well above target, the residual has to come from the
+    # opportunity rate.
+    ax = axs[2, 1]
+    _target_band(ax, *TARGET_PROB_BUY, "Observed range")
+    ax.axhline(TARGET_PROB_BUY_MID, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    mean, ci = mean_and_ci(turnover)
+    ax.plot(ratio_steps, mean, color=C_GREEN, label="transactions per vehicle per year")
+    ax.fill_between(ratio_steps, mean - ci, mean + ci, color=C_GREEN, alpha=0.2)
+    mean_pb, _ = mean_and_ci(prob_buy)
+    ax.plot(ratio_steps, mean_pb, color=C_GREEN, linestyle=":", alpha=0.7,
+            label="P(buy | opportunity), diagnostic")
+    ax.set_title(f"Transaction volume\nfinal-year {_final_mean(mean):.3f} per vehicle/yr "
+                 f"vs target {TARGET_PROB_BUY_MID:.2f} "
+                 f"({TARGET_PROB_BUY[0]:.2f}-{TARGET_PROB_BUY[1]:.2f})", fontsize=13)
+    ax.set_ylabel("Per vehicle per year", fontsize=14)
+    ax.set_ylim(0, 1)
+
     for ax in axs.flat:
         add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=[0.9, 0.9, 0.9])
         ax.legend(loc="upper left", fontsize=10)
@@ -697,6 +775,13 @@ def plot_calibration_targets(base_params, fileName, outputs, dpi=200):
           f"(ratio {q_end/p_end:.2f})")
     print(f"  HHI                     {_final_mean(mean_and_ci(hhi)[0]):>10.3f}   target {TARGET_HHI}")
     print(f"  fleet mean age, years   {_final_mean(mean_and_ci(age_years)[0]):>10.1f}   target {TARGET_FLEET_AGE_YEARS}")
+    print(f"  used share of purchases {_final_mean(mean_and_ci(used_share)[0]):>10.3f}   target {TARGET_USED_SHARE_MID} {TARGET_USED_SHARE}")
+    turnover_now = _final_mean(mean_and_ci(turnover)[0])
+    prob_buy_now = _final_mean(mean_and_ci(prob_buy)[0])
+    print(f"  transactions/vehicle/yr {turnover_now:>10.3f}   target {TARGET_PROB_BUY_MID} {TARGET_PROB_BUY}")
+    print(f"    P(buy | opportunity)  {prob_buy_now:>10.3f}   -> prob_switch_car implied by the target: "
+          f"{TARGET_PROB_BUY_MID/(12*prob_buy_now):.4f} "
+          f"(currently {base_params['parameters_social_network']['prob_switch_car']})")
 
 
 ####################################################################################
