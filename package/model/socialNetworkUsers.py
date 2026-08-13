@@ -14,6 +14,10 @@ from package.model.secondHandMerchant import _attr_array
 # ranges could ever legitimately produce.
 MAX_LIFECYCLE_COST_TERM = 1e8
 
+# Number of income groups used for distributional reporting. See
+# Social_Network.init_income_deciles.
+NUM_INCOME_DECILES = 10
+
 class Social_Network:
     def __init__(self, parameters_social_network: dict, parameters_vehicle_user: dict):
         """
@@ -42,6 +46,12 @@ class Social_Network:
         self.nu_vec = parameters_social_network["nu_vec"]
 
         self.d_vec = parameters_social_network["d_vec"]
+
+        # Agent income, aligned with beta_vec (see controller.gen_beta). Read
+        # only for distributional reporting -- no choice or pricing logic uses
+        # it. Optional so that parameter dicts written before it existed still
+        # load; the income-decile time series are then simply not recorded.
+        self.income_vec = parameters_social_network.get("income_vec", None)
 
         self.alpha = parameters_social_network["alpha"]
         self.zeta = parameters_social_network["zeta"]
@@ -72,6 +82,8 @@ class Social_Network:
         self.num_rich = self.num_individuals*0.1
 
         self.gamma_median = np.median(self.gamma_vec)
+
+        self.init_income_deciles()
 
         self.emissions_cumulative = 0
         self.emissions_cumulative_production = 0
@@ -144,6 +156,39 @@ class Social_Network:
         self.save_timeseries_data_state = parameters_social_network["save_timeseries_data_state"]
         self.compression_factor_state = parameters_social_network["compression_factor_state"]
         self.carbon_price =  parameters_social_network["carbon_price"]
+
+    def init_income_deciles(self):
+        """
+        Partition the population into income deciles for distributional reporting.
+
+        Builds self.income_decile_idx, a list of NUM_INCOME_DECILES index arrays
+        ordered poorest first, so decile 0 is the bottom 10% of incomes and
+        decile 9 the top 10%. Computed once: income is fixed for the whole run.
+
+        Deciles are cut on the empirical quantiles of income_vec and assigned
+        with searchsorted, so the group sizes are equal up to ties and up to
+        num_individuals not dividing by ten exactly.
+
+        This replaces beta percentiles as the basis for "rich" and "poor" in the
+        reported adoption series. beta is a willingness to pay for quality that
+        happens to be proportional to income (controller.gen_beta), so ranking
+        on it gives the same ordering today, but it would stop doing so the
+        moment any other parameter is made income-dependent, or beta is given
+        an idiosyncratic taste component. Income is the primitive, so report on
+        income.
+
+        Sets self.income_decile_idx to None when no income_vec was supplied,
+        which the recording path checks.
+        """
+        if self.income_vec is None:
+            self.income_decile_idx = None
+            return
+
+        edges = np.quantile(self.income_vec, np.linspace(0, 1, NUM_INCOME_DECILES + 1)[1:-1])
+        decile_of_agent = np.searchsorted(edges, self.income_vec, side="right")
+        self.income_decile_idx = [
+            np.flatnonzero(decile_of_agent == d) for d in range(NUM_INCOME_DECILES)
+        ]
 
     def init_network_settings(self, parameters_social_network):
         """
@@ -1282,6 +1327,11 @@ class Social_Network:
         self.history_ev_adoption_rate = []
         self.history_ev_adoption_rate_top = []
         self.history_ev_adoption_rate_bottom = []
+        # One list of NUM_INCOME_DECILES adoption rates per recorded timestep,
+        # poorest decile first. The beta-based _top/_bottom series above are
+        # kept as they are, because existing analysis scripts read them
+        # (see package/analysis/low_policy_intensity_gen.py).
+        self.history_ev_adoption_rate_income_decile = []
         self.history_consider_ev_rate = []
         self.history_consider_ev = []
         self.history_ICE_users = []
@@ -1482,6 +1532,14 @@ class Social_Network:
         ev_adoption_rate_bottom = np.mean([i for i, j in zip(self.ev_adoption_vec, self.beta_vec) if j < self.beta_median])
         self.history_ev_adoption_rate_top.append(ev_adoption_rate_top)
         self.history_ev_adoption_rate_bottom.append(ev_adoption_rate_bottom)
+
+        # EV adoption within each income decile, poorest first. The decile index
+        # arrays are fixed for the run, so this is one masked mean per decile.
+        if self.income_decile_idx is not None:
+            ev_adoption_vec = np.asarray(self.ev_adoption_vec)
+            self.history_ev_adoption_rate_income_decile.append(
+                [float(np.mean(ev_adoption_vec[idx])) for idx in self.income_decile_idx]
+            )
 
         self.history_consider_ev_rate.append(np.mean(self.consider_ev_vec))
         self.history_consider_ev.append(self.consider_ev_vec)

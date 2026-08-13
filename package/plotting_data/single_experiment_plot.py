@@ -33,6 +33,42 @@ def save_and_show(fig, fileName, plot_name, dpi=300, annotation_height_prop= [0.
     ensure_directory_exists(save_path)
     fig.savefig(f"{save_path}/{plot_name}.png", dpi=dpi, format="png")
 
+# Income deciles are an ORDERED group, so they get a sequential single-hue ramp
+# light (poorest) to dark (richest), not a categorical or rainbow scale: the
+# reader has to be able to see the income gradient itself, not just tell the
+# lines apart. The range is clipped away from the extremes of the ramp so the
+# lightest line stays visible on white and the darkest is not pure black.
+INCOME_DECILE_CMAP = "Blues"
+INCOME_DECILE_RAMP_RANGE = (0.28, 0.95)
+
+
+def income_decile_colours(num_deciles):
+    """Sequential colours for the income deciles, poorest (light) first."""
+    cmap = plt.get_cmap(INCOME_DECILE_CMAP)
+    return [cmap(x) for x in np.linspace(*INCOME_DECILE_RAMP_RANGE, num_deciles)]
+
+
+def get_ev_adoption_by_income_decile(base_params, social_network, time_series):
+    """
+    EV adoption rate per income decile over the post-burn-in period.
+
+    Returns:
+        tuple: (time axis, (T x num_deciles) array with the poorest decile in
+        column 0), or (None, None) when the run predates the income-decile
+        series, so callers can fall back or skip rather than raise.
+    """
+    history = getattr(social_network, "history_ev_adoption_rate_income_decile", None)
+    if not history:
+        return None, None
+
+    decile_series = np.asarray(history)[base_params["duration_burn_in"]:]
+    # Trim to the shorter of the two: the time axis is derived from the
+    # controller's own series, and a run saved with a different compression
+    # factor need not match it exactly.
+    n = min(len(time_series), len(decile_series))
+    return time_series[:n], decile_series[:n]
+
+
 def add_vertical_lines(ax, base_params, color='black', linestyle='--', annotation_height_prop=[0.2, 0.2, 0.2, 0.2]):
     burn_in = base_params["duration_burn_in"]
     no_carbon_price = base_params["duration_calibration"]
@@ -138,8 +174,21 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     ax.plot(time_yearly,EV_stock_prop_2010_23, label = "California data", linestyle= "dashed", color = "orange")
     ax.plot(time_series, social_network.history_consider_ev_rate[base_params["duration_burn_in"]:], label = "Consider", color = "blue")
     ax.plot(time_series, social_network.history_ev_adoption_rate[base_params["duration_burn_in"]:], label = "Adopt", color = "green")
-    ax.plot(time_series, social_network.history_ev_adoption_rate_top[base_params["duration_burn_in"]:], label = "Adopt Rich", color = "orange")
-    ax.plot(time_series, social_network.history_ev_adoption_rate_bottom[base_params["duration_burn_in"]:], label = "Adopt Poor", color = "black")
+    # Rich and poor by INCOME decile rather than by beta percentile. The two
+    # lines are the ends of the same sequential ramp used by
+    # plot_ev_adoption_by_income_decile, so light reads as poor and dark as rich
+    # consistently across the two figures. See that function for all ten.
+    decile_time, decile_series = get_ev_adoption_by_income_decile(base_params, social_network, time_series)
+    if decile_series is not None:
+        num_deciles = decile_series.shape[1]
+        end_colours = income_decile_colours(num_deciles)
+        ax.plot(decile_time, decile_series[:, -1], label = f"Adopt richest {100//num_deciles}%", color = end_colours[-1])
+        ax.plot(decile_time, decile_series[:, 0], label = f"Adopt poorest {100//num_deciles}%", color = end_colours[0])
+    else:
+        # Pre-income-decile run: fall back to the beta-percentile series, which
+        # are top decile of beta vs bottom HALF of beta, not deciles.
+        ax.plot(time_series, social_network.history_ev_adoption_rate_top[base_params["duration_burn_in"]:], label = "Adopt Rich (high $\\beta$)", color = "orange")
+        ax.plot(time_series, social_network.history_ev_adoption_rate_bottom[base_params["duration_burn_in"]:], label = "Adopt Poor (low $\\beta$)", color = "black")
     #ax.plot(time_series, firm_manager.history_past_new_bought_vehicles_prop_ev[base_params["duration_burn_in"]:], label = "New cars monthly", color = "grey", linestyle = "--")
     
     # Extract the relevant data after burn-in period
@@ -161,6 +210,61 @@ def plot_ev_consider_adoption_bought_rate(base_params,social_network, firm_manag
     ax.legend()
     format_plot(ax, "EV Adoption Rate Over Time", "Time Step", "EV Adoption Rate", legend=False)
     save_and_show(fig, fileName, "plot_ev_consider_adoption_bought_rate", dpi)
+
+
+def plot_ev_adoption_by_income_decile(base_params, social_network, time_series, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
+    """
+    EV adoption rate within each income decile, poorest (light) to richest (dark).
+
+    The point of the figure is the SIGN OF THE GRADIENT: if the dark lines sit
+    below the light ones, richer users are adopting less than poorer ones. Ten
+    ordered groups get a sequential single-hue ramp and a colourbar rather than a
+    ten-entry legend, with the two end deciles labelled directly so identity is
+    never carried by colour alone.
+    """
+    decile_time, decile_series = get_ev_adoption_by_income_decile(base_params, social_network, time_series)
+    if decile_series is None:
+        print("No income-decile EV adoption data on this run, skipping plot_ev_adoption_by_income_decile.")
+        return
+
+    num_deciles = decile_series.shape[1]
+    colours = income_decile_colours(num_deciles)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for d in range(num_deciles):
+        ax.plot(decile_time, decile_series[:, d], color=colours[d], linewidth=2)
+
+    # Direct labels on the two ends, at their own final value. Label text is ink
+    # rather than the series colour: the lightest step is legible as a 2px line
+    # but not as 9pt text on white, and the line it sits against carries the
+    # identity anyway. clip_on=False so the text survives outside the axes.
+    for d, text in ((0, "poorest 10%"), (num_deciles - 1, "richest 10%")):
+        ax.annotate(
+            text,
+            xy=(decile_time[-1], decile_series[-1, d]),
+            xytext=(5, 0), textcoords="offset points",
+            va="center", ha="left", fontsize=9, color="#333333", clip_on=False,
+        )
+
+    # Colourbar as the legend for the ordered groups.
+    scalar_map = cm.ScalarMappable(
+        cmap=mcolors.ListedColormap(colours),
+        norm=mcolors.Normalize(vmin=0.5, vmax=num_deciles + 0.5),
+    )
+    cbar = fig.colorbar(scalar_map, ax=ax, ticks=[1, num_deciles])
+    cbar.set_label("Income decile")
+    cbar.ax.set_yticklabels(["1 (poorest)", f"{num_deciles} (richest)"])
+
+    add_vertical_lines(ax, base_params, annotation_height_prop=annotation_height_prop)
+    format_plot(ax, "EV Adoption Rate by Income Decile", "Time Step", "EV Adoption Rate", legend=False)
+    # Room on the right for the direct labels, set on the axis rather than via
+    # margins so it is not eaten by the colourbar's share of the figure width.
+    x_first, x_last = decile_time[0], decile_time[-1]
+    x_span = x_last - x_first
+    # Small left pad too, so the burn-in marker's rotated label does not sit on
+    # top of the y axis.
+    ax.set_xlim(x_first - 0.03*x_span, x_last + 0.16*x_span)
+    save_and_show(fig, fileName, "plot_ev_adoption_by_income_decile", dpi)
 
 
 def plot_prop_EV_on_sale(base_params,firm_manager, fileName, dpi=300, annotation_height_prop= [0.5, 0.5, 0.5]):
@@ -2024,6 +2128,7 @@ def main(fileName, dpi=300):
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
 
     plot_ev_consider_adoption_bought_rate(base_params, social_network,firm_manager, time_series, fileName, EV_stock_prop_2010_23, dpi)
+    plot_ev_adoption_by_income_decile(base_params, social_network, time_series, fileName, dpi)
     plot_total_utility(base_params,social_network, time_series, fileName, dpi)
     plot_history_count_buy_ratio(base_params, social_network, fileName, dpi, annotation_height_prop=[0.5, 0.5, 0.5])
     plot_history_car_age(base_params, social_network, time_series,fileName, dpi)

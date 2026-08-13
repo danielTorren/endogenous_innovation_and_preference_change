@@ -55,7 +55,7 @@ RUNS = {
     # ---- main manuscript -------------------------------------------------
     # Figure 2 (validation dashboard) and supplementary Figure 5 (car qualities)
     # both come out of the same calibration run.
-    "calibration": "results/calibration_gen_13_31_54__12_08_2026",
+    "calibration": "results/calibration_gen_09_30_13__13_08_2026",
     # Figure 3 -- package/analysis/vary_single_policy_gen.py
     "single_policies": "results/vary_single_policy_gen_19_53_15__11_08_2026",
     # Figure 4 -- package/analysis/endogenous_policy_intensity_pair_gen.py
@@ -63,13 +63,13 @@ RUNS = {
     # Figure 5 -- package/analysis/low_policy_intensity_gen.py
     "low_intensity": "",
     # Figure 6 -- package/generating_data/single_experiment_gen.py
-    "single_experiment": "results/single_experiment_10_38_01__12_08_2026",
+    "single_experiment": "results/single_experiment_09_42_36__13_08_2026",
     # Figure 7 -- vary_single_param_gen over max_num_cars_prop
     "used_car_capacity": "results/sen_vary_max_num_cars_prop_10_41_12__12_08_2026",
 
     # ---- supplementary material -----------------------------------------
     # Figure 1 -- package/calibration/sbi_single_seed_gen.py
-    "posterior": "results/calibration_gen_13_31_54__12_08_2026",
+    "posterior": "results/calibration_gen_09_30_13__13_08_2026",
     # Figure 6 -- ten vary_single runs, in panel order a-j. Order matters:
     # a alpha, b r, c mu, d kappa, e b_chi, f a_chi, g lambda, h delta,
     # i K_EV, j K_ICE (see supplementary_runs/fig06_local_sensitivity_gen.PANELS).

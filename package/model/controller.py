@@ -318,11 +318,15 @@ class Controller:
         #BETA
         self.gen_beta()
 
-        self.parameters_social_network["beta_vec"] = self.beta_vec 
-        self.parameters_social_network["gamma_vec"] = self.gamma_vec 
-        self.parameters_social_network["chi_vec"] = self.chi_vec 
-        self.parameters_social_network["nu_vec"] = self.nu_vec 
+        self.parameters_social_network["beta_vec"] = self.beta_vec
+        self.parameters_social_network["gamma_vec"] = self.gamma_vec
+        self.parameters_social_network["chi_vec"] = self.chi_vec
+        self.parameters_social_network["nu_vec"] = self.nu_vec
         self.parameters_social_network["d_vec"] = self.d_vec
+        # Aligned with beta_vec agent-for-agent (see gen_beta). Used only for
+        # reporting distributional outcomes by income decile; nothing in the
+        # choice or pricing logic reads it, so it changes no model behaviour.
+        self.parameters_social_network["income_vec"] = self.income_vec
 
         self.beta_median = np.median(self.beta_vec)
         self.gamma_median = np.median(self.gamma_vec)
@@ -438,17 +442,53 @@ class Controller:
 
     def gen_beta(self):
         """
-        Generate beta_vec reflecting consumer quality sensitivity based on income.
-        Inverse relationship to income distribution drawn from a log-normal.
+        Generate beta_vec, the dollar willingness to pay for car quality, from
+        the income distribution drawn from a log-normal.
+
+        beta_i is PROPORTIONAL to income: beta_i/median_beta = income_i/median_income,
+        so a richer agent has a higher willingness to pay for quality. This is
+        the mapping the manuscript specifies (Section "Calibration": "we
+        distribute this value according to the Californian income distribution,
+        assigning a higher willingness to pay to richer agents"; Table of
+        parameters: "greater beta is richer car user"; supplementary: "in such
+        a way that the same proportion is maintained").
+
+        This previously computed the reciprocal, median_income/income_i, which
+        assigned the HIGHEST quality willingness to pay to the POOREST agents.
+        Note that it was a no-op for every model output: `incomes` is local and
+        income enters the model nowhere else, beta_vec is shuffled below so even
+        the ordering link to the income draw is discarded, and the reciprocal of
+        a log-normal is log-normal with the same sigma -- so both forms draw
+        beta_vec from the same distribution, and "rich" in the outputs is
+        defined as high beta (see socialNetworkUsers.beta_rich) rather than as
+        high income. Results therefore differ only by Monte Carlo noise. The
+        point of the change is that the individual-level mapping now matches
+        the documented one, which any later income-correlated parameter (nu,
+        gamma, d) needs in order to carry the right sign.
         """
         #BETA
         self.beta_multiplier = self.parameters_social_network.get("beta_multiplier", 1)#PURPOSE IS TO TEST THE ROLE OF BETA DISTRIBUTIONS
-        median_beta = self.calc_beta_median()*self.beta_multiplier 
-        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
+        median_beta = self.calc_beta_median()*self.beta_multiplier
+        #GIVEN THAT YOU DO INCOME/MEDIAN INCOME, DONT NEED TO SCALE INCOME
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
         median_income = np.median(incomes)
-        self.beta_vec = median_beta*(median_income/incomes)
-        self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+        beta_unshuffled = median_beta*(incomes/median_income)
+
+        # Shuffle to randomise the order of agents, i.e. to decorrelate beta
+        # from an agent's index and so from its position in the social network.
+        # Drawn as an explicit permutation rather than shuffling beta_vec in
+        # place so that the SAME permutation can be applied to incomes, leaving
+        # income_vec[i] as the income of the agent whose quality willingness to
+        # pay is beta_vec[i]. Without this the income draw is discarded and
+        # there is no agent-level income to report distributional outcomes on.
+        # RandomState.permutation(n) is arange(n) followed by the same
+        # Fisher-Yates pass that shuffle() performs, and a shuffle is a pure
+        # permutation of positions independent of the array's contents, so
+        # beta_vec is bit-for-bit what the in-place shuffle produced and the
+        # random stream is left in exactly the same state.
+        perm = self.random_state_inputs.permutation(self.num_individuals)
+        self.beta_vec = beta_unshuffled[perm]
+        self.income_vec = incomes[perm]
 
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         # Calculate the bin edges using quantiles
@@ -463,12 +503,16 @@ class Controller:
         """
         Generate a list of beta values for n agents based on quintile incomes.
         Beta for each quintile is calculated as:
-            beta = 1 * (lowest_quintile_income / quintile_income)
-        
+            beta = median_beta * (quintile_income / median_quintile_income)
+
+        Proportional to income, i.e. the same mapping as gen_beta -- see the
+        note in that method's docstring. Currently unused; kept in sync so it
+        cannot reintroduce the inverted mapping if it is ever called.
+
         Args:
             n (int): Total number of agents.
             quintile_incomes (list): List of incomes for each quintile (from lowest to highest).
-            
+
         Returns:
             list: A list of beta values of length n.
         """
@@ -476,7 +520,7 @@ class Controller:
 
         median_income = quintile_incomes[2]
 
-        beta_vals = [median_beta*median_income/income for income in quintile_incomes]
+        beta_vals = [median_beta*income/median_income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
         proportions = [0.2] * len(quintile_incomes)
