@@ -434,8 +434,7 @@ if __name__ == "__main__":
         {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 5]},
         {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.8, 5]},
         {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.0015, 0.0033]},
-        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 3e-4]},
-        {"name": "max_Cost", "subdict": "parameters_EV", "bounds": [80000, 100000]}
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 3e-4]}
     ]
     main(
         parameters_list=parameters_list,

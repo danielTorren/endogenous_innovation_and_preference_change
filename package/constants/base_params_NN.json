@@ -84,7 +84,7 @@
         "min_Battery_size": 0,
         "max_Battery_size": 150,
         "min_Cost": 10000,
-        "max_Cost": 100000
+        "max_Cost": 90000
     },
     "parameters_firm_manager": {
         "J": 10,
