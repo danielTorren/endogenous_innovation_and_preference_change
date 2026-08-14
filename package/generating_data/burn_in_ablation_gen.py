@@ -268,6 +268,15 @@ for _w in (0, 25000, 46647, 80000, 120000):
 WTP_SWEEP = ["wtp000000","wtp025000","wtp046647","wtp080000","wtp120000"]
 
 
+# nu (battery/range weight) and zeta (its exponent). EVs and ICEs differ mainly in
+# B -- battery pack vs fuel tank -- so this is the structural EV lever that acts
+# through perceived range rather than through price, and so cannot invert the
+# ICE-cheaper-than-EV ordering the way EV.max_Cost can.
+for _n in (300, 1174, 3000, 8000):
+    CONFIGS[f"nu{_n:05d}"] = (LADDER[:4], 90, {"parameters_social_network": {"nu": _n}})
+NU_SWEEP = ["nu00300","nu01174","nu03000","nu08000"]
+
+
 def build_params(name, seeds):
     with open(BASE_PARAMS_LOAD) as f:
         bp = json.load(f)
