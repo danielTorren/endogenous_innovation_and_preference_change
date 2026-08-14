@@ -178,6 +178,58 @@ for _sc in (1.5, 1.75, 2.0, 2.25, 2.5):
 # At 1.75 the current config gives 0.81x, so the crossing has moved higher.
 STRETCH_SWEEP = ["sc150", "sc175", "sc200", "sc225", "sc250"]
 
+# Observed mean new-car TRANSACTION price in the model's 2020 dollars. See the
+# price_med_x comment in summarise() for the derivation.
+TARGET_NEW_PRICE_MEAN = 39644.0
+
+# delta sweep: utility decay per month, against delta_P = 0.0087 for price decay.
+#
+# At the shipped delta = 0.00222 a 16-year-old car retains (1-delta)^192 = 0.653 of
+# its utility while retaining only (1-delta_P)^192 = 0.187 of its price. A used car
+# costs 19% of new and delivers 65% of the value, which is why 78% of purchases go
+# used, the fleet ages to 16 years, and the only people still buying new are the
+# wealthy tail -- so firms price for them and the new-car mass ends up at the
+# expensive end with the skew backwards.
+#
+# Raising delta removes that bargain, and it is the one side of the ratio that is
+# not off-limits. 0.0087 makes utility decay exactly track price decay. Note the
+# controller copies delta onto the EV landscape, so this moves both drivetrains,
+# and delta also enters the driving-cost term -- old cars get worse on fuel economy
+# and on range at once, so the response will not be linear.
+# HARD CEILING: controller.gen_gamma() requires r > delta/(1-delta), so with
+# r = 0.00407412378 the model refuses any delta >= 0.0040576. Matching delta_P
+# exactly is therefore impossible without also raising r -- the usable range is
+# only 0.00222 to 0.00406, under a factor of two.
+#
+# That range is enough, because the response inside it is violent. At 0.00222 the
+# model sits at 79% used purchases, a 16-yr fleet and EV 0.009; at 0.00400 it is at
+# 7% used, a 5-yr fleet and EV 0.112. Every target of interest crosses its band
+# somewhere in between, so the sweep is deliberately dense rather than wide.
+#
+# Note delta did NOT behave as a single fix: it moves fleet age, used share and EV
+# uptake strongly, but the new-car price level gets WORSE as it rises (pMed 1.34x
+# -> 1.59x), because collapsing the used market forces everyone into the new market
+# and firms price into that demand. Price level needs its own lever.
+DELTA_MAX = 0.0040576
+for _d in (0.00222, 0.0025, 0.0028, 0.0031, 0.0034, 0.0037, 0.0040):
+    assert _d < DELTA_MAX, f"delta {_d} exceeds the r-implied ceiling {DELTA_MAX}"
+    CONFIGS[f"delta{int(round(_d*100000)):05d}"] = (
+        LADDER[:4], 90, {"parameters_ICE": {"delta": _d}},
+    )
+
+for _d in (0.0029, 0.0031):
+    for _sc in (1.75, 2.00, 2.25):
+        CONFIGS[f"d{int(round(_d*100000)):04d}_sc{int(_sc*100):03d}"] = (
+            LADDER[:4], 90,
+            {"parameters_ICE": {"delta": _d, "stretch_Cost": _sc},
+             "parameters_EV": {"stretch_Cost": _sc}},
+        )
+
+JOINT_SWEEP = [f"d{d:04d}_sc{s:03d}" for d in (290, 310) for s in (175, 200, 225)]
+
+DELTA_SWEEP = ["delta00222", "delta00250", "delta00280", "delta00310",
+               "delta00340", "delta00370", "delta00400"]
+
 DEFAULT_CONFIGS = ["b0_base", "b1_research", "b2_placement", "b3_age", "b4_sellable",
                    "long_360", "short_90", "short_36"]
 
@@ -229,6 +281,12 @@ def summarise(name, bp, outputs):
     months = np.arange(age_cal.shape[1])
     slope = float(np.polyfit(months, np.nanmean(age_cal, axis=0), 1)[0]*120)
 
+    # [[new_ICE, new_EV], [used_ICE, used_EV]] mean prices over the cars on sale.
+    # ICE is meant to be the cheaper drivetrain on average, so this ratio belongs
+    # below 1; at 1.00 or above the model has EVs undercutting ICE, which inverts
+    # the whole adoption story regardless of what the uptake number says.
+    mp = np.asarray(outputs["history_mean_price_ICE_EV"], dtype=float)[:, b:, :, :]
+
     nq = np.asarray(outputs["history_new_car_price_quantiles"], dtype=float)[:, b:, :]
     uq = np.asarray(outputs["history_used_car_price_quantiles"], dtype=float)[:, b:, :]
     counts = np.asarray(outputs["history_purchase_counts"], dtype=float)[:, b:, :]
@@ -243,6 +301,24 @@ def summarise(name, bp, outputs):
         "ev_2023": fy(A("history_prop_EV")),
         "hhi": fy(A("history_market_concentration")),
         "price_iqr_x": fy(nq[:, :, 2] - nq[:, :, 0]) / (57784.66 - 32359.41),
+        # Spread alone hides a distribution that is the right width but sitting in
+        # the wrong place: a run can hit price_iqr_x 1.04x with both quartiles
+        # inside 6% and still have its mass at the wrong end.
+        #
+        # Denominator is the OBSERVED MEAN, not the P25/P75 midpoint. Grieco, Murry
+        # & Yurukoglu 2024 Fig II give a mean of $34,000 in 2015$, which the x1.166
+        # deflator that reproduces the P25/P75 constants puts at $39,644 in the
+        # model's 2020$. No median is published, but that mean sits well below the
+        # midpoint ($45,072), so the real distribution is right skewed and its
+        # median is BELOW its mean. Dividing by the mean therefore UNDERSTATES how
+        # high the model sits -- treat price_med_x as a lower bound on the miss.
+        "price_med_x": fy(nq[:, :, 1]) / TARGET_NEW_PRICE_MEAN,
+        # Which side of the median is longer. Real new-car prices are right skewed
+        # (cheap mass, expensive tail), so the observed value is well under 1 --
+        # roughly 0.2-0.3. Above 1 means the model has it backwards: mass bunched
+        # at the expensive end with a long cheap tail.
+        "price_skew": (fy(nq[:, :, 1]) - fy(nq[:, :, 0])) / (fy(nq[:, :, 2]) - fy(nq[:, :, 1])),
+        "ice_ev_new": fy(mp[:, :, 0, 0]) / fy(mp[:, :, 0, 1]),
         "qual_price_ratio": fy(A("history_used_stock_quality_spread"))
                             / fy(uq[:, :, 2] - uq[:, :, 0]),
         "used_share": float(np.mean(u / (n + u))),
@@ -256,17 +332,20 @@ def summarise(name, bp, outputs):
 # by tightening the market -- and that shows up in q/p, not in priceIQR. A run that
 # hits priceIQR 1.00x with q/p well off 1 has bought the price target by making the
 # expensive end of the market not worth buying.
-HEADER = (f"{'config':<16}{'age@BI':>8}{'slope':>8}{'age 23':>8}{'age sd':>8}"
-          f"{'EV 2023':>9}{'HHI':>7}{'priceIQR':>10}{'q/p':>7}{'usedsh':>8}{'P(buy)':>8}")
-TARGETS = (f"{'TARGET':<16}{'10-12':>8}{'~0':>8}{'10-12':>8}{'-':>8}"
-           f"{0.038:>9.3f}{'.11-.18':>7}{'1.00x':>10}{'~1':>7}{'0.67':>8}{'0.16':>8}")
+HEADER = (f"{'config':<16}{'age@BI':>8}{'slope':>8}{'age 23':>8}"
+          f"{'EV 2023':>9}{'HHI':>7}{'pIQR':>7}{'pMed':>7}{'pSkew':>7}"
+          f"{'q/p':>7}{'ICE/EV':>8}{'usedsh':>8}{'P(buy)':>8}")
+TARGETS = (f"{'TARGET':<16}{'10-12':>8}{'~0':>8}{'10-12':>8}"
+           f"{0.038:>9.3f}{'.11-.18':>7}{'1.00x':>7}{'1.00x':>7}{'~1':>7}"
+           f"{'~1':>7}{'<1':>8}{'0.67':>8}{'0.16':>8}")
 
 
 def print_row(r):
     print(f"{r['config']:<16}{r['age_bi']:>8.2f}{r['age_slope']:>+8.2f}"
-          f"{r['age_yr']:>8.2f}{r['age_sd']:>8.2f}"
-          f"{r['ev_2023']:>9.3f}{r['hhi']:>7.3f}{r['price_iqr_x']:>9.2f}x"
-          f"{r['qual_price_ratio']:>7.2f}"
+          f"{r['age_yr']:>8.2f}"
+          f"{r['ev_2023']:>9.3f}{r['hhi']:>7.3f}"
+          f"{r['price_iqr_x']:>6.2f}x{r['price_med_x']:>6.2f}x{r['price_skew']:>7.2f}"
+          f"{r['qual_price_ratio']:>7.2f}{r['ice_ev_new']:>8.3f}"
           f"{r['used_share']:>8.3f}{r['prob_buy']:>8.3f}", flush=True)
 
 
