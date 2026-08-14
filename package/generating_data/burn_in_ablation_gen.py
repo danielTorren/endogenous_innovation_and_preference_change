@@ -277,6 +277,21 @@ for _n in (300, 1174, 3000, 8000):
 NU_SWEEP = ["nu00300","nu01174","nu03000","nu08000"]
 
 
+# EV.max_Cost sweep WITH the cost-quality correlation switched back on.
+#
+# rho[1]=0.5 was dropped because it pushed ICE/EV from 0.954 to 1.104 -- but that
+# was measured at EV.max_Cost = 70000. With EV.max_Cost now at 100000 the ratio
+# sits near 0.70, so the correlation's price-ordering cost may now be affordable,
+# and it is worth +0.013 on EV uptake plus gains on pIQR and HHI. rho[3] stays at 0
+# (measured null). This sweep asks how much EV.max_Cost headroom that leaves.
+for _m in (70000, 85000, 100000, 120000, 140000):
+    CONFIGS[f"corr_evmax{_m//1000:03d}"] = (LADDER[:4], 90, {
+        "parameters_ICE": {"rho": [1, 0.5, 0]},
+        "parameters_EV": {"rho": [1, 0.5, 0, 0], "max_Cost": _m},
+    })
+CORR_EVMAX_SWEEP = [f"corr_evmax{m//1000:03d}" for m in (70000,85000,100000,120000,140000)]
+
+
 def build_params(name, seeds):
     with open(BASE_PARAMS_LOAD) as f:
         bp = json.load(f)
