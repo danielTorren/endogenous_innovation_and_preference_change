@@ -234,6 +234,31 @@ DEFAULT_CONFIGS = ["b0_base", "b1_research", "b2_placement", "b3_age", "b4_sella
                    "long_360", "short_90", "short_36"]
 
 
+# Final tuning grid on the minimal-change config. EV max_Cost is raised on every
+# row (battery packs give EVs a higher cost ceiling than ICE -- a one-sentence
+# justification, unlike the correlation structure). The open questions are how
+# much stretch_Cost is needed to stop the new-car price spread being 5x too
+# narrow, and whether delta wants nudging down to lift fleet age back into band.
+_EVMAX = {"parameters_EV": {"max_Cost": 100000}}
+def _cfg(sc=None, delta=None):
+    o = {"parameters_EV": dict(_EVMAX["parameters_EV"]), "parameters_ICE": {}}
+    if sc is not None:
+        o["parameters_ICE"]["stretch_Cost"] = sc; o["parameters_EV"]["stretch_Cost"] = sc
+    if delta is not None:
+        o["parameters_ICE"]["delta"] = delta
+    return (LADDER[:4], 90, o)
+
+CONFIGS["m1_evmax"]        = _cfg()
+CONFIGS["m2_sc175"]        = _cfg(sc=1.75)
+CONFIGS["m3_sc250"]        = _cfg(sc=2.50)
+CONFIGS["m4_sc350"]        = _cfg(sc=3.50)
+CONFIGS["m5_sc250_d29"]    = _cfg(sc=2.50, delta=0.0029)
+CONFIGS["m6_sc250_d27"]    = _cfg(sc=2.50, delta=0.0027)
+CONFIGS["m7_sc175_d27"] = _cfg(sc=1.75, delta=0.0027)
+CONFIGS["m8_sc200_d27"] = _cfg(sc=2.00, delta=0.0027)
+FINAL_GRID = ["m1_evmax","m2_sc175","m3_sc250","m4_sc350","m5_sc250_d29","m6_sc250_d27"]
+
+
 def build_params(name, seeds):
     with open(BASE_PARAMS_LOAD) as f:
         bp = json.load(f)
@@ -336,7 +361,7 @@ HEADER = (f"{'config':<16}{'age@BI':>8}{'slope':>8}{'age 23':>8}"
           f"{'EV 2023':>9}{'HHI':>7}{'pIQR':>7}{'pMed':>7}{'pSkew':>7}"
           f"{'q/p':>7}{'ICE/EV':>8}{'usedsh':>8}{'P(buy)':>8}")
 TARGETS = (f"{'TARGET':<16}{'10-12':>8}{'~0':>8}{'10-12':>8}"
-           f"{0.038:>9.3f}{'.11-.18':>7}{'1.00x':>7}{'1.00x':>7}{'~1':>7}"
+           f"{0.038:>9.3f}{'.11-.18':>7}{'1.00x':>7}{'1.00x':>7}{'0.25':>7}"
            f"{'~1':>7}{'<1':>8}{'0.67':>8}{'0.16':>8}")
 
 
