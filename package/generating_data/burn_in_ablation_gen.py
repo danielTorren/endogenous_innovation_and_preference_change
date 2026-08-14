@@ -259,6 +259,15 @@ CONFIGS["m8_sc200_d27"] = _cfg(sc=2.00, delta=0.0027)
 FINAL_GRID = ["m1_evmax","m2_sc175","m3_sc250","m4_sc350","m5_sc250_d29","m6_sc250_d27"]
 
 
+# WTP_E_mean sweep: does environmental willingness-to-pay actually move EV uptake?
+# It is the natural NN lever because it acts through preferences, not prices, so it
+# cannot invert the ICE-cheaper-than-EV ordering the way EV.max_Cost can.
+for _w in (0, 25000, 46647, 80000, 120000):
+    CONFIGS[f"wtp{_w:06d}"] = (LADDER[:4], 90,
+        {"parameters_social_network": {"WTP_E_mean": _w if _w else 1.0}})
+WTP_SWEEP = ["wtp000000","wtp025000","wtp046647","wtp080000","wtp120000"]
+
+
 def build_params(name, seeds):
     with open(BASE_PARAMS_LOAD) as f:
         bp = json.load(f)
