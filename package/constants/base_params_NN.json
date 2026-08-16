@@ -54,7 +54,7 @@
         "N": 15,
         "K": 3,
         "A": 3,
-        "rho":[1,0.5,0],
+        "rho":[1,0,0],
         "stretch_Cost": 2.0,
         "production_emissions":10000,
         "delta": 0.0027,
@@ -74,7 +74,7 @@
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0.5,0,0],
+        "rho":[1,0,0,0],
         "stretch_Cost": 2.0,
         "delta_P":0.0116,
         "production_emissions":14000,
@@ -84,7 +84,7 @@
         "min_Battery_size": 0,
         "max_Battery_size": 150,
         "min_Cost": 10000,
-        "max_Cost": 90000
+        "max_Cost": 100000
     },
     "parameters_firm_manager": {
         "J": 10,
@@ -126,7 +126,7 @@
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 0.0001525,
+        "kappa": 0.00018,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,
