@@ -646,8 +646,8 @@ if __name__ == "__main__":
         # posterior chased the highest-variance corner of theta space instead of
         # the best-fitting one. Amortised over the prior is the right call until
         # the simulator noise is under control.
-        num_thetas_per_round=6144,
-        num_seeds_per_theta=32,
+        num_thetas_per_round=3072,
+        num_seeds_per_theta=64,
         num_rounds=1,
         master_seed=20260816,
         central="mean",
