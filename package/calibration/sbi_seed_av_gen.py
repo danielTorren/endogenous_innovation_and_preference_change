@@ -692,7 +692,7 @@ if __name__ == "__main__":
     # It is not calibrated here, so the JSON value is used verbatim for every draw
     # and the run is conditional on it. The startup log prints what it read.
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.1, 1.4]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.4]},
         {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.0026, 0.0028]},
     ]
 
@@ -701,42 +701,9 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        # 6144 x 32 = 196,608 runs, ~8 h of simulation at 18.5 s/run on 128
-        # workers. SINGLE ROUND on purpose.
-        #
-        # K=32, not 8: the 8-seed run left 64% of the variance in x as seed noise,
-        # because the per-seed logit sd in the region explored is ~1.74, not the
-        # 0.874 that K=8 was sized from. K=32 puts the residual at 1.74/sqrt(32) =
-        # 0.31. The narrowed prior bounds above cut the theta signal too, so this
-        # is a compromise at roughly 13% of variance rather than the 8% the old
-        # wide bounds would have given.
-        #
-        # TREAT THE 1.74 AS UNVERIFIED. It was measured off (theta, x) pairs, which
-        # cannot tell seed noise apart from noise that theta itself induces, so it
-        # is an upper bound on the part K controls and K=32 may be several times
-        # more than is needed. On sbi_seed_av_22_25_54__16_08_2026 the leftover
-        # scatter at fixed theta is 0.75 in logit units (semivariogram nugget over
-        # 261k theta pairs at separation below 0.55 prior-sd, agreeing with a
-        # 5-fold CV gradient-boosting floor of 0.66); 1.74/sqrt(32) = 0.31 accounts
-        # for only 17% of it. The rest is theta-coupled and no K removes it: chi_vec
-        # is drawn by RandomState.beta off the shared random_state_inputs stream, a
-        # rejection sampler whose uniform consumption depends on (a_chi, b_chi), so
-        # a 1% move in a_chi reshuffles WTP_E_vec, incomes and the network
-        # permutation drawn after it (measured: corr(chi, chi_0) falls to 0.76).
-        #
-        # simulate_round() now prints per_seed / of_mean / theta_sd per moment and
-        # x_seed_sd is saved, so the next run settles this from its own log rather
-        # than from an inferred number. Set K from that.
-        #
-        # num_rounds=1, not 2: concentrating the proposal shrinks the theta signal
-        # while leaving the noise untouched, so round 2 was strictly worse
-        # conditioned than round 1 (64% vs 25% unexplained variance) and the
-        # posterior chased the highest-variance corner of theta space instead of
-        # the best-fitting one. Amortised over the prior is the right call until
-        # the simulator noise is under control.
         num_thetas_per_round=3072,
         num_seeds_per_theta=8,
-        num_rounds=1,
+        num_rounds=2,
         master_seed=20260816,
         central="mean",
     )
