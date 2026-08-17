@@ -151,8 +151,9 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/sbi_seed_av_08_58_38__17_08_2026",
+        fileName="results/sbi_seed_av_11_36_44__17_08_2026",
     )
+    #sbi_seed_av_11_27_43__17_08_2026
     #sbi_seed_av_08_58_38__17_08_2026
     #sbi_seed_av_10_13_07__17_08_2026 - this one has the right range and b beta fixed
     #sbi_seed_av_09_15_32__17_08_2026

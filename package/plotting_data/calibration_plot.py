@@ -1472,9 +1472,9 @@ def main(fileName, dpi=200):
         plot_multi_seed_2d_contour(fileName, outputs, base_params, dpi=dpi)
     else:
         print("\n[!] No 'cars_on_sale' found in outputs.")
-
+    print(base_params)
     plt.show()
 
 
 if __name__ == "__main__":
-    main(fileName="results/calibration_gen_09_56_46__07_08_2026")
+    main(fileName="results/calibration_gen_10_19_30__17_08_2026")
