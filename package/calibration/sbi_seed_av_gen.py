@@ -300,8 +300,20 @@ def build_x(x_raw, central="mean"):
             identical to taking the median of the raw proportions.
 
     Returns:
-        (x, n_finite) -- x of shape (num_thetas, NUM_RAW_MOMENTS), and the count
-        of finite seeds per theta of shape (num_thetas,).
+        (x, n_finite, x_sd) -- x of shape (num_thetas, NUM_RAW_MOMENTS), the count
+        of finite seeds per theta of shape (num_thetas,), and the ACROSS-SEED sd of
+        the transformed per-seed moments, same shape as x.
+
+        x_sd is what makes the seed averaging auditable, and it is cheap: x records
+        only the average, so a finished run holds no record of how much the K seeds
+        disagreed with each other. Without it the leftover scatter measured off
+        (theta, x) alone confounds two things -- noise that averaging removes (a
+        fresh params["seed"] per run) and noise it does not (theta perturbations
+        reshuffling the pinned seed_inputs landscape, because RandomState.beta's
+        rejection sampler consumes a theta-dependent number of uniforms and shifts
+        every draw made after it off the same stream). x_sd / sqrt(K) is the first
+        of those, so saving it separates them and says directly whether K is set
+        higher than it needs to be. See simulate_round(), which prints the budget.
     """
     stock = logit(x_raw[:, :, :MATCH_NUM_YEARS])
     age = x_raw[:, :, MATCH_NUM_YEARS:]
@@ -325,7 +337,13 @@ def build_x(x_raw, central="mean"):
         else:
             raise ValueError(f"central must be 'mean' or 'median', got {central!r}")
 
-    return x, n_finite
+        # ddof=1 because the K seeds are a sample, not the population. A theta with
+        # one finite seed gives NaN rather than 0, which is the honest answer to
+        # "how much did the seeds disagree" when there is only one of them; those
+        # thetas are excluded from the medians simulate_round() prints.
+        x_sd = np.nanstd(masked, axis=1, ddof=1)
+
+    return x, n_finite, x_sd
 
 
 def simulate_round(proposal, base_params, param_list, num_thetas, num_seeds,
@@ -362,7 +380,7 @@ def simulate_round(proposal, base_params, param_list, num_thetas, num_seeds,
           f"seed_inputs pinned at {base_params['seed_inputs']}")
 
     x_raw = _simulate_batch_raw(theta_np, seed_matrix, base_params, param_list, num_workers)
-    x_arr, n_finite = build_x(x_raw, central=central)
+    x_arr, n_finite, x_sd = build_x(x_raw, central=central)
 
     # A theta survives if enough of its seeds were finite; the average is then
     # taken over those. Only thetas that fall below the threshold are resampled.
@@ -403,11 +421,14 @@ def simulate_round(proposal, base_params, param_list, num_thetas, num_seeds,
         replacement_raw = _simulate_batch_raw(
             replacement, replacement_seeds, base_params, param_list, num_workers
         )
-        replacement_x, replacement_n = build_x(replacement_raw, central=central)
+        replacement_x, replacement_n, replacement_sd = build_x(
+            replacement_raw, central=central
+        )
 
         theta_np[idx] = replacement
         x_arr[idx] = replacement_x
         n_finite[idx] = replacement_n
+        x_sd[idx] = replacement_sd
         seed_matrix[idx] = replacement_seeds
         bad = (n_finite < MIN_FINITE_SEED_FRACTION * num_seeds) | ~np.isfinite(x_arr).all(axis=1)
 
@@ -419,10 +440,32 @@ def simulate_round(proposal, base_params, param_list, num_thetas, num_seeds,
             "simulating badly. Investigate before training on it."
         )
 
+    # The number that decides whether num_seeds is set sensibly, printed rather
+    # than left in the pickle because it should be read while the run is still
+    # cheap to abandon.
+    #
+    # per_seed  is how much one run wobbles at fixed theta -- the thing averaging
+    #           is meant to kill.
+    # of_mean   is per_seed / sqrt(K): what survives the averaging.
+    # theta_sd  is the spread of x ACROSS thetas: the signal NPE learns from.
+    #
+    # of_mean well below theta_sd means the averaging has done its job and K is at
+    # or above what it needs to be; raising it further only trades away thetas.
+    # Note of_mean is a floor on the leftover scatter, not the whole of it: any
+    # excess is theta-coupled and no value of K removes it (see build_x).
+    with np.errstate(invalid="ignore"):
+        per_seed = np.nanmedian(x_sd, axis=0)
+    theta_sd = x_arr.std(axis=0)
+    print("  seed-noise budget, median over thetas:")
+    for i, (ps, ts) in enumerate(zip(per_seed, theta_sd)):
+        of_mean = ps / np.sqrt(num_seeds)
+        print(f"    moment {i}: per_seed {ps:.4f}  of_mean {of_mean:.4f}  "
+              f"theta_sd {ts:.4f}  of_mean/theta_sd {of_mean / ts:.4f}")
+
     x = torch.as_tensor(x_arr, dtype=torch.float32)
     theta = torch.as_tensor(theta_np, dtype=torch.float32)
 
-    return theta, x, seed_matrix
+    return theta, x, seed_matrix, x_sd
 
 
 def main(
@@ -526,11 +569,12 @@ def main(
     posteriors = []
     proposal = prior
     seed_log = []
+    x_seed_sd_log = []
 
     for i in range(num_rounds):
         print("ROUND: ", i + 1, "/", num_rounds)
 
-        theta, x, seed_matrix = simulate_round(
+        theta, x, seed_matrix, x_sd = simulate_round(
             proposal,
             base_params,
             parameters_list,
@@ -543,6 +587,11 @@ def main(
             central=central,
         )
         seed_log.append({"round": i, "seed_matrix": seed_matrix})
+        # Saved alongside, not inside seed_log, so it can be loaded on its own
+        # without pulling in a (num_thetas, num_seeds) integer matrix. Aligned row
+        # for row with the theta/x of the same round, which come back out of
+        # inference.pkl as torch.cat(inference._theta_roundwise / ._x_roundwise).
+        x_seed_sd_log.append(x_sd)
 
         # Exactly ONE append_simulations() per round. sbi stamps every call
         # carrying a non-prior proposal with max(_data_round_index) + 1, so
@@ -581,6 +630,10 @@ def main(
     save_object(x_o, fileName + "/Data", "x_o")
 
     save_object(seed_log, fileName + "/Data", "seed_log")
+    # One (num_thetas, NUM_RAW_MOMENTS) array per round. See build_x() for what it
+    # is for: it is the only thing that separates seed noise, which num_seeds
+    # controls, from theta-coupled noise, which it cannot touch.
+    save_object(x_seed_sd_log, fileName + "/Data", "x_seed_sd")
     save_object(
         {
             "num_thetas_per_round": num_thetas_per_round,
@@ -620,8 +673,7 @@ if __name__ == "__main__":
     # It is not calibrated here, so the JSON value is used verbatim for every draw
     # and the run is conditional on it. The startup log prints what it read.
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.6, 1.5]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2, 5]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.2]},
         {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.002, 0.003]},
     ]
 
@@ -640,6 +692,23 @@ if __name__ == "__main__":
         # is a compromise at roughly 13% of variance rather than the 8% the old
         # wide bounds would have given.
         #
+        # TREAT THE 1.74 AS UNVERIFIED. It was measured off (theta, x) pairs, which
+        # cannot tell seed noise apart from noise that theta itself induces, so it
+        # is an upper bound on the part K controls and K=32 may be several times
+        # more than is needed. On sbi_seed_av_22_25_54__16_08_2026 the leftover
+        # scatter at fixed theta is 0.75 in logit units (semivariogram nugget over
+        # 261k theta pairs at separation below 0.55 prior-sd, agreeing with a
+        # 5-fold CV gradient-boosting floor of 0.66); 1.74/sqrt(32) = 0.31 accounts
+        # for only 17% of it. The rest is theta-coupled and no K removes it: chi_vec
+        # is drawn by RandomState.beta off the shared random_state_inputs stream, a
+        # rejection sampler whose uniform consumption depends on (a_chi, b_chi), so
+        # a 1% move in a_chi reshuffles WTP_E_vec, incomes and the network
+        # permutation drawn after it (measured: corr(chi, chi_0) falls to 0.76).
+        #
+        # simulate_round() now prints per_seed / of_mean / theta_sd per moment and
+        # x_seed_sd is saved, so the next run settles this from its own log rather
+        # than from an inferred number. Set K from that.
+        #
         # num_rounds=1, not 2: concentrating the proposal shrinks the theta signal
         # while leaving the noise untouched, so round 2 was strictly worse
         # conditioned than round 1 (64% vs 25% unexplained variance) and the
@@ -647,7 +716,7 @@ if __name__ == "__main__":
         # the best-fitting one. Amortised over the prior is the right call until
         # the simulator noise is under control.
         num_thetas_per_round=3072,
-        num_seeds_per_theta=64,
+        num_seeds_per_theta=32,
         num_rounds=1,
         master_seed=20260816,
         central="mean",

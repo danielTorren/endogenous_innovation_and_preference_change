@@ -151,8 +151,10 @@ def main(fileName):
 
 if __name__ == "__main__":
     main(
-        fileName="results/sbi_seed_av_17_44_11__16_08_2026",
+        fileName="results/sbi_seed_av_22_25_54__16_08_2026",
     )
+    #sbi_seed_av_22_27_30__16_08_2026
+    #sbi_seed_av_22_25_54__16_08_2026
     #sbi_seed_av_17_44_11__16_08_2026
     #sbi_single_seed_14_34_13__14_08_2026
     #NN_calibration_multi_14_33_36__14_08_2026

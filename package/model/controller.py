@@ -14,6 +14,10 @@ from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
 from scipy.stats import lognorm
+# Aliased rather than imported as `beta` because `beta` is already a user
+# parameter name in this model (gen_beta, beta_list, parameters_social_network
+#["beta"]) and the two are unrelated.
+from scipy.stats import beta as beta_dist
 from copy import deepcopy
 
 # Offset used to derive a dedicated substream for initial-condition draws (fleet
@@ -407,8 +411,36 @@ class Controller:
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
 
-        # Step 1: Generate continuous Beta distribution
-        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+        # Step 1: Generate continuous Beta distribution, by INVERSE CDF rather than
+        # random_state_inputs.beta().
+        #
+        # Same distribution, but a fixed number of uniforms drawn. RandomState.beta
+        # is a rejection sampler: it proposes, tests, and retries, so the count of
+        # uniforms it consumes depends on (a_chi, b_chi). Every later draw off this
+        # same stream -- zero_indices below, WTP_E_vec in gen_gamma, incomes and the
+        # network permutation in gen_beta, then the firm placement and the ICE/EV
+        # NK landscapes -- therefore shifted position whenever a_chi or b_chi moved,
+        # handing the run a different population and a different landscape. Measured
+        # on the pinned seed_inputs=22 stream: a_chi 1.05 -> 1.06, a move of 1% of
+        # the calibration prior, dropped corr(chi, chi_before) to 0.76 and desynced
+        # everything downstream; sweeping a_chi over [0.95, 1.15] moved the mean of
+        # the next normal draw across a range of 0.54.
+        #
+        # That made the simulator a rough function of theta for reasons unrelated to
+        # theta, which is what SBI reads as "this parameter does not predict the
+        # output" -- the leftover scatter at fixed theta on
+        # sbi_seed_av_22_25_54__16_08_2026 was 0.75 in logit units against a
+        # seed-noise share of at most 0.31, and no number of seeds per theta could
+        # average it away because every seed shared the reshuffle.
+        #
+        # ppf consumes exactly num_individuals uniforms whatever (a_chi, b_chi) are,
+        # so chi_vec now varies smoothly with them and nothing downstream moves at
+        # all. gen_chi is the ONLY draw on this stream whose arguments depend on a
+        # calibrated parameter, so this one line covers the whole chain; the poisson
+        # in gen_distance is also variable-consumption but its lambda is fitted from
+        # data and it runs before this anyway.
+        u = self.random_state_inputs.random_sample(self.num_individuals)
+        innovativeness_vec_continuous = beta_dist.ppf(u, self.a_chi, self.b_chi)
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
