@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16        # DELIBERATELY BELOW seed_repetitions=64. get_num_workers() feeds this to
+#SBATCH --cpus-per-task=128        # DELIBERATELY BELOW seed_repetitions=64. get_num_workers() feeds this to
                                    # joblib as n_jobs, so it is also the cap on how many models are alive at
                                    # once -- the main lever on peak memory. 64 workers on 32G (0.5G each) was
                                    # OOM-killed on the first BAU scenario; the calibration phase before it,
