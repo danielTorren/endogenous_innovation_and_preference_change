@@ -692,8 +692,8 @@ if __name__ == "__main__":
     # It is not calibrated here, so the JSON value is used verbatim for every draw
     # and the run is conditional on it. The startup log prints what it read.
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.2]},
-        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.002, 0.003]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.1, 1.4]},
+        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.0026, 0.0028]},
     ]
 
     main(
