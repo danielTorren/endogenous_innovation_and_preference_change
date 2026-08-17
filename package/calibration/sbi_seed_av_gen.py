@@ -506,13 +506,32 @@ def main(
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
 
-    # kappa is not calibrated here, so it is whatever the JSON says. Printed
-    # because it is a deliberate pinning rather than an incidental default, and a
-    # silently stale value would shift the whole posterior -- see the module
-    # docstring.
-    print("NOT calibrated, taken from "
-          f"{BASE_PARAMS_LOAD}: parameters_vehicle_user.kappa = "
-          f"{base_params['parameters_vehicle_user']['kappa']}")
+    # Parameters this script deliberately PINS rather than fits. Each is whatever
+    # the JSON says, so a silently stale value shifts the whole posterior and the
+    # run is conditional on it without saying so. Printed for that reason, and
+    # cross-checked against parameters_list so a name cannot appear in both.
+    #
+    # b_chi joined kappa here: with only [stock level, age] as moments, a_chi and
+    # b_chi push the stock level in opposite directions along a straight line
+    # through the prior box, and every b_chi in [2, 5] fits equally well once a_chi
+    # moves with it. b_chi is the weaker half of that pair by 3.4x per prior width,
+    # so fitting it in place of a_chi would return a posterior WIDER than its prior
+    # (1.56x). Fixing it costs a_chi nothing: 0.499 prior-widths fitted against
+    # 0.490 pinned.
+    PINNED = [
+        ("parameters_social_network", "b_chi"),
+        ("parameters_vehicle_user", "kappa"),
+    ]
+    fitted_names = {p["name"] for p in parameters_list}
+    print(f"NOT calibrated, taken verbatim from {BASE_PARAMS_LOAD}:")
+    for subdict, name in PINNED:
+        if name in fitted_names:
+            raise ValueError(
+                f"{name} is in parameters_list AND in PINNED. It cannot be both: "
+                "the draw would overwrite the JSON value for every theta while the "
+                "log claimed it was held fixed. Remove it from one of them."
+            )
+        print(f"    {subdict}.{name} = {base_params[subdict][name]}")
 
     # Nothing below mutates base_params -- run_single_simulation_raw works on a
     # deepcopy -- but the snapshot is kept as a guard against a future edit
@@ -716,7 +735,7 @@ if __name__ == "__main__":
         # the best-fitting one. Amortised over the prior is the right call until
         # the simulator noise is under control.
         num_thetas_per_round=3072,
-        num_seeds_per_theta=32,
+        num_seeds_per_theta=8,
         num_rounds=1,
         master_seed=20260816,
         central="mean",
