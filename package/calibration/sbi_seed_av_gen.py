@@ -693,7 +693,6 @@ if __name__ == "__main__":
     # and the run is conditional on it. The startup log prints what it read.
     parameters_list = [
         {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 1.4]},
-        {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.0026, 0.0028]},
     ]
 
     main(
@@ -702,7 +701,7 @@ if __name__ == "__main__":
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
         num_thetas_per_round=3072,
-        num_seeds_per_theta=8,
+        num_seeds_per_theta=32,
         num_rounds=2,
         master_seed=20260816,
         central="mean",
