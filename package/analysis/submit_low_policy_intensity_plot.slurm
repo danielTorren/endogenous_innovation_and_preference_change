@@ -45,7 +45,30 @@ cd "$REPO_ROOT"
 # current directory, so this cd is what makes the import work -- running the
 # same command from package/analysis/ fails with ModuleNotFoundError.
 
+# LOW_INTENSITY_FOLDER: the results/pair_low_intensity_policies_<timestamp> folder
+# written by the gen job, printed near the top of that job's log. Pass it at submit
+# time:
+#
+#   sbatch --export=ALL,LOW_INTENSITY_FOLDER=results/pair_low_intensity_policies_17_49_57__17_08_2026 \
+#       package/analysis/submit_low_policy_intensity_plot.slurm
+#
+# Left unset, the script falls back to the folder hardcoded in its __main__ block,
+# which almost certainly is not the one you want -- so fail loudly here instead of
+# after `uv sync`. Note this job does NOT take PAIRWISE_FOLDERS; that belongs to
+# submit_low_policy_intensity_gen.slurm.
+if [ -z "${LOW_INTENSITY_FOLDER:-}" ]; then
+    echo "ERROR: LOW_INTENSITY_FOLDER is not set. Pass the gen results folder, e.g." >&2
+    echo "  sbatch --export=ALL,LOW_INTENSITY_FOLDER=results/pair_low_intensity_policies_17_49_57__17_08_2026 \\" >&2
+    echo "      package/analysis/submit_low_policy_intensity_plot.slurm" >&2
+    exit 1
+fi
+
+if [ ! -d "$LOW_INTENSITY_FOLDER/Data" ]; then
+    echo "ERROR: '$LOW_INTENSITY_FOLDER/Data' does not exist (relative to $REPO_ROOT)." >&2
+    exit 1
+fi
+
 uv sync
 
-# The folder to plot is the one hardcoded in the script's __main__ block.
-uv run python -m package.analysis.low_policy_intensity_plot
+# Output: PNGs in $LOW_INTENSITY_FOLDER/Plots/.
+uv run python -m package.analysis.low_policy_intensity_plot "$LOW_INTENSITY_FOLDER"

@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
@@ -339,4 +341,11 @@ def main(fileName):
 
 
 if __name__ == "__main__":
-    main(fileName = "results/pair_low_intensity_policies_15_53_33__31_03_2026")
+    # fileName = the results/pair_low_intensity_policies_<timestamp> folder written
+    # by package.analysis.low_policy_intensity_gen. Pass it on the command line to
+    # override the hardcoded default below -- that default is just the folder last
+    # used interactively and does not exist on a fresh checkout, so
+    # submit_low_policy_intensity_plot.slurm always passes $LOW_INTENSITY_FOLDER.
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/pair_low_intensity_policies_15_53_33__31_03_2026"
+    print("Plotting:", file_name)
+    main(fileName = file_name)
