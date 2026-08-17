@@ -97,23 +97,74 @@ FALLBACK_SINGLE_POLICY_INTENSITIES = {
 }
 
 
-def load_single_policy_intensities(fileName_load):
+def load_single_policy_intensities(fileName_load, single_policy_fileName=None):
     """
-    Endogenous single-policy intensities from the pair-gen run, i.e. the
-    intensity of each instrument on its own that hits the EV uptake target.
+    Endogenous single-policy intensities, i.e. the intensity of each instrument
+    on its own that hits the EV uptake target.
+
+    Two sources, in order of precedence:
+
+    single_policy_fileName -- a results/endog_single_<timestamp> folder from
+        package.analysis.endogenous_policy_intensity_single_gen, whose
+        Data/policy_outcomes is a dedicated single-policy BO run (its own
+        n_calls, its own bounds from policy_bounds_endog_single_gen.json).
+        Missing or unreadable outcomes RAISE here rather than falling back:
+        asking for a specific folder and silently getting other numbers is how
+        Figure 5 ends up mislabelled.
+
+    fileName_load -- the pair-gen folder, whose Data/single_policy_outcomes is
+        the single-policy optimisation embedded in that run. Used when no
+        endog_single folder is given. Falls back to the old hardcoded values
+        for pair-gen folders too old to carry the file.
+
+    Either way the numbers come from a real optimisation run, NOT from
+    intensities hardcoded here -- but the two runs are separate optimisations,
+    so they do not have to agree. Whichever source is used gets printed and its
+    intensities are saved to the output folder as single_policy_intensities.
     """
-    try:
-        single_policy_outcomes = load_object(f"{fileName_load}/Data", "single_policy_outcomes")
-    except FileNotFoundError:
-        print(f"[!] No single_policy_outcomes in {fileName_load}/Data -- falling back to the old "
-              f"hardcoded intensities {FALLBACK_SINGLE_POLICY_INTENSITIES}. These do NOT match this "
-              f"run and the single-policy lines in Figure 5 will be inconsistent with its pairs.")
-        return dict(FALLBACK_SINGLE_POLICY_INTENSITIES)
+    if single_policy_fileName is not None:
+        # endog_single saves Data/policy_outcomes, with a "BAU" entry alongside
+        # the policies; endog_pair saves that same dict minus BAU as
+        # Data/single_policy_outcomes. Accept either name so a folder of either
+        # kind can be passed here.
+        outcomes = None
+        for object_name in ("policy_outcomes", "single_policy_outcomes"):
+            try:
+                outcomes = load_object(f"{single_policy_fileName}/Data", object_name)
+            except FileNotFoundError:
+                continue
+            print(f"Single-policy intensities from {single_policy_fileName}/Data/{object_name}.pkl")
+            break
+        if outcomes is None:
+            raise FileNotFoundError(
+                f"No policy_outcomes.pkl or single_policy_outcomes.pkl in "
+                f"{single_policy_fileName}/Data -- is that an endog_single/endog_pair "
+                f"results folder?"
+            )
+        source = single_policy_fileName
+        strict = True
+    else:
+        try:
+            outcomes = load_object(f"{fileName_load}/Data", "single_policy_outcomes")
+        except FileNotFoundError:
+            print(f"[!] No single_policy_outcomes in {fileName_load}/Data -- falling back to the old "
+                  f"hardcoded intensities {FALLBACK_SINGLE_POLICY_INTENSITIES}. These do NOT match this "
+                  f"run and the single-policy lines in Figure 5 will be inconsistent with its pairs.")
+            return dict(FALLBACK_SINGLE_POLICY_INTENSITIES)
+        print(f"Single-policy intensities from {fileName_load}/Data/single_policy_outcomes.pkl")
+        source = fileName_load
+        strict = False
 
     intensities = {}
     for policy in SINGLE_POLICY_REFERENCES:
-        if policy in single_policy_outcomes:
-            intensities[policy] = single_policy_outcomes[policy]["optimized_intensity"]
+        if policy in outcomes:
+            intensities[policy] = outcomes[policy]["optimized_intensity"]
+        elif strict:
+            raise KeyError(
+                f"'{policy}' is not in {source}/Data -- it has "
+                f"{sorted(k for k in outcomes if k != 'BAU')}. Pass a single-policy folder "
+                f"that optimised every policy in SINGLE_POLICY_REFERENCES, or drop it from there."
+            )
         else:
             intensities[policy] = FALLBACK_SINGLE_POLICY_INTENSITIES[policy]
             print(f"[!] '{policy}' missing from single_policy_outcomes -- falling back to "
@@ -173,8 +224,17 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
 
 def main(fileNames,
         min_ev_uptake = 0.945,
-        max_ev_uptake = 0.955
+        max_ev_uptake = 0.955,
+        single_policy_fileName = None
         ):
+    """
+    fileNames -- results/endog_pair_<timestamp> folder(s); their pairwise_outcomes
+        are merged and the low-intensity pair per policy combination is drawn from
+        them. fileNames[0] also supplies base_params for every run here.
+    single_policy_fileName -- optional results/endog_single_<timestamp> folder to
+        take the single-policy reference intensities from instead of fileNames[0].
+        See load_single_policy_intensities.
+    """
 
     pairwise_outcomes_complied = {}
     #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
@@ -190,8 +250,14 @@ def main(fileNames,
     #pairwise_outcomes_complied = load_object(f"{fileName_load}/Data", "pairwise_outcomes")
 
     top_policies = calc_low_intensities(pairwise_outcomes_complied,  min_ev_uptake, max_ev_uptake)
-    
+
     print("top_policies", list(top_policies.keys()), len( list(top_policies.keys())))
+
+    # Resolved here rather than beside the runs that use it at the bottom of this
+    # function: a bad single_policy_fileName then fails in seconds instead of
+    # after the whole BAU + pairs phase.
+    single_policy_intensities = load_single_policy_intensities(fileName_load, single_policy_fileName)
+    print("single_policy_intensities", single_policy_intensities)
 
     ##########################################################################################
 
@@ -264,7 +330,6 @@ def main(fileNames,
     # parameters -- the single-policy lines in Figure 5 then described a different
     # model than the pairs drawn beside them.
 
-    single_policy_intensities = load_single_policy_intensities(fileName_load)
     save_object(single_policy_intensities, root_folder + "/Data", "single_policy_intensities")
 
     for policy, save_name in SINGLE_POLICY_REFERENCES.items():
@@ -280,6 +345,35 @@ def main(fileNames,
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
 
+def parse_args(argv):
+    """
+    Positional args are the pair-gen folders; --single-policy <folder> is the
+    optional endog_single folder for the single-policy reference intensities.
+
+    Hand-rolled rather than argparse to keep the "no args at all runs the
+    hardcoded defaults" behaviour every other script in this package has.
+    """
+    file_names = []
+    single_policy_fileName = None
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg in ("--single-policy", "--single_policy"):
+            if i + 1 >= len(argv):
+                raise SystemExit(f"{arg} needs a results/endog_single_<timestamp> folder after it")
+            single_policy_fileName = argv[i + 1]
+            i += 2
+        elif arg.startswith("--single-policy=") or arg.startswith("--single_policy="):
+            single_policy_fileName = arg.split("=", 1)[1]
+            i += 1
+        elif arg.startswith("-"):
+            raise SystemExit(f"unknown option {arg}")
+        else:
+            file_names.append(arg)
+            i += 1
+    return file_names, single_policy_fileName
+
+
 if __name__ == "__main__":
     # fileNames = the results/endog_pair_<timestamp> folder(s) produced by
     # package.analysis.endogenous_policy_intensity_pair_gen, whose
@@ -288,10 +382,17 @@ if __name__ == "__main__":
     # just the folder last used interactively and does not exist on a fresh
     # checkout, so submit_low_policy_intensity_gen.slurm always passes
     # $PAIRWISE_FOLDERS explicitly.
-    file_names = sys.argv[1:] or ["results/endog_pair_15_10_05__13_08_2026"]
+    #
+    #   python -m package.analysis.low_policy_intensity_gen results/endog_pair_A \
+    #       --single-policy results/endog_single_14_36_20__13_08_2026
+    file_names, single_policy_fileName = parse_args(sys.argv[1:])
+    file_names = file_names or ["results/endog_pair_15_10_05__13_08_2026"]
     print("Loading pairwise outcomes from:", file_names)
+    if single_policy_fileName:
+        print("Loading single-policy intensities from:", single_policy_fileName)
     main(
         fileNames=file_names,
         min_ev_uptake = 0.94,
-        max_ev_uptake = 0.96#0.96
+        max_ev_uptake = 0.96,#0.96
+        single_policy_fileName = single_policy_fileName
     )

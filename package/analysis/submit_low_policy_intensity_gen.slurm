@@ -107,14 +107,33 @@ for folder in $PAIRWISE_FOLDERS; do
     fi
 done
 
+# SINGLE_POLICY_FOLDER (optional): a results/endog_single_<timestamp> folder from
+# package.analysis.endogenous_policy_intensity_single_gen. Its Data/policy_outcomes
+# then supplies the intensities for the two single-policy reference lines instead of
+# the single-policy optimisation embedded in the pair-gen run:
+#
+#   sbatch --export=ALL,PAIRWISE_FOLDERS=results/endog_pair_15_10_05__13_08_2026,SINGLE_POLICY_FOLDER=results/endog_single_14_36_20__13_08_2026 \
+#       package/analysis/submit_low_policy_intensity_gen.slurm
+#
+# Left unset, the pair-gen's own single_policy_outcomes is used, as before.
+SINGLE_POLICY_ARGS=""
+if [ -n "${SINGLE_POLICY_FOLDER:-}" ]; then
+    if [ ! -d "$SINGLE_POLICY_FOLDER/Data" ]; then
+        echo "ERROR: '$SINGLE_POLICY_FOLDER/Data' does not exist (relative to $REPO_ROOT)." >&2
+        exit 1
+    fi
+    SINGLE_POLICY_ARGS="--single-policy $SINGLE_POLICY_FOLDER"
+fi
+
 # Output: one fresh results/pair_low_intensity_policies_<timestamp> folder with
 # Data/top_policies, Data/outputs_BAU, Data/outputs, Data/outputs_carbon_tax and
 # Data/outputs_adoption_subsidy. The min/max EV uptake window (0.94-0.96) that
 # selects the low-intensity pairs is hardcoded in the script's __main__ block.
-# word splitting on $PAIRWISE_FOLDERS is deliberate -- each folder is a separate argv entry.
+# word splitting on $PAIRWISE_FOLDERS and $SINGLE_POLICY_ARGS is deliberate -- each
+# folder/flag is a separate argv entry.
 # shellcheck disable=SC2086
-uv run python -m package.analysis.low_policy_intensity_gen $PAIRWISE_FOLDERS
+uv run python -m package.analysis.low_policy_intensity_gen $PAIRWISE_FOLDERS $SINGLE_POLICY_ARGS
 
 # Otherwise, activate a plain venv instead of the uv lines above:
 # source .venv/bin/activate
-# python -m package.analysis.low_policy_intensity_gen $PAIRWISE_FOLDERS
+# python -m package.analysis.low_policy_intensity_gen $PAIRWISE_FOLDERS $SINGLE_POLICY_ARGS
