@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64        # get_num_workers() reads the SLURM allocation, so this is also joblib's
+#SBATCH --cpus-per-task=128        # get_num_workers() reads the SLURM allocation, so this is also joblib's
                                    # n_jobs and therefore the number of model instances alive at once --
                                    # the only lever on peak memory. 5 x 64 = 320 runs, so 5 batches.
                                    # Raising this to 128 buys ~2 batches of wall-clock and DOUBLES peak
