@@ -495,37 +495,45 @@ class Controller:
         Generate beta_vec, the dollar willingness to pay for car quality, from
         the income distribution drawn from a log-normal.
 
-        REVERTED to the RECIPROCAL mapping, beta_i/median_beta =
-        median_income/income_i, to reproduce the runs made before 13/08/2026
-        (e.g. calibration_gen_09_30_13__13_08_2026). Two things to know about
-        this form:
+        beta_i is PROPORTIONAL to income: beta_i/median_beta = income_i/median_income,
+        so a richer agent has a higher willingness to pay for quality. This is
+        the mapping the manuscript specifies (Section "Calibration": "we
+        distribute this value according to the Californian income distribution,
+        assigning a higher willingness to pay to richer agents"; Table of
+        parameters: "greater beta is richer car user"; supplementary: "in such
+        a way that the same proportion is maintained").
 
-        It contradicts the manuscript, which specifies beta PROPORTIONAL to
-        income (Section "Calibration": "we distribute this value according to
-        the Californian income distribution, assigning a higher willingness to
-        pay to richer agents"; Table of parameters: "greater beta is richer car
-        user"). Here the HIGHEST quality willingness to pay goes to the POOREST
-        agent. Put `incomes/median_income` back before doing anything that
-        reads the agent-level income link.
+        This previously computed the reciprocal, median_income/income_i, which
+        assigned the HIGHEST quality willingness to pay to the POOREST agents.
+        The runs made before 13/08/2026 (e.g.
+        calibration_gen_09_30_13__13_08_2026) used that form, so this method
+        does NOT reproduce them exactly. It is kept corrected deliberately,
+        because the difference is small and bounded while gen_chi's is not:
 
-        It is nonetheless a no-op for every AGGREGATE output: income enters the
-        model nowhere else, beta_vec is permuted below so the ordering link to
-        the income draw is discarded, and the reciprocal of a log-normal is
-        log-normal with the same sigma -- so both forms draw beta_vec from the
-        same distribution. Aggregate results differ only by Monte Carlo noise;
-        it is the per-agent values, and hence a given seed's realised run, that
-        change. What DOES flip sign is the income-decile reporting added in
-        socialNetworkUsers.init_income_deciles: with this mapping the bottom
-        income decile holds the highest beta, so those series are the mirror of
-        the beta-based _top/_bottom ones rather than agreeing with them.
+        The number of draws consumed is identical either way (the reciprocal is
+        applied after lognorm.rvs), so the pinned seed_inputs stream is not
+        shifted and nothing downstream of this method moves. The effect is
+        confined to the realised values in beta_vec, and both forms draw it from
+        the SAME distribution, since the reciprocal of a log-normal is
+        log-normal with the same sigma. So this is one alternative sample from
+        one unchanged law: at num_individuals = 3000 and income_sigma = 0.927
+        the mean of beta_vec moves by order 2%, plus a reshuffle of which
+        individuals sit in the tail and of the num_beta_segments quantile edges.
+        Contrast gen_chi, where the draw COUNT changed and both NK landscapes
+        were therefore redrawn.
+
+        The correction also fixes the sign of the income-decile reporting in
+        socialNetworkUsers.init_income_deciles, which needs beta to rise with
+        income to mean what it says, as does any later income-correlated
+        parameter (nu, gamma, d).
         """
         #BETA
         self.beta_multiplier = self.parameters_social_network.get("beta_multiplier", 1)#PURPOSE IS TO TEST THE ROLE OF BETA DISTRIBUTIONS
         median_beta = self.calc_beta_median()*self.beta_multiplier
-        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
+        #GIVEN THAT YOU DO INCOME/MEDIAN INCOME, DONT NEED TO SCALE INCOME
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
         median_income = np.median(incomes)
-        beta_unshuffled = median_beta*(median_income/incomes)
+        beta_unshuffled = median_beta*(incomes/median_income)
 
         # Shuffle to randomise the order of agents, i.e. to decorrelate beta
         # from an agent's index and so from its position in the social network.
@@ -556,12 +564,11 @@ class Controller:
         """
         Generate a list of beta values for n agents based on quintile incomes.
         Beta for each quintile is calculated as:
-            beta = median_beta * (median_quintile_income / quintile_income)
+            beta = median_beta * (quintile_income / median_quintile_income)
 
-        Reciprocal, i.e. the same mapping as gen_beta -- see the note in that
-        method's docstring for why that mapping is the one in use and what is
-        wrong with it. Currently unused; kept in sync so the two cannot
-        disagree if it is ever called.
+        Proportional to income, i.e. the same mapping as gen_beta -- see the
+        note in that method's docstring. Currently unused; kept in sync so it
+        cannot reintroduce the inverted mapping if it is ever called.
 
         Args:
             n (int): Total number of agents.
@@ -574,7 +581,7 @@ class Controller:
 
         median_income = quintile_incomes[2]
 
-        beta_vals = [median_beta*median_income/income for income in quintile_incomes]
+        beta_vals = [median_beta*income/median_income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
         proportions = [0.2] * len(quintile_incomes)

@@ -288,7 +288,7 @@ if __name__ == "__main__":
     # just the folder last used interactively and does not exist on a fresh
     # checkout, so submit_low_policy_intensity_gen.slurm always passes
     # $PAIRWISE_FOLDERS explicitly.
-    file_names = sys.argv[1:] or ["results/endog_pair_21_27_48__11_08_2026"]
+    file_names = ["results/endog_pair_15_10_05__13_08_2026"]
     print("Loading pairwise outcomes from:", file_names)
     main(
         fileNames=file_names,
