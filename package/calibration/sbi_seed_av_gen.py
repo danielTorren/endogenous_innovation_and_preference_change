@@ -701,7 +701,7 @@ if __name__ == "__main__":
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
         num_thetas_per_round=3072,
-        num_seeds_per_theta=32,
+        num_seeds_per_theta=8,
         num_rounds=2,
         master_seed=20260816,
         central="mean",
