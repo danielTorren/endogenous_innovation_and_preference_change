@@ -49,7 +49,7 @@ KAPPA_LIST = np.linspace(1e-4, 3e-4, 10)
 # kappa effect is monotone and large next to that noise, so 16 seeds resolve the
 # trend at a quarter of the cost of 10 x 64 = 640 runs. Raise it with --seeds
 # once the trend is worth a publication figure.
-SEEDS = 16
+SEEDS = 64
 
 # Reported alongside each row, from package/plotting_data/calibration_plot.py.
 TARGET_HHI = (0.11, 0.18)
