@@ -91,7 +91,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 3,
-        "rho":[1,0.5,0.25],
+        "rho":[1,0,0],
         "stretch_Quality": 3.0,
         "stretch_Efficiency": 1.0,
         "stretch_Cost": 3.0,
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         "N": 15,
         "K": 3,
         "A": 4,
-        "rho":[1,0.5,0.25,0.75],
+        "rho":[1,0,0,0],
         "stretch_Efficiency": 1.0,
         "stretch_Cost": 3.0,
         "stretch_Battery_size": 3.0,
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "min_Battery_size": 0,
         "max_Battery_size": 150,
         "min_Cost": 15000,
-        "max_Cost": 70000
+        "max_Cost": 100000
     },
     "parameters_firm_manager": {
         "J": 10,

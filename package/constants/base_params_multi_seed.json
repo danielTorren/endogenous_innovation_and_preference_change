@@ -55,7 +55,7 @@
         "rho":[1,0,0],
         "stretch_Cost": 2.0,
         "production_emissions":10000,
-        "delta": 0.0027,
+        "delta": 0.0022,
         "delta_P": 0.0087,
         "transportType": 2,
         "mean_Price": 60000,
@@ -64,7 +64,7 @@
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 10000,
+        "min_Cost": 5000,
         "max_Cost": 70000
     }, 
     "parameters_EV":{
@@ -81,7 +81,7 @@
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 10000,
+        "min_Cost": 5000,
         "max_Cost": 100000
     },
     "parameters_firm_manager": {
