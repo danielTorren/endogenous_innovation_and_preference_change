@@ -4,13 +4,13 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32         # get_num_workers() reads SLURM_CPUS_PER_TASK, so this is ALSO joblib's
+#SBATCH --cpus-per-task=64         # get_num_workers() reads SLURM_CPUS_PER_TASK, so this is ALSO joblib's
                                    # n_jobs and therefore the number of model instances alive at once --
                                    # the only lever on peak memory. Deliberately BELOW seed_repetitions:
                                    # 64 seeds then run as 2 sequential 32-wide batches per seed_inputs,
                                    # which halves peak memory for a few extra minutes of wall clock.
                                    # Raising this to match the seed count REQUIRES raising --mem with it.
-#SBATCH --mem=64G                  # 2G per worker. base_params_calibration.json sets
+#SBATCH --mem=128G                  # 2G per worker. base_params_calibration.json sets
                                    # save_timeseries_data_state=1, which the HHI series REQUIRES, so each
                                    # worker holds full per-step history for 456 steps (180+276,
                                    # duration_future=0) over 3000 individuals. Measured floor is ~1G per

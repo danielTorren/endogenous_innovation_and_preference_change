@@ -72,7 +72,7 @@ from package.resources.utility import (
 # carries no hidden selection: every integer in the range is scored and the whole
 # table is saved, which is what makes the spread of ev_rmse readable as evidence
 # about the model rather than about the search.
-SEED_INPUTS_LIST = np.arange(1, 33)
+SEED_INPUTS_LIST = np.arange(1, 10)
 
 # Replicates of `seed` per landscape. Seed noise has to be averaged down far enough
 # that the RANKING is about the landscape, so this is the same 64 the other sweeps
