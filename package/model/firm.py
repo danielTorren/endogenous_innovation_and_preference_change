@@ -278,7 +278,18 @@ class Firm:
         C_m_cost = C_m.copy()  # Important: Create a copy to avoid modifying original
         C_m_price = C_m.copy()
         C_m_cost[ev_mask] = np.maximum(0, C_m[ev_mask] - self.production_subsidy)
-        C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
+        # C_m_price is NOT a cost and nobody ever pays it. It is the net price a
+        # buyer would face if the firm charged its own marginal cost, and it
+        # feeds only the Lambert-W argument below, which locates the markup.
+        # When the subsidies exceed the production cost that quantity is
+        # genuinely negative (at cost pricing the buyer would be handed money),
+        # so it is deliberately NOT floored at zero. Flooring it told the firm
+        # the car was less attractive at cost than it really is, which capped
+        # the markup and handed 100% of every further subsidy dollar to the
+        # buyer instead of the profit-maximising share. C_m_cost above IS a real
+        # cost and stays floored, so the state never pays a firm more than the
+        # car costs to build.
+        C_m_price[ev_mask] = C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration)
 
         term1 = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] # Matrix with shape: num cars x num segments
         term2 = self.beta_s_values[np.newaxis, :]*(Quality_a_t[:, np.newaxis]**self.alpha)# Matrix with shape: num cars x num segments
@@ -297,7 +308,18 @@ class Firm:
         LW = lambertw(Arg, 0).real
 
         P = C_m_cost[:, np.newaxis] + (1.0 + LW)/self.kappa
-        
+
+        # The buyer pays max(0, P - rebate), so demand is completely flat in P
+        # below P = rebate: there the rebate absorbs the whole price and raising
+        # P costs no volume at all. The Lambert-W price assumes demand responds
+        # to P one-for-one, which only holds above that kink, so a price it
+        # returns below the rebate is not an optimum. Profit (P - c)*share is
+        # strictly increasing across the flat region, so the best feasible point
+        # in it is the kink itself. Hence P* = max(rebate, C_m_cost + markup).
+        rebate_total = self.rebate + self.rebate_calibration
+        if rebate_total > 0:
+            P[ev_mask] = np.maximum(P[ev_mask], rebate_total)
+
         # Store results in the original car objects (CRITICAL CHANGE)
         for i, car in enumerate(car_list):
                 for j, segment_code in enumerate(self.segment_codes):  # Use enumerate directly on the dictionary
