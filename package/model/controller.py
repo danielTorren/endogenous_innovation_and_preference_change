@@ -14,11 +14,9 @@ from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
 from scipy.stats import lognorm
-# Unused on the current code path -- gen_chi is reverted to RandomState.beta --
-# and kept only so the stream-stable ppf alternative quoted in gen_chi's Step 1
-# comment is a drop-in. Aliased rather than imported as `beta` because `beta` is
-# already a user parameter name in this model (gen_beta, beta_list,
-# parameters_social_network["beta"]) and the two are unrelated.
+# Aliased rather than imported as `beta` because `beta` is already a user
+# parameter name in this model (gen_beta, beta_list, parameters_social_network
+# ["beta"]) and the two are unrelated. Used by gen_chi's inverse-CDF draw.
 from scipy.stats import beta as beta_dist
 from copy import deepcopy
 
@@ -413,43 +411,49 @@ class Controller:
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
 
-        # Step 1: Generate continuous Beta distribution.
+        # Step 1: Generate the continuous Beta distribution by inverse CDF.
         #
-        # REVERTED (18/08/2026) to RandomState.beta, the sampler used for every
-        # run before 13/08/2026, so that those runs -- and the calibration point
-        # fitted against them -- are reproducible from this file again.
+        # ppf consumes exactly num_individuals uniforms whatever (a_chi, b_chi)
+        # are. Do NOT replace this with random_state_inputs.beta(): that is a
+        # rejection sampler, so the number of words it consumes depends on
+        # (a_chi, b_chi), and every later draw off this same pinned stream --
+        # zero_indices below, WTP_E_vec in gen_gamma, incomes and the network
+        # permutation in gen_beta, then the firm placement and the ICE/EV NK
+        # landscapes -- shifts position whenever a_chi or b_chi moves, handing
+        # the run a different population and a different landscape. gen_chi is
+        # the ONLY draw on this stream whose arguments depend on a calibrated
+        # parameter, so these two lines cover the whole chain.
         #
-        # KNOWN COST of this sampler, kept here because it was measured and must
-        # not be rediscovered: RandomState.beta is a rejection sampler, so the
-        # number of uniforms it consumes depends on (a_chi, b_chi). Every later
-        # draw off this same pinned stream -- zero_indices below, WTP_E_vec in
-        # gen_gamma, incomes and the network permutation in gen_beta, then the
-        # firm placement and the ICE/EV NK landscapes -- therefore shifts
-        # position whenever a_chi or b_chi moves, handing the run a different
-        # population AND a different landscape. Measured on the pinned
-        # seed_inputs=22 stream: a_chi 1.05 -> 1.06, a move of 1% of the
-        # calibration prior, dropped corr(chi, chi_before) to 0.76 and desynced
-        # everything downstream; sweeping a_chi over [0.95, 1.15] moved the mean
-        # of the next normal draw across a range of 0.54. That makes the
-        # simulator a rough function of theta for reasons unrelated to theta,
-        # which is what SBI reads as "this parameter does not predict the
-        # output": the leftover scatter at fixed theta on
-        # sbi_seed_av_22_25_54__16_08_2026 was 0.75 in logit units against a
+        # Measured on the pinned seed_inputs=22 stream, at the calibrated b_chi.
+        # The rejection sampler consumed 27904 words of the stream at
+        # a_chi = 1.351 but 27884 at 1.40, so at 1.40 the whole setup ran off a
+        # different offset: the ICE landscape's worst design moved from
+        # 100100110010101 to 000000111011010, its production cost from $38.5M to
+        # $34.6M, the EV landscape moved with it, and mean income changed too.
+        # The shift is a step function of a_chi, not a smooth one -- 1.36
+        # consumed exactly as much as 1.351 and was bit-identical downstream --
+        # so which small moves are free is unpredictable. Agent-level chi was
+        # also re-randomised: corr(chi_i, chi_i before) fell to ~0 while the
+        # SORTED distribution stayed correlated above 0.99, i.e. the same
+        # distribution over different individuals, which re-wires who in the
+        # social network is innovative. On sbi_seed_av_22_25_54__16_08_2026 the
+        # leftover scatter at fixed theta was 0.75 in logit units against a
         # seed-noise share of at most 0.31, and no number of seeds per theta
-        # could average it away because every seed shared the reshuffle. So do
-        # not run SBI or any a_chi/b_chi sweep on this path.
+        # could average it away because every seed shared the reshuffle. That is
+        # what SBI reads as "this parameter does not predict the output".
         #
-        # The stream-stable alternative is
-        #     u = self.random_state_inputs.random_sample(self.num_individuals)
-        #     innovativeness_vec_continuous = beta_dist.ppf(u, self.a_chi, self.b_chi)
-        # which consumes exactly num_individuals uniforms whatever (a_chi,
-        # b_chi) are. gen_chi is the ONLY draw on this stream whose arguments
-        # depend on a calibrated parameter, so those two lines cover the whole
-        # chain. Runs made with it (calibration_gen_14_04_01__18_08_2026 onward)
-        # are NOT reproducible on the reverted path: at matched
-        # a_chi/b_chi/delta the 2023 EV stock differs by roughly an order of
-        # magnitude, because seed_inputs=22 draws a different landscape.
-        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+        # Runs made with the rejection sampler cannot be reproduced from this
+        # file: everything before 13/08/2026 (e.g.
+        # calibration_gen_09_30_13__13_08_2026), the sbi_seed_av runs launched
+        # before 10:52 on 18/08/2026, and everything committed between cce52bd
+        # and this change. Their EV level is not comparable either, since at
+        # matched a_chi/b_chi/delta the 2023 EV stock differs by roughly an order
+        # of magnitude once the stream is realigned, because seed_inputs then
+        # draws a different landscape. Pick the landscape deliberately instead:
+        # package/generating_data/seed_inputs_sweep_gen.py scores seed_inputs
+        # against the calibration targets on THIS code path.
+        u = self.random_state_inputs.random_sample(self.num_individuals)
+        innovativeness_vec_continuous = beta_dist.ppf(u, self.a_chi, self.b_chi)
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
