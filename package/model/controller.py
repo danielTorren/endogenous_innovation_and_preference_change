@@ -411,36 +411,38 @@ class Controller:
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
 
-        # Step 1: Generate continuous Beta distribution
+        # Step 1: Generate the continuous Beta distribution by inverse CDF.
         #
-        # REVERTED to random_state_inputs.beta() to reproduce the runs made before
-        # 13/08/2026 (e.g. calibration_gen_09_30_13__13_08_2026), which this branch
-        # otherwise cannot reproduce. Known cost of this form, and the reason the
-        # inverse-CDF version below existed:
-        #
-        # RandomState.beta is a rejection sampler, so the number of uniforms it
-        # consumes depends on (a_chi, b_chi). Every later draw off this same pinned
-        # stream -- zero_indices below, WTP_E_vec in gen_gamma, incomes and the
-        # network permutation in gen_beta, then the firm placement and the ICE/EV
-        # NK landscapes -- therefore shifts position whenever a_chi or b_chi moves,
-        # handing the run a different population and a different landscape. Measured
-        # on the pinned seed_inputs=22 stream: a_chi 1.05 -> 1.06, a move of 1% of
-        # the calibration prior, dropped corr(chi, chi_before) to 0.76 and desynced
-        # everything downstream; sweeping a_chi over [0.95, 1.15] moved the mean of
-        # the next normal draw across a range of 0.54. That makes the simulator a
-        # rough function of theta for reasons unrelated to theta, which is what SBI
-        # reads as "this parameter does not predict the output" -- the leftover
+        # ppf consumes exactly num_individuals uniforms whatever (a_chi, b_chi)
+        # are. Do NOT replace this with random_state_inputs.beta(): that is a
+        # rejection sampler, so the number of uniforms it consumes depends on
+        # (a_chi, b_chi), and every later draw off this same pinned stream --
+        # zero_indices below, WTP_E_vec in gen_gamma, incomes and the network
+        # permutation in gen_beta, then the firm placement and the ICE/EV NK
+        # landscapes -- shifts position whenever a_chi or b_chi moves, handing the
+        # run a different population and a different landscape. Measured on the
+        # pinned seed_inputs=22 stream: a_chi 1.05 -> 1.06, a move of 1% of the
+        # calibration prior, dropped corr(chi, chi_before) to 0.76 and desynced
+        # everything downstream; sweeping a_chi over [0.95, 1.15] moved the mean
+        # of the next normal draw across a range of 0.54. That makes the simulator
+        # a rough function of theta for reasons unrelated to theta, which is what
+        # SBI reads as "this parameter does not predict the output": the leftover
         # scatter at fixed theta on sbi_seed_av_22_25_54__16_08_2026 was 0.75 in
         # logit units against a seed-noise share of at most 0.31, and no number of
         # seeds per theta could average it away because every seed shared the
-        # reshuffle. So do NOT calibrate on this form; put the two lines below back
-        # first. ppf consumes exactly num_individuals uniforms whatever (a_chi,
-        # b_chi) are, and gen_chi is the ONLY draw on this stream whose arguments
-        # depend on a calibrated parameter, so those two lines cover the whole chain.
+        # reshuffle. gen_chi is the ONLY draw on this stream whose arguments
+        # depend on a calibrated parameter, so these two lines cover the whole
+        # chain.
         #
-        #u = self.random_state_inputs.random_sample(self.num_individuals)
-        #innovativeness_vec_continuous = beta_dist.ppf(u, self.a_chi, self.b_chi)
-        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+        # Runs made with the rejection sampler cannot be reproduced from this
+        # file: everything before 13/08/2026 (e.g.
+        # calibration_gen_09_30_13__13_08_2026) and everything on
+        # min_param_changes from commit 2d2b335 up to this change used it. Their
+        # EV level is not comparable either, since at matched a_chi/b_chi/delta
+        # the 2023 EV stock roughly tripled once the stream was realigned,
+        # because seed_inputs=22 then draws a different landscape.
+        u = self.random_state_inputs.random_sample(self.num_individuals)
+        innovativeness_vec_continuous = beta_dist.ppf(u, self.a_chi, self.b_chi)
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
@@ -493,67 +495,49 @@ class Controller:
     def gen_beta(self):
         """
         Generate beta_vec, the dollar willingness to pay for car quality, from
-        the income distribution drawn from a log-normal.
+        the income distribution drawn from a log-normal, as
 
-        Which of the two mappings is used is set by
-        parameters_social_network["beta_income_mapping"]:
+            beta_i/median_beta = income_i/median_income
 
-          "reciprocal"    beta_i/median_beta = median_income/income_i.
-                          THE DEFAULT, and the historical behaviour, so runs and
-                          parameter files that predate this switch are
-                          reproduced unchanged. It is also WRONG, see below.
-          "proportional"  beta_i/median_beta = income_i/median_income.
+        so richer agents get the higher willingness to pay. This is what the
+        manuscript specifies (Section "Calibration": "we distribute this value
+        according to the Californian income distribution, assigning a higher
+        willingness to pay to richer agents"; Table of parameters: "greater beta
+        is richer car user"; supplementary: "in such a way that the same
+        proportion is maintained").
 
-        "proportional" is what the manuscript specifies (Section "Calibration":
-        "we distribute this value according to the Californian income
-        distribution, assigning a higher willingness to pay to richer agents";
-        Table of parameters: "greater beta is richer car user"; supplementary:
-        "in such a way that the same proportion is maintained"). Under the
-        default "reciprocal" the HIGHEST quality willingness to pay goes to the
-        POOREST agent, and the income-decile reporting in
-        socialNetworkUsers.init_income_deciles has its sign flipped: the bottom
-        income decile holds the highest beta, so those series are the mirror of
-        the beta-based _top/_bottom ones rather than agreeing with them. Set
-        "proportional" before doing anything that reads the agent-level income
-        link, and before any later income-correlated parameter (nu, gamma, d).
+        Do NOT reinstate the reciprocal form,
+        median_beta*(median_income/incomes). beta is the coefficient on
+        Quality**alpha in a money-metric utility whose price coefficient is
+        exactly 1 for every agent, so under the reciprocal the HIGHEST quality
+        willingness to pay goes to the POOREST agent, the income-decile series
+        built by socialNetworkUsers.init_income_deciles come out as the mirror of
+        the beta-based _top/_bottom ones, and any later income-correlated
+        parameter (nu, gamma, d) inherits the same inversion.
 
-        The default is nonetheless kept at the wrong form because it is what the
-        existing runs used and the difference is bounded, unlike gen_chi's. Which
-        run used which: everything before 10:49 on 13/08/2026 (e.g.
-        calibration_gen_09_30_13__13_08_2026) is "reciprocal"; commit 2e552da
-        switched it, so 13/08/2026 14:36 onward (endog_single,
-        vary_single_policy_gen, endog_pair) is "proportional".
+        Which runs used which: everything before 10:49 on 13/08/2026 (e.g.
+        calibration_gen_09_30_13__13_08_2026) is reciprocal, as is everything on
+        min_param_changes from commit 2d2b335 up to this change; commit 2e552da
+        and the runs from 13/08/2026 14:36 onward (endog_single,
+        vary_single_policy_gen, endog_pair) are proportional.
 
-        Why the difference is bounded: the number of draws consumed is identical
-        either way (the mapping is applied after lognorm.rvs), so the pinned
-        seed_inputs stream is not shifted and nothing downstream of this method
-        moves. The effect is confined to the realised values in beta_vec, and
-        both forms draw it from the SAME distribution, since the reciprocal of a
-        log-normal is log-normal with the same sigma. So the two are alternative
-        samples from one unchanged law: at num_individuals = 3000 and
-        income_sigma = 0.927 the mean of beta_vec moves by order 2%, plus a
-        reshuffle of which individuals sit in the tail and of the
-        num_beta_segments quantile edges. Contrast gen_chi, where the draw COUNT
-        changed and both NK landscapes were therefore redrawn.
-
-        Raises:
-            ValueError: if beta_income_mapping is not one of the two names.
+        The difference is bounded, unlike gen_chi's. The number of draws consumed
+        is identical either way, since the mapping is applied after lognorm.rvs,
+        so the pinned seed_inputs stream is not shifted and nothing downstream of
+        this method moves. Both forms also draw beta_vec from the SAME
+        distribution, because the reciprocal of a log-normal is log-normal with
+        the same sigma, so they are alternative samples from one unchanged law: at
+        num_individuals = 3000 and income_sigma = 0.927 the mean of beta_vec moves
+        by order 2%, plus a reshuffle of which individuals sit in the tail and of
+        the num_beta_segments quantile edges.
         """
         #BETA
         self.beta_multiplier = self.parameters_social_network.get("beta_multiplier", 1)#PURPOSE IS TO TEST THE ROLE OF BETA DISTRIBUTIONS
-        self.beta_income_mapping = self.parameters_social_network.get("beta_income_mapping", "reciprocal")
         median_beta = self.calc_beta_median()*self.beta_multiplier
-        #EITHER MAPPING IS A RATIO TO THE MEDIAN, SO DONT NEED TO SCALE INCOME
+        #THE MAPPING IS A RATIO TO THE MEDIAN, SO DONT NEED TO SCALE INCOME
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
         median_income = np.median(incomes)
-        if self.beta_income_mapping == "reciprocal":
-            beta_unshuffled = median_beta*(median_income/incomes)
-        elif self.beta_income_mapping == "proportional":
-            beta_unshuffled = median_beta*(incomes/median_income)
-        else:
-            raise ValueError(
-                f"Unknown beta_income_mapping {self.beta_income_mapping!r}, expected 'reciprocal' or 'proportional'"
-            )
+        beta_unshuffled = median_beta*(incomes/median_income)
 
         # Shuffle to randomise the order of agents, i.e. to decorrelate beta
         # from an agent's index and so from its position in the social network.
@@ -584,13 +568,12 @@ class Controller:
         """
         Generate a list of beta values for n agents based on quintile incomes.
         Beta for each quintile is calculated as:
-            beta = median_beta * (median_quintile_income / quintile_income)
+            beta = median_beta * (quintile_income / median_quintile_income)
 
-        Reciprocal, i.e. gen_beta's DEFAULT mapping -- see the note in that
-        method's docstring for what is wrong with it. Currently unused, so it is
-        left hard-coded rather than made to follow beta_income_mapping; wire it
-        to that switch before calling it, or it will silently disagree with
-        gen_beta whenever "proportional" is set.
+        Same mapping as gen_beta, so richer quintiles get the higher willingness
+        to pay -- see that method's docstring. Currently unused, but kept in step
+        with gen_beta so it cannot reintroduce the reciprocal if it is ever wired
+        up.
 
         Args:
             n (int): Total number of agents.
@@ -603,7 +586,7 @@ class Controller:
 
         median_income = quintile_incomes[2]
 
-        beta_vals = [median_beta*median_income/income for income in quintile_incomes]
+        beta_vals = [median_beta*income/median_income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
         proportions = [0.2] * len(quintile_incomes)
