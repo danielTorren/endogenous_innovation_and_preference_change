@@ -164,7 +164,7 @@ LOGIT_EPS = 1e-4
 
 # Runs per theta. See section 1 of the module docstring -- K=8 puts seed noise at
 # roughly a twentieth of the signal variance in logit space. Cost is linear in it.
-DEFAULT_NUM_SEEDS_PER_THETA = 8
+DEFAULT_NUM_SEEDS_PER_THETA = 64
 
 # A theta is resampled if fewer than this fraction of its seeds returned a finite
 # x. Below the threshold the surviving seeds are too few to average; at or above
@@ -519,8 +519,7 @@ def main(
     # (1.56x). Fixing it costs a_chi nothing: 0.499 prior-widths fitted against
     # 0.490 pinned.
     PINNED = [
-        ("parameters_social_network", "b_chi"),
-        ("parameters_vehicle_user", "kappa"),
+        
     ]
     fitted_names = {p["name"] for p in parameters_list}
     print(f"NOT calibrated, taken verbatim from {BASE_PARAMS_LOAD}:")
