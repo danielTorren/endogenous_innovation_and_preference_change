@@ -9,7 +9,7 @@
     "seed": 5,
     "seed_inputs": 22,
     "ev_research_start_time": 0,
-    "ev_production_start_time": 108,
+    "ev_production_start_time": 0,
     "EV_rebate_state": 0,
     "parameters_rebate_calibration": {
         "start_time": 108,
@@ -93,7 +93,7 @@
         "max_Cost": 70000
     },
     "parameters_firm_manager": {
-        "J": 16,
+        "J": 10,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data": 12,
