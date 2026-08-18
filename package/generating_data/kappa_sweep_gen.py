@@ -45,10 +45,10 @@ BASE_PARAMS_LOAD = "package/constants/base_params_calibration.json"
 # 10 values, endpoints included, as asked for.
 KAPPA_LIST = np.linspace(1e-4, 3e-4, 10)
 
-# 16, not the 64 in the base JSON. Both target series are seed-noisy but the
-# kappa effect is monotone and large next to that noise, so 16 seeds resolve the
-# trend at a quarter of the cost of 10 x 64 = 640 runs. Raise it with --seeds
-# once the trend is worth a publication figure.
+# Matches the base JSON. Independent of the worker count: the submit script's
+# --cpus-per-task is what sets how many of the 640 runs are resident at once, and
+# therefore peak memory. 64 workers in 32G is an OOM kill on this base params
+# file, so do not raise the two together without checking `seff` first.
 SEEDS = 64
 
 # Reported alongside each row, from package/plotting_data/calibration_plot.py.
@@ -106,6 +106,13 @@ def main(seeds=SEEDS, kappa_list=KAPPA_LIST):
         hhi_all.append(hhi)
         age_all.append(age)
         ev_all.append(ev)
+
+        # Dropped explicitly, not left to rebinding on the next iteration:
+        # `outputs` holds every MULTI_SEED_ARRAY_KEYS series plus the cars_on_sale
+        # object snapshot for all 64 seeds, and plain rebinding would build the
+        # next kappa's dict while the previous one is still referenced, so the
+        # parent would peak at two of them on top of the live workers.
+        del outputs
 
         row = {
             "kappa": float(kappa),
