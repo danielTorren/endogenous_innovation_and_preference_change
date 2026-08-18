@@ -43,7 +43,7 @@ from package.resources.utility import (
 BASE_PARAMS_LOAD = "package/constants/base_params_calibration.json"
 
 # 10 values, endpoints included, as asked for.
-KAPPA_LIST = np.linspace(1e-4, 3e-4, 10)
+KAPPA_LIST = np.linspace(2e-4, 3e-4, 10)
 
 # Matches the base JSON. Independent of the worker count: the submit script's
 # --cpus-per-task is what sets how many of the 640 runs are resident at once, and

@@ -692,10 +692,10 @@ if __name__ == "__main__":
     # It is not calibrated here, so the JSON value is used verbatim for every draw
     # and the run is conditional on it. The startup log prints what it read.
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 5]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [0.8, 5]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [0.8, 2]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [2, 5]},
         {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.001, 0.0033]},
-        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [1e-4, 3e-4]}
+        {"name": "kappa", "subdict": "parameters_vehicle_user", "bounds": [2e-4, 3e-4]}
     ]
 
     main(
@@ -703,9 +703,9 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_thetas_per_round=512,
+        num_thetas_per_round=1024,
         num_seeds_per_theta=64,
-        num_rounds=2,
+        num_rounds=1,
         master_seed=20260816,
         central="mean",
     )
