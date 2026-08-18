@@ -44,7 +44,7 @@ if __name__ == "__main__":
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
     "seed": 5,
-    "seed_inputs": 22,
+    "seed_inputs": 3,
     "ev_research_start_time":0,
     "ev_production_start_time": 0,
     "EV_rebate_state": 0,

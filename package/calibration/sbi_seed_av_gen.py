@@ -519,7 +519,6 @@ def main(
     # (1.56x). Fixing it costs a_chi nothing: 0.499 prior-widths fitted against
     # 0.490 pinned.
     PINNED = [
-        
     ]
     fitted_names = {p["name"] for p in parameters_list}
     print(f"NOT calibrated, taken verbatim from {BASE_PARAMS_LOAD}:")
@@ -682,17 +681,9 @@ def main(
 
 
 if __name__ == "__main__":
-    # kappa is absent here on purpose. See the module docstring: it loads onto the
-    # unconstrained direction of the [stock, age] Jacobian, its posterior has come
-    # back at 0.99x the prior width in every run made so far, and pinning it at
-    # 1.8e-4 costs ~0.03x on the achievable stock fit.
-    #
-    # SET parameters_vehicle_user.kappa IN base_params_NN.json BEFORE LAUNCHING.
-    # It is not calibrated here, so the JSON value is used verbatim for every draw
-    # and the run is conditional on it. The startup log prints what it read.
     parameters_list = [
-        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.15, 1.35]},
-        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [3, 4]},
+        {"name": "a_chi", "subdict": "parameters_social_network", "bounds": [1.2, 1.4]},
+        {"name": "b_chi", "subdict": "parameters_social_network", "bounds": [3.2, 4]},
         {"name": "delta", "subdict": "parameters_ICE", "bounds": [0.002, 0.003]},
     ]
 
@@ -701,7 +692,7 @@ if __name__ == "__main__":
         BASE_PARAMS_LOAD="package/constants/base_params_NN.json",
         OUTPUTS_LOAD_ROOT="package/calibration_data",
         OUTPUTS_LOAD_NAME="calibration_data_output",
-        num_thetas_per_round=1024,
+        num_thetas_per_round=512,
         num_seeds_per_theta=64,
         num_rounds=1,
         master_seed=20260816,
