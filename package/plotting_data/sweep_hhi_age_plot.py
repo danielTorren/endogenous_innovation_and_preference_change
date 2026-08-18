@@ -1,12 +1,15 @@
 """
-Figures for one results/kappa_sweep_<timestamp> folder written by
-package/generating_data/kappa_sweep_gen.py.
+Figures for any one-parameter HHI-and-car-age sweep folder written by
+package/generating_data/sweep_hhi_age_gen.py.
 
-  kappa_sweep_timeseries.png - HHI and fleet mean age against time, one line per
-                               kappa, against the observed target bands
-  kappa_sweep_response.png   - the 2023 mean of each series against kappa, with a
-                               95% CI over seeds, so the admissible kappa window
-                               can be read straight off the x axis
+  <slug>_sweep_timeseries.png - HHI and fleet mean age against time, one line per
+                                parameter value, against the observed target bands
+  <slug>_sweep_response.png   - the 2023 mean of each series against the parameter,
+                                with a 95% CI over seeds, so the admissible window
+                                can be read straight off the x axis
+
+Everything parameter-specific (the axis label, the slug, the x scale) comes out of
+the folder's own Data, so this module never needs editing to cover a new sweep.
 
 Arrays arrive with burn-in ALREADY trimmed, so index 0 is Jan 2001. Age is stored
 in months and plotted in years, because both target bands are stated in years.
@@ -53,23 +56,23 @@ def _year_ticks(ax, n_steps, interval_years=5):
     ax.set_xlabel("Year", fontsize=14)
 
 
-def plot_timeseries(fileName, kappa_list, hhi, age_yr, base_params, dpi=200):
+def plot_timeseries(fileName, slug, label, values, hhi, age_yr, base_params, dpi=200):
     """
-    One line per kappa, seed-mean only.
+    One line per parameter value, seed-mean only.
 
     No confidence ribbons: ten overlapping bands are unreadable, and the
-    per-kappa uncertainty is what kappa_sweep_response.png is for.
+    per-value uncertainty is what the response figure is for.
     """
     n_steps = hhi.shape[2]
     steps = np.arange(n_steps)
     cmap = plt.get_cmap(CMAP)
-    colours = [cmap(i / max(len(kappa_list) - 1, 1)) for i in range(len(kappa_list))]
+    colours = [cmap(i / max(len(values) - 1, 1)) for i in range(len(values))]
 
     fig, axs = plt.subplots(2, 1, figsize=(10, 9), sharex=True)
 
-    for i, kappa in enumerate(kappa_list):
+    for i, value in enumerate(values):
         axs[0].plot(steps, np.nanmean(hhi[i], axis=0), color=colours[i], lw=1.4,
-                    label=f"{kappa:.2e}")
+                    label=f"{value:.2e}")
         axs[1].plot(steps, np.nanmean(age_yr[i], axis=0), color=colours[i], lw=1.4)
 
     _target_band(axs[0], *TARGET_HHI, "Observed range")
@@ -82,19 +85,21 @@ def plot_timeseries(fileName, kappa_list, hhi, age_yr, base_params, dpi=200):
                                        annotation_height_prop=[0.3, 0.3, 0.3])
     _year_ticks(axs[1], n_steps)
 
-    axs[0].legend(title=r"$\kappa$", fontsize=9, title_fontsize=10, ncol=2,
-                  loc="upper right")
-    fig.suptitle(r"HHI and fleet age against $\kappa$", fontsize=16)
-    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    # Legend OUTSIDE the axes. Ten series plus the target band is a tall key, and
+    # inside the panel it covered the HHI lines it was there to identify.
+    axs[0].legend(title=label, fontsize=9, title_fontsize=10,
+                  loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0)
+    fig.suptitle(f"HHI and fleet age against {label}", fontsize=16)
+    fig.tight_layout(rect=[0, 0, 0.86, 0.97])
 
-    path = f"{fileName}/Plots/kappa_sweep_timeseries.png"
+    path = f"{fileName}/Plots/{slug}_sweep_timeseries.png"
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print("saved", path)
 
 
-def plot_response(fileName, kappa_list, hhi, age_yr, dpi=200):
-    """2023 mean of each series against kappa, with a 95% CI over seeds."""
+def plot_response(fileName, slug, label, values, hhi, age_yr, dpi=200):
+    """2023 mean of each series against the parameter, with a 95% CI over seeds."""
     fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
     for ax, data, ylabel, band in (
@@ -104,39 +109,45 @@ def plot_response(fileName, kappa_list, hhi, age_yr, dpi=200):
         # Per-seed 2023 mean first, THEN the CI over seeds. Averaging the 12
         # months before taking the CI is what makes the interval a statement
         # about seed spread rather than about within-year wobble.
-        per_seed = np.nanmean(data[:, :, -12:], axis=2)   # (n_kappa, seeds)
+        per_seed = np.nanmean(data[:, :, -12:], axis=2)   # (n_values, seeds)
         mean, half = _ci(per_seed.T)
-        ax.errorbar(kappa_list, mean, yerr=half, marker="o", capsize=3,
+        ax.errorbar(values, mean, yerr=half, marker="o", capsize=3,
                     color="#0072B2", lw=1.4)
         _target_band(ax, *band, "Observed range")
-        ax.set_xlabel(r"$\kappa$", fontsize=14)
+        ax.set_xlabel(label, fontsize=14)
         ax.set_ylabel(ylabel, fontsize=14)
         ax.legend(fontsize=10)
 
-    fig.suptitle(r"2023 mean against $\kappa$ (95% CI over seeds)", fontsize=16)
+    fig.suptitle(f"2023 mean against {label} (95% CI over seeds)", fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
 
-    path = f"{fileName}/Plots/kappa_sweep_response.png"
+    path = f"{fileName}/Plots/{slug}_sweep_response.png"
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print("saved", path)
 
 
 def main(fileName):
-    kappa_list = np.asarray(load_object(fileName + "/Data", "kappa_list"), dtype=float)
-    base_params = load_object(fileName + "/Data", "base_params")
-    hhi = np.asarray(load_object(fileName + "/Data", "data_array_hhi"), dtype=float)
-    age_yr = np.asarray(load_object(fileName + "/Data", "data_array_age_fleet"),
-                        dtype=float) / 12
+    D = fileName + "/Data"
+    base_params = load_object(D, "base_params")
+    values = np.asarray(load_object(D, "param_list"), dtype=float)
+    slug = load_object(D, "param_name")
+    label = load_object(D, "param_label")
+
+    hhi = np.asarray(load_object(D, "data_array_hhi"), dtype=float)
+    age_yr = np.asarray(load_object(D, "data_array_age_fleet"), dtype=float) / 12
 
     if not os.path.exists(fileName + "/Plots"):
         createFolder(fileName)
 
-    plot_timeseries(fileName, kappa_list, hhi, age_yr, base_params)
-    plot_response(fileName, kappa_list, hhi, age_yr)
+    plot_timeseries(fileName, slug, label, values, hhi, age_yr, base_params)
+    plot_response(fileName, slug, label, values, hhi, age_yr)
     return fileName
 
 
 if __name__ == "__main__":
     # Folder on argv, so this does not need editing between runs.
-    main(sys.argv[1] if len(sys.argv) > 1 else "results/kappa_sweep")
+    if len(sys.argv) < 2:
+        raise SystemExit("usage: python -m package.plotting_data.sweep_hhi_age_plot "
+                         "results/<sweep folder>")
+    main(sys.argv[1])

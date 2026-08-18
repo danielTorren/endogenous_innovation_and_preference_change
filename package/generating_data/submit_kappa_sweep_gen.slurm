@@ -33,8 +33,8 @@
 # --cpus-per-task above sets how many of them are resident at once.
 #
 # Outputs one fresh results/kappa_sweep_<timestamp> folder holding
-# Data/{data_array_hhi,data_array_age_fleet,data_array_ev_prop,kappa_list,
-# base_params,summary} plus Plots/kappa_sweep_timeseries.png and
+# Data/{data_array_hhi,data_array_age_fleet,data_array_ev_prop,param_list,
+# param_name,param_label,base_params,summary} plus Plots/kappa_sweep_timeseries.png and
 # Plots/kappa_sweep_response.png. The per-kappa 2023 means are also printed as a
 # table in this job's log, with the target bands on the row above.
 
@@ -66,7 +66,7 @@ uv run python -m package.generating_data.kappa_sweep_gen
 
 RESULTS_FOLDER="$(ls -td results/kappa_sweep_* | head -n 1)"
 echo "Results folder: $RESULTS_FOLDER"
-echo "Re-plot with: python -m package.plotting_data.kappa_sweep_plot $RESULTS_FOLDER"
+echo "Re-plot with: python -m package.plotting_data.sweep_hhi_age_plot $RESULTS_FOLDER"
 
 # Otherwise, activate a plain venv instead of the uv lines above:
 # source .venv/bin/activate
