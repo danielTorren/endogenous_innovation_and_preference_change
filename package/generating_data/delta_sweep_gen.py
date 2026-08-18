@@ -51,7 +51,7 @@ SUBDICT = "parameters_ICE"      # copied to parameters_EV by the controller, see
 PARAM_LABEL = r"$\delta$"
 
 # 10 values, endpoints included. The calibration prior range.
-DELTA_LIST = np.linspace(0.002, 0.0033, 5)
+DELTA_LIST = np.linspace(0.00175, 0.0022, 5)
 
 # Overrides seed_repetitions in the base JSON, so editing that file does not
 # silently change the sweep. Independent of the worker count: the submit script's
