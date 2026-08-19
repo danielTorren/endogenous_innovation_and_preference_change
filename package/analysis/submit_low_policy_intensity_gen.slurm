@@ -89,15 +89,28 @@ uv sync
 #   sbatch --export=ALL,"PAIRWISE_FOLDERS=results/endog_pair_A results/endog_pair_B" \
 #       package/analysis/submit_low_policy_intensity_gen.slurm
 #
-# Left unset, the script falls back to the folder hardcoded in its __main__
-# block, which almost certainly is not the one you want -- so fail loudly here
-# instead, minutes before `uv sync` and a wasted allocation turn into a
-# FileNotFoundError.
+# Left unset, the folders pasted into ENDOG_PAIR at the top of
+# low_policy_intensity_gen.py are used instead. They are read out here rather
+# than just left to the script so they get echoed into the log and checked for
+# existence below -- the whole point of this block is that a wrong folder fails
+# in seconds, not after the allocation is spent.
 if [ -z "${PAIRWISE_FOLDERS:-}" ]; then
-    echo "ERROR: PAIRWISE_FOLDERS is not set. Pass the pair-gen results folder(s), e.g." >&2
-    echo "  sbatch --export=ALL,PAIRWISE_FOLDERS=results/endog_pair_00_19_42__30_03_2026 \\" >&2
-    echo "      package/analysis/submit_low_policy_intensity_gen.slurm" >&2
-    exit 1
+    # `if !` rather than a bare assignment: under `set -e` a failing command
+    # substitution would otherwise kill the job with no message of its own.
+    if ! PAIRWISE_FOLDERS="$(uv run python -c 'from package.analysis.low_policy_intensity_gen import ENDOG_PAIR, resolve_folder; print(" ".join(resolve_folder(f) for f in ENDOG_PAIR))')"; then
+        echo "ERROR: could not read ENDOG_PAIR from package/analysis/low_policy_intensity_gen.py" >&2
+        echo "  (see the traceback above). Pass PAIRWISE_FOLDERS at submit time instead." >&2
+        exit 1
+    fi
+    if [ -z "$PAIRWISE_FOLDERS" ]; then
+        echo "ERROR: PAIRWISE_FOLDERS is not set and ENDOG_PAIR in" >&2
+        echo "  package/analysis/low_policy_intensity_gen.py is empty. Paste the pair-gen" >&2
+        echo "  folder(s) there, or pass them at submit time, e.g." >&2
+        echo "  sbatch --export=ALL,PAIRWISE_FOLDERS=results/endog_pair_00_19_42__30_03_2026 \\" >&2
+        echo "      package/analysis/submit_low_policy_intensity_gen.slurm" >&2
+        exit 1
+    fi
+    echo "PAIRWISE_FOLDERS not set -- using ENDOG_PAIR from low_policy_intensity_gen.py: $PAIRWISE_FOLDERS"
 fi
 
 for folder in $PAIRWISE_FOLDERS; do
@@ -115,7 +128,9 @@ done
 #   sbatch --export=ALL,PAIRWISE_FOLDERS=results/endog_pair_15_10_05__13_08_2026,SINGLE_POLICY_FOLDER=results/endog_single_14_36_20__13_08_2026 \
 #       package/analysis/submit_low_policy_intensity_gen.slurm
 #
-# Left unset, the pair-gen's own single_policy_outcomes is used, as before.
+# Left unset, ENDOG_SINGLE at the top of low_policy_intensity_gen.py decides:
+# a folder pasted there is used, and None means the pair-gen's own
+# single_policy_outcomes, as before.
 SINGLE_POLICY_ARGS=""
 if [ -n "${SINGLE_POLICY_FOLDER:-}" ]; then
     if [ ! -d "$SINGLE_POLICY_FOLDER/Data" ]; then
