@@ -230,5 +230,5 @@ if __name__ == '__main__':
         N_samples = 512,
         BASE_PARAMS_LOAD = "package/constants/base_params_SA.json",
         VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_SA.json",
-        calc_second_order = True
+        calc_second_order = False
     )
