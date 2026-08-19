@@ -83,7 +83,7 @@ if __name__ == "__main__":
     "parameters_second_hand":{
         "age_limit_second_hand": 36,
         "max_num_cars_prop": 0.5,
-        "burn_in_second_hand_market": 0,
+        "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
     },
     "parameters_ICE":{
@@ -92,11 +92,8 @@ if __name__ == "__main__":
         "K": 3,
         "A": 3,
         "rho":[1,0,0],
-        "stretch_Quality": 3.0,
-        "stretch_Efficiency": 1.0,
-        "stretch_Cost": 3.0,
         "production_emissions":10000,
-        "delta": 0.00222,
+        "delta": 0.00233,
         "delta_P": 0.0087,
         "transportType": 2,
         "mean_Price": 60000,
@@ -105,7 +102,7 @@ if __name__ == "__main__":
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
-        "min_Cost": 15000,
+        "min_Cost": 5000,
         "max_Cost": 70000
     }, 
     "parameters_EV":{
@@ -114,9 +111,6 @@ if __name__ == "__main__":
         "K": 3,
         "A": 4,
         "rho":[1,0,0,0],
-        "stretch_Efficiency": 1.0,
-        "stretch_Cost": 3.0,
-        "stretch_Battery_size": 3.0,
         "delta_P":0.0116,
         "production_emissions":14000,
         "transportType": 3,
@@ -124,17 +118,13 @@ if __name__ == "__main__":
         "max_Efficiency": 9.73,
         "min_Battery_size": 0,
         "max_Battery_size": 150,
-        "min_Cost": 15000,
-        "max_Cost": 100000
+        "min_Cost": 5000,
+        "max_Cost": 70000
     },
     "parameters_firm_manager": {
         "J": 10,
-        "init_car_age_mean": 192,
-        "init_car_age_std": 129,
-        "init_car_age_max": 600,
-        "init_car_sellable": True,
-        "init_firm_placement": "worst_pool",
-        "init_firm_pool_prop": 0.05,
+        "init_car_age_mean": 0,
+        "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
         "gamma_threshold_percentile": 50,
         "num_beta_segments": 8,
@@ -152,8 +142,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.351,
-        "b_chi": 3.821,
+        "a_chi": 1.34, 
+        "b_chi": 3.573,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,

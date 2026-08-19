@@ -661,19 +661,34 @@ class Social_Network:
         rebate_deduction = np.where(matched_is_ev, self.rebate_calibration + self.rebate, 0.0)
         closest_prices = np.maximum(first_hand_prices[closest_idxs] - rebate_deduction, 0)
 
-        # Adjust prices based on car age and depreciation
-        adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
+        # Adjust prices based on car age and depreciation. The gross series is
+        # the same anchor with the EV rebate left in. It exists because a car's
+        # physical end of life cannot depend on a subsidy paid on NEW cars: the
+        # price floor in firm.calc_optimal_price_cars pins an EV list price at
+        # exactly the rebate, so the deducted anchor above is identically zero
+        # for every used EV at every age once that floor binds. Read by the
+        # scrap test, that destroyed the entire used-EV fleet on contact --
+        # including one-month-old cars -- and dragged fleet EV share down even
+        # as new EV sales tripled. Prices stay on the deducted series, because a
+        # large new-car rebate really does crush used values; only the scrap
+        # decision reads the gross one.
+        depreciation = (1 - second_hand_delta_P) ** second_hand_ages
+        adjusted_prices = closest_prices * depreciation
+        adjusted_prices_gross = first_hand_prices[closest_idxs] * depreciation
 
-        # Calculate offer prices
-        offer_prices = adjusted_prices / (1 + self.mu)
+        # Calculate offer prices, not below the scrap price
+        offer_prices = np.maximum(adjusted_prices / (1 + self.mu), self.scrap_price)
 
-        # Ensure offer prices are not below the scrap price
-        offer_prices = np.maximum(offer_prices, self.scrap_price)
+        # Physically-scrap test, read off the gross series. Identical to the old
+        # `cost_second_hand_merchant == self.scrap_price` test whenever the EV
+        # rebate is zero, since the two series coincide there.
+        scrap_eligible = adjusted_prices_gross / (1 + self.mu) <= self.scrap_price
 
         # Assign prices back to second-hand car objects
         for i, car in enumerate(current_cars):
             car.price_second_hand_merchant = adjusted_prices[i]
             car.cost_second_hand_merchant = offer_prices[i]
+            car.scrap_eligible = bool(scrap_eligible[i])
 
         return offer_prices
 
@@ -873,7 +888,7 @@ class Social_Network:
                 # -- which is why stocked cars read exactly one month too young
                 # for their whole time on the second-hand market.
                 user.vehicle.update_timer_L_a_t()
-                if (user.vehicle.init_car) or (user.vehicle.cost_second_hand_merchant == self.scrap_price) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD
+                if (user.vehicle.init_car) or (user.vehicle.scrap_eligible) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD
                     user.vehicle.owner_id = -99#send to shadow realm
                     user.vehicle = None
                 else:

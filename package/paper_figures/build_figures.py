@@ -55,50 +55,56 @@ RUNS = {
     # ---- main manuscript -------------------------------------------------
     # Figure 2 (validation dashboard) and supplementary Figure 5 (car qualities)
     # both come out of the same calibration run.
-    "calibration": "results/calibration_gen_09_30_13__13_08_2026",
+    "calibration": "results/calibration_gen_20_28_03__18_08_2026",
     # Figure 3 -- package/analysis/vary_single_policy_gen.py
-    "single_policies": "results/vary_single_policy_gen_19_53_15__11_08_2026",
+    "single_policies": "results/vary_single_policy_gen_20_01_30__18_08_2026",
     # Figure 4 -- package/analysis/endogenous_policy_intensity_pair_gen.py
-    "policy_pairs": "results/endog_pair_21_27_48__11_08_2026",
+    "policy_pairs": "results/endog_pair_20_22_47__18_08_2026",
     # Figure 5 -- package/analysis/low_policy_intensity_gen.py
-    "low_intensity": "",
+    # No run in results/ yet (results/endog_single_20_01_19__18_08_2026 is the
+    # single-policy input it needs, not its output).
+    "low_intensity": "pair_low_intensity_policies_11_46_52__19_08_2026",
     # Figure 6 -- package/generating_data/single_experiment_gen.py
-    "single_experiment": "results/single_experiment_09_42_36__13_08_2026",
+    # No single_experiment_* run in results/ yet.
+    "single_experiment": "single_experiment_13_58_56__19_08_2026",
     # Figure 7 -- vary_single_param_gen over max_num_cars_prop
-    "used_car_capacity": "results/sen_vary_max_num_cars_prop_10_41_12__12_08_2026",
+    "used_car_capacity": "results/sen_vary_max_num_cars_prop_20_27_28__18_08_2026",
 
     # ---- supplementary material -----------------------------------------
     # Figure 1 -- package/calibration/sbi_single_seed_gen.py
-    "posterior": "results/calibration_gen_09_30_13__13_08_2026",
+    "posterior": "results/sbi_seed_av_15_31_53__18_08_2026",
     # Figure 6 -- ten vary_single runs, in panel order a-j. Order matters:
     # a alpha, b r, c mu, d kappa, e b_chi, f a_chi, g lambda, h delta,
     # i K_EV, j K_ICE (see supplementary_runs/fig06_local_sensitivity_gen.PANELS).
     "local_sensitivity": [
-        "results/single_param_vary_22_13_42__11_08_2026",  # a  alpha
-        "results/single_param_vary_22_15_59__11_08_2026",  # b  r
-        "results/single_param_vary_22_18_14__11_08_2026",  # c  mu
-        "results/single_param_vary_22_20_29__11_08_2026",  # d  kappa
-        "results/single_param_vary_22_22_40__11_08_2026",  # e  b_chi
-        "results/single_param_vary_22_24_53__11_08_2026",  # f  a_chi
-        "results/single_param_vary_22_27_08__11_08_2026",  # g  lambda
-        "results/single_param_vary_22_29_20__11_08_2026",  # h  delta
-        "results/single_param_vary_22_31_31__11_08_2026",  # i  K_EV
-        "results/single_param_vary_22_33_41__11_08_2026",  # j  K_ICE
+        "results/single_param_vary_20_27_49__18_08_2026",  # a  alpha
+        "results/single_param_vary_20_30_11__18_08_2026",  # b  r
+        "results/single_param_vary_20_32_19__18_08_2026",  # c  mu
+        "results/single_param_vary_20_34_32__18_08_2026",  # d  kappa
+        "results/single_param_vary_20_36_44__18_08_2026",  # e  b_chi
+        "results/single_param_vary_20_40_39__18_08_2026",  # f  a_chi
+        "results/single_param_vary_20_42_55__18_08_2026",  # g  lambda
+        "results/single_param_vary_20_45_13__18_08_2026",  # h  delta
+        "results/single_param_vary_20_47_26__18_08_2026",  # i  K_EV
+        "results/single_param_vary_20_49_48__18_08_2026",  # j  K_ICE
     ],
     # Figures 7 and 8 -- package/supplementary_runs/fig07_08_sobol_gen.py
-    "sobol": "results/sensitivity_analysis_23_42_10__11_08_2026",
+    "sobol": "results/sensitivity_analysis_20_28_14__18_08_2026",
     # Figures 9 and 10 -- package/supplementary_runs/fig09_10_bau_gen.py
     "bau_grid": "",
     # Figures 11-14 -- package/supplementary_runs/fig11_14_policy_grid_gen.py
-    "grid_beta_carbon": "results/cross_beta_multiplier_vs_Carbon_price_22_36_30__11_08_2026",
-    "grid_beta_rebate": "results/cross_beta_multiplier_vs_Adoption_subsidy_23_13_14__11_08_2026",
-    "grid_achi_carbon": "results/cross_a_chi_vs_Carbon_price_23_56_23__11_08_2026",
-    "grid_achi_rebate": "results/cross_a_chi_vs_Adoption_subsidy_00_26_03__12_08_2026",
+    "grid_beta_carbon": "results/cross_beta_multiplier_vs_Carbon_price_20_27_49__18_08_2026",
+    # No cross_beta_multiplier_vs_Adoption_subsidy_* run in results/ yet.
+    "grid_beta_rebate": "",
+    "grid_achi_carbon": "results/cross_a_chi_vs_Carbon_price_20_32_04__18_08_2026",
+    "grid_achi_rebate": "results/cross_a_chi_vs_Adoption_subsidy_20_52_15__18_08_2026",
     # The BAU baseline for Figures 11-14 has no policy in it, so it depends only
     # on the physical parameter: one BAU run serves both policies on that axis.
     # A cross_* run writes data_cross_bau.pkl of its own; point these at whichever
     # run actually has that file (leave empty to use each figure's own folder).
-    "grid_bau_beta": "results/cross_beta_multiplier_vs_Adoption_subsidy_23_13_14__11_08_2026",
+    # None of the current cross_* runs has data_cross_bau.pkl, so both are empty
+    # and the heatmaps come out without the BAU contour.
+    "grid_bau_beta": "",
     "grid_bau_achi": "",
 }
 

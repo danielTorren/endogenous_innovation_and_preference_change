@@ -88,6 +88,38 @@ def plot_results(fileName, posterior_samples, param_bounds, param_names):
     save_and_show(fig, fileName, "pairplot", dpi=300)
     plt.show()
 
+def plot_subset(fileName, posterior_samples, param_bounds, param_names,
+                wanted=("a_chi", "b_chi"), plot_name="pairplot_chi"):
+    """
+    Pairplot of a named subset of the parameters only.
+
+    Use it when the run sampled extra parameters (e.g. delta) that are not
+    wanted in the figure. Parameters missing from param_names are skipped.
+
+    Args:
+        fileName (str): Base directory for outputs.
+        posterior_samples (torch.Tensor): Posterior samples, shape (n, n_params).
+        param_bounds (list): Bounds, one per parameter, in param_names order.
+        param_names (list): Names of all sampled parameters.
+        wanted (tuple): Names to keep, in the order they must be plotted.
+        plot_name (str): File name for the saved figure.
+    """
+    idx = [param_names.index(n) for n in wanted if n in param_names]
+    if len(idx) < 2:
+        print(f"skipping {plot_name}: found {len(idx)} of {list(wanted)} in {param_names}")
+        return
+
+    fig, ax = pairplot(
+        posterior_samples[:, idx],
+        limits=[param_bounds[i] for i in idx],
+        figsize=(6, 6),
+        points_colors='r',
+        labels=[param_names[i] for i in idx]
+    )
+
+    save_and_show(fig, fileName, plot_name, dpi=300)
+    plt.show()
+
 def main(fileName):
     """
     Main function to load data and plot results.
@@ -148,6 +180,7 @@ def main(fileName):
     
     # Plot results
     plot_results(fileName, samples, param_bounds, param_names)
+    plot_subset(fileName, samples, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
