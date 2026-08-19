@@ -1,4 +1,6 @@
 import copy
+import sys
+
 from package.resources.utility import load_object, save_object
 import matplotlib.pyplot as plt
 import numpy as np
@@ -575,6 +577,8 @@ def main(fileNames):
 
 
 if __name__ == "__main__":
-    main(
-        fileNames=["results/endog_pair_20_22_47__18_08_2026"]
-    )
+    # The gen script calls main() itself, so the default below is only the folder
+    # last used interactively; pass one or more folders to plot other runs.
+    fileNames = sys.argv[1:] or ["results/endog_pair_20_22_47__18_08_2026"]
+    print("Plotting:", fileNames)
+    main(fileNames=fileNames)

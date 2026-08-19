@@ -6,6 +6,7 @@ from package.resources.utility import (
     load_object,
     get_num_workers,
 )
+import os
 import shutil  # Cleanup
 import sys
 from operator import attrgetter
@@ -259,7 +260,8 @@ def calc_low_intensities(pairwise_outcomes_complied, min_val, max_val):
 def main(fileNames,
         min_ev_uptake = 0.945,
         max_ev_uptake = 0.955,
-        single_policy_fileName = None
+        single_policy_fileName = None,
+        plot = True
         ):
     """
     fileNames -- results/endog_pair_<timestamp> folder(s); their pairwise_outcomes
@@ -378,6 +380,32 @@ def main(fileNames,
     #######################################################################################################
     #DELETE CALIBRATION RUNS
     shutil.rmtree(Path(root_folder) / "Calibration_runs", ignore_errors=True)
+
+    if plot:
+        plot_results(root_folder)
+
+    return root_folder
+
+
+def plot_results(root_folder):
+    """
+    Plot straight after the run so the results folder never has to be pasted into
+    low_policy_intensity_plot by hand. The plot module is imported here rather than
+    at the top of the file so a headless run that cannot import matplotlib still
+    completes, and a plotting bug never hides the saved data.
+    """
+    # Inside a batch job there is no display, and an interactive backend would make
+    # plt.show() block until the job hits its wall time.
+    if os.environ.get("SLURM_JOB_ID") and "MPLBACKEND" not in os.environ:
+        os.environ["MPLBACKEND"] = "Agg"
+
+    try:
+        from package.analysis.low_policy_intensity_plot import main as plot_main
+        plot_main(root_folder)
+    except Exception as e:
+        print(f"[!] Plotting failed ({type(e).__name__}: {e}). Data is saved, plot it with:")
+        print(f"    python -m package.analysis.low_policy_intensity_plot {root_folder}")
+
 
 def parse_args(argv):
     """

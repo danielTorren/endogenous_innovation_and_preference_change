@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import load_object
@@ -160,4 +162,8 @@ def main(file_name):
 
     plt.show()
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_20_01_30__18_08_2026")#vary_single_policy_gen_16_43_02__06_03_2025
+    # The gen script calls main() itself, so the default below is only the folder
+    # last used interactively; pass a folder to plot any other run.
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/vary_single_policy_gen_13_48_31__19_08_2026"
+    print("Plotting:", file_name)
+    main(file_name=file_name)#vary_single_policy_gen_16_43_02__06_03_2025

@@ -280,6 +280,79 @@ def print_data_shapes(outputs, base_params):
 
 def plot_calibration_fit(base_params, fileName, outputs, dpi=200):
     """
+    2x2 figure: EV stock and sales, prices, market concentration and mean car age.
+
+    The four panels that carry the calibration story. No observed-range bands:
+    this is the fit figure, and the target ranges live in calibration_targets.
+    """
+
+    calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
+    EV_sales_prop_2020_23 = calibration_data_output["EV Sales Prop"]
+
+    fig, axs = plt.subplots(2, 2, figsize=(17, 10), sharex=True)
+
+    # Plot 1: EV uptake, stock and sales (top-left)
+    plot_ev_uptake(EV_stock_prop_2010_23, EV_sales_prop_2020_23, base_params,
+                   outputs["history_prop_EV"],
+                   outputs["history_past_new_bought_vehicles_prop_ev"], axs[0, 0],
+                   annotation_height_prop=[0.9, 0.9, 0.9])
+
+    # Plot 2: Mean price (top-right)
+    plot_mean_price(base_params, outputs["history_mean_price_ICE_EV"],
+                    outputs["history_median_price_ICE_EV"],
+                    outputs["history_lower_percentile_price_ICE_EV"],
+                    outputs["history_upper_percentile_price_ICE_EV"], axs[0, 1],
+                    annotation_height_prop=[0.1, 0.1, 0.1])
+
+    # Plot 3: Market concentration (bottom-left)
+    plot_market_concentration(base_params, outputs["history_market_concentration"], axs[1, 0],
+                              annotation_height_prop=[0.3, 0.3, 0.3],
+                              show_target_band=False)
+
+    # Plot 4: Mean car age (bottom-right). Whole-fleet series, always recorded,
+    # rather than history_mean_car_age, which is gated behind
+    # save_timeseries_data_state -- the two measure the same quantity.
+    plot_mean_car_age(base_params, np.asarray(outputs["history_mean_car_age_fleet"]), axs[1, 1],
+                      annotation_height_prop=[0.3, 0.3, 0.3],
+                      show_target_band=False)
+
+    #########################################################################
+    # Year ticks every 5 years from the end of burn-in, same rebasing as the
+    # 3x2 figure: step 0 is the end of burn-in.
+    tick_interval_years = 5
+    months_per_year = 12
+
+    max_time_step = max(
+        ax.get_lines()[0].get_xdata().max() for ax in [axs[1, 0], axs[1, 1]]
+    )
+    max_year = CALIBRATION_START_YEAR + int(max_time_step // months_per_year)
+    last_tick_year = max_year - (max_year - CALIBRATION_START_YEAR) % tick_interval_years
+    tick_years = np.arange(CALIBRATION_START_YEAR, last_tick_year + 1, tick_interval_years)
+
+    tick_positions = (tick_years - CALIBRATION_START_YEAR) * months_per_year
+    tick_labels = [str(year) for year in tick_years]
+
+    for ax in axs[0]:
+        ax.set_xlabel("")
+    for ax in axs[1]:
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels(tick_labels)
+        ax.set_xlabel("Year")
+    #########################################################################
+
+    plt.tight_layout(rect=[0.01, 0.0, 0.98, 1])
+    plt.subplots_adjust(wspace=0.15)
+
+    save_path = os.path.join(fileName, "Plots")
+    os.makedirs(save_path, exist_ok=True)
+    fig.savefig(f"{save_path}/calibration_fit.png", dpi=dpi)
+    fig.savefig(f"{save_path}/calibration_fit.eps", dpi=dpi)
+    print(f"Saved to {save_path}/calibration_fit.png")
+
+
+def plot_calibration_fit_plus(base_params, fileName, outputs, dpi=200):
+    """
     3x2 figure: EV uptake, prices, market concentration, mean car age, used share
     of purchases and transaction volume.
 
@@ -356,9 +429,9 @@ def plot_calibration_fit(base_params, fileName, outputs, dpi=200):
 
     save_path = os.path.join(fileName, "Plots")
     os.makedirs(save_path, exist_ok=True)
-    fig.savefig(f"{save_path}/calibration_fit.png", dpi=dpi)
-    fig.savefig(f"{save_path}/calibration_fit.eps", dpi=dpi)
-    print(f"Saved to {save_path}/calibration_fit.png")
+    fig.savefig(f"{save_path}/calibration_fit_plus.png", dpi=dpi)
+    fig.savefig(f"{save_path}/calibration_fit_plus.eps", dpi=dpi)
+    print(f"Saved to {save_path}/calibration_fit_plus.png")
 
 
 def plot_ev_uptake(real_data, EV_sales_prop_2020_23, base_params, data,
@@ -561,7 +634,8 @@ def plot_mean_price(base_params, history_mean_price_ICE_EV, history_median_price
     add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
 
 
-def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
+def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8],
+                              show_target_band=True):
     """Plot market concentration on the provided axes."""
     burn_in_step = base_params["duration_burn_in"]
     data_after_burn_in = np.asarray(data)[:, burn_in_step:]
@@ -580,14 +654,16 @@ def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8
         label='95% Confidence Interval'
     )
 
-    _target_band(ax, *TARGET_HHI, "Observed range")
+    if show_target_band:
+        _target_band(ax, *TARGET_HHI, "Observed range")
     ax.set_xlabel("Time Step, months", fontsize=16)
     ax.set_ylabel("Market Concentration, HHI", fontsize=16)
     add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(loc="upper left", fontsize=12)
 
 
-def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
+def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8],
+                      show_target_band=True):
     """
     Plot mean car age on the provided axes.
 
@@ -612,7 +688,8 @@ def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0
         label='95% Confidence Interval'
     )
 
-    _target_band(ax, *TARGET_FLEET_AGE_YEARS, "Observed range")
+    if show_target_band:
+        _target_band(ax, *TARGET_FLEET_AGE_YEARS, "Observed range")
     ax.set_xlabel("Time Step, months", fontsize=16)
     ax.set_ylabel("Car Age, years", fontsize=16)
     add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
@@ -1453,6 +1530,7 @@ def main(fileName, dpi=200):
 
     # Fit against the Californian data
     plot_calibration_fit(base_params, fileName, outputs, dpi=dpi)
+    plot_calibration_fit_plus(base_params, fileName, outputs, dpi=dpi)
 
     # The four target variables against their observed ranges. Skipped on runs
     # saved before record_calibration_targets() existed.
