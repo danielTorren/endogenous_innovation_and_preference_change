@@ -188,6 +188,6 @@ def main(file_name):
 if __name__ == "__main__":
     # The gen script calls main() itself, so the default below is only the folder
     # last used interactively; pass a folder to plot any other run.
-    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/endog_single_20_01_19__18_08_2026"
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/endog_single_13_47_10__19_08_2026"
     print("Plotting:", file_name)
     main(file_name=file_name)
