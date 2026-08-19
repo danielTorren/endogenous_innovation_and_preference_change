@@ -5,7 +5,7 @@ Drop the results folder names into RUNS below, then:
 
     python -m package.paper_figures.build_figures
 
-It does three things:
+It does four things:
 
 1. Re-plots each figure from its results folder (existing plotting code only;
    no simulation, no duplicated plotting logic).
@@ -15,13 +15,17 @@ It does three things:
 3. Rewrites the \\includegraphics paths in manuscript.tex and supplementary.tex
    so they point at those files. Figures are matched by their \\label, not by
    position, so reordering the .tex is safe.
+4. Rebuilds the numbers in Tables 3 and 4 from the same results folders and
+   rewrites the matching tabular block in manuscript.tex. Tables are matched by
+   their label too, and their keys on the command line are T3 and T4.
 
 Useful flags:
 
     --list              show the manifest and what is missing, change nothing
-    --only 3,S6,S11     build a subset (S prefix = supplementary)
+    --only 3,S6,T3      build a subset (S prefix = supplementary, T = table)
     --skip-plot         reuse the PNGs already in the results folders
     --no-tex            copy figures but leave the .tex files alone
+    --no-tables         build the figures only, leave the tables alone
     --dry-run           print what would happen
 
 Figures that are not model output (main Figure 1, supplementary Figures 2-4)
@@ -55,14 +59,16 @@ RUNS = {
     # ---- main manuscript -------------------------------------------------
     # Figure 2 (validation dashboard) and supplementary Figure 5 (car qualities)
     # both come out of the same calibration run.
-    "calibration": "results/calibration_gen_20_28_03__18_08_2026",
+    "calibration": "results/calibration_gen_15_46_01__19_08_2026",
     # Figure 3 -- package/analysis/vary_single_policy_gen.py
     "single_policies": "results/vary_single_policy_gen_20_01_30__18_08_2026",
     # Figure 4 -- package/analysis/endogenous_policy_intensity_pair_gen.py
     "policy_pairs": "results/endog_pair_20_22_47__18_08_2026",
-    # Figure 5 -- package/analysis/low_policy_intensity_gen.py
-    # No run in results/ yet (results/endog_single_20_01_19__18_08_2026 is the
-    # single-policy input it needs, not its output).
+    # Table 3 -- package/analysis/endogenous_policy_intensity_single_gen.py.
+    # The endogenous single-policy solve: one optimised intensity per policy, of
+    # which only those landing in the target uptake band get a column.
+    "single_policy_endog": "results/endog_single_13_47_10__19_08_2026",
+    # Figure 5 and Table 4 -- package/analysis/low_policy_intensity_gen.py
     "low_intensity": "pair_low_intensity_policies_11_46_52__19_08_2026",
     # Figure 6 -- package/generating_data/single_experiment_gen.py
     # No single_experiment_* run in results/ yet.
@@ -111,6 +117,17 @@ RUNS = {
 # N_samples used for the Sobol run, which is baked into its output filename.
 SOBOL_N_SAMPLES = 256
 
+# The EV uptake band a run has to land in to count as reaching the 95% target,
+# used by Figure 4 and by Table 3 when it picks its columns.
+MIN_EV_UPTAKE = 0.94
+MAX_EV_UPTAKE = 0.96
+
+# Scale applied to cumulative emissions in the tables. This keeps the magnitude
+# of the hand-typed Table 3, whose BAU row was of order 100 "MTCO2". The figure
+# code multiplies the same quantity by 1e-9 instead, so the table and the figure
+# axis have never agreed; flip this to 1e-9 to make the figures the reference.
+EMISSIONS_SCALE = 1e-6
+
 # Figures the model does not produce. Put these files in docs/paper/static_figs/.
 STATIC_SOURCES = {
     "diagram": "Figure_1.png",
@@ -133,7 +150,16 @@ SUPPLEMENTARY_TEX = os.path.join(PAPER_DIR, "supplementary.tex")
 
 
 def _abs(path):
-    return path if os.path.isabs(path) else os.path.join(REPO_ROOT, path)
+    """
+    Absolute path of a configured folder. A bare run name with no separator in
+    it means results/<name>, the same rule the gen scripts use, so a folder name
+    pasted into RUNS works with or without the results/ prefix.
+    """
+    if os.path.isabs(path):
+        return path
+    if "/" not in path.replace(chr(92), "/"):
+        path = "results/" + path
+    return os.path.join(REPO_ROOT, path)
 
 
 # ---------------------------------------------------------------------------
@@ -175,8 +201,8 @@ def _replot_policy_pairs(folder):
         single_policy_outcomes,
         outcomes_BAU,
         path,
-        min_ev_uptake=0.94,
-        max_ev_uptake=0.96,
+        min_ev_uptake=MIN_EV_UPTAKE,
+        max_ev_uptake=MAX_EV_UPTAKE,
         dpi=300,
         insets=True,
         plot_name="emissions_tradeoff",
@@ -331,10 +357,7 @@ class Figure:
         """Configured results folder(s) for this figure, [] if unset."""
         if self.is_static:
             return []
-        value = RUNS.get(self.run_key, "")
-        if isinstance(value, str):
-            return [value] if value else []
-        return [f for f in value if f]
+        return _run_folders(self.run_key)
 
     def source_path(self):
         """Absolute path of the PNG this figure is copied from, or None."""
@@ -353,6 +376,14 @@ class Figure:
             return None
         base = self.out_folder(folders) if self.out_folder else folders[0]
         return os.path.join(_abs(base), self.artifact)
+
+
+def _run_folders(run_key):
+    """The RUNS entry as a list of folders, [] if unset. One string or a list."""
+    value = RUNS.get(run_key, "")
+    if isinstance(value, str):
+        return [value] if value else []
+    return [f for f in value if f]
 
 
 def _sobol_artifact(order):
@@ -428,6 +459,279 @@ FIGURES = [
            "policy_surface_heatmap_with_BAU.png", _policy_grid_replotter("grid_bau_achi"),
            "EV uptake, a_chi x new car rebate"),
 ]
+
+
+# ---------------------------------------------------------------------------
+# 4b. TABLES -- numbers taken out of the same run folders as the figures
+# ---------------------------------------------------------------------------
+
+TABLE_ENV = re.compile(r"\\begin\{table\*?\}.*?\\end\{table\*?\}", re.DOTALL)
+TABLE_LABEL = re.compile(r"\\label\{tab:([^}]+)\}")
+TABULAR = re.compile(r"[ \t]*\\begin\{tabular\}\{[^}]*\}.*?\\end\{tabular\}", re.DOTALL)
+
+
+def _tabular(column_spec, header, rows):
+    """Assemble a booktabs tabular block out of already-formatted cells."""
+    lines = [r"\begin{tabular}{%s}" % column_spec, r"\toprule",
+             (" & ".join(header) + r" \\").lstrip(), r"\midrule"]
+    lines += [" & ".join(row) + r" \\" for row in rows]
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    return lines
+
+
+def _intensity_cell(policy, value):
+    """
+    Policy intensities are stored in the units the model uses: the carbon price
+    in $/kgCO2, the electricity subsidy as a fraction, the rest in dollars.
+    """
+    if policy == "Carbon_price":
+        return r"%.0f $\$/TCO_2$" % (value * 1000)
+    if policy == "Electricity_subsidy":
+        return r"$%.1f\%%$" % (value * 100)
+    return r"$\$%.2f$" % value
+
+
+def _table_policy_outcomes(folder):
+    """
+    Table 3 -- outcomes of each single policy at the endogenously found minimum
+    intensity, for the policies whose mean EV uptake lands in the target band.
+    Reads policy_outcomes.pkl from an endog_single_* run.
+    """
+    from package.analysis.endogenous_policy_intensity_single_plot import policy_titles
+    from package.resources.utility import load_object
+
+    outcomes = load_object(_abs(folder) + "/Data", "policy_outcomes")
+    if "BAU" not in outcomes:
+        raise ValueError("policy_outcomes has no BAU entry")
+
+    on_target, off_target = [], []
+    for policy, entry in outcomes.items():
+        if policy == "BAU":
+            continue
+        if MIN_EV_UPTAKE <= entry["mean_EV_uptake"] <= MAX_EV_UPTAKE:
+            on_target.append((policy, entry))
+        else:
+            off_target.append((policy, entry["mean_EV_uptake"]))
+
+    for policy, uptake in off_target:
+        print("    [drop] %s: EV uptake %.3f outside %.2f-%.2f"
+              % (policy_titles.get(policy, policy), uptake, MIN_EV_UPTAKE, MAX_EV_UPTAKE))
+    if not on_target:
+        raise ValueError("no policy in this run reached %.2f-%.2f EV uptake"
+                         % (MIN_EV_UPTAKE, MAX_EV_UPTAKE))
+    for policy, entry in on_target:
+        print("    [keep] %s: EV uptake %.3f at intensity %s"
+              % (policy_titles.get(policy, policy), entry["mean_EV_uptake"],
+                 _intensity_cell(policy, entry["optimized_intensity"])))
+
+    def uptake_cell(policy, entry):
+        return "%.3f (%.3f)" % (entry["mean_EV_uptake"], entry["sd_ev_uptake"])
+
+    def intensity_cell(policy, entry):
+        if policy == "BAU":
+            return "-"
+        return _intensity_cell(policy, entry["optimized_intensity"])
+
+    def scaled(key, scale, digits):
+        def cell(policy, entry):
+            return "%.*f" % (digits, entry[key] * scale)
+        return cell
+
+    row_spec = [
+        (r"\textbf{EV Adoption Proportion, ($\sigma$)}", uptake_cell),
+        (r"\textbf{Intensity}", intensity_cell),
+        (r"\textbf{Cumulative Net Cost, bn USD}", scaled("mean_net_cost", 1e-9, 3)),
+        (r"\textbf{Cumulative Emissions, MT$CO_2$}",
+         scaled("mean_emissions_cumulative", EMISSIONS_SCALE, 2)),
+        (r"\textbf{Cumulative Emissions (Driving), MT$CO_2$}",
+         scaled("mean_emissions_cumulative_driving", EMISSIONS_SCALE, 2)),
+        (r"\textbf{Cumulative Emissions (Production), MT$CO_2$}",
+         scaled("mean_emissions_cumulative_production", EMISSIONS_SCALE, 2)),
+        (r"\textbf{Cumulative Profit, bn USD}", scaled("mean_profit_cumulative", 1e-9, 3)),
+        (r"\textbf{Cumulative Utility (2030), bn USD}",
+         scaled("mean_utility_cumulative_30", 1e-9, 3)),
+        (r"\textbf{Cumulative Utility (2035), bn USD}",
+         scaled("mean_utility_cumulative", 1e-9, 3)),
+    ]
+
+    columns = [("BAU", outcomes["BAU"])] + on_target
+    header = [""] + [r"\textbf{%s}" % policy_titles.get(p, p) for p, _ in columns]
+    rows = [[label] + [cell(p, entry) for p, entry in columns] for label, cell in row_spec]
+    return _tabular("l" + "c" * len(columns), header, rows)
+
+
+def _table_low_intensity_emissions(folder):
+    """
+    Table 4 -- cumulative emissions of each policy mix at the last time step
+    (2050), as a percentage change against BAU. Same quantity the low intensity
+    dashboard prints, from the same pickles, in the same policy ordering.
+    """
+    import numpy as np
+
+    from package.analysis.low_policy_intensity_plot import flip_policy_pair, policy_titles
+    from package.resources.utility import load_object
+
+    path = _abs(folder) + "/Data"
+    outputs = load_object(path, "outputs")
+    outputs_BAU = load_object(path, "outputs_BAU")
+
+    # Same reordering the plot module applies before labelling anything.
+    flip_policy_pair(outputs, "Adoption_subsidy_used", "Carbon_price")
+    flip_policy_pair(outputs, "Adoption_subsidy", "Carbon_price")
+
+    # The dashboard draws the two single policies alongside the pairs; the table
+    # lists them too, so add them the same way.
+    outputs[("Carbon_price",)] = load_object(path, "outputs_carbon_tax")
+    outputs[("Adoption_subsidy",)] = load_object(path, "outputs_adoption_subsidy")
+
+    def cumulative_final(output):
+        return np.nanmean(np.cumsum(output["history_total_emissions"], axis=1)[:, -1])
+
+    bau_final = cumulative_final(outputs_BAU)
+
+    changes = []
+    for key, output in outputs.items():
+        label = " + ".join(policy_titles.get(p, p) for p in key)
+        changes.append((label, (cumulative_final(output) - bau_final) / bau_final * 100))
+    changes.sort(key=lambda row: row[1])
+
+    header = [r"\textbf{Policy Combination}", r"\textbf{Change (\%)}"]
+    rows = [[label, r"$%s$%.2f" % ("-" if change < 0 else "+", abs(change))]
+            for label, change in changes]
+    return _tabular("lc", header, rows)
+
+
+class Table:
+    def __init__(self, number, label, run_key, build, caption):
+        self.number = number
+        self.label = label            # \label{tab:<label>} in manuscript.tex
+        self.run_key = run_key        # key into RUNS
+        self.build = build            # callable(folder) -> list of tex lines
+        self.caption = caption        # short human description, for --list
+
+    @property
+    def key(self):
+        return "T%d" % self.number
+
+    def folders(self):
+        return _run_folders(self.run_key)
+
+    def source_folder(self):
+        folders = self.folders()
+        return folders[0] if folders else None
+
+
+TABLES = [
+    Table(3, "policy_outcomes", "single_policy_endog", _table_policy_outcomes,
+          "Single policy outcomes at the minimum intensity reaching the uptake band"),
+    Table(4, "emissions", "low_intensity", _table_low_intensity_emissions,
+          "Cumulative emissions change against BAU at the final time step"),
+]
+
+
+def build_tables(tables, dry_run=False, write_tex=True):
+    """Recompute each table and rewrite its tabular block. Returns (built, skipped)."""
+    built, skipped = [], []
+
+    for table in tables:
+        folder = table.source_folder()
+        if not folder:
+            print("  [skip] Table %s: RUNS['%s'] is empty" % (table.key, table.run_key))
+            skipped.append(table)
+            continue
+        if not os.path.isdir(_abs(folder)):
+            print("  [skip] Table %s: folder not found: %s" % (table.key, folder))
+            skipped.append(table)
+            continue
+
+        print("  [build] Table %s <- %s" % (table.key, folder))
+        try:
+            lines = table.build(folder)
+        except Exception as error:  # keep going; report at the end
+            print("  [FAIL] Table %s: %s" % (table.key, error))
+            skipped.append(table)
+            continue
+
+        for line in lines:
+            print("      " + line)
+        built.append((table, lines))
+
+    if write_tex and built:
+        print("\nUpdating LaTeX tables")
+        rewrite_tables(MANUSCRIPT_TEX, built, dry_run=dry_run)
+
+    return [table for table, _ in built], skipped
+
+
+def rewrite_tables(tex_path, built, dry_run=False):
+    """Replace the tabular block of each rebuilt table, matched by its label."""
+    if not os.path.isfile(tex_path):
+        print("  [skip] %s not found" % os.path.basename(tex_path))
+        return 0
+
+    by_label = {table.label: lines for table, lines in built}
+    with open(tex_path, "r", encoding="utf-8") as handle:
+        original = handle.read()
+
+    changed = []
+
+    def fix_environment(match):
+        block = match.group(0)
+        label_match = TABLE_LABEL.search(block)
+        if not label_match:
+            return block
+        lines = by_label.get(label_match.group(1))
+        if lines is None:
+            return block
+        tabular = TABULAR.search(block)
+        if tabular is None:
+            print("  [warn] tab:%s: no tabular block to replace" % label_match.group(1))
+            return block
+        indent = re.match(r"[ \t]*", tabular.group(0)).group(0)
+        inner = "\t" if "\t" in indent else "    "
+        replacement = "\n".join(
+            indent + ("" if line.startswith(r"\begin{tabular}")
+                      or line.startswith(r"\end{tabular}") else inner) + line
+            for line in lines)
+        if replacement == tabular.group(0):
+            return block
+        changed.append(label_match.group(1))
+        return block[:tabular.start()] + replacement + block[tabular.end():]
+
+    updated = TABLE_ENV.sub(fix_environment, original)
+
+    name = os.path.basename(tex_path)
+    if not changed:
+        print("  %s: tables already up to date" % name)
+        return 0
+
+    for label in changed:
+        print("  %s: tab:%s rebuilt" % (name, label))
+
+    if not dry_run:
+        # rewrite_tex may have written the backup already, in which case keep
+        # it: it is the version from before this run touched anything.
+        if not os.path.isfile(tex_path + ".bak"):
+            shutil.copyfile(tex_path, tex_path + ".bak")
+        with open(tex_path, "w", encoding="utf-8") as handle:
+            handle.write(updated)
+        print("  %s: rewritten (%d table(s), backup at %s.bak)" % (name, len(changed), name))
+
+    return len(changed)
+
+
+def check_unmapped_tables(tex_path, tables):
+    """Warn about table environments in the .tex the manifest does not cover."""
+    if not os.path.isfile(tex_path):
+        return
+    known = {table.label for table in tables}
+    with open(tex_path, "r", encoding="utf-8") as handle:
+        content = handle.read()
+    for block in TABLE_ENV.findall(content):
+        label_match = TABLE_LABEL.search(block)
+        if label_match and label_match.group(1) not in known:
+            print("  [note] %s: tab:%s is not rebuilt from a run"
+                  % (os.path.basename(tex_path), label_match.group(1)))
 
 
 # ---------------------------------------------------------------------------
@@ -592,14 +896,30 @@ def print_manifest():
             print(f"  {figure.key:<5}{status:<10}{figure.tex_path:<38}{shown}")
             print(f"  {'':<5}{'':<10}{figure.caption}")
 
+    print("\nTABLES (manuscript.tex)")
+    print(f"  {'Tab':<5}{'status':<10}{'label':<38}source")
+    for table in TABLES:
+        folder = table.source_folder()
+        if not folder:
+            status, shown = "unset", f"RUNS['{table.run_key}'] is empty"
+        elif os.path.isdir(_abs(folder)):
+            status, shown = "ready", folder
+        else:
+            status, shown = "missing", folder
+        print(f"  {table.key:<5}{status:<10}{'tab:' + table.label:<38}{shown}")
+        print(f"  {'':<5}{'':<10}{table.caption}")
+
 
 def parse_selection(text):
+    """Split a --only list into the figures and the tables it names."""
     wanted = {token.strip().upper() for token in text.split(",") if token.strip()}
-    selected = [figure for figure in FIGURES if figure.key.upper() in wanted]
-    unknown = wanted - {figure.key.upper() for figure in selected}
+    figures = [figure for figure in FIGURES if figure.key.upper() in wanted]
+    tables = [table for table in TABLES if table.key.upper() in wanted]
+    known = {figure.key.upper() for figure in figures} | {table.key.upper() for table in tables}
+    unknown = wanted - known
     if unknown:
-        sys.exit(f"Unknown figure(s): {', '.join(sorted(unknown))}")
-    return selected
+        sys.exit(f"Unknown figure(s)/table(s): {', '.join(sorted(unknown))}")
+    return figures, tables
 
 
 def main():
@@ -609,6 +929,7 @@ def main():
     parser.add_argument("--only", default=None, help="comma-separated figure keys, e.g. 3,S6,S11")
     parser.add_argument("--skip-plot", action="store_true", help="reuse PNGs already in the results folders")
     parser.add_argument("--no-tex", action="store_true", help="do not touch the .tex files")
+    parser.add_argument("--no-tables", action="store_true", help="build the figures only")
     parser.add_argument("--dry-run", action="store_true", help="report only, write nothing")
     args = parser.parse_args()
 
@@ -616,12 +937,16 @@ def main():
         print_manifest()
         return
 
-    figures = parse_selection(args.only) if args.only else FIGURES
+    figures, tables = parse_selection(args.only) if args.only else (FIGURES, TABLES)
+    if args.no_tables:
+        tables = []
 
-    print("Building figures")
-    copied, skipped = build_figures(figures, skip_plot=args.skip_plot, dry_run=args.dry_run)
+    copied, skipped = [], []
+    if figures:
+        print("Building figures")
+        copied, skipped = build_figures(figures, skip_plot=args.skip_plot, dry_run=args.dry_run)
 
-    if not args.no_tex:
+    if figures and not args.no_tex:
         print("\nUpdating LaTeX paths")
         main_figures = [f for f in copied if not f.supplementary]
         supp_figures = [f for f in copied if f.supplementary]
@@ -630,9 +955,18 @@ def main():
         check_unmapped(MANUSCRIPT_TEX, [f for f in FIGURES if not f.supplementary])
         check_unmapped(SUPPLEMENTARY_TEX, [f for f in FIGURES if f.supplementary])
 
+    built_tables, skipped_tables = [], []
+    if tables:
+        print("\nBuilding tables")
+        built_tables, skipped_tables = build_tables(
+            tables, dry_run=args.dry_run, write_tex=not args.no_tex)
+        check_unmapped_tables(MANUSCRIPT_TEX, TABLES)
+
     print(f"\n{len(copied)} figure(s) in place, {len(skipped)} skipped.")
-    if skipped:
-        print("Skipped: " + ", ".join(figure.key for figure in skipped))
+    if tables:
+        print(f"{len(built_tables)} table(s) rebuilt, {len(skipped_tables)} skipped.")
+    if skipped or skipped_tables:
+        print("Skipped: " + ", ".join(item.key for item in skipped + skipped_tables))
         print("Fill in the matching RUNS entry (or docs/paper/static_figs/) and re-run.")
 
 
