@@ -16,6 +16,40 @@ from joblib import Parallel, delayed, load
 import multiprocessing
 
 
+# ---------------------------------------------------------------------------
+# PASTE THE RUN FOLDERS HERE
+#
+# ENDOG_PAIR    -- one or more results/endog_pair_<timestamp> folders from
+#                  endogenous_policy_intensity_pair_gen. Their pairwise_outcomes
+#                  are merged; the first one also supplies base_params.
+# ENDOG_SINGLE  -- the results/endog_single_<timestamp> folder to take the
+#                  single-policy reference intensities from, or None to read
+#                  them from ENDOG_PAIR[0]/Data/single_policy_outcomes.
+#
+# Paste just the folder name ("endog_pair_20_22_47__18_08_2026"); the "results/"
+# prefix, surrounding quotes and a trailing slash are all optional. Command-line
+# args still override both (see __main__).
+ENDOG_PAIR = [
+    " results/endog_pair_20_22_47__18_08_2026",
+]
+ENDOG_SINGLE = " results/endog_single_20_01_19__18_08_2026"
+# ---------------------------------------------------------------------------
+
+
+def resolve_folder(name):
+    """
+    Turn a pasted folder name into a path relative to the repo root, so both
+    "endog_pair_<stamp>" and "results/endog_pair_<stamp>" work. Anything that
+    already has a path separator is left alone (absolute paths, other roots).
+    """
+    if not name:
+        return None
+    name = str(name).strip().strip('"').strip("'").replace("\\", "/").rstrip("/")
+    if not name:
+        return None
+    return name if "/" in name else f"results/{name}"
+
+
 # Histories collected from every scenario run, as
 #   saved output key -> attribute path on the finished controller.
 #
@@ -378,15 +412,16 @@ if __name__ == "__main__":
     # fileNames = the results/endog_pair_<timestamp> folder(s) produced by
     # package.analysis.endogenous_policy_intensity_pair_gen, whose
     # Data/pairwise_outcomes files get merged here. Pass one or more on the
-    # command line to override the hardcoded default below -- that default is
-    # just the folder last used interactively and does not exist on a fresh
-    # checkout, so submit_low_policy_intensity_gen.slurm always passes
-    # $PAIRWISE_FOLDERS explicitly.
+    # command line to override ENDOG_PAIR / ENDOG_SINGLE at the top of this
+    # file -- those are just the folders last used interactively and do not
+    # exist on a fresh checkout, so submit_low_policy_intensity_gen.slurm
+    # always passes $PAIRWISE_FOLDERS explicitly.
     #
     #   python -m package.analysis.low_policy_intensity_gen results/endog_pair_A \
     #       --single-policy results/endog_single_14_36_20__13_08_2026
     file_names, single_policy_fileName = parse_args(sys.argv[1:])
-    file_names = file_names or ["results/endog_pair_15_10_05__13_08_2026"]
+    file_names = [resolve_folder(f) for f in (file_names or ENDOG_PAIR)]
+    single_policy_fileName = resolve_folder(single_policy_fileName or ENDOG_SINGLE)
     print("Loading pairwise outcomes from:", file_names)
     if single_policy_fileName:
         print("Loading single-policy intensities from:", single_policy_fileName)
