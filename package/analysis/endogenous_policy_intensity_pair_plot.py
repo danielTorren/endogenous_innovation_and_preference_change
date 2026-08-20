@@ -9,10 +9,8 @@ import os
 from matplotlib.patches import Patch
 from matplotlib.collections import LineCollection
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from package.resources.utility import (
-    createFolder, save_object, produce_name_datetime
-)
 from matplotlib.colors import ListedColormap
+from matplotlib.ticker import MaxNLocator
 
 # Marker helper functions
 def half_circle_marker(start, end, offset=-45):
@@ -517,6 +515,142 @@ def plot_emissions_tradeoffs_zoom(
     fig.savefig(f"{file_name}/Plots/emissions_tradeoffs/{plot_name}.png", dpi=dpi)
 
 
+def plot_emissions_tradeoffs_bau_inset(
+        base_params,
+        pairwise_outcomes_complied,
+        single_outcomes,
+        outcomes_BAU,
+        file_name,
+        min_ev_uptake=0.9,
+        max_ev_uptake=1.0,
+        dpi=300,
+        pad_frac=0.10,
+        headroom_frac=0.35,
+        inset_bbox_top=(0.70, 0.68, 0.28, 0.29),
+        inset_bbox_bottom=(0.70, 0.68, 0.28, 0.29),
+        plot_name="emissions_tradeoff_bau_inset"
+        ):
+    """
+    All policy combinations at full scale, with BAU relegated to an inset.
+
+    BAU has far higher emissions than any policy point, so keeping it on the
+    main axes squashes the whole policy cloud into the left edge. Here the main
+    axes are scaled to the policy points only, and each panel carries a small
+    overview inset holding the full range: the policy cloud as grey dots inside
+    a dashed box marking the main window, and BAU as the black marker off to
+    the right.
+    """
+    okabe_ito_colors = ['#E69F00', '#009E73', '#56B4E9', '#F0E442',
+                        '#0072B2', '#D55E00', '#CC79A7', '#000000']
+    color_map = ListedColormap(okabe_ito_colors)
+    all_policies = sorted({p for pair in pairwise_outcomes_complied for p in pair})
+    policy_colors = {policy: color_map(i) for i, policy in enumerate(all_policies)}
+
+    scale_marker = 350
+
+    records, policy_ranges = _collect_records(
+        base_params, pairwise_outcomes_complied, single_outcomes,
+        min_ev_uptake, max_ev_uptake)
+    for policy in all_policies:
+        policy_ranges.setdefault(policy, {"min": 0, "max": 0})
+
+    prob_switch = base_params["parameters_social_network"]["prob_switch_car"]
+    bau_em = outcomes_BAU["mean_emissions_cumulative"] * 1e-9
+    bau_ut = outcomes_BAU["mean_utility_cumulative"] / prob_switch * 1e-9
+    bau_cost = outcomes_BAU["mean_net_cost"] * 1e-9
+
+    fig, (ax_top, ax_bottom) = plt.subplots(2, 1, figsize=(9, 9), sharex=True)
+
+    for rec in records:
+        _draw_record(ax_top, rec, "c", policy_colors, policy_ranges, scale_marker)
+        _draw_record(ax_bottom, rec, "u", policy_colors, policy_ranges, scale_marker)
+
+    # --- Main window: scaled to the means, not to the confidence intervals. The
+    # emissions CIs are wide enough that including them would push every marker
+    # into the middle third of the axes; the bars are allowed to run off instead.
+    # headroom_frac adds empty space at the top for the inset to sit in.
+    def _limits(values, headroom=True):
+        lo, hi = min(values), max(values)
+        span = hi - lo if hi > lo else abs(hi) or 1.0
+        return lo - pad_frac * span, hi + (headroom_frac if headroom else pad_frac) * span
+
+    e_lims = _limits([r["e"] for r in records], headroom=False)
+    c_lims = _limits([r["c"] for r in records])
+    u_lims = _limits([r["u"] for r in records])
+
+    ax_top.set_xlim(*e_lims)
+    ax_top.set_ylim(*c_lims)
+    ax_bottom.set_xlim(*e_lims)
+    ax_bottom.set_ylim(*u_lims)
+
+    # --- Overview insets carrying BAU
+    def _add_bau_inset(ax, y_key, y_lims, bau_y, bbox):
+        axins = ax.inset_axes(bbox)
+
+        xs = [r["e"] for r in records]
+        ys = [r[y_key] for r in records]
+        axins.scatter(xs, ys, s=8, color="0.55", edgecolor="none", zorder=2)
+        axins.scatter(bau_em, bau_y, s=70, color="black", edgecolor="black", zorder=3)
+        axins.annotate("BAU", (bau_em, bau_y), textcoords="offset points",
+                       xytext=(0, -12), ha="center", va="top", fontsize=7)
+
+        # Dashed box = the window shown on the main axes.
+        axins.add_patch(plt.Rectangle(
+            (e_lims[0], y_lims[0]), e_lims[1] - e_lims[0], y_lims[1] - y_lims[0],
+            fill=False, edgecolor="0.35", linestyle=(0, (3, 2)), linewidth=0.8, zorder=1))
+
+        x_lo = min(min(xs), bau_em)
+        x_hi = max(max(xs), bau_em)
+        y_lo = min(min(ys), bau_y, y_lims[0])
+        y_hi = max(max(ys), bau_y, y_lims[1])
+        x_pad = 0.12 * (x_hi - x_lo)
+        y_pad = 0.16 * (y_hi - y_lo)
+        axins.set_xlim(x_lo - x_pad, x_hi + x_pad)
+        axins.set_ylim(y_lo - y_pad, y_hi + y_pad)
+
+        # Few, auto-placed ticks: hand-picked ticks at the data extremes land on
+        # the callout box corners and collide with it in a box this small.
+        axins.xaxis.set_major_locator(MaxNLocator(nbins=3, prune="both"))
+        axins.yaxis.set_major_locator(MaxNLocator(nbins=3, prune="both"))
+        axins.tick_params(axis='both', labelsize=6, pad=1.5, length=2)
+        axins.set_facecolor("white")
+        for spine in axins.spines.values():
+            spine.set_edgecolor("0.4")
+        return axins
+
+    _add_bau_inset(ax_top, "c", c_lims, bau_cost, inset_bbox_top)
+    _add_bau_inset(ax_bottom, "u", u_lims, bau_ut, inset_bbox_bottom)
+
+    # --- Labels
+    ax_top.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)
+    ax_bottom.set_ylabel("Cumulative Utility, bn $", fontsize=16)
+    ax_bottom.set_xlabel("Cumulative Emissions, MTCO2", fontsize=16)
+
+    # --- Legend
+    legend_elements = [Patch(facecolor=policy_colors[policy], edgecolor='black',
+                             label=f"{POLICY_TITLES[policy]} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
+                       for policy in all_policies]
+    legend_elements += [Patch(facecolor='black', edgecolor='black', label='BAU (inset)')]
+    legend_elements += [
+        plt.Line2D([0], [0], color="grey", alpha=0.5, linestyle='-', label='95% Confidence Interval'),
+        plt.Line2D([0], [0], marker=half_circle_marker(0, 180), color='gray',
+                   markerfacecolor='gray', markeredgecolor='black', linestyle='None',
+                   label='Low Intensity', markersize=8),
+        plt.Line2D([0], [0], marker=half_circle_marker(0, 180), color='gray',
+                   markerfacecolor='gray', markeredgecolor='black', linestyle='None',
+                   label='High Intensity', markersize=12),
+    ]
+    # Below the panels rather than inside one: with every pair drawn, an in-axes
+    # legend sits on top of the low-utility cluster.
+    fig.legend(handles=legend_elements, loc='lower center', ncol=3, fontsize=10,
+               frameon=False, bbox_to_anchor=(0.5, 0.0))
+
+    # --- Save
+    os.makedirs(f"{file_name}/Plots/emissions_tradeoffs", exist_ok=True)
+    fig.tight_layout(rect=(0, 0.11, 1, 1))
+    fig.savefig(f"{file_name}/Plots/emissions_tradeoffs/{plot_name}.png", dpi=dpi)
+
+
 def main(fileNames):
     """
     fileNames : list of endog_pair folders. The FIRST one must be a folder made
@@ -533,8 +667,9 @@ def main(fileNames):
     single_policy_outcomes = load_object(f"{fileName}/Data", "single_policy_outcomes")
 
 
-    file_name = produce_name_datetime("all_policies")
-    createFolder(file_name)
+    # Plots (and the compiled pairwise data) go into the first run folder rather
+    # than a separate all_policies folder.
+    file_name = fileName
 
     pairwise_outcomes_complied = {}
     
@@ -568,10 +703,15 @@ def main(fileNames):
                                   inset_policies=("Production_subsidy", "Adoption_subsidy"),
                                   plot_name="emissions_tradeoff_zoom")
 
-    save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes")
-    save_object(single_policy_outcomes, file_name + "/Data", "single_policy_outcomes")
-    save_object(outcomes_BAU, file_name + "/Data", "outcomes_BAU")
-    save_object(base_params, file_name + "/Data", "base_params")
+    # All policy combinations at full scale, BAU moved into an overview inset
+    plot_emissions_tradeoffs_bau_inset(base_params, pairwise_outcomes_complied, single_policy_outcomes, outcomes_BAU,
+                                       file_name,
+                                       min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300,
+                                       plot_name="emissions_tradeoff_bau_inset")
+
+    # Saved under its own name so the folder's own pairwise_outcomes (and the
+    # BAU/single-policy/params objects already sitting there) stay untouched.
+    save_object(pairwise_outcomes_complied, file_name + "/Data", "pairwise_outcomes_complied")
 
     plt.show()
 
@@ -579,6 +719,6 @@ def main(fileNames):
 if __name__ == "__main__":
     # The gen script calls main() itself, so the default below is only the folder
     # last used interactively; pass one or more folders to plot other runs.
-    fileNames = sys.argv[1:] or ["results/endog_pair_20_22_47__18_08_2026"]
+    fileNames = sys.argv[1:] or ["results/endog_pair_14_08_10__19_08_2026"]
     print("Plotting:", fileNames)
     main(fileNames=fileNames)

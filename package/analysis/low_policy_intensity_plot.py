@@ -346,6 +346,6 @@ if __name__ == "__main__":
     # override the hardcoded default below -- that default is just the folder last
     # used interactively and does not exist on a fresh checkout, so
     # submit_low_policy_intensity_plot.slurm always passes $LOW_INTENSITY_FOLDER.
-    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/pair_low_intensity_policies_11_46_52__19_08_2026"
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/pair_low_intensity_policies_06_52_21__20_08_2026"
     print("Plotting:", file_name)
     main(fileName = file_name)

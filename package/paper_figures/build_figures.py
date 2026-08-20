@@ -180,9 +180,9 @@ def _replot_single_policies(folder):
 
 def _replot_policy_pairs(folder):
     """
-    endogenous_policy_intensity_pair_plot.main() writes into a fresh
-    all_policies_<timestamp> folder, which we cannot address afterwards, so
-    call the plotting function it wraps and point it at the run folder itself.
+    endogenous_policy_intensity_pair_plot.main() draws four variants into the
+    run folder; only this one is used here, so call the plotting function it
+    wraps directly rather than rendering the other three.
     """
     from package.analysis.endogenous_policy_intensity_pair_plot import (
         plot_emissions_tradeoffs_from_outcomes,
