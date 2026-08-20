@@ -31,9 +31,9 @@ import multiprocessing
 # prefix, surrounding quotes and a trailing slash are all optional. Command-line
 # args still override both (see __main__).
 ENDOG_PAIR = [
-    " results/endog_pair_20_22_47__18_08_2026",
+    " results/endog_pair_14_08_10__19_08_2026",
 ]
-ENDOG_SINGLE = " results/endog_single_20_01_19__18_08_2026"
+ENDOG_SINGLE = " results/endog_single_13_47_10__19_08_2026"
 # ---------------------------------------------------------------------------
 
 
