@@ -16,19 +16,26 @@ plt.rcParams.update({
     'axes.grid': True
 })
 
-def plot_elasticity_comparison(results_folder):
+def plot_elasticity_comparison(results_folder, grid_intensities_to_plot=None, elec_prices_to_plot=None):
     """
     Compare the effect of a 1% change in electricity price vs grid emissions intensity
     on EV uptake and CO2 emissions.
-    
+
     WHAT THIS PLOT SHOWS:
     - Positive values = a 1% increase in the input leads to an X% INCREASE in the output
     - Negative values = a 1% increase in the input leads to an X% DECREASE in the output
     - The steeper the line, the more sensitive the system is to that factor
-    
+
     INTERPRETATION:
     - EV Uptake Elasticity: How responsive EV adoption is to changes in electricity price vs grid cleanliness
     - Emissions Elasticity: How responsive CO2 emissions are to changes in electricity price vs grid cleanliness
+
+    grid_intensities_to_plot / elec_prices_to_plot: optional subsets of the values
+    found in vary_metadata to draw as perturbation lines (baseline=1.0 is always
+    excluded automatically). Defaults to every non-baseline value in the data, so
+    a run whose property_list has more values than the figure needs (e.g. a
+    generation run shared with a raw time-series figure) can still restrict this
+    plot to just the magnitudes it wants.
     """
     
     # Load data
@@ -79,7 +86,9 @@ def plot_elasticity_comparison(results_folder):
     for i, price in enumerate(elec_prices):
         if price == 1.0:
             continue  # Skip baseline
-            
+        if elec_prices_to_plot is not None and price not in elec_prices_to_plot:
+            continue
+
         # Get data for this electricity price
         ev_data = data_ev[baseline_grid_idx, i, :, start_step:]
         em_data = data_em[baseline_grid_idx, i, :, start_step:]
@@ -138,7 +147,9 @@ def plot_elasticity_comparison(results_folder):
     for i, grid_intensity in enumerate(grid_intensities):
         if grid_intensity == 1.0:
             continue  # Skip baseline
-            
+        if grid_intensities_to_plot is not None and grid_intensity not in grid_intensities_to_plot:
+            continue
+
         # Get data for this grid intensity
         ev_data = data_ev[i, baseline_price_idx, :, start_step:]
         em_data = data_em[i, baseline_price_idx, :, start_step:]

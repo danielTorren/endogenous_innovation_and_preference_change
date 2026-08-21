@@ -191,7 +191,7 @@ def main(
     Y_total_firm_profit = np.mean(Y_total_firm_profit_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     Y_market_concentration_reshape = Y_market_concentration_stochastic.reshape(len_y,AV_reps)
-    Y_market_concentration = np.mean(Y_ev_uptake_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
+    Y_market_concentration = np.mean(Y_market_concentration_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
 
     Y_total_utility_reshape = Y_total_utility_stochastic.reshape(len_y,AV_reps)
     Y_total_utility = np.mean(Y_total_utility_reshape, axis=1)#AVERAGE OVER THE SEED VARIATIONS
@@ -230,5 +230,5 @@ if __name__ == '__main__':
         N_samples = 512,
         BASE_PARAMS_LOAD = "package/constants/base_params_SA.json",
         VARIABLE_PARAMS_LOAD = "package/constants/variable_parameters_dict_SA.json",
-        calc_second_order = True
+        calc_second_order = False
     )

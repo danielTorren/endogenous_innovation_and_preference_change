@@ -39,6 +39,11 @@ class PersonalCar:
 
         self.init_car = init_car
 
+        # Set every step by Social_Network.calc_offer_prices_heursitic for the
+        # cars of switching users; the default only matters before the first
+        # such pass.
+        self.scrap_eligible = False
+
         self.scenario =  "current_car"
 
         self.attributes_fitness = attributes_fitness

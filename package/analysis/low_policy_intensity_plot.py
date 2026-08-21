@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import sem, t
@@ -55,7 +57,8 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
     top_policies,
     output_carbon_tax,
     output_adoption_subsidy,
-    dpi=300
+    dpi=300,
+    single_policy_intensities=None
 ):
     import matplotlib.pyplot as plt
     import numpy as np
@@ -80,14 +83,19 @@ def plot_combined_policy_figures_with_utilty_flow_cost_both(
     outputs[("Carbon_price",)] = output_carbon_tax
     outputs[("Adoption_subsidy",)] = output_adoption_subsidy
 
+    # Intensities come from the gen run's single_policy_intensities, which it
+    # took from the pair-gen's endogenous single-policy solution. The fallbacks
+    # are the values that used to be hardcoded here, for older results folders
+    # saved before that file existed.
+    intensities = single_policy_intensities or {}
     top_policies[("Carbon_price",)] = {
-        "policy1_value": 0.910,
+        "policy1_value": intensities.get("Carbon_price", 0.910),
         "policy2_value": None,
         "mean_ev_uptake": np.mean(output_carbon_tax["history_prop_EV"][:, -1]),
         "original_order": ("Carbon_price",)
     }
     top_policies[("Adoption_subsidy",)] = {
-        "policy1_value": 36875.57,
+        "policy1_value": intensities.get("Adoption_subsidy", 36875.57),
         "policy2_value": None,
         "mean_ev_uptake": np.mean(output_adoption_subsidy["history_prop_EV"][:, -1]),
         "original_order": ("Adoption_subsidy",)
@@ -302,6 +310,15 @@ def main(fileName):
     outputs_carbon_tax = load_object(fileName + "/Data", "outputs_carbon_tax")
     outputs_adoption_subsidy = load_object(fileName + "/Data", "outputs_adoption_subsidy")
 
+    # The intensities those two were run at, written by low_policy_intensity_gen.
+    # Absent in folders generated before it started saving them.
+    try:
+        single_policy_intensities = load_object(fileName + "/Data", "single_policy_intensities")
+    except FileNotFoundError:
+        single_policy_intensities = None
+        print("[!] No single_policy_intensities in this results folder -- labelling the "
+              "single-policy lines with the old hardcoded intensities.")
+
     # Add to outputs using tuple keys
     outputs[("Carbon_price",)] = outputs_carbon_tax
     outputs[("Adoption_subsidy",)] = outputs_adoption_subsidy
@@ -315,7 +332,8 @@ def main(fileName):
         top_policies,
         outputs_carbon_tax,
         outputs_adoption_subsidy,
-        dpi=200
+        dpi=200,
+        single_policy_intensities=single_policy_intensities
     )
 
     plt.show()
@@ -323,4 +341,11 @@ def main(fileName):
 
 
 if __name__ == "__main__":
-    main(fileName = "results/pair_low_intensity_policies_15_53_33__31_03_2026")
+    # fileName = the results/pair_low_intensity_policies_<timestamp> folder written
+    # by package.analysis.low_policy_intensity_gen. Pass it on the command line to
+    # override the hardcoded default below -- that default is just the folder last
+    # used interactively and does not exist on a fresh checkout, so
+    # submit_low_policy_intensity_plot.slurm always passes $LOW_INTENSITY_FOLDER.
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/pair_low_intensity_policies_06_52_21__20_08_2026"
+    print("Plotting:", file_name)
+    main(fileName = file_name)

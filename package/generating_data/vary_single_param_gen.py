@@ -60,12 +60,12 @@ def main(
     save_object(data_array_margins, fileName + "/Data","data_array_margins")
 
     print(fileName)
-    return params_list
+    return fileName
 
 if __name__ == "__main__":
     results = main(
-        BASE_PARAMS_LOAD="package/constants/base_params_vary_single_carbon_tax.json",
-        VARY_LOAD ="package/constants/vary_beta_multiplier.json"
+        BASE_PARAMS_LOAD="package/constants/base_params_vary_single.json",
+        VARY_LOAD ="package/constants/vary_single_b_innov.json"
         )
     
     #OLD

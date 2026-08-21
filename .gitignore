@@ -27,3 +27,7 @@ slurm_logs/*
 *.fdb_latexmk
 *.bbl
 *.blg
+*.tex.bak
+
+# Manuscript sources, kept out of the public repository
+docs/paper/

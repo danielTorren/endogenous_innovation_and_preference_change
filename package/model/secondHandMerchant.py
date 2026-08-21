@@ -1,4 +1,20 @@
 import numpy as np
+from itertools import compress
+from operator import attrgetter
+
+
+def _attr_array(list_vehicles, name, dtype=np.float64):
+    """
+    Read one attribute off every vehicle into a NumPy array.
+
+    np.fromiter over a C-level attrgetter, rather than np.array over a list
+    comprehension: it skips the intermediate Python list entirely and writes
+    into the output buffer directly. Same values, same dtype, roughly half the
+    time -- which matters here because the stock is walked once per attribute,
+    once per timestep.
+    """
+    return np.fromiter(map(attrgetter(name), list_vehicles), dtype=dtype, count=len(list_vehicles))
+
 
 class SecondHandMerchant:
     def __init__(self, unique_id, parameters_second_hand):
@@ -12,6 +28,8 @@ class SecondHandMerchant:
         """
         self.id = unique_id
         self.cars_on_sale = []
+        # Set by remove_car(), drained by compact_stock() -- see those methods.
+        self._sold_ids = set()
 
         self.t_second_hand_cars = 0
 
@@ -63,31 +81,20 @@ class SecondHandMerchant:
             dict: Dictionary mapping attribute names to NumPy arrays.
         """
             
-        # Initialize dictionary to hold lists of vehicle properties
+        # "price" is deliberately left empty -- nothing downstream reads it off
+        # this dict (the price is what calc_car_price_heuristic computes), and
+        # the original never populated it either.
         vehicle_dict_vecs = {
-            "Quality_a_t": [], 
-            "Eff_omega_a_t": [], 
-            "price": [], 
-            "L_a_t": [],
-            "delta_P": [],
-            "B": []
+            "Quality_a_t": _attr_array(list_vehicles, "Quality_a_t"),
+            "Eff_omega_a_t": _attr_array(list_vehicles, "Eff_omega_a_t"),
+            "price": np.array([]),
+            "L_a_t": _attr_array(list_vehicles, "L_a_t", np.int64),
+            "delta_P": _attr_array(list_vehicles, "delta_P"),
+            "B": _attr_array(list_vehicles, "B")
         }
 
-        # Iterate over each vehicle to populate the arrays
-        for vehicle in list_vehicles:
-            vehicle_dict_vecs["Quality_a_t"].append(vehicle.Quality_a_t)
-            vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
-            #vehicle_dict_vecs["price"].append(vehicle.price)
-            vehicle_dict_vecs["L_a_t"].append(vehicle.L_a_t)
-            vehicle_dict_vecs["delta_P"].append(vehicle.delta_P)
-            vehicle_dict_vecs["B"].append(vehicle.B)
-
-        # convert lists to numpy arrays for vectorised operations
-        for key in vehicle_dict_vecs:
-            vehicle_dict_vecs[key] = np.array(vehicle_dict_vecs[key])
-
         return vehicle_dict_vecs
-    
+
     def gen_vehicle_dict_vecs_new_cars(self, list_vehicles):
         """
         Generate attribute arrays from a list of new vehicle objects.
@@ -99,27 +106,16 @@ class SecondHandMerchant:
             dict: Dictionary mapping attribute names to NumPy arrays.
         """
             
-        # Initialize dictionary to hold lists of vehicle properties
         vehicle_dict_vecs = {
-            "Quality_a_t": [], 
-            "Eff_omega_a_t": [], 
-            "price": [],
-            "B": []
+            "Quality_a_t": _attr_array(list_vehicles, "Quality_a_t"),
+            "Eff_omega_a_t": _attr_array(list_vehicles, "Eff_omega_a_t"),
+            "price": _attr_array(list_vehicles, "price"),
+            "B": _attr_array(list_vehicles, "B"),
+            "transportType": _attr_array(list_vehicles, "transportType", np.int64)
         }
 
-        # Iterate over each vehicle to populate the arrays
-        for vehicle in list_vehicles:
-            vehicle_dict_vecs["Quality_a_t"].append(vehicle.Quality_a_t)
-            vehicle_dict_vecs["Eff_omega_a_t"].append(vehicle.Eff_omega_a_t)
-            vehicle_dict_vecs["price"].append(vehicle.price)       
-            vehicle_dict_vecs["B"].append(vehicle.B)       
-
-        # convert lists to numpy arrays for vectorised operations
-        for key in vehicle_dict_vecs:
-            vehicle_dict_vecs[key] = np.array(vehicle_dict_vecs[key])
-
         return vehicle_dict_vecs
-    
+
     def calc_car_price_heuristic(self, vehicle_dict_vecs_new_cars, vehicle_dict_vecs_second_hand_cars):
         """
         Estimate second-hand car prices using a heuristic based on similarity to new cars.
@@ -156,24 +152,46 @@ class SecondHandMerchant:
         normalized_second_hand_efficiency = second_hand_efficiency / first_hand_efficiency_max
         normalized_second_hand_B = second_hand_B / first_hand_B_max
 
-        # Compute proximity (Euclidean distance) for all second-hand cars to all first-hand cars
-        diff_quality = normalized_second_hand_quality[:, np.newaxis] - normalized_first_hand_quality
-        diff_efficiency = normalized_second_hand_efficiency[:, np.newaxis] - normalized_first_hand_efficiency
-        diff_B = normalized_second_hand_B[:, np.newaxis] - normalized_first_hand_B
+        # Compute proximity (Euclidean distance) for all second-hand cars to all first-hand cars.
+        # Accumulated into two (second_hand x new) buffers rather than the six
+        # the original expression allocated; same operations in the same order.
+        distances = normalized_second_hand_quality[:, np.newaxis] - normalized_first_hand_quality
+        np.square(distances, out=distances)
 
-        distances = np.sqrt(diff_quality ** 2 + diff_efficiency ** 2 + diff_B ** 2)
+        scratch = normalized_second_hand_efficiency[:, np.newaxis] - normalized_first_hand_efficiency
+        np.square(scratch, out=scratch)
+        distances += scratch
+
+        np.subtract(normalized_second_hand_B[:, np.newaxis], normalized_first_hand_B, out=scratch)
+        np.square(scratch, out=scratch)
+        distances += scratch
+
+        np.sqrt(distances, out=distances)
 
         # Find the closest first-hand car for each second-hand car
         closest_idxs = np.argmin(distances, axis=1)
 
-        # Get the prices of the closest first-hand cars
-        #closest_prices = first_hand_prices[closest_idxs]
-        closest_prices = np.maximum(first_hand_prices[closest_idxs] - (self.rebate_calibration + self.rebate),0)
+        # Get the prices of the closest first-hand cars. The EV rebate only
+        # exists on EVs, so it may only be netted off an EV anchor price -- an
+        # ICE anchor is quoted at its full price. Matching is done on
+        # (Quality, Efficiency, B), and B separates the two drivetrains (fuel
+        # tank vs battery), so a used ICE matches an ICE anchor essentially
+        # always; deducting the EV rebate there wrote the subsidy into the
+        # resale value of the whole ICE fleet.
+        matched_is_ev = vehicle_dict_vecs_new_cars["transportType"][closest_idxs] == 3
+        rebate_deduction = np.where(matched_is_ev, self.rebate_calibration + self.rebate, 0.0)
+        closest_prices = np.maximum(first_hand_prices[closest_idxs] - rebate_deduction, 0)
 
-        # Adjust prices based on car age and depreciation
-        adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
+        # Adjust prices based on car age and depreciation. The gross series --
+        # the same anchor with the EV rebate left in -- is returned alongside so
+        # that update_stock_contents can retire cars on physical value rather
+        # than on a price the rebate has driven to zero. See
+        # Social_Network.calc_offer_prices_heursitic for the full reasoning.
+        depreciation = (1 - second_hand_delta_P) ** second_hand_ages
+        adjusted_prices = closest_prices * depreciation
+        adjusted_prices_gross = first_hand_prices[closest_idxs] * depreciation
 
-        return adjusted_prices
+        return adjusted_prices, adjusted_prices_gross
 
     def update_stock_contents(self):
         """
@@ -183,9 +201,21 @@ class SecondHandMerchant:
             - Enforce max inventory constraint.
         """
             
-        #check len of list    
-        for vehicle in self.cars_on_sale:       
-            if vehicle.second_hand_counter > self.age_limit_second_hand:
+        #check len of list
+        # Rebuilt in one pass rather than calling list.remove() while iterating
+        # over the same list: mutating a list mid-for-loop shifts later
+        # elements into the just-vacated slot, which the iterator then skips
+        # over -- so two adjacent over-age cars would previously leave the
+        # second one stuck in stock past its age limit.
+        # The over-age test is a vectorised comparison and the surviving stock
+        # is rebuilt with itertools.compress, so the Python-level loop only
+        # runs over the cars actually being scrapped (a handful) instead of
+        # over the whole stock. Ascending index order is preserved, so the
+        # bookkeeping lists are appended to in exactly the original order.
+        over_age = _attr_array(self.cars_on_sale, "second_hand_counter", np.int64) > self.age_limit_second_hand
+        if over_age.any():
+            for idx in np.flatnonzero(over_age):
+                vehicle = self.cars_on_sale[idx]
 
                 # Capture emissions before removal
                 if vehicle.transportType == 2:
@@ -196,52 +226,56 @@ class SecondHandMerchant:
                 self.age_second_hand_car_removed.append(vehicle.L_a_t)
                 self.assets -= vehicle.cost_second_hand_merchant
                 self.scrap_loss += vehicle.cost_second_hand_merchant
-                self.cars_on_sale.remove(vehicle)
+
+            self.cars_on_sale = list(compress(self.cars_on_sale, ~over_age))
 
         data_dicts_second_hand = self.gen_vehicle_dict_vecs_second_hand(self.cars_on_sale)
         # Calculate the price vector
         data_dicts_new_cars = self.gen_vehicle_dict_vecs_new_cars(self.vehicles_on_sale)
 
-        price_vec = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
+        price_vec, price_vec_gross = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
 
         # Update the prices of the remaining cars
-        for i, vehicle in enumerate(self.cars_on_sale):
-            vehicle.price = price_vec[i]
+        for vehicle, price in zip(self.cars_on_sale, price_vec):
+            vehicle.price = price
 
-
-
-        # Remove cars below the scrap price
-        new_stock = []
-        for i, vehicle in enumerate(self.cars_on_sale):
-            if price_vec[i] < self.scrap_price:
+        # Remove cars below the scrap price. Same vectorised-mask treatment as
+        # the over-age pass above.
+        below_scrap_mask = price_vec_gross < self.scrap_price
+        if below_scrap_mask.any():
+            for idx in np.flatnonzero(below_scrap_mask):
+                vehicle = self.cars_on_sale[idx]
                 # Capture emissions before removal
                 if vehicle.transportType == 2:
                     self.removed_ice_emissions.append(vehicle.total_emissions)
                 else:
                     self.removed_ev_emissions.append(vehicle.total_emissions)
-            else:
-                new_stock.append(vehicle)
-        self.cars_on_sale = new_stock
 
-        # Vectorized approach to identify cars below the scrap price
-        #below_scrap_mask = price_vec < self.scrap_price        
-        #self.cars_on_sale = [
-        #    vehicle for i, vehicle in enumerate(self.cars_on_sale) if not below_scrap_mask[i]]
+            self.cars_on_sale = list(compress(self.cars_on_sale, ~below_scrap_mask))
 
         #REMOVE EXCESS CARS
         if len(self.cars_on_sale) > self.max_num_cars:
             # Calculate how many cars to remove
             num_cars_to_remove = len(self.cars_on_sale) - self.max_num_cars
-            # Randomly select cars to remove
-            cars_to_remove = self.random_state.choice(
-                self.cars_on_sale, num_cars_to_remove, replace=False
+            # Randomly select cars to remove. Drawing the POSITIONS rather than
+            # the objects consumes the identical random stream -- RandomState.
+            # choice(n, k, replace=False) and choice(seq, k, replace=False) both
+            # reduce to permutation(n)[:k] -- but lets the survivors be selected
+            # with a boolean mask. The original tested `car not in cars_to_remove`
+            # against a NumPy object array once per car in stock, i.e. a full
+            # elementwise comparison per car: quadratic in the size of the stock,
+            # which is exactly the quantity being increased here.
+            idxs_to_remove = self.random_state.choice(
+                len(self.cars_on_sale), num_cars_to_remove, replace=False
             )
-            # Add ages of removed cars
-            self.age_second_hand_car_removed.extend(vehicle.L_a_t for vehicle in cars_to_remove)
-            # Use list comprehension to filter out the cars to remove
-            self.cars_on_sale = [car for car in self.cars_on_sale if car not in cars_to_remove] 
+            # Add ages of removed cars, in draw order as before
+            self.age_second_hand_car_removed.extend(self.cars_on_sale[i].L_a_t for i in idxs_to_remove)
 
-        
+            keep_mask = np.ones(len(self.cars_on_sale), dtype=bool)
+            keep_mask[idxs_to_remove] = False
+            self.cars_on_sale = list(compress(self.cars_on_sale, keep_mask))
+
+
     def add_to_stock(self,vehicle):
         """
         Add a new second-hand vehicle to the merchant's stock.
@@ -258,13 +292,38 @@ class SecondHandMerchant:
     
     def remove_car(self, vehicle):
         """
-        Remove a vehicle from the merchant's stock.
+        Mark a vehicle as sold out of the merchant's stock.
+
+        The stock list itself is left alone until compact_stock() runs at the
+        end of the users' choice loop. list.remove() is a linear scan, and it
+        was being called once per second-hand sale against a stock of
+        max_num_cars -- quadratic per timestep in exactly the quantity being
+        scaled up. Nothing reads cars_on_sale between the first sale of a
+        timestep and compact_stock(), so deferring is not observable.
 
         Args:
             vehicle (object): Vehicle object to remove.
         """
-            
-        self.cars_on_sale.remove(vehicle)
+        self._sold_ids.add(id(vehicle))
+
+    def compact_stock(self):
+        """
+        Drop the vehicles marked by remove_car() from the stock.
+
+        Mutates cars_on_sale in place rather than rebinding it: the social
+        network holds a reference to this same list object (controller.
+        get_second_hand_cars returns it directly), and rebinding here would
+        leave that reference pointing at the pre-sale stock.
+
+        Order is unchanged -- survivors keep their relative order and cars
+        taken in trade during the same step stay appended at the end, exactly
+        as with the interleaved list.remove()/append() the original did.
+        """
+        if not self._sold_ids:
+            return
+        sold = self._sold_ids
+        self.cars_on_sale[:] = [car for car in self.cars_on_sale if id(car) not in sold]
+        sold.clear()
 
     def set_up_time_series_second_hand_car(self):
         """
@@ -291,19 +350,31 @@ class SecondHandMerchant:
         Args:
             list_cars (list): List of vehicle objects currently in stock.
         """
+        # Loop-invariant lookups hoisted out: this walks the whole stock, so
+        # every self.<attr> inside the body was one dict lookup per car per
+        # timestep.
+        age_the_stock = self.t_second_hand_cars > self.burn_in_second_hand_market
+        gas_price = self.gas_price
+        gas_cost_index = self.gas_cost_index
+        gas_emissions_index = self.gas_emissions_index
+        electricity_price = self.electricity_price
+        electricity_emissions_intensity = self.electricity_emissions_intensity
+        electricity_cost_index = self.electricity_cost_index
+        electricity_emissions_index = self.electricity_emissions_index
+
         for car in list_cars:
-            if self.t_second_hand_cars > self.burn_in_second_hand_market:
+            if age_the_stock:
                 car.L_a_t += 1
                 car.second_hand_counter += 1#UPDATE THE STEPS ITS BEEN HERE
             if car.transportType == 2:#ICE
-                car.fuel_cost_c = self.gas_price
-                car.cost_index = self.gas_cost_index
-                car.emissions_index = self.gas_emissions_index
+                car.fuel_cost_c = gas_price
+                car.cost_index = gas_cost_index
+                car.emissions_index = gas_emissions_index
             else:#EV
-                car.fuel_cost_c = self.electricity_price
-                car.e_t = self.electricity_emissions_intensity
-                car.cost_index = self.electricity_cost_index
-                car.emissions_index = self.electricity_emissions_index
+                car.fuel_cost_c = electricity_price
+                car.e_t = electricity_emissions_intensity
+                car.cost_index = electricity_cost_index
+                car.emissions_index = electricity_emissions_index
 
     def next_step(self,gas_price, electricity_price, electricity_emissions_intensity, vehicles_on_sale, rebate_calibration,rebate, gas_cost_index=0.0, gas_emissions_index=0.0, electricity_cost_index=0.0, electricity_emissions_index=0.0):
         """

@@ -36,18 +36,18 @@ def main(
 if __name__ == "__main__":
 
     base_params = {
-    "seed_repetitions": 64,
+    "seed_repetitions": 1,
     "duration_burn_in_research": 0,
     "duration_burn_in": 180,
     "duration_calibration": 276,
     "duration_future": 0,
     "save_timeseries_data_state": 1,
     "compression_factor_state": 1,
-    "seed": 10,
-    "seed_inputs": 22,
+    "seed": 5,
+    "seed_inputs": 3,
     "ev_research_start_time":0,
     "ev_production_start_time": 0,
-    "EV_rebate_state": 1,
+    "EV_rebate_state": 0,
     "parameters_rebate_calibration":{
         "start_time": 108,
         "rebate": 10000,
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     },
     "parameters_policies":{
         "States":{
-            "Carbon_price": 1,
+            "Carbon_price": 0,
             "Electricity_subsidy": 0,
             "Adoption_subsidy": 0,
             "Adoption_subsidy_used": 0,
@@ -70,19 +70,19 @@ if __name__ == "__main__":
         "Values":{
             "Carbon_price":{
                 "Carbon_price_init": 0,
-                "Carbon_price": 0.2,
+                "Carbon_price": 0.0,
                 "Carbon_price_state": "flat"
             },
-            "Electricity_subsidy":0.76,
-            "Adoption_subsidy":36875.57,
+            "Electricity_subsidy":0.5,
+            "Adoption_subsidy":18390.801,
             "Adoption_subsidy_used":20000,
-            "Production_subsidy":30548.21
+            "Production_subsidy":58150
             
         }
     },
     "parameters_second_hand":{
         "age_limit_second_hand": 36,
-        "max_num_cars_prop": 0.1,
+        "max_num_cars_prop": 0.5,
         "burn_in_second_hand_market": 12,
         "scrap_price": 669.8
     },
@@ -93,12 +93,12 @@ if __name__ == "__main__":
         "A": 3,
         "rho":[1,0,0],
         "production_emissions":10000,
-        "delta": 0.00175,
-        "delta_P": 0.0116,
+        "delta": 0.00233,
+        "delta_P": 0.0087,
         "transportType": 2,
         "mean_Price": 60000,
         "min_Efficiency": 0.79,
-        "max_Efficiency": 3.09,
+        "max_Efficiency": 2.3175,
         "min_Quality": 0,
         "max_Quality": 1,
         "fuel_tank": 469.4,
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         "K": 3,
         "A": 4,
         "rho":[1,0,0,0],
-        "delta_P":0.0087,
+        "delta_P":0.0116,
         "production_emissions":14000,
         "transportType": 3,
         "min_Efficiency": 2.73,
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         "max_Cost": 70000
     },
     "parameters_firm_manager": {
-        "J": 16,
+        "J": 10,
         "init_car_age_mean": 0,
         "init_car_age_std": 0,
         "time_steps_tracking_market_data":12,
@@ -142,8 +142,8 @@ if __name__ == "__main__":
     "parameters_social_network":{
         "num_individuals":3000,
         "chi_max": 0.9,
-        "a_chi": 1.1968, 
-        "b_chi": 2.6805,
+        "a_chi": 1.34, 
+        "b_chi": 3.573,
         "SW_network_density": 0.05,
         "SW_prob_rewire": 0.1,
         "WTP_E_mean": 46646.65434,
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         "income_sigma":0.927
     },
     "parameters_vehicle_user":{
-        "kappa": 2.25e-4,
+        "kappa": 0.0001525,
         "U_segments_init": 0,
         "W_calibration":1e5,
         "min_W": 1e-10,

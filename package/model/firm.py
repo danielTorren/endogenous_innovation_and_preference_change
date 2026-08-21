@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 from scipy.special import lambertw
 from package.model.carModel import CarModel
@@ -96,8 +97,14 @@ class Firm:
 
         self.lambda_exp = parameters_firm["lambda"]
 
-        self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
-        self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]#THIS NEEDS TO BE SHARED AMONGST ALL FIRMS
+        # Shared PROTOTYPE cache, keyed by component string: one entry per design,
+        # built once and never handed out directly. gen_neighbour_carsModel()
+        # returns a per-firm shallow copy of the prototype, so the expensive
+        # design data (NK attributes, neighbour strings) is computed once for the
+        # whole market while each firm keeps its OWN price/utility/profit state.
+        # See gen_neighbour_carsModel() for why that separation matters.
+        self.universal_model_repo_ICE = parameters_firm["universal_model_repo_ICE"]
+        self.universal_model_repo_EV = parameters_firm["universal_model_repo_EV"]
 
         self.ICE_landscape = self.parameters_firm["ICE_landscape"]
         self.EV_landscape = self.parameters_firm["EV_landscape"]
@@ -271,7 +278,22 @@ class Firm:
         C_m_cost = C_m.copy()  # Important: Create a copy to avoid modifying original
         C_m_price = C_m.copy()
         C_m_cost[ev_mask] = np.maximum(0, C_m[ev_mask] - self.production_subsidy)
-        C_m_price[ev_mask] = np.maximum(0, C_m[ev_mask] - (self.production_subsidy + self.rebate + self.rebate_calibration))
+        rebate_total = self.rebate + self.rebate_calibration
+        # C_m_price is NOT a cost and nobody ever pays it. It is the net price a
+        # buyer would face if the firm charged its own marginal cost, and it
+        # feeds only the Lambert-W argument below, which locates the markup.
+        # It is therefore read off C_m_cost, the same floored cost the price is
+        # built on: once the production subsidy covers the whole build cost the
+        # firm's marginal cost is zero, so selling at cost means selling at zero
+        # and the buyer's net price stops falling too. Reading it off the
+        # unfloored C_m - subsidy instead let it run negative, which told the
+        # markup formula the car was better than free and turned every unspent
+        # subsidy dollar into markup -- the consumer price then rose again past
+        # subsidy = build cost, and EV uptake peaked and fell. The outer
+        # max(0, ...) is the floor the demand side already applies (see
+        # calc_utility_cars_segments below, and socialNetworkUsers.
+        # vectorised_calculate_utility_new_cars): nobody is paid to take a car.
+        C_m_price[ev_mask] = np.maximum(0.0, C_m_cost[ev_mask] - rebate_total)
 
         term1 = - C_m_price[:, np.newaxis] - self.gamma_s_values[np.newaxis, :]*E_m[:, np.newaxis] # Matrix with shape: num cars x num segments
         term2 = self.beta_s_values[np.newaxis, :]*(Quality_a_t[:, np.newaxis]**self.alpha)# Matrix with shape: num cars x num segments
@@ -290,7 +312,17 @@ class Firm:
         LW = lambertw(Arg, 0).real
 
         P = C_m_cost[:, np.newaxis] + (1.0 + LW)/self.kappa
-        
+
+        # The buyer pays max(0, P - rebate), so demand is completely flat in P
+        # below P = rebate: there the rebate absorbs the whole price and raising
+        # P costs no volume at all. The Lambert-W price assumes demand responds
+        # to P one-for-one, which only holds above that kink, so a price it
+        # returns below the rebate is not an optimum. Profit (P - c)*share is
+        # strictly increasing across the flat region, so the best feasible point
+        # in it is the kink itself. Hence P* = max(rebate, C_m_cost + markup).
+        if rebate_total > 0:
+            P[ev_mask] = np.maximum(P[ev_mask], rebate_total)
+
         # Store results in the original car objects (CRITICAL CHANGE)
         for i, car in enumerate(car_list):
                 for j, segment_code in enumerate(self.segment_codes):  # Use enumerate directly on the dictionary
@@ -324,21 +356,27 @@ class Firm:
 
         U = np.full((num_cars, self.num_segments), -np.inf)
 
-        # Broadcasting car data to match (num_cars, num_segments)
-        Q_values = np.tile(car_data["Quality_a_t"][:, np.newaxis], (1, self.num_segments))
-        c_values = np.tile(car_data["fuel_cost_c"][:, np.newaxis], (1, self.num_segments))
-        omega_values = np.tile(car_data["Eff_omega_a_t"][:, np.newaxis], (1, self.num_segments))
-        e_values = np.tile(car_data["e_t"][:, np.newaxis], (1, self.num_segments))
-        cost_index_values = np.tile(car_data["cost_index"][:, np.newaxis], (1, self.num_segments))
-        emissions_index_values = np.tile(car_data["emissions_index"][:, np.newaxis], (1, self.num_segments))
-        E_new_values = np.tile(car_data["emissions"][:, np.newaxis], (1, self.num_segments))
-        delta_values = np.tile(car_data["delta"][:, np.newaxis], (1, self.num_segments))
-        transport_types = np.tile(car_data["transportType"][:, np.newaxis], (1, self.num_segments))
-        B_values = np.tile(car_data["B"][:, np.newaxis], (1, self.num_segments))
+        # Broadcasting car data to match (num_cars, num_segments).
+        # np.broadcast_to gives a read-only stride-0 view instead of np.tile's
+        # materialised copy. Every one of these is only ever read, and read
+        # exactly once, through a boolean mask -- which selects the same values
+        # from a view as from a copy. P_adjust_values is left as a real array
+        # because it is written to below.
+        shape = (num_cars, self.num_segments)
+        Q_values = np.broadcast_to(car_data["Quality_a_t"][:, np.newaxis], shape)
+        c_values = np.broadcast_to(car_data["fuel_cost_c"][:, np.newaxis], shape)
+        omega_values = np.broadcast_to(car_data["Eff_omega_a_t"][:, np.newaxis], shape)
+        e_values = np.broadcast_to(car_data["e_t"][:, np.newaxis], shape)
+        cost_index_values = np.broadcast_to(car_data["cost_index"][:, np.newaxis], shape)
+        emissions_index_values = np.broadcast_to(car_data["emissions_index"][:, np.newaxis], shape)
+        E_new_values = np.broadcast_to(car_data["emissions"][:, np.newaxis], shape)
+        delta_values = np.broadcast_to(car_data["delta"][:, np.newaxis], shape)
+        transport_types = np.broadcast_to(car_data["transportType"][:, np.newaxis], shape)
+        B_values = np.broadcast_to(car_data["B"][:, np.newaxis], shape)
 
         # Broadcast segment parameters to match (num_cars, num_segments)
-        beta_s_broadcast = np.tile(self.beta_s_values, (num_cars, 1))
-        gamma_s_broadcast = np.tile(self.gamma_s_values, (num_cars, 1))
+        beta_s_broadcast = np.broadcast_to(self.beta_s_values, shape)
+        gamma_s_broadcast = np.broadcast_to(self.gamma_s_values, shape)
 
         # Initialize P_adjust and valid_mask
         P_adjust_values = np.zeros((num_cars, self.num_segments))
@@ -557,8 +595,28 @@ class Firm:
         """
         Generate CarModel instances for neighboring technology strings.
 
+        Each firm gets its OWN instance per design. The repo holds a prototype
+        per component string purely as a cache, and is never handed out: it
+        would otherwise make one Python object serve every firm that has ever
+        even considered that design, so a firm's own pricing/production step
+        would silently overwrite the price, segment utilities, expected profits
+        and choosen_tech_bool of a car a DIFFERENT firm currently has on sale,
+        and `car.firm` would point at whichever firm touched it last (breaking
+        per-firm profit attribution and the HHI built on top of it).
+
+        copy.copy, not deepcopy: the shallow copy deliberately keeps sharing the
+        read-only design data (attributes_fitness, inverted_tech_strings,
+        nk_landscape, parameters), which is the whole point of the cache and is
+        never mutated per firm. deepcopy would clone the entire NK landscape and
+        fork its random state -- ~2700x slower than simply reconstructing the
+        model, which is presumably why copying was dropped in the first place.
+        Every attribute a firm DOES write is rebound below so that no mutable
+        state is shared. `price` is deliberately left unset, matching a
+        freshly-constructed CarModel (CarModel.__init__ does not set it either);
+        it is assigned later by select_car_lambda_production().
+
         Returns:
-            list: List of CarModel instances.
+            list: List of CarModel instances, one fresh instance per firm.
         """
         neighbouring_technologies = []
 
@@ -568,18 +626,29 @@ class Firm:
             universal_model_repo = self.universal_model_repo_EV
 
         for tech_string in tech_strings:
-            if tech_string in universal_model_repo.keys():
-                tech_to_add = universal_model_repo[tech_string]
-            else:
-                tech_to_add = CarModel(
+            prototype = universal_model_repo.get(tech_string)
+            if prototype is None:
+                prototype = CarModel(
                     component_string=tech_string,
                     nk_landscape = nk_landscape,
                     parameters = parameters_car
                 )
-                universal_model_repo[tech_string] = tech_to_add
+                universal_model_repo[tech_string] = prototype
 
-            unique_tech_id = self.id_generator.get_new_id()
-            tech_to_add.unique_id = unique_tech_id
+            tech_to_add = copy.copy(prototype)
+
+            #REBIND EVERY PIECE OF PER-FIRM MUTABLE STATE
+            tech_to_add.optimal_price_segments = {}
+            tech_to_add.B_segments = {}
+            tech_to_add.car_utility_segments_U = {}
+            tech_to_add.expected_profit_segments = {}
+            tech_to_add.expected_profit = 0
+            tech_to_add.actual_profit = 0
+            tech_to_add.choosen_tech_bool = False
+            tech_to_add.timer = 0
+            tech_to_add.__dict__.pop("price", None)#as if freshly constructed
+
+            tech_to_add.unique_id = self.id_generator.get_new_id()
             tech_to_add.firm = self
             neighbouring_technologies.append(tech_to_add)
 
@@ -740,12 +809,9 @@ class Firm:
         # Raw profit
         raw_profit = profit_per_sale * self.I_s_t_vec[np.newaxis, :] * utility_proportion
 
-        # Expected profit, if ice car then apply the discriminatory tax
-        expected_profit = np.where(
-            is_ev_mask[:, np.newaxis],
-            raw_profit,
-            raw_profit
-        )
+        # Expected profit (previously branched on is_ev_mask via np.where, but
+        # both branches were identical -- collapsed to the shared expression).
+        expected_profit = raw_profit
 
         # Apply zero profit for segments that can't buy EVs
         expected_profit = np.where(
@@ -820,11 +886,9 @@ class Firm:
 
         raw_profits = profit_per_sale * I_s_t_values * utility_proportions
 
-        updated_profits = np.where(
-            selected_vehicle.transportType == 3,
-            raw_profits,
-            raw_profits
-        )
+        # Previously branched on transportType via np.where, but both
+        # branches were identical -- collapsed to the shared expression.
+        updated_profits = raw_profits
 
         return updated_profits
     

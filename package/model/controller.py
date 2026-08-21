@@ -14,7 +14,17 @@ from package.model.socialNetworkUsers import Social_Network
 import numpy as np
 import itertools
 from scipy.stats import lognorm
+# Aliased rather than imported as `beta` because `beta` is already a user
+# parameter name in this model (gen_beta, beta_list, parameters_social_network
+# ["beta"]) and the two are unrelated. Used by gen_chi's inverse-CDF draw.
+from scipy.stats import beta as beta_dist
 from copy import deepcopy
+
+# Offset used to derive a dedicated substream for initial-condition draws (fleet
+# ages, firm placement) from `seed`. Kept separate from self.random_state so that
+# switching the new initialisation on does not consume draws from -- and thereby
+# shift -- the stream every other component shares.
+INIT_SEED_OFFSET = 100000
 
 class Controller:
     """
@@ -34,9 +44,13 @@ class Controller:
 
         self.unpack_controller_parameters(parameters_controller)
         
-        self.parameters_EV["delta"] = self.parameters_ICE["delta"] 
-        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"] 
+        self.parameters_EV["delta"] = self.parameters_ICE["delta"]
+        self.parameters_EV["min_Quality"] = self.parameters_ICE["min_Quality"]
         self.parameters_EV["max_Quality"] = self.parameters_ICE["max_Quality"]
+        # Quality is compared ACROSS drivetrains in the choice utility, so the two
+        # landscapes must share the whole quality mapping, not just its bounds.
+        # See the stretch_vec comment in nkModel_ICE.
+        self.parameters_EV["stretch_Quality"] = self.parameters_ICE.get("stretch_Quality", 1.0)
 
         self.handle_seed()
 
@@ -286,6 +300,14 @@ class Controller:
         self.parameters_firm["random_state"] = self.random_state
         self.parameters_second_hand["random_state"] = self.random_state
 
+        #Initial conditions get their own substream off `seed`, so that the fleet
+        #age draw and the firm placement draw vary across replicates (the NK
+        #landscape stays pinned to seed_inputs) without shifting self.random_state.
+        self.random_state_init = np.random.RandomState(
+            self.parameters_controller["seed"] + INIT_SEED_OFFSET
+        )
+        self.parameters_firm_manager["random_state_init"] = self.random_state_init
+
     def gen_users_parameters(self):
         """
         Generate user-specific parameters for social network individuals:
@@ -318,11 +340,15 @@ class Controller:
         #BETA
         self.gen_beta()
 
-        self.parameters_social_network["beta_vec"] = self.beta_vec 
-        self.parameters_social_network["gamma_vec"] = self.gamma_vec 
-        self.parameters_social_network["chi_vec"] = self.chi_vec 
-        self.parameters_social_network["nu_vec"] = self.nu_vec 
+        self.parameters_social_network["beta_vec"] = self.beta_vec
+        self.parameters_social_network["gamma_vec"] = self.gamma_vec
+        self.parameters_social_network["chi_vec"] = self.chi_vec
+        self.parameters_social_network["nu_vec"] = self.nu_vec
         self.parameters_social_network["d_vec"] = self.d_vec
+        # Aligned with beta_vec agent-for-agent (see gen_beta). Used only for
+        # reporting distributional outcomes by income decile; nothing in the
+        # choice or pricing logic reads it, so it changes no model behaviour.
+        self.parameters_social_network["income_vec"] = self.income_vec
 
         self.beta_median = np.median(self.beta_vec)
         self.gamma_median = np.median(self.gamma_vec)
@@ -385,8 +411,49 @@ class Controller:
         self.chi_max = self.parameters_social_network["chi_max"]
         self.proportion_zero_target = self.parameters_social_network["proportion_zero_target"]  # Define your target proportion here
 
-        # Step 1: Generate continuous Beta distribution
-        innovativeness_vec_continuous = self.random_state_inputs.beta(self.a_chi, self.b_chi, size=self.num_individuals)
+        # Step 1: Generate the continuous Beta distribution by inverse CDF.
+        #
+        # ppf consumes exactly num_individuals uniforms whatever (a_chi, b_chi)
+        # are. Do NOT replace this with random_state_inputs.beta(): that is a
+        # rejection sampler, so the number of words it consumes depends on
+        # (a_chi, b_chi), and every later draw off this same pinned stream --
+        # zero_indices below, WTP_E_vec in gen_gamma, incomes and the network
+        # permutation in gen_beta, then the firm placement and the ICE/EV NK
+        # landscapes -- shifts position whenever a_chi or b_chi moves, handing
+        # the run a different population and a different landscape. gen_chi is
+        # the ONLY draw on this stream whose arguments depend on a calibrated
+        # parameter, so these two lines cover the whole chain.
+        #
+        # Measured on the pinned seed_inputs=22 stream, at the calibrated b_chi.
+        # The rejection sampler consumed 27904 words of the stream at
+        # a_chi = 1.351 but 27884 at 1.40, so at 1.40 the whole setup ran off a
+        # different offset: the ICE landscape's worst design moved from
+        # 100100110010101 to 000000111011010, its production cost from $38.5M to
+        # $34.6M, the EV landscape moved with it, and mean income changed too.
+        # The shift is a step function of a_chi, not a smooth one -- 1.36
+        # consumed exactly as much as 1.351 and was bit-identical downstream --
+        # so which small moves are free is unpredictable. Agent-level chi was
+        # also re-randomised: corr(chi_i, chi_i before) fell to ~0 while the
+        # SORTED distribution stayed correlated above 0.99, i.e. the same
+        # distribution over different individuals, which re-wires who in the
+        # social network is innovative. On sbi_seed_av_22_25_54__16_08_2026 the
+        # leftover scatter at fixed theta was 0.75 in logit units against a
+        # seed-noise share of at most 0.31, and no number of seeds per theta
+        # could average it away because every seed shared the reshuffle. That is
+        # what SBI reads as "this parameter does not predict the output".
+        #
+        # Runs made with the rejection sampler cannot be reproduced from this
+        # file: everything before 13/08/2026 (e.g.
+        # calibration_gen_09_30_13__13_08_2026), the sbi_seed_av runs launched
+        # before 10:52 on 18/08/2026, and everything committed between cce52bd
+        # and this change. Their EV level is not comparable either, since at
+        # matched a_chi/b_chi/delta the 2023 EV stock differs by roughly an order
+        # of magnitude once the stream is realigned, because seed_inputs then
+        # draws a different landscape. Pick the landscape deliberately instead:
+        # package/generating_data/seed_inputs_sweep_gen.py scores seed_inputs
+        # against the calibration targets on THIS code path.
+        u = self.random_state_inputs.random_sample(self.num_individuals)
+        innovativeness_vec_continuous = beta_dist.ppf(u, self.a_chi, self.b_chi)
 
         # Step 2: Introduce zeros based on target proportion
         num_zeros = int(self.proportion_zero_target * self.num_individuals)
@@ -438,17 +505,66 @@ class Controller:
 
     def gen_beta(self):
         """
-        Generate beta_vec reflecting consumer quality sensitivity based on income.
-        Inverse relationship to income distribution drawn from a log-normal.
+        Generate beta_vec, the dollar willingness to pay for car quality, from
+        the income distribution drawn from a log-normal, as
+
+            beta_i/median_beta = income_i/median_income
+
+        so richer agents get the higher willingness to pay. This is what the
+        manuscript specifies (Section "Calibration": "we distribute this value
+        according to the Californian income distribution, assigning a higher
+        willingness to pay to richer agents"; Table of parameters: "greater beta
+        is richer car user"; supplementary: "in such a way that the same
+        proportion is maintained").
+
+        Do NOT reinstate the reciprocal form,
+        median_beta*(median_income/incomes). beta is the coefficient on
+        Quality**alpha in a money-metric utility whose price coefficient is
+        exactly 1 for every agent, so under the reciprocal the HIGHEST quality
+        willingness to pay goes to the POOREST agent, the income-decile series
+        built by socialNetworkUsers.init_income_deciles come out as the mirror of
+        the beta-based _top/_bottom ones, and any later income-correlated
+        parameter (nu, gamma, d) inherits the same inversion.
+
+        Which runs used which: everything before 10:49 on 13/08/2026 (e.g.
+        calibration_gen_09_30_13__13_08_2026) is reciprocal, as is everything on
+        min_param_changes from commit 2d2b335 up to this change; commit 2e552da
+        and the runs from 13/08/2026 14:36 onward (endog_single,
+        vary_single_policy_gen, endog_pair) are proportional.
+
+        The difference is bounded, unlike gen_chi's. The number of draws consumed
+        is identical either way, since the mapping is applied after lognorm.rvs,
+        so the pinned seed_inputs stream is not shifted and nothing downstream of
+        this method moves. Both forms also draw beta_vec from the SAME
+        distribution, because the reciprocal of a log-normal is log-normal with
+        the same sigma, so they are alternative samples from one unchanged law: at
+        num_individuals = 3000 and income_sigma = 0.927 the mean of beta_vec moves
+        by order 2%, plus a reshuffle of which individuals sit in the tail and of
+        the num_beta_segments quantile edges.
         """
         #BETA
         self.beta_multiplier = self.parameters_social_network.get("beta_multiplier", 1)#PURPOSE IS TO TEST THE ROLE OF BETA DISTRIBUTIONS
-        median_beta = self.calc_beta_median()*self.beta_multiplier 
-        #GIVEN THAT YOU DO MEDIAN INCOME/ INCOME, DONT NEED TO SCALE INCOME
+        median_beta = self.calc_beta_median()*self.beta_multiplier
+        #THE MAPPING IS A RATIO TO THE MEDIAN, SO DONT NEED TO SCALE INCOME
         incomes = lognorm.rvs(s=self.parameters_social_network["income_sigma"], scale=np.exp(self.parameters_social_network["income_mu"]), size=self.num_individuals, random_state=self.random_state_inputs)
         median_income = np.median(incomes)
-        self.beta_vec = median_beta*(median_income/incomes)
-        self.random_state_inputs.shuffle(self.beta_vec)# Shuffle to randomize the order of agents
+        beta_unshuffled = median_beta*(incomes/median_income)
+
+        # Shuffle to randomise the order of agents, i.e. to decorrelate beta
+        # from an agent's index and so from its position in the social network.
+        # Drawn as an explicit permutation rather than shuffling beta_vec in
+        # place so that the SAME permutation can be applied to incomes, leaving
+        # income_vec[i] as the income of the agent whose quality willingness to
+        # pay is beta_vec[i]. Without this the income draw is discarded and
+        # there is no agent-level income to report distributional outcomes on.
+        # RandomState.permutation(n) is arange(n) followed by the same
+        # Fisher-Yates pass that shuffle() performs, and a shuffle is a pure
+        # permutation of positions independent of the array's contents, so
+        # beta_vec is bit-for-bit what the in-place shuffle produced and the
+        # random stream is left in exactly the same state.
+        perm = self.random_state_inputs.permutation(self.num_individuals)
+        self.beta_vec = beta_unshuffled[perm]
+        self.income_vec = incomes[perm]
 
         self.num_beta_segments = self.parameters_firm_manager["num_beta_segments"]
         # Calculate the bin edges using quantiles
@@ -463,12 +579,17 @@ class Controller:
         """
         Generate a list of beta values for n agents based on quintile incomes.
         Beta for each quintile is calculated as:
-            beta = 1 * (lowest_quintile_income / quintile_income)
-        
+            beta = median_beta * (quintile_income / median_quintile_income)
+
+        Same mapping as gen_beta, so richer quintiles get the higher willingness
+        to pay -- see that method's docstring. Currently unused, but kept in step
+        with gen_beta so it cannot reintroduce the reciprocal if it is ever wired
+        up.
+
         Args:
             n (int): Total number of agents.
             quintile_incomes (list): List of incomes for each quintile (from lowest to highest).
-            
+
         Returns:
             list: A list of beta values of length n.
         """
@@ -476,7 +597,7 @@ class Controller:
 
         median_income = quintile_incomes[2]
 
-        beta_vals = [median_beta*median_income/income for income in quintile_incomes]
+        beta_vals = [median_beta*income/median_income for income in quintile_incomes]
         
         # Assign proportions for each quintile (evenly split 20% each)
         proportions = [0.2] * len(quintile_incomes)
@@ -867,8 +988,9 @@ class Controller:
         # calculate_price_at_time() is only safe to call once
         # future_carbon_price_policy/_state/_init exist, which happens only
         # after manage_policies() has run. A calibration-only controller
-        # (Phase 1, duration_future == 0, e.g. package.surrogate.run's
-        # set_up_calibration_runs) never calls manage_policies() at all, so
+        # (Phase 1, duration_future == 0, e.g. the one built by
+        # analysis.endogenous_policy_intensity_single_gen.set_up_calibration_runs)
+        # never calls manage_policies() at all, so
         # those attributes don't exist yet -- checking hasattr() directly
         # (rather than self.full_run_state, which setup_continued_run_future()
         # never updates and so would be stale False even once manage_policies()

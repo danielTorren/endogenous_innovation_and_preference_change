@@ -1,17 +1,45 @@
-from copy import deepcopy
 import json
 from package.resources.run import parallel_run_multi_seed
 from package.resources.utility import (
-    createFolder, 
-    save_object, 
-    produce_name_datetime, 
+    createFolder,
+    save_object,
+    produce_name_datetime,
     params_list_with_seed
 )
 from package.plotting_data.calibration_plot import main as plotting_main
 
+# What gets pickled out of the run. The rest of the run output (per-vehicle
+# quality, efficiency and production cost histories) is not plotted, so it is
+# dropped rather than written to disk.
+SAVED_KEYS = (
+    "history_driving_emissions",
+    "history_production_emissions",
+    "history_total_emissions",
+    "history_prop_EV",
+    "history_lower_percentile_price_ICE_EV",
+    "history_upper_percentile_price_ICE_EV",
+    "history_mean_price_ICE_EV",
+    "history_median_price_ICE_EV",
+    "history_total_utility",
+    "history_market_concentration",
+    "history_total_profit",
+    "history_mean_profit_margins_ICE",
+    "history_mean_profit_margins_EV",
+    "history_mean_car_age",
+    "history_past_new_bought_vehicles_prop_ev",
+    "cars_on_sale",
+    # Feed plot_calibration_targets: the four target variables in one figure.
+    "history_mean_car_age_fleet",
+    "history_new_car_price_quantiles",
+    "history_used_car_price_quantiles",
+    "history_used_stock_quality_spread",
+    "history_purchase_counts",
+)
+
+
 def main(
         BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
-    ) -> str: 
+    ) -> str:
 
     # Load base parameters
     with open(BASE_PARAMS_LOAD) as f:
@@ -22,71 +50,24 @@ def main(
     print("fileName:", fileName)
 
     params_list = params_list_with_seed(base_params)
-    
+
     print("TOTAL RUNS: ", len(params_list))
 
-    # Reshape data into 2D structure: rows for scenarios, columns for seed values
-    (
-        history_driving_emissions_arr,#Emmissions flow
-        history_production_emissions_arr,
-        history_total_emissions_arr,#Emmissions flow
-        history_prop_EV_arr, 
-        history_car_age_arr, 
-        history_lower_percentile_price_ICE_EV_arr,
-        history_upper_percentile_price_ICE_EV_arr,
-        history_mean_price_ICE_EV_arr,
-        history_median_price_ICE_EV_arr, 
-        history_total_utility_arr, 
-        history_market_concentration_arr,
-        history_total_profit_arr, 
-        history_quality_ICE, 
-        history_quality_EV, 
-        history_efficiency_ICE, 
-        history_efficiency_EV, 
-        history_production_cost_ICE, 
-        history_production_cost_EV, 
-        history_mean_profit_margins_ICE,
-        history_mean_profit_margins_EV,
-        history_mean_car_age,
-        history_past_new_bought_vehicles_prop_ev
-    ) = parallel_run_multi_seed(
-        params_list
-    )
+    run_outputs = parallel_run_multi_seed(params_list)
 
     createFolder(fileName)
-    
-    save_object(history_driving_emissions_arr, fileName + "/Data", "history_driving_emissions_arr")
-    save_object(history_production_emissions_arr, fileName + "/Data", "history_production_emissions_arr")
-    save_object(history_total_emissions_arr, fileName + "/Data", "history_total_emissions_arr")
-    save_object(history_prop_EV_arr, fileName + "/Data", "history_prop_EV_arr")
-    #save_object(history_car_age_arr, fileName + "/Data", "history_car_age_arr")
-    save_object(history_lower_percentile_price_ICE_EV_arr, fileName + "/Data", "history_lower_percentile_price_ICE_EV_arr")
-    save_object(history_upper_percentile_price_ICE_EV_arr, fileName + "/Data", "history_upper_percentile_price_ICE_EV_arr")
-    save_object(history_mean_price_ICE_EV_arr, fileName + "/Data", "history_mean_price_ICE_EV_arr")
-    save_object(history_median_price_ICE_EV_arr, fileName + "/Data", "history_median_price_ICE_EV_arr")
-    save_object(history_total_utility_arr, fileName + "/Data", "history_total_utility_arr")
-    save_object(history_market_concentration_arr, fileName + "/Data", "history_market_concentration_arr")
-    save_object(history_total_profit_arr, fileName + "/Data", "history_total_profit_arr")
-    #save_object(history_quality_ICE, fileName + "/Data", "history_quality_ICE")
-    #save_object(history_quality_EV, fileName + "/Data", "history_quality_EV")
-    #save_object(history_efficiency_ICE, fileName + "/Data", "history_efficiency_ICE")
-    #save_object(history_efficiency_EV, fileName + "/Data", "history_efficiency_EV")
-    #save_object(history_production_cost_ICE, fileName + "/Data", "history_production_cost_ICE")
-    #save_object(history_production_cost_EV, fileName + "/Data", "history_production_cost_EV")
-    save_object(history_mean_profit_margins_ICE, fileName + "/Data", "history_mean_profit_margins_ICE")
-    save_object(history_mean_profit_margins_EV, fileName + "/Data", "history_mean_profit_margins_EV")
-    save_object(history_mean_car_age, fileName + "/Data", "history_mean_car_age")
-    #save_object(history_distance_individual_ICE, fileName + "/Data", "history_distance_individual_ICE")
-    #save_object(history_distance_individual_EV, fileName + "/Data", "history_distance_individual_EV")
-    save_object(history_past_new_bought_vehicles_prop_ev , fileName + "/Data", "history_past_new_bought_vehicles_prop_ev")
-    
+
+    outputs = {key: run_outputs[key] for key in SAVED_KEYS}
+
+    save_object(outputs, fileName + "/Data", "outputs")
     save_object(base_params, fileName + "/Data", "base_params")
 
     print(fileName)
     return fileName
 
 if __name__ == "__main__":
-    fileName = main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
+    #main(BASE_PARAMS_LOAD="package/constants/base_params_multi_seed.json")
+    fileName = main(BASE_PARAMS_LOAD="package/constants/base_params_calibration.json")
 
     """
     Will also plot stuff at the same time for convieniency

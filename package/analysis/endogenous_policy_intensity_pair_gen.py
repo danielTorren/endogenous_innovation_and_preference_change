@@ -1,9 +1,12 @@
 import json
 import numpy as np
-from package.analysis.endogenous_policy_intensity_single_gen import optimize_policy_intensity_BO, set_up_calibration_runs
+from package.analysis.endogenous_policy_intensity_single_gen import (
+    optimize_policy_intensity_BO, set_up_calibration_runs, simulate_future_policies
+)
 from package.resources.utility import (
     save_object, 
 )
+import os
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from copy import deepcopy
@@ -154,11 +157,24 @@ def main(
     ],
     target_ev_uptake=0.95,
     n_steps_for_sweep=5,
-    n_calls=40, 
-    noise = 0.01
+    n_calls=40,
+    noise = 0.01,
+    n_calls_single=None,
+    plot=True
 ):
     """
     Main function for running pairwise policy optimization.
+
+    Everything the pair plot needs is produced here and saved into ONE
+    timestamped results/endog_pair_<stamp> folder:
+        Data/base_params
+        Data/outcomes_BAU               (no-policy reference point)
+        Data/single_policy_outcomes     (one optimised policy at a time)
+        Data/pairwise_outcomes          (the pair sweeps)
+        Data/conditions
+    So endogenous_policy_intensity_pair_plot.main() takes that folder alone.
+
+    n_calls_single : BO calls for the single-policy optima. None -> use n_calls.
     """
     with open(BASE_PARAMS_LOAD) as f:
         base_params = json.load(f)
@@ -175,6 +191,29 @@ def main(
 
     
     controller_files, base_params, file_name = set_up_calibration_runs(base_params,"endog_pair")
+
+    ###################################################################################################################
+
+    #BAU AND SINGLE POLICY OUTCOMES, same controllers and same folder as the pairs
+    if n_calls_single is None:
+        n_calls_single = n_calls
+
+    policy_outcomes = simulate_future_policies(
+        file_name,
+        controller_files,
+        policy_list_all,
+        {"bounds_dict": bounds_dict},
+        n_calls_single,
+        base_params,
+        target_ev_uptake,
+        noise
+    )
+
+    outcomes_BAU = policy_outcomes["BAU"]
+    single_policy_outcomes = {k: v for k, v in policy_outcomes.items() if k != "BAU"}
+
+    save_object(outcomes_BAU, file_name + "/Data", "outcomes_BAU")
+    save_object(single_policy_outcomes, file_name + "/Data", "single_policy_outcomes")
 
     ###################################################################################################################
 
@@ -211,11 +250,36 @@ def main(
         "target_ev_uptake": target_ev_uptake,
         "n_steps_for_sweep": n_steps_for_sweep,
         "n_calls": n_calls,
+        "n_calls_single": n_calls_single,
         "noise": noise
     }
     save_object(conditions, file_name + "/Data", "conditions")
 
-    return "Done"
+    if plot:
+        plot_results(file_name)
+
+    return file_name
+
+
+def plot_results(file_name):
+    """
+    Plot straight after the run so the results folder never has to be pasted into
+    endogenous_policy_intensity_pair_plot by hand. The plot module is imported
+    here rather than at the top of the file so a headless run that cannot import
+    matplotlib still completes, and a plotting bug never hides the saved data.
+    """
+    # Inside a batch job there is no display, and an interactive backend would make
+    # plt.show() block until the job hits its wall time.
+    if os.environ.get("SLURM_JOB_ID") and "MPLBACKEND" not in os.environ:
+        os.environ["MPLBACKEND"] = "Agg"
+
+    try:
+        from package.analysis.endogenous_policy_intensity_pair_plot import main as plot_main
+        plot_main([file_name])
+    except Exception as e:
+        print(f"[!] Plotting failed ({type(e).__name__}: {e}). Data is saved, plot it with:")
+        print(f"    python -m package.analysis.endogenous_policy_intensity_pair_plot {file_name}")
+
 
 if __name__ == "__main__":
     main(
@@ -231,5 +295,6 @@ if __name__ == "__main__":
         target_ev_uptake=0.95,
         n_steps_for_sweep=5,
         n_calls=20,
-        noise=0.05
+        noise=0.05,
+        n_calls_single=30
     )

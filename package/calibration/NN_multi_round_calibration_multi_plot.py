@@ -5,6 +5,62 @@ from package.plotting_data.single_experiment_plot import save_and_show
 import torch
 from torch import multiprocessing
 
+def reconstruct_x_o(match_data):
+    """
+    Rebuild the observed summary statistic vector from a saved match_data dict.
+
+    Handles the layouts still being plotted:
+      - current: EV stock proportion, EV sales proportion, then the extra scalar
+        moments under "extra_scalar_targets" -- the order the gen script builds
+        x_o in. That is mean fleet age alone now; runs made while new-car HHI was
+        also a moment carry two entries there, and both work unchanged because
+        the block is concatenated whatever its length.
+      - older: EV stock then EV sales only, with no extra moments.
+      - legacy: a single EV stock series under whatever year range that run
+        used (e.g. "EV_stock_prop_2016_23"), with no sales channel at all.
+
+    Runs whose x layout is not recoverable this way (e.g. the intermediate
+    version that repeated the age and HHI targets once per year) save the tensor
+    itself as "x_o" -- load_x_o() prefers that.
+
+    Args:
+        match_data (dict): Observed data saved alongside the posterior.
+
+    Returns:
+        torch.Tensor: Observed data, matching the trained posterior's x layout.
+    """
+    stock_keys = sorted(k for k in match_data if k.startswith("EV_stock_prop"))
+    sales_keys = sorted(k for k in match_data if k.startswith("EV_sales_prop"))
+
+    if not stock_keys:
+        raise KeyError(f"no EV stock series in match_data; keys were {sorted(match_data)}")
+
+    parts = [match_data[k] for k in stock_keys + sales_keys]
+    used = stock_keys + sales_keys
+
+    if "extra_scalar_targets" in match_data:
+        parts.append(match_data["extra_scalar_targets"])
+        used.append("extra_scalar_targets")
+
+    print("x_o built from:", used)
+
+    return torch.cat([torch.tensor(p, dtype=torch.float32).reshape(-1) for p in parts], dim=0)
+
+
+def load_x_o(fileName, match_data):
+    """
+    Return the run's observed vector, preferring the saved tensor.
+
+    The gen script saves x_o directly, so use that when it is there and fall back
+    to rebuilding it from match_data for runs that predate it.
+    """
+    try:
+        x_o = load_object(fileName + "/Data", "x_o")
+        print("x_o loaded from saved tensor, shape", tuple(x_o.shape))
+        return x_o
+    except FileNotFoundError:
+        return reconstruct_x_o(match_data)
+
 def plot_results(fileName, posterior_samples, param_bounds, param_names):
     """
     Plots results for posterior samples, dynamically handling multiple parameters.
@@ -32,6 +88,38 @@ def plot_results(fileName, posterior_samples, param_bounds, param_names):
     save_and_show(fig, fileName, "pairplot", dpi=300)
     plt.show()
 
+def plot_subset(fileName, posterior_samples, param_bounds, param_names,
+                wanted=("a_chi", "b_chi"), plot_name="pairplot_chi"):
+    """
+    Pairplot of a named subset of the parameters only.
+
+    Use it when the run sampled extra parameters (e.g. delta) that are not
+    wanted in the figure. Parameters missing from param_names are skipped.
+
+    Args:
+        fileName (str): Base directory for outputs.
+        posterior_samples (torch.Tensor): Posterior samples, shape (n, n_params).
+        param_bounds (list): Bounds, one per parameter, in param_names order.
+        param_names (list): Names of all sampled parameters.
+        wanted (tuple): Names to keep, in the order they must be plotted.
+        plot_name (str): File name for the saved figure.
+    """
+    idx = [param_names.index(n) for n in wanted if n in param_names]
+    if len(idx) < 2:
+        print(f"skipping {plot_name}: found {len(idx)} of {list(wanted)} in {param_names}")
+        return
+
+    fig, ax = pairplot(
+        posterior_samples[:, idx],
+        limits=[param_bounds[i] for i in idx],
+        figsize=(6, 6),
+        points_colors='r',
+        labels=[param_names[i] for i in idx]
+    )
+
+    save_and_show(fig, fileName, plot_name, dpi=300)
+    plt.show()
+
 def main(fileName):
     """
     Main function to load data and plot results.
@@ -44,26 +132,11 @@ def main(fileName):
     # Load observed data
 
     match_data = load_object(fileName + "/Data", "match_data")
+    base_params = load_object(fileName + "/Data", "base_params")
+    print(base_params)
+    
 
-
-    # Extract observed statistics
-    EV_stock_prop_2016_23 = match_data["EV_stock_prop_2016_23"]
-    #median_distance_traveled = match_data["median_distance_traveled"]
-    #median_age = match_data["median_age"]
-    #median_price = match_data["median_price"]
-
-    # Convert data to tensors
-    EV_stock_prop_2016_23_tensor = torch.tensor(EV_stock_prop_2016_23, dtype=torch.float32)
-    #median_distance_traveled_tensor = torch.tensor([median_distance_traveled], dtype=torch.float32)
-    #median_age_tensor = torch.tensor([median_age], dtype=torch.float32)
-    #median_price_tensor = torch.tensor([median_price], dtype=torch.float32)
-
-    # Reconstruct x_o by concatenating the tensors
-    #x_o = torch.cat((EV_stock_prop_2016_22_tensor, 
-    #                 median_distance_traveled_tensor, 
-    #                 median_age_tensor, 
-    #                 median_price_tensor), dim=0)
-    x_o = EV_stock_prop_2016_23_tensor
+    x_o = load_x_o(fileName, match_data)
 
     # Load posterior and variable dictionary
     posterior = load_object(fileName + "/Data", "posterior")
@@ -107,8 +180,36 @@ def main(fileName):
     
     # Plot results
     plot_results(fileName, samples, param_bounds, param_names)
+    plot_subset(fileName, samples, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
-        fileName="results/NN_calibration_multi_11_08_28__20_03_2025",
+        fileName="results/sbi_seed_av_15_31_53__18_08_2026",
     )
+    #sbi_seed_av_15_31_53__18_08_2026
+    #sbi_seed_av_12_53_38__18_08_2026
+    #sbi_seed_av_10_40_28__18_08_2026
+    #sbi_seed_av_11_27_43__17_08_2026
+    #sbi_seed_av_08_58_38__17_08_2026
+    #sbi_seed_av_10_13_07__17_08_2026 - this one has the right range and b beta fixed
+    #sbi_seed_av_09_15_32__17_08_2026
+    #sbi_seed_av_22_27_30__16_08_2026
+    #sbi_seed_av_22_25_54__16_08_2026
+    #sbi_seed_av_17_44_11__16_08_2026
+    #sbi_single_seed_14_34_13__14_08_2026
+    #NN_calibration_multi_14_33_36__14_08_2026
+    #NN_calibration_multi_13_02_48__14_08_2026
+    #sbi_single_seed_13_04_51__14_08_2026
+    #sbi_single_seed_12_42_40__14_08_2026
+    #NN_calibration_multi_12_34_29__14_08_2026
+
+    #sbi_single_seed_16_43_32__12_08_2026
+    #NN_calibration_multi_16_42_17__12_08_2026
+    #sbi_single_seed_14_23_24__11_08_2026
+    #sbi_single_seed_15_18_22__11_08_2026
+    #sbi_single_seed_15_38_23__11_08_2026
+    #NN_calibration_multi_12_41_07__11_08_2026 - OLD EFFICICENCY
+    #NN_calibration_multi_12_25_22__11_08_2026 - UPDATED efficiency 
+    #NN_calibration_multi_08_14_47__07_08_2026
+#NN_calibration_multi_12_43_09__06_08_2026
+#NN_calibration_multi_11_08_28__20_03_2025

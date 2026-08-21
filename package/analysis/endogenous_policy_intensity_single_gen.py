@@ -7,6 +7,7 @@ from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import (
     createFolder, save_object, produce_name_datetime, params_list_with_seed, get_num_workers
 )
+import os
 import shutil  # Cleanup
 from pathlib import Path  # Path handling
 from skopt import gp_minimize
@@ -160,8 +161,8 @@ def set_up_calibration_runs(base_params, root, file_name=None):
         createFolder()) instead of minting a new results/<root>_<timestamp>
         folder of its own. Used by callers that want ONE self-contained
         timestamped folder covering calibration + everything downstream
-        (e.g. package.surrogate.run.get_or_create_calibration's
-        target_folder argument), rather than calibration living in its own
+        (a caller that reuses one calibration across a downstream sweep
+        passes its own folder here), rather than calibration living in its own
         separate sibling folder. None (default, existing behaviour
         unchanged): mint a fresh results/<root>_<timestamp> folder here.
     """
@@ -293,7 +294,8 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
          policy_list=None, 
          target_ev_uptake=0.5,
          n_calls=40, 
-         noise = 0.01
+         noise = 0.01,
+         plot = True
          ):
     """
     Main function for optimizing policy intensities.
@@ -319,15 +321,42 @@ def main(BASE_PARAMS_LOAD="package/constants/base_params.json",
 
     save_object(conditions, file_name + "/Data", "conditions")
 
+    if plot:
+        plot_results(file_name)
+
+    return file_name
+
+
+def plot_results(file_name):
+    """
+    Plot straight after the run so the results folder never has to be pasted into
+    endogenous_policy_intensity_single_plot by hand. The plot module is imported
+    here rather than at the top of the file so a headless run that cannot import
+    matplotlib still completes, and a plotting bug never hides the saved data.
+    """
+    # Inside a batch job there is no display, and an interactive backend would make
+    # plt.show() block until the job hits its wall time.
+    if os.environ.get("SLURM_JOB_ID") and "MPLBACKEND" not in os.environ:
+        os.environ["MPLBACKEND"] = "Agg"
+
+    try:
+        from package.analysis.endogenous_policy_intensity_single_plot import main as plot_main
+        plot_main(file_name)
+    except Exception as e:
+        print(f"[!] Plotting failed ({type(e).__name__}: {e}). Data is saved, plot it with:")
+        print(f"    python -m package.analysis.endogenous_policy_intensity_single_plot {file_name}")
+
+
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_endogenous_policy_single_gen.json",
         BOUNDS_LOAD="package/analysis/policy_bounds_endog_single_gen.json",
         policy_list=[
             "Carbon_price",
-            "Adoption_subsidy"
+            "Adoption_subsidy",
+            "Production_subsidy"
         ],
         target_ev_uptake=0.95,
-        n_calls=10,
+        n_calls=30,
         noise=0.05
     )
