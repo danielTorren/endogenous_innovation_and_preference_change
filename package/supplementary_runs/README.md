@@ -95,6 +95,53 @@ narrower submitter instead (three jobs: 9+10 share one generation run):
 bash package/supplementary_runs/submit_figs_09_10_13_14.sh
 ```
 
+### Memory sizing (why the 21/08/2026 figs 13/14 jobs were OOM-killed)
+
+One full-length run of the Figures 11-14 config (600 steps, 3,000 individuals)
+peaks at **~1.0 GiB RSS**, measured single-process. The original `--mem=64G`
+with `--cpus-per-task=64` therefore gave each worker exactly 1.0 GiB and no
+headroom for the parent process, the per-worker interpreter, or allocator
+fragmentation. Symptom: a worker died mid-way through the policy phase
+(joblib logged "A worker stopped while some jobs were given to the executor"),
+the phase still finished, and then the BAU phase was OOM-killed the moment it
+started. Two things were wrong, both now fixed:
+
+- `--mem` is 128G for figs 11-14, i.e. 2 GiB per worker at 64 workers.
+- `run_cross_variation` now frees the policy phase's arrays and calls
+  `_release_workers()` before the BAU phase. joblib's loky backend keeps its
+  workers warm between `Parallel(...)` calls, and CPython does not return freed
+  memory to the OS, so the BAU phase was inheriting 64 processes already at
+  their ~1 GiB high-water mark and allocating on top of that. Shutting the
+  executor down gives the BAU phase fresh workers at baseline RSS.
+
+### Recovering a run whose BAU phase died
+
+`run_cross_variation` saves the policy grid (`Data/data_cross_ev`) **before**
+starting the BAU sweep, so an OOM in the BAU phase costs only the BAU sweep --
+the 3,072-run policy grid on disk is still good. The BAU sweep is 512 runs
+(~3 min) and, because every policy is switched off in it, depends only on the
+*physical* parameter -- so one sweep serves both figures sharing that axis
+(13 and 14, or 11 and 12):
+
+```bash
+sbatch package/supplementary_runs/submit_fig13_14_achi_bau_gen.slurm
+```
+
+Paste the `results/cross_a_chi_vs_Carbon_price_BAU_<ts>` folder it prints into
+`RUNS["grid_bau_achi"]` in `package/paper_figures/build_figures.py`, then build
+the two figures with no further simulation:
+
+```bash
+python -m package.paper_figures.build_figures --only S13,S14
+```
+
+The same script also has direct BAU-only and plot-only modes:
+
+```bash
+python -m package.supplementary_runs.fig11_14_policy_grid_gen 13 bau
+python -m package.supplementary_runs.fig11_14_policy_grid_gen 13 plot <policy_folder> [bau_folder]
+```
+
 Each job prints its own fresh `results/<name>_<timestamp>` folder near the
 top of its log -- that's where the figure PNGs land (see each script's
 docstring for the exact filename; most are under `Plots/`, but the Figures
@@ -117,6 +164,11 @@ only re-plots an existing posterior):
 | Fig 12 | 3,584 | (8 beta x 6 rebate x 64 seeds) + (8 x 64 BAU) |
 | Fig 13 | 3,584 | (8 a_chi x 6 carbon x 64 seeds) + (8 x 64 BAU) |
 | Fig 14 | 3,584 | (8 a_chi x 6 rebate x 64 seeds) + (8 x 64 BAU) |
+
+Each of Figs 11-14 above includes its own 512-run BAU sweep, which is
+redundant within a pair: BAU has all policies off, so 11/12 compute the same
+beta sweep twice and 13/14 the same a_chi sweep twice. Running one pair member
+full and the other's BAU from `grid_bau_*` saves 512 runs per pair.
 | **Total** | **214,336** | |
 
 At ~20 s/run (measured during smoke-testing -- 8 full-length, 456-step runs

@@ -28,7 +28,10 @@ four separate SLURM jobs so they run in parallel on the cluster rather than
 one another's queue.
 """
 import sys
-from package.generating_data.policy_sensitivity_gen import run_cross_variation
+from package.generating_data.policy_sensitivity_gen import (
+    run_bau_only,
+    run_cross_variation,
+)
 from package.plotting_data.policy_sensitivity_plot import load_and_plot_combined
 
 BASE_PARAMS_LOAD = "package/constants/base_params_vary_policy_joint.json"
@@ -64,7 +67,66 @@ def run_policy_grid_figure(fig_number, base_params_load=BASE_PARAMS_LOAD):
     return folder_name
 
 
+def run_bau_for(fig_number, base_params_load=BASE_PARAMS_LOAD):
+    """
+    Run ONLY the all-policies-off BAU sweep for a figure's physical parameter,
+    into its own results/cross_<phys>_vs_<pol>_BAU_<timestamp> folder.
+
+    BAU depends only on the physical parameter, not the policy one, so the same
+    sweep is valid for both figures sharing a physical parameter: one call with
+    fig_number 13 (or 14) serves Figures 13 AND 14, and one with 11 (or 12)
+    serves Figures 11 AND 12. That is why build_figures.RUNS keys this as
+    "grid_bau_achi"/"grid_bau_beta" rather than per-figure -- and why running
+    the full run_cross_variation for both members of a pair repeats these 512
+    runs needlessly.
+
+    Use this to finish a run whose policy phase completed and was saved but
+    whose BAU phase died (e.g. the OOM kill on the 21/08/2026 jobs): the
+    cross_* folder already on disk keeps its data_cross_ev, and
+    load_and_plot_combined takes the BAU array from this separate folder via
+    its bau_results_folder argument.
+    """
+    cfg = FIGURES[str(fig_number)]
+    folder_name = run_bau_only(
+        BASE_PARAMS_LOAD=base_params_load,
+        VAR_PHYSICAL_LOAD=cfg["var_physical"],
+        VAR_POLICY_LOAD=cfg["var_policy"],
+    )
+    print(f"\nBAU-only folder: {folder_name}")
+    print("Point build_figures.RUNS['grid_bau_achi'] (Figures 13/14) or")
+    print("['grid_bau_beta'] (Figures 11/12) at it, whichever matches.")
+    return folder_name
+
+
+def plot_only(fig_number, policy_folder, bau_folder=None):
+    """
+    Re-plot a figure from folders already on disk -- no simulation. bau_folder
+    is where data_cross_bau lives; None means policy_folder holds it itself.
+    """
+    return load_and_plot_combined(policy_folder, bau_results_folder=bau_folder)
+
+
 if __name__ == "__main__":
-    # e.g. `python -m package.supplementary_runs.fig11_14_policy_grid_gen 11`
+    # Full run (policy grid + its own BAU sweep + plot):
+    #   python -m package.supplementary_runs.fig11_14_policy_grid_gen 13
+    # BAU sweep only, for a figure whose policy phase already succeeded:
+    #   python -m package.supplementary_runs.fig11_14_policy_grid_gen 13 bau
+    # Plot only, from folders on disk:
+    #   python -m package.supplementary_runs.fig11_14_policy_grid_gen 13 plot \
+    #       results/cross_a_chi_vs_Carbon_price_<ts> results/cross_..._BAU_<ts>
     fig_number = sys.argv[1] if len(sys.argv) > 1 else "11"
-    run_policy_grid_figure(fig_number)
+    mode = sys.argv[2] if len(sys.argv) > 2 else "full"
+
+    if mode == "bau":
+        run_bau_for(fig_number)
+    elif mode == "plot":
+        if len(sys.argv) < 4:
+            raise SystemExit(
+                "plot mode needs the policy folder: "
+                "... <fig> plot <policy_folder> [bau_folder]"
+            )
+        plot_only(fig_number, sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None)
+    elif mode == "full":
+        run_policy_grid_figure(fig_number)
+    else:
+        raise SystemExit(f"unknown mode {mode!r}; expected full, bau or plot")

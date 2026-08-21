@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.3.25)  21 AUG 2026 11:01
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.3.25)  21 AUG 2026 12:31
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1962,8 +1962,8 @@ Overfull \hbox (10.75847pt too wide) in paragraph at lines 1515--1515
  []
 
 
-Overfull \hbox (28.91719pt too wide) in paragraph at lines 1515--1515
-\OT1/cmr/m/n/10.95 ($1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 1968\OML/cmm/m/it/10.95 ; \OT1/cmr/m/n/10.95 2\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 6805$)| 
+Overfull \hbox (17.96718pt too wide) in paragraph at lines 1515--1515
+\OT1/cmr/m/n/10.95 ($1\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 340\OML/cmm/m/it/10.95 ; \OT1/cmr/m/n/10.95 3\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 573$)| 
  []
 
 
@@ -2332,7 +2332,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 1553--1553
 
 
 Overfull \hbox (5.1922pt too wide) in paragraph at lines 1553--1553
-\OT1/cmr/m/n/10.95 ($0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 79$,$3\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 09$)
+\OT1/cmr/m/n/10.95 ($0\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 79$,$2\OML/cmm/m/it/10.95 :\OT1/cmr/m/n/10.95 32$)
  []
 
 
@@ -2619,15 +2619,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 1573--1573
  []
 
 
-Package natbib Warning: Citation `Grieco2024MarketPower' on page 40 undefined on input line 1573.
-
-
 Underfull \hbox (badness 7667) in paragraph at lines 1575--1575
 []|\OT1/cmr/m/n/10.95 Number of
  []
-
-
-Package natbib Warning: Citation `Grieco2024MarketPower' on page 40 undefined on input line 1575.
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 1577--1577
@@ -2883,7 +2877,7 @@ Here is how much of TeX's memory you used:
 pdfTeX warning (dest): name{https://www.bts.gov/browse-statistical-products-and-data/state-transportation-statistics/state-highway-travel} has been referenced but does not exist, replaced by a fixed one
 
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfrm1200.pfb>
-Output written on manuscript.pdf (48 pages, 4888837 bytes).
+Output written on manuscript.pdf (48 pages, 4888981 bytes).
 PDF statistics:
  629 PDF objects out of 1000 (max. 8388607)
  517 compressed objects within 6 object streams

@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1787308283.49205 "/home/daniel/Documents/Code/endogenous_innovation_and_preference_change/docs/paper/manuscript.tex" "manuscript.pdf" "manuscript" 1787308287.49599 2
+["pdflatex"] 1787308418.05002 "/home/daniel/Documents/Code/endogenous_innovation_and_preference_change/docs/paper/manuscript_final.tex" "manuscript_final.pdf" "manuscript_final" 1787308421.83485 0
   "/etc/texmf/web2c/texmf.cnf" 1774426212.17132 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/daniel/Documents/Code/endogenous_innovation_and_preference_change/docs/paper/manuscript.tex" 1787308279.13496 164996 4e527612b627651a03d59ad1e06f5c06 ""
+  "/home/daniel/Documents/Code/endogenous_innovation_and_preference_change/docs/paper/manuscript_final.tex" 1787308415.46707 151074 0adadf0d7208d982117c2a65cea29199 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/tcrm1200.tfm" 1136768653 1536 74b7293ec3713bb7fdca8dd1bd1f469c ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
@@ -216,14 +216,14 @@
   "Figure_5.png" 1787302802.33179 2123849 fb699709dd221d6f45267d3e48d4d1e4 ""
   "Figure_6.png" 1787302803.81946 184433 c56375b1a51b97371bbe33490e48f4b5 ""
   "Figure_7.png" 1787302804.08424 186238 0dbe5dd04e7934c09008d8fdbf1929d8 ""
-  "manuscript.aux" 1787308287.35939 27239 c8166afaf3ff892183526c38918b082d "pdflatex"
-  "manuscript.out" 1787308287.36039 3944 9aedadfb681a4a448bc40353b442224e "pdflatex"
-  "manuscript.tex" 1787308279.13496 164996 4e527612b627651a03d59ad1e06f5c06 ""
+  "manuscript_final.aux" 1787308421.73932 26559 29a6b98c4dc9801bef0b1ae72b338a18 "pdflatex"
+  "manuscript_final.out" 1787308421.74032 3944 9aedadfb681a4a448bc40353b442224e "pdflatex"
+  "manuscript_final.tex" 1787308415.46707 151074 0adadf0d7208d982117c2a65cea29199 ""
   (generated)
-  "manuscript.aux"
-  "manuscript.loc"
-  "manuscript.log"
-  "manuscript.out"
-  "manuscript.pdf"
-  "manuscript.soc"
+  "manuscript_final.aux"
+  "manuscript_final.loc"
+  "manuscript_final.log"
+  "manuscript_final.out"
+  "manuscript_final.pdf"
+  "manuscript_final.soc"
   (rewritten before read)

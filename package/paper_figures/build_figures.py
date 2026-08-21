@@ -89,11 +89,22 @@ RUNS = {
     # Figure 6 -- ten vary_single runs, in panel order a-j:
     # a alpha, b r, c mu, d kappa, e b_chi, f a_chi, g lambda, h delta,
     # i K_EV, j K_ICE (see supplementary_runs/fig06_local_sensitivity_gen.PANELS).
-    # Only panel a exists in results/, and a partial list would quietly plot a
-    # figure with the other nine panels missing, so the list stays empty until
-    # the rest are run. Panel a is
-    # results/single_param_vary_14_11_40__19_08_2026 (alpha, [0.2, 0.4, 0.6, 0.8]).
-    "local_sensitivity": [],
+    # All ten panels were run and combined on the cluster on 21/08/2026, but only
+    # panel a's Data/ folder came back with the figure, so the nine other entries
+    # below cannot be filled in and the figure cannot be re-plotted here. The
+    # combined PNG that run produced is already on disk at
+    #   results/single_param_vary_09_33_59__21_08_2026_fig6_combined
+    # which is the folder _local_sensitivity_output_folder derives from the panel
+    # a entry, so S6 builds with --skip-plot and only with --skip-plot:
+    #   python -m package.paper_figures.build_figures --only S6 --skip-plot
+    # Without it _replot_local_sensitivity refuses rather than silently emitting a
+    # one-panel figure. Copy the other nine folders back, or re-run
+    #   python -m package.supplementary_runs.fig06_panels run-all
+    # to make S6 re-plottable; the superseded panel a from the previous
+    # calibration is results/single_param_vary_14_11_40__19_08_2026.
+    "local_sensitivity": [
+        "results/single_param_vary_09_33_59__21_08_2026",  # a: alpha
+    ],
     # Figures 7 and 8 -- package/supplementary_runs/fig07_08_sobol_gen.py.
     # Its artifacts are named 10_256_*, matching SOBOL_N_SAMPLES below.
     "sobol": "results/sensitivity_analysis_14_11_58__19_08_2026",
@@ -103,17 +114,29 @@ RUNS = {
     # Figures 11-14 -- package/supplementary_runs/fig11_14_policy_grid_gen.py
     "grid_beta_carbon": "results/cross_beta_multiplier_vs_Carbon_price_14_11_40__19_08_2026",
     "grid_beta_rebate": "results/cross_beta_multiplier_vs_Adoption_subsidy_14_13_36__19_08_2026",
-    "grid_achi_carbon": "results/cross_a_chi_vs_Carbon_price_14_14_24__19_08_2026",
-    "grid_achi_rebate": "results/cross_a_chi_vs_Adoption_subsidy_14_48_58__19_08_2026",
+    # The 21/08/2026 a_chi runs. Both finished and saved their 3,072-run policy
+    # phase (Data/data_cross_ev) and were then OOM-killed at the start of their
+    # BAU phase, so NEITHER folder has its own Data/data_cross_bau -- the BAU
+    # array comes from "grid_bau_achi" below instead. Superseded 19/08/2026
+    # runs, from the previous calibration:
+    #   results/cross_a_chi_vs_Carbon_price_14_14_24__19_08_2026
+    #   results/cross_a_chi_vs_Adoption_subsidy_14_48_58__19_08_2026
+    "grid_achi_carbon": "results/cross_a_chi_vs_Carbon_price_10_00_29__21_08_2026",
+    "grid_achi_rebate": "results/cross_a_chi_vs_Adoption_subsidy_10_00_29__21_08_2026",
     # The BAU baseline for Figures 11-14 has no policy in it, so it depends only
     # on the physical parameter: one BAU run serves both policies on that axis.
     # A cross_* run writes data_cross_bau.pkl of its own; point these at whichever
     # run actually has that file (leave empty to use each figure's own folder).
-    # Of the four current cross_* runs, only the beta/adoption-subsidy one has
-    # data_cross_bau.pkl, so S11 and S12 get the BAU contour and S13/S14 will
-    # report data_cross_bau missing until an a_chi BAU sweep finishes. That
-    # sweep is the cheap half of a cross run (8 a_chi values x 64 seeds):
-    # policy_sensitivity_gen.run_bau_only against vary_policy_a_chi.json.
+    # Of the current cross_* runs, only the beta/adoption-subsidy one has
+    # data_cross_bau.pkl: the two 21/08/2026 a_chi runs were OOM-killed at the
+    # start of their BAU phase, after saving their policy grids. So S11 and S12
+    # get the BAU contour, and S13/S14 will report data_cross_bau missing until
+    # an a_chi BAU sweep finishes. That sweep is the cheap half of a cross run
+    # (8 a_chi values x 64 seeds = 512 runs, ~3 min) and does NOT require
+    # re-running the 3,072-run policy grid:
+    #   sbatch package/supplementary_runs/submit_fig13_14_achi_bau_gen.slurm
+    # then paste the results/cross_a_chi_vs_Carbon_price_BAU_<ts> folder it
+    # prints into grid_bau_achi below and build with --only S13,S14.
     "grid_bau_beta": "results/cross_beta_multiplier_vs_Adoption_subsidy_14_13_36__19_08_2026",
     "grid_bau_achi": "",
 }
@@ -253,6 +276,18 @@ def _replot_local_sensitivity(folders):
     from package.supplementary_runs.fig06_local_sensitivity_plot import plot_fig6_combined
 
     letters = "abcdefghij"
+    # A short list plots a figure with the missing panels simply absent, which
+    # looks like a finished figure. Refuse instead: either all ten panel folders
+    # are on disk, or the combined PNG from the run that had them is reused with
+    # --skip-plot.
+    if len(folders) != len(letters):
+        raise ValueError(
+            "RUNS['local_sensitivity'] has %d of %d panel folders (%s); "
+            "run the rest with 'python -m package.supplementary_runs.fig06_panels "
+            "run-all', or build S6 with --skip-plot to reuse the combined PNG in %s"
+            % (len(folders), len(letters), ", ".join(letters[:len(folders)]),
+               _local_sensitivity_output_folder(folders))
+        )
     panel_folders = [(letters[i], _abs(f)) for i, f in enumerate(folders)]
     plot_fig6_combined(
         panel_folders,

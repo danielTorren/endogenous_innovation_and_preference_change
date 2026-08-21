@@ -13,6 +13,11 @@
 # queue and can run concurrently. See README.md for the run-count math behind
 # each job's --time budget.
 #
+# NOTE: if the figs 13/14 jobs already ran and were OOM-killed in their BAU
+# phase (as on 21/08/2026), do NOT re-run them from here -- their 3,072-run
+# policy grids are already saved. Run the cheap recovery job instead:
+#   sbatch package/supplementary_runs/submit_fig13_14_achi_bau_gen.slurm
+#
 # Usage (from anywhere):
 #   bash package/supplementary_runs/submit_figs_09_10_13_14.sh
 set -euo pipefail
