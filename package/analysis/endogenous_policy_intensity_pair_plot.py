@@ -664,7 +664,8 @@ def plot_emissions_tradeoffs_reference_lines(
         utility_as_pct_of_bau=False,
         emissions_as_pct_of_bau=False,
         show_zero_net_cost_line=True,
-        pad_frac=0.10,
+        x_err_in_limits=False,
+        pad_frac=0.20,
         plot_name="emissions_tradeoff_reference_lines"
         ):
     """
@@ -685,6 +686,11 @@ def plot_emissions_tradeoffs_reference_lines(
     are read off the axis scale instead.
     show_zero_net_cost_line=False drops the zero net cost line from the top
     panel; the top axis is then scaled to the policy points alone.
+    x_err_in_limits=True widens the x axis to hold the whole emissions
+    confidence bar of every point. Those bars are several percentage points
+    wide, so it roughly doubles the x range and squashes the policy cloud;
+    by default x is scaled to the means and the bars are allowed to run off
+    the sides, as in the other full-scale figures.
     """
     okabe_ito_colors = ['#E69F00', '#009E73', '#56B4E9', '#F0E442',
                         '#0072B2', '#D55E00', '#CC79A7', '#000000']
@@ -750,10 +756,14 @@ def plot_emissions_tradeoffs_reference_lines(
                     xytext=(0, 4), textcoords="offset points",
                     ha="right", va="bottom", fontsize=11, color="0.25")
 
-    # --- Limits: scaled to the means, with the reference line kept in view even
-    # if every policy point sits on one side of it. Confidence bars are allowed
-    # to run off the axes, as in the other full-scale figure.
-    def _limits(values, reference):
+    # --- Limits: scaled to the confidence bars on y, so the caps of every bar
+    # stay inside the axes, plus pad_frac of the span on each side. The
+    # reference line is kept in view even if every policy point sits on one
+    # side of it.
+    def _limits(key, reference, with_err=True):
+        values = ([r[key] for r in records] if not with_err
+                  else [r[key] - r[f"{key}_err"] for r in records]
+                  + [r[key] + r[f"{key}_err"] for r in records])
         refs = [] if reference is None else [reference]
         lo, hi = min(values + refs), max(values + refs)
         span = hi - lo if hi > lo else abs(hi) or 1.0
@@ -761,13 +771,11 @@ def plot_emissions_tradeoffs_reference_lines(
 
     # x is always scaled to the policy points alone: BAU emissions sit far to
     # the right (100% when rescaled), and reserving room for them would leave
-    # most of the axis empty.
-    e_vals = [r[x_key] for r in records]
-    e_lo, e_hi = min(e_vals), max(e_vals)
-    e_span = e_hi - e_lo or abs(e_hi) or 1.0
-    ax_top.set_xlim(e_lo - pad_frac * e_span, e_hi + pad_frac * e_span)
-    ax_top.set_ylim(*_limits([r["c"] for r in records], top_ref))
-    ax_bottom.set_ylim(*_limits([r[y_bottom] for r in records], bottom_ref))
+    # most of the axis empty. The emissions bars are wide enough that including
+    # them costs more legibility than it buys, hence x_err_in_limits.
+    ax_top.set_xlim(*_limits(x_key, None, with_err=x_err_in_limits))
+    ax_top.set_ylim(*_limits("c", top_ref))
+    ax_bottom.set_ylim(*_limits(y_bottom, bottom_ref))
 
     # --- Labels
     ax_top.set_ylabel("Cumulative Net Cost, bn $", fontsize=16)

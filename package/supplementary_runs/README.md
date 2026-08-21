@@ -86,6 +86,15 @@ sbatch package/supplementary_runs/submit_fig13_achi_carbon_gen.slurm
 sbatch package/supplementary_runs/submit_fig14_achi_rebate_gen.slurm
 ```
 
+To re-run only Figures 9, 10, 13 and 14 -- the four whose
+`\includegraphics` in `docs/paper/supplementary.tex` still point at the old
+`pics/` PNGs rather than `supplementary_figs/Supp_Figure_N.png` -- use the
+narrower submitter instead (three jobs: 9+10 share one generation run):
+
+```bash
+bash package/supplementary_runs/submit_figs_09_10_13_14.sh
+```
+
 Each job prints its own fresh `results/<name>_<timestamp>` folder near the
 top of its log -- that's where the figure PNGs land (see each script's
 docstring for the exact filename; most are under `Plots/`, but the Figures
@@ -103,12 +112,12 @@ only re-plots an existing posterior):
 | Fig 5 | 64 | 1 combo x 64 seeds |
 | Fig 6 | 2,560 | 10 params x 4 values x 64 seeds |
 | Fig 7/8 | 196,608 | N_samples=256 x (D+2)=12 x 64 seeds, calc_second_order=False |
-| Fig 9/10 | 192 | 4 decarb x 3 price x 16 seeds |
+| Fig 9/10 | 768 | 4 decarb x 3 price x 64 seeds |
 | Fig 11 | 3,584 | (8 beta x 6 carbon x 64 seeds) + (8 x 64 BAU) |
 | Fig 12 | 3,584 | (8 beta x 6 rebate x 64 seeds) + (8 x 64 BAU) |
 | Fig 13 | 3,584 | (8 a_chi x 6 carbon x 64 seeds) + (8 x 64 BAU) |
 | Fig 14 | 3,584 | (8 a_chi x 6 rebate x 64 seeds) + (8 x 64 BAU) |
-| **Total** | **213,760** | |
+| **Total** | **214,336** | |
 
 At ~20 s/run (measured during smoke-testing -- 8 full-length, 456-step runs
 finished in ~21 s on 16 workers, i.e. ~20 s each when there's a free core per
@@ -118,8 +127,8 @@ many jobs the cluster schedules at once, since each job parallelises
 internally across its own `--cpus-per-task`:
 
 - **Per-job wall-clock**, i.e. `ceil(runs / cpus-per-task) x 20 s`:
-  Fig 5 ~20 s, Fig 6 ~13 min, Fig 7/8 ~8.5 h (128 cores), Fig 9/10 ~4 min,
-  each of Fig 11-14 ~19 min.
+  Fig 5 ~20 s, Fig 6 ~13 min, Fig 7/8 ~8.5 h (128 cores), Fig 9/10 ~5 min
+  (12 batches of 64, ~25 s/run at 768 steps), each of Fig 11-14 ~19 min.
 - **If all 8 jobs get scheduled at once**: wall-clock for the whole batch is
   set by the slowest job, i.e. **Fig 7/8's ~8.5 h**.
 - **Worst case, jobs queue one after another**: sum of all eight, ~10.1 h.

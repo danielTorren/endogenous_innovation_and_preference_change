@@ -164,6 +164,6 @@ def main(file_name):
 if __name__ == "__main__":
     # The gen script calls main() itself, so the default below is only the folder
     # last used interactively; pass a folder to plot any other run.
-    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/vary_single_policy_gen_13_48_31__19_08_2026"
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/vary_single_policy_gen_13_59_16__19_08_2026"
     print("Plotting:", file_name)
     main(file_name=file_name)#vary_single_policy_gen_16_43_02__06_03_2025

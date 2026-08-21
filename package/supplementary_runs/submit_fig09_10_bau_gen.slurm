@@ -4,10 +4,10 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16        # match "seed_repetitions" in constants/base_params_inputs_and_emissions.json
-#SBATCH --mem=16G                 # adjust after checking actual usage on a first run (seff <jobid>)
-#SBATCH --time=08:00:00           # 4 decarb x 3 elec_price = 12 combinations x 16 seeds = 192 runs,
-                                   # duration_future=312 (768 steps/run) -> 12 sequential 16-wide
+#SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_inputs_and_emissions.json
+#SBATCH --mem=64G                 # adjust after checking actual usage on a first run (seff <jobid>)
+#SBATCH --time=08:00:00           # 4 decarb x 3 elec_price = 12 combinations x 64 seeds = 768 runs,
+                                   # duration_future=312 (768 steps/run) -> 12 sequential 64-wide
                                    # batches. Pad generously on the first run, then trim from seff.
 #SBATCH --partition=generic        # default partition on jupyter-torrenperaire (see `sinfo`); CPU-only, 10-day limit
 
