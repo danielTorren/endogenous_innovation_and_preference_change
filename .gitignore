@@ -17,3 +17,4 @@ sbi-logs/
 slurm_logs/*
 !slurm_logs/.gitkeep
 *.tex.bak
+docs/paper/
