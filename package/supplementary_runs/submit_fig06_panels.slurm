@@ -5,7 +5,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_calibration.json
-#SBATCH --mem=64G                 # adjust after checking actual usage on a first run (seff <jobid>)
+#SBATCH --mem=128G                # 2G per worker at 64 workers. MEASURED: one run of this config
+                                   # (456 steps, 3000 individuals) peaks at ~0.82 GiB RSS, so 64
+                                   # workers need ~52 GiB for run data alone -- 81% of the old 64G,
+                                   # leaving nothing for the parent or the per-worker interpreter.
 #SBATCH --time=12:00:00           # 43 value-settings x 64 seeds = 2,752 runs at 456 steps
                                    # (9 parameters x 4 values + b_chi's 7) -> 43 sequential
                                    # 64-wide batches, panel a included since it is re-run

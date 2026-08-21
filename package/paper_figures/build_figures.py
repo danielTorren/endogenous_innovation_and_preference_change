@@ -127,18 +127,20 @@ RUNS = {
     # on the physical parameter: one BAU run serves both policies on that axis.
     # A cross_* run writes data_cross_bau.pkl of its own; point these at whichever
     # run actually has that file (leave empty to use each figure's own folder).
-    # Of the current cross_* runs, only the beta/adoption-subsidy one has
-    # data_cross_bau.pkl: the two 21/08/2026 a_chi runs were OOM-killed at the
-    # start of their BAU phase, after saving their policy grids. So S11 and S12
-    # get the BAU contour, and S13/S14 will report data_cross_bau missing until
-    # an a_chi BAU sweep finishes. That sweep is the cheap half of a cross run
-    # (8 a_chi values x 64 seeds = 512 runs, ~3 min) and does NOT require
-    # re-running the 3,072-run policy grid:
-    #   sbatch package/supplementary_runs/submit_fig13_14_achi_bau_gen.slurm
-    # then paste the results/cross_a_chi_vs_Carbon_price_BAU_<ts> folder it
-    # prints into grid_bau_achi below and build with --only S13,S14.
+    # grid_bau_beta comes from the beta/adoption-subsidy cross run, which
+    # completed its own BAU phase.
+    #
+    # grid_bau_achi is the standalone recovery sweep from
+    # submit_fig13_14_achi_bau_gen.slurm (8 a_chi values x 64 seeds = 512 runs,
+    # ~3 min): the two 21/08/2026 a_chi cross runs saved their 3,072-run policy
+    # grids and were then OOM-killed at the start of their own BAU phase, so
+    # neither carries data_cross_bau and both S13 and S14 read it from here.
+    # Its folder name says "vs_Carbon_price" only because run_bau_only derives
+    # the name from the config pair it was invoked with (Figure 13's); the
+    # sweep itself has every policy switched off, so it is equally Figure 14's
+    # BAU and is deliberately shared by both.
     "grid_bau_beta": "results/cross_beta_multiplier_vs_Adoption_subsidy_14_13_36__19_08_2026",
-    "grid_bau_achi": "",
+    "grid_bau_achi": "results/cross_a_chi_vs_Carbon_price_BAU_10_48_00__21_08_2026",
 }
 
 # N_samples used for the Sobol run, which is baked into its output filename.
@@ -149,11 +151,11 @@ SOBOL_N_SAMPLES = 256
 MIN_EV_UPTAKE = 0.94
 MAX_EV_UPTAKE = 0.96
 
-# Scale applied to cumulative emissions in the tables. This keeps the magnitude
-# of the hand-typed Table 3, whose BAU row was of order 100 "MTCO2". The figure
-# code multiplies the same quantity by 1e-9 instead, so the table and the figure
-# axis have never agreed; flip this to 1e-9 to make the figures the reference.
-EMISSIONS_SCALE = 1e-6
+# Scale applied to cumulative emissions in the tables. Raw emissions are in kg,
+# so 1e-9 gives MtCO2 -- the same unit the figure axes use. This used to be 1e-6
+# (kilotonnes) while still being labelled "MTCO2", so the table and the figure
+# axis disagreed by a factor of 1000.
+EMISSIONS_SCALE = 1e-9
 
 # Figures the model does not produce. Put these files in docs/paper/static_figs/.
 STATIC_SOURCES = {
@@ -543,6 +545,12 @@ def _table_policy_outcomes(folder):
     if "BAU" not in outcomes:
         raise ValueError("policy_outcomes has no BAU entry")
 
+    # Utility only accrues to the prob_switch_car share of agents activated each
+    # month, so the population-level figure is 1/prob_switch_car times the raw
+    # accumulator. The figures apply the same correction.
+    base_params = load_object(_abs(folder) + "/Data", "base_params")
+    utility_scale = 1.0 / base_params["parameters_social_network"]["prob_switch_car"]
+
     on_target, off_target = [], []
     for policy, entry in outcomes.items():
         if policy == "BAU":
@@ -580,17 +588,17 @@ def _table_policy_outcomes(folder):
         (r"\textbf{EV Adoption Proportion, ($\sigma$)}", uptake_cell),
         (r"\textbf{Intensity}", intensity_cell),
         (r"\textbf{Cumulative Net Cost, bn USD}", scaled("mean_net_cost", 1e-9, 3)),
-        (r"\textbf{Cumulative Emissions, MT$CO_2$}",
-         scaled("mean_emissions_cumulative", EMISSIONS_SCALE, 2)),
-        (r"\textbf{Cumulative Emissions (Driving), MT$CO_2$}",
-         scaled("mean_emissions_cumulative_driving", EMISSIONS_SCALE, 2)),
-        (r"\textbf{Cumulative Emissions (Production), MT$CO_2$}",
-         scaled("mean_emissions_cumulative_production", EMISSIONS_SCALE, 2)),
+        (r"\textbf{Cumulative Emissions, Mt$CO_2$}",
+         scaled("mean_emissions_cumulative", EMISSIONS_SCALE, 3)),
+        (r"\textbf{Cumulative Emissions (Driving), Mt$CO_2$}",
+         scaled("mean_emissions_cumulative_driving", EMISSIONS_SCALE, 3)),
+        (r"\textbf{Cumulative Emissions (Production), Mt$CO_2$}",
+         scaled("mean_emissions_cumulative_production", EMISSIONS_SCALE, 3)),
         (r"\textbf{Cumulative Profit, bn USD}", scaled("mean_profit_cumulative", 1e-9, 3)),
         (r"\textbf{Cumulative Utility (2030), bn USD}",
-         scaled("mean_utility_cumulative_30", 1e-9, 3)),
+         scaled("mean_utility_cumulative_30", utility_scale * 1e-9, 3)),
         (r"\textbf{Cumulative Utility (2035), bn USD}",
-         scaled("mean_utility_cumulative", 1e-9, 3)),
+         scaled("mean_utility_cumulative", utility_scale * 1e-9, 3)),
     ]
 
     columns = [("BAU", outcomes["BAU"])] + on_target
@@ -970,7 +978,29 @@ def main():
     parser.add_argument("--no-tex", action="store_true", help="do not touch the .tex files")
     parser.add_argument("--no-tables", action="store_true", help="build the figures only")
     parser.add_argument("--dry-run", action="store_true", help="report only, write nothing")
+    parser.add_argument(
+        "--set", action="append", default=[], metavar="KEY=FOLDER",
+        help="override a RUNS entry for this invocation, e.g. "
+             "--set bau_grid=results/phys_duo_..._21_08_2026. Repeatable. "
+             "For list-valued keys (local_sensitivity) pass the folders "
+             "comma-separated. Lets a cluster job feed the folder it just "
+             "created straight into the build without editing this file.")
     args = parser.parse_args()
+
+    for override in args.set:
+        if "=" not in override:
+            raise SystemExit(f"--set expects KEY=FOLDER, got {override!r}")
+        key, _, value = override.partition("=")
+        key, value = key.strip(), value.strip()
+        if key not in RUNS:
+            raise SystemExit(
+                f"--set: unknown RUNS key {key!r}. Known keys: "
+                + ", ".join(sorted(RUNS))
+            )
+        # Match the existing entry's shape: list-valued keys stay lists.
+        RUNS[key] = [p.strip() for p in value.split(",") if p.strip()] \
+            if isinstance(RUNS[key], list) else value
+        print(f"  [override] RUNS[{key!r}] = {RUNS[key]!r}")
 
     if args.list:
         print_manifest()

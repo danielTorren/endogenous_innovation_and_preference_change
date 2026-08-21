@@ -17,7 +17,7 @@ existing function it calls. Nothing here duplicates simulation logic.
 | 6 | 10-panel local sensitivity (EV uptake) | `fig06_panels.py` (resumable) or `fig06_local_sensitivity_gen.py`, both + `fig06_local_sensitivity_plot.py` | `submit_fig06_panels.slurm` |
 | 7 | Sobol first-order sensitivity, 6 outputs x 10 params | `fig07_08_sobol_gen.py` | `submit_fig07_08_sobol_gen.slurm` |
 | 8 | Sobol total-order sensitivity, 6 outputs x 10 params | `fig07_08_sobol_gen.py` | (same job as Figure 7) |
-| 9 | BAU EV uptake/emissions, decarb x elec-price, time series | `fig09_10_bau_gen.py` + `fig09_bau_timeseries_plot.py` | `submit_fig09_10_bau_gen.slurm` |
+| 9 | BAU EV uptake/emissions, decarb x elec-price, time series | `fig09_10_bau_gen.py` + `fig09_bau_timeseries_plot.py` | `submit_fig09_10_bau_gen.slurm`, or `submit_figs_06_09_10.slurm` to build S6/S9/S10 in one job |
 | 10 | BAU elasticity, decarb x elec-price | `fig09_10_bau_gen.py` + `fig10_bau_elasticity_plot.py` | (same job as Figure 9) |
 | 11 | EV uptake 2035, beta multiplier x carbon price | `fig11_14_policy_grid_gen.py "11"` | `submit_fig11_beta_carbon_gen.slurm` |
 | 12 | EV uptake 2035, beta multiplier x new car rebate | `fig11_14_policy_grid_gen.py "12"` | `submit_fig12_beta_rebate_gen.slurm` |
@@ -140,6 +140,42 @@ The same script also has direct BAU-only and plot-only modes:
 ```bash
 python -m package.supplementary_runs.fig11_14_policy_grid_gen 13 bau
 python -m package.supplementary_runs.fig11_14_policy_grid_gen 13 plot <policy_folder> [bau_folder]
+```
+
+### Figures 6, 9 and 10 in one command
+
+These three were the remainder after the 21/08/2026 batch: S6's other nine
+local-sensitivity panels never came back, and the decarb x elec-price grid
+behind S9/S10 was never produced. One job runs both generation steps and builds
+all three figures:
+
+```bash
+sbatch package/supplementary_runs/submit_figs_06_09_10.slurm
+```
+
+It runs `build_figs_06_09_10.py`, which takes each folder from the generating
+function's return value and feeds it to `build_figures` through the new `--set`
+flag, so the PNGs reach `docs/paper/supplementary_figs/` and `supplementary.tex`
+is repointed without anything being pasted into `RUNS` by hand. ~15 min:
+
+| Step | Runs | Time |
+|---|---|---|
+| S6 -- 9 missing panels x 4 values x 64 seeds, 456 steps | 2,304 | ~8 min |
+| S9 + S10 -- 4 decarb x 3 price x 64 seeds, 768 steps | 768 | ~4 min |
+
+Sequential on purpose: each step already saturates all 64 workers. If S6's
+panels do not all finish, it says so and still builds S9/S10 rather than failing
+the whole job. It exits non-zero unless each expected PNG was actually
+*rewritten* -- `build_figures` exits 0 even when it skips a figure, and
+`Supp_Figure_6.png` is already on disk from an earlier run, so existence alone
+would not distinguish "built" from "left alone".
+
+`--set` is generally useful, not just here -- it overrides any `RUNS` entry for
+one invocation:
+
+```bash
+python -m package.paper_figures.build_figures --only S9,S10 \
+    --set bau_grid=results/phys_duo_Grid_emissions_intensity_vs_Electricity_price_<ts>
 ```
 
 Each job prints its own fresh `results/<name>_<timestamp>` folder near the

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.3.25)  21 AUG 2026 10:34
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.3.25)  21 AUG 2026 13:05
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -680,12 +680,11 @@ Package biblatex Info: Automatic encoding selection.
 \openout3 = `supplementary.bcf'.
 
 Package biblatex Info: Trying to load bibliographic data...
-Package biblatex Info: ... file 'supplementary.bbl' not found.
-
-No file supplementary.bbl.
+Package biblatex Info: ... file 'supplementary.bbl' found.
+ (./supplementary.bbl)
 Package biblatex Info: Reference section=0 on input line 65.
 Package biblatex Info: Reference segment=0 on input line 65.
-(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+ (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count438
 \scratchdimen=\dimen256
@@ -727,9 +726,6 @@ LaTeX Font Info:    Trying to load font information for U+msb on input line 73.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 
-LaTeX Warning: Citation 'Grieco2024MarketPower' on page 1 undefined on input line 75.
-
-
 LaTeX Warning: Reference `Appendix_Price_Derivation' on page 1 undefined on input line 79.
 
 [1
@@ -739,55 +735,7 @@ Overfull \hbox (36.75972pt too wide) detected at line 99
 [][][]\OML/cmm/m/it/10.95 ^^L[] \OT1/cmr/m/n/10.95 = [][][] [] (1\OML/cmm/m/it/10.95 =^^T\OT1/cmr/m/n/10.95 ) + \OML/cmm/m/it/10.95 P[] \OT1/cmr/m/n/10.95 + \OML/cmm/m/it/10.95 ^^M[]E[] \OMS/cmsy/m/n/10.95 ^^@ \OML/cmm/m/it/10.95 ^^W\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 B[]![]\OT1/cmr/m/n/10.95 )[] + [][][]
  []
 
-
-LaTeX Warning: Citation 'hulshof2020willingness' on page 2 undefined on input line 103.
-
-
-LaTeX Warning: Citation 'hulshof2020willingness' on page 2 undefined on input line 112.
-
-
-LaTeX Warning: Citation 'FERGUSON2018208' on page 2 undefined on input line 114.
-
-
-LaTeX Warning: Citation 'HOEN2014199' on page 2 undefined on input line 114.
-
-
-Overfull \hbox (32.79099pt too wide) in paragraph at lines 114--115
-\OT1/cmr/m/n/10.95 be-tween range and will-ing-ness to pay, specif-i-cally im-pos-ing de-creas-ing re-turns. []
- []
-
-
-LaTeX Warning: Citation 'FERGUSON2018208' on page 2 undefined on input line 125.
-
-[2]
-
-LaTeX Warning: Citation 'woody2024electric' on page 3 undefined on input line 140.
-
-
-LaTeX Warning: Citation 'busse2013consumers' on page 3 undefined on input line 140.
-
-
-LaTeX Warning: Citation 'greene2010consumers' on page 3 undefined on input line 140.
-
-
-LaTeX Warning: Citation 'Grieco2024MarketPower' on page 3 undefined on input line 142.
-
-
-LaTeX Warning: Citation 'watts1998collective' on page 3 undefined on input line 146.
-
-[3]
-
-LaTeX Warning: Citation 'papamakarios2016fast' on page 4 undefined on input line 149.
-
-
-LaTeX Warning: Citation 'cranmer2020frontier' on page 4 undefined on input line 149.
-
-
-LaTeX Warning: Citation 'dyer2024black' on page 4 undefined on input line 149.
-
-
-LaTeX Warning: Citation 'tejero-cantero2020sbi' on page 4 undefined on input line 149.
-
+[2] [3]
 
 LaTeX Warning: Reference `fig:inference' on page 4 undefined on input line 149.
 
@@ -795,50 +743,11 @@ LaTeX Warning: Reference `fig:inference' on page 4 undefined on input line 149.
 LaTeX Warning: Reference `fig:Costs_Electricity_Gasoline' on page 4 undefined on input line 153.
 
 
-LaTeX Warning: Citation 'ipcc2022transport' on page 4 undefined on input line 155.
-
-
 LaTeX Warning: Reference `fig:Emissions_Electricity_Gasoline' on page 4 undefined on input line 155.
 
-
-LaTeX Warning: Citation 'ipcc2022transport' on page 4 undefined on input line 157.
-
-[4]
-
-LaTeX Warning: Citation 'SCHLOTER20222Depreciation' on page 5 undefined on input line 163.
-
-
-LaTeX Warning: Citation 'konig2021overview' on page 5 undefined on input line 173.
-
-
-Overfull \hbox (37.79338pt too wide) in paragraph at lines 173--174
-\OT1/cmr/m/n/10.95 choos-ing re-search paths. To ac-count for the main cost driver in EV man-u-fac-tur-ing [],
- []
-
-
-LaTeX Warning: Citation 'ostli2017generic' on page 5 undefined on input line 175.
-
-
-LaTeX Warning: Citation 'Grieco2024MarketPower' on page 5 undefined on input line 175.
-
-
-LaTeX Warning: Citation 'konig2021overview' on page 5 undefined on input line 178.
-
-
-LaTeX Warning: Citation 'woody2024electric' on page 5 undefined on input line 178.
-
-
-LaTeX Warning: Citation 'Grieco2024MarketPower' on page 5 undefined on input line 178.
-
-[5]
-
-LaTeX Warning: Citation 'Schmuch2018' on page 6 undefined on input line 180.
-
+[4] [5]
 
 LaTeX Warning: Reference `Appendix_NKProperties' on page 6 undefined on input line 180.
-
-
-LaTeX Warning: Citation 'ipcc2022transport' on page 6 undefined on input line 182.
 
 
 LaTeX Warning: Reference `Appendix_NKProperties' on page 6 undefined on input line 182.
@@ -851,12 +760,6 @@ LaTeX Warning: Reference `fig:calibration_cars' on page 6 undefined on input lin
 LaTeX Warning: Reference `fig:sensitivity' on page 7 undefined on input line 200.
 
 [7]
-
-LaTeX Warning: Citation 'sobol2001global' on page 8 undefined on input line 211.
-
-
-LaTeX Warning: Citation 'Herman2017' on page 8 undefined on input line 211.
-
 
 LaTeX Warning: Reference `fig:sobol_first' on page 8 undefined on input line 211.
 
@@ -882,29 +785,7 @@ LaTeX Warning: Reference `fig:BAU_sen_elec' on page 9 undefined on input line 24
 
 LaTeX Warning: Reference `fig:BAU_sen_elec_elas' on page 9 undefined on input line 245.
 
-[9]
-
-LaTeX Warning: Citation 'kauffman1993origins' on page 10 undefined on input line 255.
-
-
-LaTeX Warning: Citation 'levinthal1997adaptation' on page 10 undefined on input line 255.
-
-
-LaTeX Warning: Citation 'adner2014positioning' on page 10 undefined on input line 257.
-
-
-LaTeX Warning: Citation 'csaszar2016mental' on page 10 undefined on input line 257.
-
-
-LaTeX Warning: Citation 'horne2005improving' on page 10 undefined on input line 257.
-
-
-LaTeX Warning: Citation 'ostli2017generic' on page 10 undefined on input line 257.
-
-
-LaTeX Warning: Citation 'adner2014positioning' on page 10 undefined on input line 261.
-
-[10]
+[9] [10]
 
 LaTeX Warning: Reference `EQ_NKFeature' on page 11 undefined on input line 269.
 
@@ -919,45 +800,45 @@ Overfull \hbox (29.47614pt too wide) detected at line 388
  []
 
 [13]
-<supplementary_figs/Supp_Figure_1.png, id=171, 722.7pt x 722.7pt>
+<supplementary_figs/Supp_Figure_1.png, id=230, 722.7pt x 722.7pt>
 File: supplementary_figs/Supp_Figure_1.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_1.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_1.png  used on input line 395.
 (pdftex.def)             Requested size: 317.07614pt x 317.0737pt.
-<supplementary_figs/Supp_Figure_2.png, id=173, 790.955pt x 488.82625pt>
+<supplementary_figs/Supp_Figure_2.png, id=232, 790.955pt x 488.82625pt>
 File: supplementary_figs/Supp_Figure_2.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_2.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_2.png  used on input line 402.
 (pdftex.def)             Requested size: 385.02547pt x 237.95313pt.
  [14 <./supplementary_figs/Supp_Figure_1.png>]
-<supplementary_figs/Supp_Figure_3.png, id=181, 959.585pt x 593.21625pt>
+<supplementary_figs/Supp_Figure_3.png, id=240, 959.585pt x 593.21625pt>
 File: supplementary_figs/Supp_Figure_3.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_3.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_3.png  used on input line 409.
 (pdftex.def)             Requested size: 385.02547pt x 238.02454pt.
-<supplementary_figs/Supp_Figure_4.png, id=182, 859.21pt x 570.13pt>
+<supplementary_figs/Supp_Figure_4.png, id=241, 859.21pt x 570.13pt>
 File: supplementary_figs/Supp_Figure_4.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_4.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_4.png  used on input line 416.
 (pdftex.def)             Requested size: 385.02547pt x 255.4861pt.
  [15 <./supplementary_figs/Supp_Figure_2.png> <./supplementary_figs/Supp_Figure_3.png>]
-<supplementary_figs/Supp_Figure_5.png, id=191, 859.2903pt x 569.84895pt>
+<supplementary_figs/Supp_Figure_5.png, id=250, 859.2903pt x 569.84895pt>
 File: supplementary_figs/Supp_Figure_5.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_5.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_5.png  used on input line 425.
 (pdftex.def)             Requested size: 385.02547pt x 255.33406pt.
-<supplementary_figs/Supp_Figure_6.png, id=192, 1806.75pt x 650.43pt>
+<supplementary_figs/Supp_Figure_6.png, id=251, 1806.75pt x 650.43pt>
 File: supplementary_figs/Supp_Figure_6.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_6.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_6.png  used on input line 432.
 (pdftex.def)             Requested size: 407.66833pt x 146.75726pt.
  [16 <./supplementary_figs/Supp_Figure_4.png> <./supplementary_figs/Supp_Figure_5.png>]
-<supplementary_figs/Supp_Figure_7.png, id=201, 910.602pt x 469.755pt>
+<supplementary_figs/Supp_Figure_7.png, id=260, 910.602pt x 469.755pt>
 File: supplementary_figs/Supp_Figure_7.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_7.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_7.png  used on input line 439.
 (pdftex.def)             Requested size: 407.66833pt x 210.30545pt.
-<supplementary_figs/Supp_Figure_8.png, id=202, 910.602pt x 469.755pt>
+<supplementary_figs/Supp_Figure_8.png, id=261, 910.602pt x 469.755pt>
 File: supplementary_figs/Supp_Figure_8.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_8.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_8.png  used on input line 446.
@@ -995,54 +876,39 @@ Try typing  <return>  to proceed.
 If that doesn't work, type  X <return>  to quit.
 
 [18]
-<supplementary_figs/Supp_Figure_11.png, id=219, 722.7pt x 578.16pt>
+<supplementary_figs/Supp_Figure_11.png, id=278, 722.7pt x 578.16pt>
 File: supplementary_figs/Supp_Figure_11.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_11.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_11.png  used on input line 467.
 (pdftex.def)             Requested size: 362.37569pt x 289.89973pt.
  [19]
-<supplementary_figs/Supp_Figure_12.png, id=226, 722.7pt x 578.16pt>
+<supplementary_figs/Supp_Figure_12.png, id=285, 722.7pt x 578.16pt>
 File: supplementary_figs/Supp_Figure_12.png Graphic file (type png)
 <use supplementary_figs/Supp_Figure_12.png>
 Package pdftex.def Info: supplementary_figs/Supp_Figure_12.png  used on input line 474.
 (pdftex.def)             Requested size: 362.37569pt x 289.89973pt.
+<supplementary_figs/Supp_Figure_13.png, id=286, 722.7pt x 578.16pt>
+File: supplementary_figs/Supp_Figure_13.png Graphic file (type png)
+<use supplementary_figs/Supp_Figure_13.png>
+Package pdftex.def Info: supplementary_figs/Supp_Figure_13.png  used on input line 481.
+(pdftex.def)             Requested size: 362.37569pt x 289.89973pt.
+ [20 <./supplementary_figs/Supp_Figure_11.png> <./supplementary_figs/Supp_Figure_12.png>]
+<supplementary_figs/Supp_Figure_14.png, id=296, 722.7pt x 578.16pt>
+File: supplementary_figs/Supp_Figure_14.png Graphic file (type png)
+<use supplementary_figs/Supp_Figure_14.png>
+Package pdftex.def Info: supplementary_figs/Supp_Figure_14.png  used on input line 488.
+(pdftex.def)             Requested size: 362.37569pt x 289.89973pt.
+ [21 <./supplementary_figs/Supp_Figure_13.png> <./supplementary_figs/Supp_Figure_14.png>]
+Overfull \hbox (9.18903pt too wide) in paragraph at lines 495--495
+\OT1/cmr/m/n/12 based in-fer-ence''. In: \OT1/cmr/m/it/12 Pro-ceed-ings of the Na-tional Academy of Sci-ences \OT1/cmr/m/n/12 117.48, pp. 30055{
+ []
 
+[22]
+Overfull \hbox (30.01659pt too wide) in paragraph at lines 495--495
+[][]\OT1/cmr/m/n/12 Watts, Dun-can J and Steven H Stro-gatz (1998). ``Col-lec-tive dy-nam-ics of `small-world'networks''.
+ []
 
-LaTeX Warning: File `pics/a_chi_carbon_price.png' not found on input line 481.
-
-
-/home/daniel/Documents/Code/endogenous_innovation_and_preference_change/docs/paper/supplementary.tex:481: Package pdftex.def Error: File `pics/a_chi_carbon_price.png' not found: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.481 ...8\linewidth]{pics/a_chi_carbon_price.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[20 <./supplementary_figs/Supp_Figure_11.png> <./supplementary_figs/Supp_Figure_12.png>]
-
-LaTeX Warning: File `pics/a_chi_adoption_subsidy.png' not found on input line 488.
-
-
-/home/daniel/Documents/Code/endogenous_innovation_and_preference_change/docs/paper/supplementary.tex:488: Package pdftex.def Error: File `pics/a_chi_adoption_subsidy.png' not found: using draft setting.
-
-See the pdftex.def package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.488 ...newidth]{pics/a_chi_adoption_subsidy.png}
-                                                  
-Try typing  <return>  to proceed.
-If that doesn't work, type  X <return>  to quit.
-
-[21]
-
-LaTeX Warning: Empty bibliography on input line 493.
-
-[22] (./supplementary.aux)
+[23] (./supplementary.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
@@ -1072,18 +938,18 @@ Package logreq Info: Writing requests to 'supplementary.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 19558 strings out of 474222
- 340604 string characters out of 5748733
+ 19667 strings out of 474222
+ 344277 string characters out of 5748733
  1944975 words of memory out of 5000000
- 41441 multiletter control sequences out of 15000+600000
- 570062 words of font info for 85 fonts, out of 8000000 for 9000
+ 41520 multiletter control sequences out of 15000+600000
+ 570710 words of font info for 87 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 66i,15n,81p,1866b,1144s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on supplementary.pdf (22 pages, 2998228 bytes).
+ 66i,15n,81p,1866b,1514s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
+Output written on supplementary.pdf (23 pages, 3547729 bytes).
 PDF statistics:
- 354 PDF objects out of 1000 (max. 8388607)
- 267 compressed objects within 3 object streams
- 114 named destinations out of 1000 (max. 500000)
- 51 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 438 PDF objects out of 1000 (max. 8388607)
+ 341 compressed objects within 4 object streams
+ 140 named destinations out of 1000 (max. 500000)
+ 61 words of extra memory for PDF output out of 10000 (max. 10000000)
 
