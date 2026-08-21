@@ -109,8 +109,12 @@ RUNS = {
     # Its artifacts are named 10_256_*, matching SOBOL_N_SAMPLES below.
     "sobol": "results/sensitivity_analysis_14_11_58__19_08_2026",
     # Figures 9 and 10 -- package/supplementary_runs/fig09_10_bau_gen.py.
-    # No BAU grid/electricity-price run in results/ yet.
-    "bau_grid": "",
+    # One decarb x elec-price grid serves both: (4, 3, 64, 768) EV-proportion and
+    # emissions arrays. Figure 9 plots the three reduction columns (0.1/0.5/0.75)
+    # as raw time series; Figure 10 needs the 1.0 "no change" baseline as well to
+    # take its elasticities against, which is why the grid carries four values
+    # and not Figure 9's three.
+    "bau_grid": "results/phys_duo_Grid_emissions_intensity_vs_Electricity_price_11_40_39__21_08_2026",
     # Figures 11-14 -- package/supplementary_runs/fig11_14_policy_grid_gen.py
     "grid_beta_carbon": "results/cross_beta_multiplier_vs_Carbon_price_14_11_40__19_08_2026",
     "grid_beta_rebate": "results/cross_beta_multiplier_vs_Adoption_subsidy_14_13_36__19_08_2026",
