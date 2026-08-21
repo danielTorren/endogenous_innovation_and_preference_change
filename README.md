@@ -63,7 +63,7 @@ Reproduction is two steps. First run the generator for a figure, which leaves a
 timestamped folder under `results/`. Then paste that folder name into the `RUNS`
 dict at the top of `package/paper_figures/build_figures.py` and run the builder,
 which re-plots from the results folder, renumbers each PNG to its number in the
-paper, and recomputes the two results tables:
+paper, and recomputes the results tables:
 
 ```bash
 uv run python -m package.paper_figures.build_figures --list          # what is ready, what is missing
@@ -85,15 +85,17 @@ next to a generator is the cluster version of the same command.
 | Paper output | Generate | Plot | Config |
 |---|---|---|---|
 | Fig. 2: calibration 2001–2023 (EV uptake and sales, prices, HHI, car age) | `generating_data.calibration_gen` | `plotting_data.calibration_plot` | `base_params_calibration.json` |
-| Fig. 3: single-instrument grid search (100 intensities per instrument) | `analysis.vary_single_policy_gen` | `analysis.vary_single_policy_plot` | `base_params_vary_single_policy_gen.json`, `analysis/policy_bounds_vary_single_policy_gen.json` |
+| Fig. 3, Table 2: single-instrument grid search (100 intensities per instrument); Table 2 lists the maximum intensity per instrument, which is the upper bound in the bounds file | `analysis.vary_single_policy_gen` | `analysis.vary_single_policy_plot` | `base_params_vary_single_policy_gen.json`, `analysis/policy_bounds_vary_single_policy_gen.json` |
 | Table 3: minimum single-policy intensity reaching 95% uptake, and its outcomes | `analysis.endogenous_policy_intensity_single_gen` | `analysis.endogenous_policy_intensity_single_plot` | `base_params_endogenous_policy_single_gen.json`, `analysis/policy_bounds_endog_single_gen.json` |
 | Fig. 4: policy pairs achieving 94–96% uptake | `analysis.endogenous_policy_intensity_pair_gen` | `analysis.endogenous_policy_intensity_pair_plot` | `base_params_endogenous_policy_pair_gen.json`, `analysis/policy_bounds_vary_pair_policy_gen.json` |
-| Fig. 5, Table 4: trajectories to 2050 after policy removal | `analysis.low_policy_intensity_gen` | `analysis.low_policy_intensity_plot` | reads pair- and single-analysis results folders (see note below) |
+| Fig. 5: trajectories to 2050 after policy removal | `analysis.low_policy_intensity_gen` | `analysis.low_policy_intensity_plot` | reads pair- and single-analysis results folders (see note below) |
 | Fig. 6: parameter distribution histograms | `generating_data.single_experiment_gen` | `plotting_data.single_experiment_plot` | inline `base_params` dict in the script |
 | Fig. 7: EV uptake vs used car market capacity | `generating_data.vary_single_param_gen` | `plotting_data.vary_single_param_plot` | `base_params_vary_single.json`, `vary_single_max_num_cars_prop.json` |
 | BAU reference outcomes | `analysis.BAU_outcomes_gen` | n/a | `base_params_endogenous_policy_pair_gen.json` |
 
-Figure 1 is a hand-drawn model diagram, not model output.
+Figure 1 is a hand-drawn model diagram, not model output. `build_figures.py`
+also recomputes an emissions table (`tab:emissions`) that the working
+manuscript carries but the submitted version drops.
 
 ### Supplementary figures
 
