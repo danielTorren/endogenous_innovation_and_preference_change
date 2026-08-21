@@ -8,6 +8,7 @@ Figures produced, all into <fileName>/Plots:
   multi_seed_dashboard_extra- emissions split, HHI, profit, car age, price spread
   multi_seed_2d_scatter     - cars on sale, range vs price, against real vehicles
   multi_seed_2d_contour     - the same, as a density map
+  calibration_targets       - the four target variables against their observed ranges
 """
 
 import os
@@ -24,6 +25,44 @@ CALIBRATION_START_YEAR = 2001  # The end of burn-in
 
 EV_COLOR = "#2E8B57"   # SeaGreen
 ICE_COLOR = "#4169E1"  # RoyalBlue
+
+# Observed target ranges, from Table "Target variable ranges" in the manuscript.
+# New-car prices are TRANSACTION prices (Grieco, Murry & Yurukoglu 2024, Fig II),
+# which is why record_calibration_targets() records prices paid rather than list
+# prices. There is no published target for the used-market quality spread; the
+# comparator there is the model's own used price spread, see
+# plot_calibration_targets.
+TARGET_NEW_PRICE_P25 = 32359.41
+TARGET_NEW_PRICE_P75 = 57784.66
+TARGET_HHI = (0.11, 0.18)
+TARGET_FLEET_AGE_YEARS = (10, 12)
+
+# Transaction-volume and channel-mix targets, built from US light-vehicle data.
+# 2023: 15.46M new (NADA Market Beat), 19.0M used RETAIL and 35.9M used in total
+# including wholesale (Cox Automotive), 286M vehicles in operation at Jan 2024
+# (S&P Global Mobility).
+#
+# Which used figure applies is a modelling choice, and it moves the target a lot.
+# The model has one merchant intermediating every used sale, and each transaction
+# puts a car with a new end user, so wholesale dealer-to-dealer moves should be
+# excluded while private-party sales should be included. Retail-only gives a used
+# share of 19.0/(19.0+15.46) = 0.55; all used transactions give 0.70; the paper's
+# own cited figure (74%) sits at the broad end. The band spans that disagreement
+# and the midpoint assumes retail plus roughly 12M private-party sales.
+TARGET_USED_SHARE = (0.55, 0.74)
+TARGET_USED_SHARE_MID = 0.67
+
+# P(a given car changes owner in a year). Transactions over fleet: (15.46 + 31)/286
+# = 0.16 on the mid definition, 0.12 retail-only, 0.18 counting wholesale. It also
+# agrees with the ownership-duration route, since S&P Global Mobility report
+# ownership of five years or less for nearly two thirds of Americans, i.e. a mean
+# near six years, giving 1/6 = 0.17.
+TARGET_PROB_BUY = (0.12, 0.18)
+TARGET_PROB_BUY_MID = 0.16
+
+# Okabe-Ito, as used by the dashboards below.
+C_BLUE, C_ORANGE, C_GREEN, C_PINK = "#0072B2", "#D55E00", "#009E73", "#CC79A7"
+C_TARGET = "#666666"
 
 
 ####################################################################################
@@ -240,13 +279,92 @@ def print_data_shapes(outputs, base_params):
 ####################################################################################
 
 def plot_calibration_fit(base_params, fileName, outputs, dpi=200):
-    """2x2 figure: EV uptake, prices, market concentration and mean car age."""
+    """
+    2x2 figure: EV stock and sales, prices, market concentration and mean car age.
+
+    The four panels that carry the calibration story. No observed-range bands:
+    this is the fit figure, and the target ranges live in calibration_targets.
+    """
 
     calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
     EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
     EV_sales_prop_2020_23 = calibration_data_output["EV Sales Prop"]
 
     fig, axs = plt.subplots(2, 2, figsize=(17, 10), sharex=True)
+
+    # Plot 1: EV uptake, stock and sales (top-left)
+    plot_ev_uptake(EV_stock_prop_2010_23, EV_sales_prop_2020_23, base_params,
+                   outputs["history_prop_EV"],
+                   outputs["history_past_new_bought_vehicles_prop_ev"], axs[0, 0],
+                   annotation_height_prop=[0.9, 0.9, 0.9])
+
+    # Plot 2: Mean price (top-right)
+    plot_mean_price(base_params, outputs["history_mean_price_ICE_EV"],
+                    outputs["history_median_price_ICE_EV"],
+                    outputs["history_lower_percentile_price_ICE_EV"],
+                    outputs["history_upper_percentile_price_ICE_EV"], axs[0, 1],
+                    annotation_height_prop=[0.1, 0.1, 0.1])
+
+    # Plot 3: Market concentration (bottom-left)
+    plot_market_concentration(base_params, outputs["history_market_concentration"], axs[1, 0],
+                              annotation_height_prop=[0.3, 0.3, 0.3],
+                              show_target_band=False)
+
+    # Plot 4: Mean car age (bottom-right). Whole-fleet series, always recorded,
+    # rather than history_mean_car_age, which is gated behind
+    # save_timeseries_data_state -- the two measure the same quantity.
+    plot_mean_car_age(base_params, np.asarray(outputs["history_mean_car_age_fleet"]), axs[1, 1],
+                      annotation_height_prop=[0.3, 0.3, 0.3],
+                      show_target_band=False)
+
+    #########################################################################
+    # Year ticks every 5 years from the end of burn-in, same rebasing as the
+    # 3x2 figure: step 0 is the end of burn-in.
+    tick_interval_years = 5
+    months_per_year = 12
+
+    max_time_step = max(
+        ax.get_lines()[0].get_xdata().max() for ax in [axs[1, 0], axs[1, 1]]
+    )
+    max_year = CALIBRATION_START_YEAR + int(max_time_step // months_per_year)
+    last_tick_year = max_year - (max_year - CALIBRATION_START_YEAR) % tick_interval_years
+    tick_years = np.arange(CALIBRATION_START_YEAR, last_tick_year + 1, tick_interval_years)
+
+    tick_positions = (tick_years - CALIBRATION_START_YEAR) * months_per_year
+    tick_labels = [str(year) for year in tick_years]
+
+    for ax in axs[0]:
+        ax.set_xlabel("")
+    for ax in axs[1]:
+        ax.set_xticks(tick_positions)
+        ax.set_xticklabels(tick_labels)
+        ax.set_xlabel("Year")
+    #########################################################################
+
+    plt.tight_layout(rect=[0.01, 0.0, 0.98, 1])
+    plt.subplots_adjust(wspace=0.15)
+
+    save_path = os.path.join(fileName, "Plots")
+    os.makedirs(save_path, exist_ok=True)
+    fig.savefig(f"{save_path}/calibration_fit.png", dpi=dpi)
+    fig.savefig(f"{save_path}/calibration_fit.eps", dpi=dpi)
+    print(f"Saved to {save_path}/calibration_fit.png")
+
+
+def plot_calibration_fit_plus(base_params, fileName, outputs, dpi=200):
+    """
+    3x2 figure: EV uptake, prices, market concentration, mean car age, used share
+    of purchases and transaction volume.
+
+    Every panel with a published target carries its observed range as a grey band,
+    so the figure can be read without cross-referencing the target table.
+    """
+
+    calibration_data_output = load_object("package/calibration_data", "calibration_data_output")
+    EV_stock_prop_2010_23 = calibration_data_output["EV Prop"]
+    EV_sales_prop_2020_23 = calibration_data_output["EV Sales Prop"]
+
+    fig, axs = plt.subplots(3, 2, figsize=(17, 15), sharex=True)
 
     # Plot 1: EV Uptake (top-left)
     plot_ev_uptake(EV_stock_prop_2010_23, EV_sales_prop_2020_23, base_params,
@@ -265,9 +383,19 @@ def plot_calibration_fit(base_params, fileName, outputs, dpi=200):
     plot_market_concentration(base_params, outputs["history_market_concentration"], axs[1, 0],
                               annotation_height_prop=[0.3, 0.3, 0.3])
 
-    # Plot 4: Mean Car Age (bottom-right)
-    plot_mean_car_age(base_params, np.asarray(outputs["history_mean_car_age"]), axs[1, 1],
+    # Plot 4: Mean Car Age (middle-right). Uses the whole-fleet series, which is
+    # always recorded, rather than history_mean_car_age, which is gated behind
+    # save_timeseries_data_state -- the two measure the same quantity.
+    plot_mean_car_age(base_params, np.asarray(outputs["history_mean_car_age_fleet"]), axs[1, 1],
                       annotation_height_prop=[0.3, 0.3, 0.3])
+
+    # Plot 5: Used share of purchases (bottom-left)
+    plot_used_share(base_params, outputs["history_purchase_counts"], axs[2, 0],
+                    annotation_height_prop=[0.3, 0.3, 0.3])
+
+    # Plot 6: Transaction volume (bottom-right)
+    plot_transaction_volume(base_params, outputs["history_purchase_counts"], axs[2, 1],
+                            annotation_height_prop=[0.3, 0.3, 0.3])
 
     #########################################################################
     # Set x-axis ticks every 5 years starting at the end of burn-in, stopping at
@@ -285,7 +413,12 @@ def plot_calibration_fit(base_params, fileName, outputs, dpi=200):
     tick_positions = (tick_years - CALIBRATION_START_YEAR) * months_per_year
     tick_labels = [str(year) for year in tick_years]
 
-    for ax in axs[1]:
+    # Only the bottom row is labelled: sharex hides the upper rows' tick labels, so
+    # the "Time Step, months" the panel helpers set would otherwise sit orphaned
+    # under rows without any ticks to describe.
+    for ax in axs[:-1].flat:
+        ax.set_xlabel("")
+    for ax in axs[2]:
         ax.set_xticks(tick_positions)
         ax.set_xticklabels(tick_labels)
         ax.set_xlabel("Year")
@@ -296,9 +429,9 @@ def plot_calibration_fit(base_params, fileName, outputs, dpi=200):
 
     save_path = os.path.join(fileName, "Plots")
     os.makedirs(save_path, exist_ok=True)
-    fig.savefig(f"{save_path}/calibration_fit.png", dpi=dpi)
-    fig.savefig(f"{save_path}/calibration_fit.eps", dpi=dpi)
-    print(f"Saved to {save_path}/calibration_fit.png")
+    fig.savefig(f"{save_path}/calibration_fit_plus.png", dpi=dpi)
+    fig.savefig(f"{save_path}/calibration_fit_plus.eps", dpi=dpi)
+    print(f"Saved to {save_path}/calibration_fit_plus.png")
 
 
 def plot_ev_uptake(real_data, EV_sales_prop_2020_23, base_params, data,
@@ -501,7 +634,8 @@ def plot_mean_price(base_params, history_mean_price_ICE_EV, history_median_price
     add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
 
 
-def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
+def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8],
+                              show_target_band=True):
     """Plot market concentration on the provided axes."""
     burn_in_step = base_params["duration_burn_in"]
     data_after_burn_in = np.asarray(data)[:, burn_in_step:]
@@ -520,16 +654,25 @@ def plot_market_concentration(base_params, data, ax, annotation_height_prop=[0.8
         label='95% Confidence Interval'
     )
 
+    if show_target_band:
+        _target_band(ax, *TARGET_HHI, "Observed range")
     ax.set_xlabel("Time Step, months", fontsize=16)
     ax.set_ylabel("Market Concentration, HHI", fontsize=16)
     add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(loc="upper left", fontsize=12)
 
 
-def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8]):
-    """Plot mean car age on the provided axes."""
+def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0.8],
+                      show_target_band=True):
+    """
+    Plot mean car age on the provided axes.
+
+    Plotted in YEARS, not months as before: the calibration target is stated in
+    years, and a band drawn in one unit over a series in the other is an easy way
+    to ship a wrong figure.
+    """
     burn_in_step = base_params["duration_burn_in"]
-    data_after_burn_in = np.asarray(data)[:, burn_in_step:]
+    data_after_burn_in = np.asarray(data)[:, burn_in_step:] / 12
     time_steps = np.arange(0, data_after_burn_in.shape[1])
 
     mean_values = np.mean(data_after_burn_in, axis=0)
@@ -545,10 +688,288 @@ def plot_mean_car_age(base_params, data, ax, annotation_height_prop=[0.8, 0.8, 0
         label='95% Confidence Interval'
     )
 
+    if show_target_band:
+        _target_band(ax, *TARGET_FLEET_AGE_YEARS, "Observed range")
     ax.set_xlabel("Time Step, months", fontsize=16)
-    ax.set_ylabel("Car Age, months", fontsize=16)
+    ax.set_ylabel("Car Age, years", fontsize=16)
     add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
     ax.legend(loc="upper left", fontsize=12)
+
+
+def _purchase_ratios(base_params, history_purchase_counts):
+    """
+    Rolling 12-month used share and transactions per vehicle per year.
+
+    Ratio of sums over the window, not a mean of per-step ratios: months with few
+    transactions would otherwise carry the same weight as busy ones, and a month
+    with no purchases has an undefined used share. Same construction as
+    plot_calibration_targets, so the two figures cannot disagree.
+    """
+    burn_in = base_params["duration_burn_in"]
+    counts = np.asarray(history_purchase_counts, dtype=float)[:, burn_in:, :]
+    win = np.ones(12)
+    roll = lambda x: np.apply_along_axis(lambda v: np.convolve(v, win, mode="valid"), 1, x)
+    r_new, r_used = roll(counts[:, :, 0]), roll(counts[:, :, 1])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        used_share = r_used/(r_new + r_used)
+        turnover = (r_new + r_used)/base_params["parameters_social_network"]["num_individuals"]
+    steps = np.arange(len(win) - 1, len(win) - 1 + used_share.shape[1])
+    return steps, used_share, turnover
+
+
+def plot_used_share(base_params, history_purchase_counts, ax,
+                    annotation_height_prop=[0.8, 0.8, 0.8]):
+    """Used share of purchases, against the observed range."""
+    steps, used_share, _ = _purchase_ratios(base_params, history_purchase_counts)
+    _target_band(ax, *TARGET_USED_SHARE, "Observed range (definition-dependent)")
+    ax.axhline(TARGET_USED_SHARE_MID, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    mean_values, ci_range = mean_and_ci(used_share)
+    ax.plot(steps, mean_values, color=C_ORANGE, label="used / (new + used), 12-mo")
+    ax.fill_between(steps, mean_values - ci_range, mean_values + ci_range,
+                    color=C_ORANGE, alpha=0.3)
+    ax.set_ylabel("Share of purchases", fontsize=16)
+    ax.set_ylim(0, 1)
+    add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
+    ax.legend(loc="upper left", fontsize=12)
+
+
+def plot_transaction_volume(base_params, history_purchase_counts, ax,
+                            annotation_height_prop=[0.8, 0.8, 0.8]):
+    """
+    Vehicles bought per vehicle per year, against the observed range.
+
+    Only the observable is drawn. P(buy | opportunity) is deliberately left out:
+    it is not comparable to the target, because the opportunity rate IS the
+    prob_switch_car assumption, so it only exists inside the model.
+    """
+    steps, _, turnover = _purchase_ratios(base_params, history_purchase_counts)
+    _target_band(ax, *TARGET_PROB_BUY, "Observed range")
+    ax.axhline(TARGET_PROB_BUY_MID, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    mean_values, ci_range = mean_and_ci(turnover)
+    ax.plot(steps, mean_values, color=C_GREEN, label="vehicles per vehicle per year")
+    ax.fill_between(steps, mean_values - ci_range, mean_values + ci_range,
+                    color=C_GREEN, alpha=0.3)
+    ax.set_ylabel("Vehicles per vehicle per year", fontsize=16)
+    ax.set_ylim(0, max(0.4, np.nanpercentile(mean_values, 99)*1.3))
+    add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=annotation_height_prop)
+    ax.legend(loc="upper left", fontsize=12)
+
+
+####################################################################################
+# The four calibration target variables, in one figure
+####################################################################################
+
+def _target_band(ax, lo, hi, label):
+    """Shade an observed target range. Recessive: it is a reference, not a series."""
+    ax.axhspan(lo, hi, color=C_TARGET, alpha=0.15, zorder=0)
+    for y in (lo, hi):
+        ax.axhline(y, color=C_TARGET, linestyle="--", linewidth=1, zorder=1)
+    ax.plot([], [], color=C_TARGET, linestyle="--", linewidth=1, label=label)
+
+
+def _final_mean(series, months=12):
+    """Mean of the last `months` steps of a (T,) series, ignoring NaN."""
+    tail = np.asarray(series, dtype=float)[-months:]
+    return float(np.nanmean(tail)) if np.any(~np.isnan(tail)) else np.nan
+
+
+def plot_calibration_targets(base_params, fileName, outputs, dpi=200):
+    """
+    2x2 figure: each of the four calibration target variables against the range
+    it is supposed to land in, so a run can be judged at a glance.
+
+    Panels are new-car transaction prices, the used-market quality spread, HHI,
+    and whole-fleet mean age. Each panel title carries the final-year mean and
+    the target, so "how is it doing" is readable without measuring the axes.
+
+    The quality-spread panel has no published target. It plots the dollar value
+    of the used stock's quality range against the used stock's own price range,
+    both in dollars on one axis. When the quality spread is far below the price
+    spread, trading down to a cheaper car costs little utility and the fleet
+    churns; that ratio is annotated.
+    """
+    burn_in = base_params["duration_burn_in"]
+
+    new_q = np.asarray(outputs["history_new_car_price_quantiles"], dtype=float)[:, burn_in:, :]
+    used_q = np.asarray(outputs["history_used_car_price_quantiles"], dtype=float)[:, burn_in:, :]
+    qual_spread = np.asarray(outputs["history_used_stock_quality_spread"], dtype=float)[:, burn_in:]
+    hhi = np.asarray(outputs["history_market_concentration"], dtype=float)[:, burn_in:]
+    age_years = np.asarray(outputs["history_mean_car_age_fleet"], dtype=float)[:, burn_in:] / 12
+
+    # Purchase counts -> the two ratio targets. Rolling 12-month RATIO OF SUMS,
+    # not a mean of per-step ratios: months with few transactions would otherwise
+    # get the same weight as busy ones, and a month with zero purchases has an
+    # undefined used share.
+    counts = np.asarray(outputs["history_purchase_counts"], dtype=float)[:, burn_in:, :]
+    win = np.ones(12)
+    def roll(x):
+        return np.apply_along_axis(lambda v: np.convolve(v, win, mode="valid"), 1, x)
+    r_new, r_used, r_opp = roll(counts[:, :, 0]), roll(counts[:, :, 1]), roll(counts[:, :, 2])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        used_share = r_used/(r_new + r_used)
+        # Transactions per vehicle per year is the OBSERVABLE, so that is what the
+        # target band applies to. Dividing by switch opportunities instead would
+        # compare against a quantity that only exists inside the model, since the
+        # opportunity rate IS the prob_switch_car assumption. The two coincide at
+        # prob_switch_car = 1/12 (one opportunity per agent per year) and diverge
+        # as soon as it is recalibrated, which is the whole point of the panel.
+        turnover = (r_new + r_used)/base_params["parameters_social_network"]["num_individuals"]
+        prob_buy = (r_new + r_used)/r_opp
+    ratio_steps = np.arange(len(win) - 1, len(win) - 1 + used_share.shape[1])
+
+    time_steps = np.arange(new_q.shape[1])
+    fig, axs = plt.subplots(3, 2, figsize=(16, 13))
+
+    # ---- 1. New-car transaction prices vs the observed p25-p75 -------------
+    ax = axs[0, 0]
+    _target_band(ax, TARGET_NEW_PRICE_P25, TARGET_NEW_PRICE_P75, "Observed p25-p75")
+    for idx, (lbl, colour, style) in enumerate(
+            [("p25", C_BLUE, "--"), ("median", C_BLUE, "-"), ("p75", C_BLUE, ":")]):
+        mean, ci = mean_and_ci(new_q[:, :, idx])
+        ax.plot(time_steps, mean, color=colour, linestyle=style, label=lbl)
+        ax.fill_between(time_steps, mean - ci, mean + ci, color=colour, alpha=0.15)
+    model_iqr = _final_mean(np.nanmean(new_q[:, :, 2] - new_q[:, :, 0], axis=0))
+    target_iqr = TARGET_NEW_PRICE_P75 - TARGET_NEW_PRICE_P25
+    # Dollar signs are escaped throughout: matplotlib reads a bare $ as a
+    # mathtext delimiter, which silently italicises the rest of the title.
+    ax.set_title(f"New-car transaction prices\nfinal-year IQR \\${model_iqr:,.0f} "
+                 f"vs target \\${target_iqr:,.0f}  ({model_iqr/target_iqr:.2f}x)", fontsize=13)
+    ax.set_ylabel("Price, \\$", fontsize=14)
+    # Clip the burn-in transient, which is otherwise wide enough to flatten the
+    # rest of the series, and never show negative prices.
+    ax.set_ylim(0, max(TARGET_NEW_PRICE_P75*1.6, np.nanpercentile(new_q[:, :, 2], 90)))
+
+    # ---- 2. Used market: is quality worth as much as price? ----------------
+    ax = axs[0, 1]
+    mean_qual, ci_qual = mean_and_ci(qual_spread)
+    ax.plot(time_steps, mean_qual, color=C_GREEN, label=r"quality spread, $\beta_{med}\cdot sd(Q^\alpha)$")
+    ax.fill_between(time_steps, mean_qual - ci_qual, mean_qual + ci_qual, color=C_GREEN, alpha=0.15)
+    used_width = used_q[:, :, 2] - used_q[:, :, 0]
+    mean_width, ci_width = mean_and_ci(used_width)
+    ax.plot(time_steps, mean_width, color=C_ORANGE, label="used price spread, p90 - p10")
+    ax.fill_between(time_steps, mean_width - ci_width, mean_width + ci_width, color=C_ORANGE, alpha=0.15)
+    q_end, p_end = _final_mean(mean_qual), _final_mean(mean_width)
+    ax.set_ylabel("Dollars", fontsize=14)
+    ax.set_ylim(0, max(np.nanpercentile(mean_width, 95), np.nanpercentile(mean_qual, 95))*1.6)
+
+    # The ratio itself, on a twin axis. The two dollar series show where it comes
+    # from, but only the ratio is comparable across runs, and it is what has to
+    # stay near 1 -- so it gets a drawn line and a target rather than a number in
+    # the title. It is the check on compressing stretch_Cost: that pulls the
+    # new-car price IQR down towards target, but it can do so by flattening the
+    # quality-cost ladder instead of tightening the market, and only this panel
+    # tells the two apart. Ratio near 1 means trading down to a cheaper car costs
+    # real utility; well below 1 means it is nearly free and the fleet churns.
+    ax_r = ax.twinx()
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio_series = qual_spread/np.where(used_width == 0, np.nan, used_width)
+    mean_ratio, ci_ratio = mean_and_ci(ratio_series)
+    ax_r.axhline(1.0, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    ax_r.plot(time_steps, mean_ratio, color=C_PINK, linewidth=1.8,
+              label="quality / price ratio (right axis)")
+    ax_r.fill_between(time_steps, mean_ratio - ci_ratio, mean_ratio + ci_ratio,
+                      color=C_PINK, alpha=0.15)
+    ax_r.set_ylabel("Quality spread / price spread", fontsize=12)
+    ax_r.set_ylim(0, max(2.0, np.nanpercentile(mean_ratio, 95)*1.3))
+    # Own legend: the shared loop below only walks axs.flat, so the twin would
+    # otherwise be unlabelled.
+    ax_r.legend(loc="upper right", fontsize=10)
+    ax.set_title(f"Used market: quality spread vs price spread\n"
+                 f"final year \\${q_end:,.0f} vs \\${p_end:,.0f}  "
+                 f"(ratio {_final_mean(mean_ratio):.2f}, want order 1)", fontsize=13)
+
+    # ---- 3. HHI ------------------------------------------------------------
+    ax = axs[1, 0]
+    _target_band(ax, *TARGET_HHI, "Observed range")
+    mean, ci = mean_and_ci(hhi)
+    ax.plot(time_steps, mean, color=C_PINK, label="HHI, unit shares")
+    ax.fill_between(time_steps, mean - ci, mean + ci, color=C_PINK, alpha=0.2)
+    ax.set_title(f"Market concentration\nfinal-year {_final_mean(mean):.3f} "
+                 f"vs target {TARGET_HHI[0]}-{TARGET_HHI[1]}", fontsize=13)
+    ax.set_ylabel("HHI", fontsize=14)
+    ax.set_ylim(0, max(0.4, np.nanpercentile(mean, 95)*1.4))
+
+    # ---- 4. Whole-fleet mean age ------------------------------------------
+    ax = axs[1, 1]
+    _target_band(ax, *TARGET_FLEET_AGE_YEARS, "Observed range")
+    mean, ci = mean_and_ci(age_years)
+    ax.plot(time_steps, mean, color=C_BLUE, label="mean age, whole fleet")
+    ax.fill_between(time_steps, mean - ci, mean + ci, color=C_BLUE, alpha=0.2)
+    ax.set_title(f"Fleet mean age\nfinal-year {_final_mean(mean):.1f} yr "
+                 f"vs target {TARGET_FLEET_AGE_YEARS[0]}-{TARGET_FLEET_AGE_YEARS[1]} yr", fontsize=13)
+    ax.set_ylabel("Age, years", fontsize=14)
+    ax.set_ylim(0, max(TARGET_FLEET_AGE_YEARS[1]*1.3, np.nanpercentile(mean, 95)*1.3))
+
+    # ---- 5. Used share of purchases -----------------------------------------
+    ax = axs[2, 0]
+    _target_band(ax, *TARGET_USED_SHARE, "Observed range (definition-dependent)")
+    ax.axhline(TARGET_USED_SHARE_MID, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    mean, ci = mean_and_ci(used_share)
+    ax.plot(ratio_steps, mean, color=C_ORANGE, label="used / (new + used), 12-mo")
+    ax.fill_between(ratio_steps, mean - ci, mean + ci, color=C_ORANGE, alpha=0.2)
+    ax.set_title(f"Used share of purchases\nfinal-year {_final_mean(mean):.3f} "
+                 f"vs target {TARGET_USED_SHARE_MID:.2f} "
+                 f"({TARGET_USED_SHARE[0]:.2f}-{TARGET_USED_SHARE[1]:.2f})", fontsize=13)
+    ax.set_ylabel("Share of purchases", fontsize=14)
+    ax.set_ylim(0, 1)
+
+    # ---- 6. Transaction volume ---------------------------------------------
+    # The banded series is the observable. P(buy | opportunity) is drawn alongside
+    # as a diagnostic, unbanded, because it is what the choice model can actually
+    # move: turnover = 12 * prob_switch_car * P(buy | opportunity), so if P(buy)
+    # bottoms out well above target, the residual has to come from the
+    # opportunity rate.
+    ax = axs[2, 1]
+    _target_band(ax, *TARGET_PROB_BUY, "Observed range")
+    ax.axhline(TARGET_PROB_BUY_MID, color=C_TARGET, linewidth=1.5, alpha=0.8)
+    mean, ci = mean_and_ci(turnover)
+    ax.plot(ratio_steps, mean, color=C_GREEN, label="transactions per vehicle per year")
+    ax.fill_between(ratio_steps, mean - ci, mean + ci, color=C_GREEN, alpha=0.2)
+    mean_pb, _ = mean_and_ci(prob_buy)
+    ax.plot(ratio_steps, mean_pb, color=C_GREEN, linestyle=":", alpha=0.7,
+            label="P(buy | opportunity), diagnostic")
+    ax.set_title(f"Transaction volume\nfinal-year {_final_mean(mean):.3f} per vehicle/yr "
+                 f"vs target {TARGET_PROB_BUY_MID:.2f} "
+                 f"({TARGET_PROB_BUY[0]:.2f}-{TARGET_PROB_BUY[1]:.2f})", fontsize=13)
+    ax.set_ylabel("Per vehicle per year", fontsize=14)
+    ax.set_ylim(0, 1)
+
+    for ax in axs.flat:
+        add_vertical_lines_from_burn_in(ax, base_params, annotation_height_prop=[0.9, 0.9, 0.9])
+        ax.legend(loc="upper left", fontsize=10)
+        ax.grid(alpha=0.3)
+
+    # Year ticks, same rebasing as plot_calibration_fit: step 0 is end of burn-in.
+    tick_years = np.arange(CALIBRATION_START_YEAR,
+                           CALIBRATION_START_YEAR + len(time_steps)//12 + 1, 5)
+    tick_positions = (tick_years - CALIBRATION_START_YEAR)*12
+    visible = tick_positions <= time_steps[-1]
+    for ax in axs.flat:
+        ax.set_xticks(tick_positions[visible])
+        ax.set_xticklabels([str(y) for y in tick_years[visible]])
+        ax.set_xlabel("Year", fontsize=12)
+
+    plt.tight_layout()
+    save_path = os.path.join(fileName, "Plots")
+    os.makedirs(save_path, exist_ok=True)
+    fig.savefig(f"{save_path}/calibration_targets.png", dpi=dpi)
+    print(f"Saved to {save_path}/calibration_targets.png")
+
+    # Same four numbers as text, so a headless run still reports them.
+    print("\n--- calibration targets, final-year mean over seeds ---")
+    print(f"  new-car price IQR      ${model_iqr:>10,.0f}   target ${target_iqr:,.0f} "
+          f"({model_iqr/target_iqr:.2f}x)")
+    print(f"  used quality spread    ${q_end:>10,.0f}   vs used price spread ${p_end:,.0f} "
+          f"(ratio {q_end/p_end:.2f})")
+    print(f"  HHI                     {_final_mean(mean_and_ci(hhi)[0]):>10.3f}   target {TARGET_HHI}")
+    print(f"  fleet mean age, years   {_final_mean(mean_and_ci(age_years)[0]):>10.1f}   target {TARGET_FLEET_AGE_YEARS}")
+    print(f"  used share of purchases {_final_mean(mean_and_ci(used_share)[0]):>10.3f}   target {TARGET_USED_SHARE_MID} {TARGET_USED_SHARE}")
+    turnover_now = _final_mean(mean_and_ci(turnover)[0])
+    prob_buy_now = _final_mean(mean_and_ci(prob_buy)[0])
+    print(f"  transactions/vehicle/yr {turnover_now:>10.3f}   target {TARGET_PROB_BUY_MID} {TARGET_PROB_BUY}")
+    print(f"    P(buy | opportunity)  {prob_buy_now:>10.3f}   -> prob_switch_car implied by the target: "
+          f"{TARGET_PROB_BUY_MID/(12*prob_buy_now):.4f} "
+          f"(currently {base_params['parameters_social_network']['prob_switch_car']})")
 
 
 ####################################################################################
@@ -1109,6 +1530,14 @@ def main(fileName, dpi=200):
 
     # Fit against the Californian data
     plot_calibration_fit(base_params, fileName, outputs, dpi=dpi)
+    plot_calibration_fit_plus(base_params, fileName, outputs, dpi=dpi)
+
+    # The four target variables against their observed ranges. Skipped on runs
+    # saved before record_calibration_targets() existed.
+    if "history_new_car_price_quantiles" in outputs:
+        plot_calibration_targets(base_params, fileName, outputs, dpi=dpi)
+    else:
+        print("[!] No calibration-target series in this run, skipping calibration_targets.")
 
     # Time-series dashboards
     plot_multi_seed_dashboard(base_params, fileName, outputs, dpi=dpi)
@@ -1121,9 +1550,9 @@ def main(fileName, dpi=200):
         plot_multi_seed_2d_contour(fileName, outputs, base_params, dpi=dpi)
     else:
         print("\n[!] No 'cars_on_sale' found in outputs.")
-
+    print(base_params)
     plt.show()
 
 
 if __name__ == "__main__":
-    main(fileName="results/calibration_gen_09_56_46__07_08_2026")
+    main(fileName="results/calibration_gen_10_19_30__17_08_2026")

@@ -4,10 +4,15 @@
 #SBATCH --error=slurm_logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16        # match "seed_repetitions" in constants/base_params_inputs_and_emissions.json
-#SBATCH --mem=16G                 # adjust after checking actual usage on a first run (seff <jobid>)
-#SBATCH --time=08:00:00           # 4 decarb x 3 elec_price = 12 combinations x 16 seeds = 192 runs,
-                                   # duration_future=312 (768 steps/run) -> 12 sequential 16-wide
+#SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_inputs_and_emissions.json
+#SBATCH --mem=128G                # 2G per worker at 64 workers. MEASURED: one run of this config
+                                   # (768 steps -- duration_future=312 makes it the longest run in
+                                   # the supplementary set -- 3000 individuals) peaks at ~1.18 GiB
+                                   # RSS, so 64 workers need ~75 GiB for run data alone. The old
+                                   # 64G would have OOM-killed this job the same way it killed the
+                                   # 21/08/2026 figs 13/14 jobs.
+#SBATCH --time=08:00:00           # 4 decarb x 3 elec_price = 12 combinations x 64 seeds = 768 runs,
+                                   # duration_future=312 (768 steps/run) -> 12 sequential 64-wide
                                    # batches. Pad generously on the first run, then trim from seff.
 #SBATCH --partition=generic        # default partition on jupyter-torrenperaire (see `sinfo`); CPU-only, 10-day limit
 

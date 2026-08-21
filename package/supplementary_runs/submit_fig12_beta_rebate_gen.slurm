@@ -5,7 +5,11 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=64        # match "seed_repetitions" in constants/base_params_vary_policy_joint.json
-#SBATCH --mem=64G                 # adjust after checking actual usage on a first run (seff <jobid>)
+#SBATCH --mem=128G                # 2G per worker at 64 workers. MEASURED: one full-length run
+                                   # (600 steps, 3000 individuals) peaks at ~1.0 GiB RSS, so the
+                                   # previous 64G gave 64 workers exactly 1.0 GiB each -- no headroom
+                                   # for the parent, the per-worker interpreter, or allocator
+                                   # fragmentation. That is what OOM-killed the 21/08/2026 jobs.
 #SBATCH --time=24:00:00           # 8 beta values x 6 rebate levels x 64 seeds = 3072 policy runs, plus
                                    # a BAU sweep of 8 x 64 = 512 runs -> 3584 runs total, duration_future=144
                                    # (600 steps/run) -> 56 sequential 64-wide batches. Pad generously on

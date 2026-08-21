@@ -7,7 +7,14 @@ class NKModel_EV:
     This class models how different component combinations (designs) affect car attributes such as quality,
     efficiency, and production cost, incorporating user behavior and environmental policy parameters.
     """
-        
+
+    # `rho` is given in the paper's feature order: the baseline feature (production
+    # cost, rho = 1 by construction) first, then quality, efficiency, battery size.
+    # The landscape columns follow `min_vec`: quality, efficiency, cost, battery size.
+    # RHO_TO_ATTR[rho_idx] gives the landscape column of that rho entry.
+    RHO_TO_ATTR = (2, 0, 1, 3)
+
+
     def __init__(self, parameters):
         """
         Initialize the NKModel with design, attribute, and policy parameters.
@@ -65,6 +72,21 @@ class NKModel_EV:
         self.min_vec = np.asarray([self.min_Quality, self.min_Efficiency, self.min_Cost, self.min_Battery_size])
         self.max_vec = np.asarray([self.max_Quality, self.max_Efficiency, self.max_Cost, self.max_Battery_size])
 
+        # Dispersion stretch, one factor per attribute -- see the same block in
+        # nkModel_ICE for why it exists and why the keys are named rather than
+        # positional. stretch_Quality is forced to match the ICE landscape's in
+        # controller.__init__, alongside min_Quality/max_Quality, because Quality
+        # is compared ACROSS drivetrains in the choice utility and two different
+        # quality scales would not be comparable.
+        self.stretch_vec = np.asarray([
+            parameters.get("stretch_Quality", 1.0),
+            parameters.get("stretch_Efficiency", 1.0),
+            parameters.get("stretch_Cost", 1.0),
+            parameters.get("stretch_Battery_size", 1.0),
+        ])
+        self.stretch_active = bool(np.any(self.stretch_vec != 1.0))
+        self.mid_vec = 0.5*(self.min_vec + self.max_vec)
+
         self.fitness_landscape = self.generate_fitness_landscape()
 
         self.min_fitness_string, self.min_fitness, self.attributes_dict = self.find_min_fitness_string(self.prop_explore)
@@ -113,6 +135,11 @@ class NKModel_EV:
         min_fitness = fitness_values[min_index]
         min_fitness_string = binary_strings[min_index]
 
+        # The sampled designs ranked worst-first. Placing every firm one bit-flip
+        # from min_fitness_string puts them all in a single basin; this lets them
+        # be spread across the bad end of the landscape instead.
+        self.sampled_strings_ranked = binary_strings[np.argsort(fitness_values)]
+
         # Populate attributes_dict
         attributes_dict = dict(zip(binary_strings, attributes_list))
 
@@ -137,10 +164,28 @@ class NKModel_EV:
             fitness += self.fitness_landscape[k_indices, n, :]
 
         average_fitness_components = fitness / self.N
-        fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec - self.min_vec)
+        fitness_scaled = self._scale(average_fitness_components)
 
         return fitness_scaled
-    
+
+    def _scale(self, average_fitness_components):
+        """
+        Map averaged fitness components onto the attribute ranges.
+
+        Without a stretch this is the original expression, unchanged and
+        bit-identical. With one, each attribute's deviation from the midpoint is
+        multiplied by its factor and the result is clipped back into
+        [min, max] -- see the stretch_vec comment in __init__. Broadcasting
+        handles both the (num_designs, A) and the (A,) case.
+        """
+        if not self.stretch_active:
+            return self.min_vec + average_fitness_components*(self.max_vec - self.min_vec)
+
+        deviation = (average_fitness_components - 0.5)*self.stretch_vec
+        return np.clip(self.mid_vec + deviation*(self.max_vec - self.min_vec),
+                       self.min_vec, self.max_vec)
+
+
     def calculate_fitness_single(self, design):
         """
         Calculate the fitness of a car design.
@@ -167,14 +212,17 @@ class NKModel_EV:
             fitness += self.fitness_landscape[k, n, :]
         average_fitness_components = fitness / self.N
 
-        fitness_scaled = self.min_vec + average_fitness_components * (self.max_vec-self.min_vec)
+        fitness_scaled = self._scale(average_fitness_components)
         return fitness_scaled
     
     def generate_fitness_landscape(self):
         L_cost = self.random_state_inputs.rand(2**(self.K+1), self.N, self.A)
 
-        for attr_idx in range(1, self.A):
-            rho_val = self.rho[attr_idx]
+        base_idx = self.RHO_TO_ATTR[0]
+
+        for rho_idx in range(1, self.A):
+            rho_val = self.rho[rho_idx]
+            attr_idx = self.RHO_TO_ATTR[rho_idx]
             if rho_val != 0:
                 num_to_sync = int(abs(rho_val) * self.N)
                 if num_to_sync > 0:
@@ -183,10 +231,10 @@ class NKModel_EV:
                     )
                     if rho_val > 0:
                         # Positive correlation: copy directly
-                        L_cost[:, sync_indices, attr_idx] = L_cost[:, sync_indices, 0]
+                        L_cost[:, sync_indices, attr_idx] = L_cost[:, sync_indices, base_idx]
                     else:
                         # Negative correlation: invert
-                        L_cost[:, sync_indices, attr_idx] = 1 - L_cost[:, sync_indices, 0]
+                        L_cost[:, sync_indices, attr_idx] = 1 - L_cost[:, sync_indices, base_idx]
 
         return L_cost
 

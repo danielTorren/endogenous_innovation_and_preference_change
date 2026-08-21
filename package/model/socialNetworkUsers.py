@@ -47,6 +47,13 @@ class Social_Network:
 
         self.d_vec = parameters_social_network["d_vec"]
 
+        # Consideration-set sizes: how many new / second-hand cars a switcher
+        # actually evaluates. None (or a value >= the number available) means the
+        # whole market, which is the original behaviour. See
+        # apply_consideration_sets for why this exists.
+        self.num_new_considered = parameters_social_network.get("num_new_considered", None)
+        self.num_second_hand_considered = parameters_social_network.get("num_second_hand_considered", None)
+
         # Agent income, aligned with beta_vec (see controller.gen_beta). Read
         # only for distributional reporting -- no choice or pricing logic uses
         # it. Optional so that parameter dicts written before it existed still
@@ -70,6 +77,45 @@ class Social_Network:
         # and averages only the vehicles CHOSEN this step (i.e. switchers), not
         # the whole fleet.
         self.history_mean_car_age_fleet = []
+
+        # Calibration-target diagnostics, recorded every step by
+        # record_calibration_targets() independently of save_timeseries_data_state,
+        # for the same reason as history_mean_car_age_fleet above: they are matched
+        # against observed target ranges, so they must survive a run with the
+        # timeseries save path off.
+        #   history_new_car_price_quantiles  [p25, p50, p75] of prices PAID for new
+        #       cars over a trailing 12-month window. Transaction prices, not
+        #       list prices, because the target (Grieco, Murry & Yurukoglu 2024,
+        #       25th pct $32,359 / 75th pct $57,785) is a transaction distribution.
+        #   history_used_car_price_quantiles [p10, p50, p90] of prices PAID used,
+        #       same window. The comparator for the quality spread below.
+        #   history_used_stock_quality_spread  median_beta * sd(Q**alpha) over the
+        #       current second-hand stock, in dollars. This is how much of a
+        #       utility difference the whole quality range of the used stock is
+        #       worth to a median consumer. While it is small next to the used
+        #       PRICE range, trading down for cash stays profitable and the fleet
+        #       churns; the two series are meant to be read against each other.
+        #   history_purchase_counts  [new, used, opportunities] per step, raw counts.
+        #       "opportunities" is the number of agents who got to choose this step
+        #       (the switchers), so the two ratios the calibration targets are
+        #           used share of purchases = used / (new + used)
+        #           P(buy | opportunity)    = (new + used) / opportunities
+        #       Kept as raw counts rather than pre-computed ratios so a trailing
+        #       window can be applied downstream without weighting artefacts:
+        #       a ratio of sums is not the mean of per-step ratios.
+        self.history_new_car_price_quantiles = []
+        self.history_used_car_price_quantiles = []
+        self.history_used_stock_quality_spread = []
+        self.history_purchase_counts = []
+        self.num_switchers_this_step = 0
+        # Trailing-window buffers of transaction prices, one list per step, capped
+        # at 12 steps. The per-step lists are appended to in user_chooses()
+        # outside the save gate and rolled into the window by
+        # record_calibration_targets().
+        self._new_price_window = []
+        self._used_price_window = []
+        self._new_prices_this_step = []
+        self._used_prices_this_step = []
 
         # Initialize parameters
         self.parameters_vehicle_user = parameters_vehicle_user
@@ -223,6 +269,8 @@ class Social_Network:
         delta = np.array([vehicle.delta for vehicle in old_cars])
         rebate_vec = np.where(transport_type == 3, self.rebate_calibration + self.rebate, 0)
         B = np.array([vehicle.B for vehicle in old_cars])
+        L_a_t = np.array([vehicle.L_a_t for vehicle in old_cars])
+        delta_P = np.array([vehicle.delta_P for vehicle in old_cars])
         # Create the dictionary directly with NumPy arrays
         vehicle_dict_vecs = {
             "Quality_a_t": quality_a_t,
@@ -234,16 +282,24 @@ class Social_Network:
             "transportType": transport_type,
             "rebate": rebate_vec,
             "delta": delta,
-            "B": B
+            "B": B,
+            "L_a_t": L_a_t,
+            "delta_P": delta_P
         }
+
+        # The starting fleet can carry a spread of ages (init_car_age_mean), so the
+        # assignment has to price age in: an old car is cheaper to acquire, its
+        # range/battery has decayed, and it burns more fuel per km. All three
+        # factors are (1-delta)^L or (1-delta_P)^L and collapse to 1 when every car
+        # starts new, so the age-0 fleet reproduces the original assignment exactly.
+        age_decay = (1 - vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"]
+        price_decay = (1 - vehicle_dict_vecs["delta_P"])**vehicle_dict_vecs["L_a_t"]
 
         # Calculate price difference, applying rebate only for transportType == 3 (included in rebate calculation)
 
-        price_difference = 1.2*vehicle_dict_vecs["ProdCost_t"][:, np.newaxis]  # Apply rebate
+        price_difference = 1.2*vehicle_dict_vecs["ProdCost_t"][:, np.newaxis]*price_decay[:, np.newaxis]  # Apply rebate
         price_difference_T = price_difference.T
-        U_a_i_t_matrix  = -price_difference_T - self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
-
-        #U_a_i_t_matrix = self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*(1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*((1-vehicle_dict_vecs["delta"])**vehicle_dict_vecs["L_a_t"])*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
+        U_a_i_t_matrix  = -price_difference_T - self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["production_emissions"] + self.beta_vec[:, np.newaxis]*vehicle_dict_vecs["Quality_a_t"]**self.alpha + self.nu_vec[:, np.newaxis]*(vehicle_dict_vecs["B"]*vehicle_dict_vecs["Eff_omega_a_t"]*age_decay)**self.zeta - self.d_vec[:, np.newaxis]*(((1+self.r)*(1-vehicle_dict_vecs["delta"])*(vehicle_dict_vecs["fuel_cost_c"] + self.gamma_vec[:, np.newaxis]*vehicle_dict_vecs["e_t"]))/(vehicle_dict_vecs["Eff_omega_a_t"]*age_decay*(self.r - vehicle_dict_vecs["delta"] - self.r*vehicle_dict_vecs["delta"])))
 
         # Sort people by their maximum utility for any car
         people_indices = np.argsort(np.max(U_a_i_t_matrix, axis=1))[::-1]  # Descending order
@@ -355,6 +411,10 @@ class Social_Network:
 
         self.new_bought_vehicles = []#track list of new vehicles
         self.second_hand_bought = 0#track number of second hand bought
+        # Transaction prices for this step, collected regardless of the save
+        # gate -- see record_calibration_targets().
+        self._new_prices_this_step = []
+        self._used_prices_this_step = []
         user_vehicle_list = self.current_vehicles.copy()#assume most people keep their cars
         
         #########################################################
@@ -364,6 +424,11 @@ class Social_Network:
         switcher_indices = np.where(switch_draws)[0]  # e.g., [2, 5, 7, ...]
         num_switchers = len(switcher_indices)
         non_switcher_indices = np.where(~switch_draws)[0]  # e.g., [0, 1, 3, 4, 6, ...]
+
+        # Denominator of P(buy | opportunity), so recorded outside the save gate.
+        # self.num_switchers below is the same number but is gated, and is left
+        # alone because the existing instrumentation reads it.
+        self.num_switchers_this_step = num_switchers
 
         if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
             self.emissions_flow = 0#MEASURIBNG THE FLOW
@@ -475,6 +540,8 @@ class Social_Network:
         available_and_current_vehicles_list = buying_vehicles_list + CV_filtered_vehicles# ITS CURRENT VEHICLES AND NOT FILTERED VEHCILES AS THE SHUFFLING INDEX DOENST ACCOUNT FOR THE FILTERING
 
         utilities_kappa = self.masking_options(self.utilities_matrix_switchers, available_and_current_vehicles_list, self.consider_ev_vec[switcher_indices])
+
+        self.apply_consideration_sets(utilities_kappa, len(self.new_cars), num_buying_columns)
 
         #########################################################################################################################
         # Create a mapping from global to reduced indices. Built over plain
@@ -594,19 +661,34 @@ class Social_Network:
         rebate_deduction = np.where(matched_is_ev, self.rebate_calibration + self.rebate, 0.0)
         closest_prices = np.maximum(first_hand_prices[closest_idxs] - rebate_deduction, 0)
 
-        # Adjust prices based on car age and depreciation
-        adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
+        # Adjust prices based on car age and depreciation. The gross series is
+        # the same anchor with the EV rebate left in. It exists because a car's
+        # physical end of life cannot depend on a subsidy paid on NEW cars: the
+        # price floor in firm.calc_optimal_price_cars pins an EV list price at
+        # exactly the rebate, so the deducted anchor above is identically zero
+        # for every used EV at every age once that floor binds. Read by the
+        # scrap test, that destroyed the entire used-EV fleet on contact --
+        # including one-month-old cars -- and dragged fleet EV share down even
+        # as new EV sales tripled. Prices stay on the deducted series, because a
+        # large new-car rebate really does crush used values; only the scrap
+        # decision reads the gross one.
+        depreciation = (1 - second_hand_delta_P) ** second_hand_ages
+        adjusted_prices = closest_prices * depreciation
+        adjusted_prices_gross = first_hand_prices[closest_idxs] * depreciation
 
-        # Calculate offer prices
-        offer_prices = adjusted_prices / (1 + self.mu)
+        # Calculate offer prices, not below the scrap price
+        offer_prices = np.maximum(adjusted_prices / (1 + self.mu), self.scrap_price)
 
-        # Ensure offer prices are not below the scrap price
-        offer_prices = np.maximum(offer_prices, self.scrap_price)
+        # Physically-scrap test, read off the gross series. Identical to the old
+        # `cost_second_hand_merchant == self.scrap_price` test whenever the EV
+        # rebate is zero, since the two series coincide there.
+        scrap_eligible = adjusted_prices_gross / (1 + self.mu) <= self.scrap_price
 
         # Assign prices back to second-hand car objects
         for i, car in enumerate(current_cars):
             car.price_second_hand_merchant = adjusted_prices[i]
             car.cost_second_hand_merchant = offer_prices[i]
+            car.scrap_eligible = bool(scrap_eligible[i])
 
         return offer_prices
 
@@ -688,6 +770,60 @@ class Social_Network:
 
         return utilities_kappa
 
+    def apply_consideration_sets(self, utilities_kappa, num_new, num_buying_columns):
+        """
+        Restrict each switcher to a random subset of the cars on offer.
+
+        A buyer does not evaluate every listing in the market. Without this, the
+        share going to each channel is driven by how many COLUMNS it has rather
+        than by how attractive its cars are: the used block is ~1500 columns
+        against ~46 new ones, and with a logit scale of 1/kappa the sheer count
+        decides the split. Worse, the best of ~1500 used cars beats the agent's
+        own car by an order-statistics margin regardless of how good that car is,
+        which is what drives the fleet to change hands roughly annually.
+
+        Each agent gets an independent sample, redrawn every step, because the
+        alternative -- one shared sample per timestep -- is not a search friction
+        but simply a smaller market, and it concentrates contention on whoever
+        happens to choose first in the shuffle.
+
+        Implemented as a mask on the already-exponentiated matrix rather than by
+        gathering a narrower one: a zero entry can never be selected by the
+        cumulative-sum draw in user_chooses, so this is behaviourally identical to
+        sampling while leaving the global column indexing, the shared vehicle
+        list, and the second-hand contention logic untouched. It therefore costs
+        the same to build the matrix as before; narrowing it is a later
+        optimisation, not a correctness requirement.
+
+        The current-car columns (from num_buying_columns on) are never masked --
+        keeping your own car is always an option.
+
+        Args:
+            utilities_kappa: (switchers x columns) exponentiated utilities, modified in place.
+            num_new: number of leading columns that are new cars.
+            num_buying_columns: total new + second-hand columns.
+        """
+        if self.num_new_considered is None and self.num_second_hand_considered is None:
+            return
+
+        num_rows = utilities_kappa.shape[0]
+        if num_rows == 0:
+            return
+
+        blocks = ((0, num_new, self.num_new_considered),
+                  (num_new, num_buying_columns, self.num_second_hand_considered))
+
+        for start, stop, num_considered in blocks:
+            width = stop - start
+            if num_considered is None or width <= num_considered:
+                continue
+            # Per row, keep the num_considered columns with the smallest random
+            # keys: a uniform sample without replacement. argpartition is O(width)
+            # per row rather than the O(width log width) of a full sort.
+            keys = self.random_state.rand(num_rows, width)
+            dropped = np.argpartition(keys, num_considered, axis=1)[:, num_considered:]
+            np.put_along_axis(utilities_kappa[:, start:stop], dropped, 0.0, axis=1)
+
     def user_chooses(self, person_index, user, available_and_current_vehicles_list, utilities_kappa, reduced_person_index, index_current_cars_start, u_draw):
         """
         Let a user choose a vehicle based on masked and exponentiated utility values.
@@ -752,7 +888,7 @@ class Social_Network:
                 # -- which is why stocked cars read exactly one month too young
                 # for their whole time on the second-hand market.
                 user.vehicle.update_timer_L_a_t()
-                if (user.vehicle.init_car) or (user.vehicle.cost_second_hand_merchant == self.scrap_price) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD
+                if (user.vehicle.init_car) or (user.vehicle.scrap_eligible) or (self.t_social_network <= self.burn_in_second_hand_market):#ITS AN INITAL CAR WE DOTN WANT TO ALLOW THSOE TO BE SOLD
                     user.vehicle.owner_id = -99#send to shadow realm
                     user.vehicle = None
                 else:
@@ -781,6 +917,8 @@ class Social_Network:
                 self.second_hand_merchant.remove_car(vehicle_chosen)#REmove it last in case of issue of removing and the obeject disappearing
                 self.second_hand_merchant.income += user.vehicle.price
 
+                self._used_prices_this_step.append(user.vehicle.price)#always-on, see record_calibration_targets
+
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_second_hand.append(user.vehicle.price)
                     self.buy_second_hand_car+= 1
@@ -795,6 +933,9 @@ class Social_Network:
                 self.new_bought_vehicles.append(vehicle_chosen)#ADD NEW CAR TO NEW CAR LIST, used so can calculate the market concentration
                 personalCar_id = self.id_generator.get_new_id()
                 user.vehicle = PersonalCar(personalCar_id, vehicle_chosen.firm, user.user_id, vehicle_chosen.component_string, vehicle_chosen.parameters, vehicle_chosen.attributes_fitness, vehicle_chosen.price)
+
+                self._new_prices_this_step.append(user.vehicle.price)#always-on, see record_calibration_targets
+
                 if self.save_timeseries_data_state and (self.t_social_network % self.compression_factor_state == 0):
                     self.car_prices_sold_new.append(user.vehicle.price)
                     self.buy_new_car+=1
@@ -1640,6 +1781,52 @@ class Social_Network:
         """
         self.history_mean_car_age_fleet.append(float(np.mean(self._cv_cache["L_a_t"])))
 
+    def record_calibration_targets(self):
+        """
+        Record the transaction-price and quality-spread diagnostics.
+
+        See the history_* declarations in __init__ for what each series is and
+        which observed target it is compared against. Called from next_step()
+        beside update_mean_car_age(), so index t lines up across all of them.
+
+        Quantiles are taken over a trailing 12-month window of transactions
+        rather than the current step, because a single month's new-car sales are
+        few enough (a couple of hundred out of 3000 agents) that per-step
+        quantiles are mostly sampling noise.
+
+        NaN is recorded for a window with no transactions in it, which is the
+        honest value: there is no price distribution to report. Downstream plots
+        must therefore be NaN-tolerant.
+        """
+        # The price buffers double as the purchase counters: one entry is appended
+        # per transaction in user_chooses, outside the save gate.
+        self.history_purchase_counts.append(
+            [len(self._new_prices_this_step), len(self._used_prices_this_step),
+             self.num_switchers_this_step])
+
+        self._new_price_window.append(self._new_prices_this_step)
+        self._used_price_window.append(self._used_prices_this_step)
+        if len(self._new_price_window) > 12:
+            self._new_price_window.pop(0)
+            self._used_price_window.pop(0)
+
+        new_prices = [p for step in self._new_price_window for p in step]
+        used_prices = [p for step in self._used_price_window for p in step]
+
+        self.history_new_car_price_quantiles.append(
+            list(np.percentile(new_prices, [25, 50, 75])) if new_prices else [np.nan]*3)
+        self.history_used_car_price_quantiles.append(
+            list(np.percentile(used_prices, [10, 50, 90])) if used_prices else [np.nan]*3)
+
+        # Dollar value, to a median consumer, of the whole quality range on offer
+        # in the used stock. Compared against the used price range recorded above.
+        if self.second_hand_cars:
+            quality = _attr_array(self.second_hand_cars, "Quality_a_t")
+            spread = self.beta_median*float(np.std(quality**self.alpha))
+        else:
+            spread = np.nan
+        self.history_used_stock_quality_spread.append(spread)
+
     def calc_price_mean_max_min(self):
         """
         Compute mean, min, and max prices among new cars.
@@ -1754,6 +1941,7 @@ class Social_Network:
 
         self.update_EV_stock()
         self.update_mean_car_age()
+        self.record_calibration_targets()
 
         self.t_social_network +=1
         

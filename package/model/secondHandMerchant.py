@@ -182,10 +182,16 @@ class SecondHandMerchant:
         rebate_deduction = np.where(matched_is_ev, self.rebate_calibration + self.rebate, 0.0)
         closest_prices = np.maximum(first_hand_prices[closest_idxs] - rebate_deduction, 0)
 
-        # Adjust prices based on car age and depreciation
-        adjusted_prices = closest_prices * (1 - second_hand_delta_P) ** second_hand_ages
+        # Adjust prices based on car age and depreciation. The gross series --
+        # the same anchor with the EV rebate left in -- is returned alongside so
+        # that update_stock_contents can retire cars on physical value rather
+        # than on a price the rebate has driven to zero. See
+        # Social_Network.calc_offer_prices_heursitic for the full reasoning.
+        depreciation = (1 - second_hand_delta_P) ** second_hand_ages
+        adjusted_prices = closest_prices * depreciation
+        adjusted_prices_gross = first_hand_prices[closest_idxs] * depreciation
 
-        return adjusted_prices
+        return adjusted_prices, adjusted_prices_gross
 
     def update_stock_contents(self):
         """
@@ -227,7 +233,7 @@ class SecondHandMerchant:
         # Calculate the price vector
         data_dicts_new_cars = self.gen_vehicle_dict_vecs_new_cars(self.vehicles_on_sale)
 
-        price_vec = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
+        price_vec, price_vec_gross = self.calc_car_price_heuristic(data_dicts_new_cars, data_dicts_second_hand)
 
         # Update the prices of the remaining cars
         for vehicle, price in zip(self.cars_on_sale, price_vec):
@@ -235,7 +241,7 @@ class SecondHandMerchant:
 
         # Remove cars below the scrap price. Same vectorised-mask treatment as
         # the over-age pass above.
-        below_scrap_mask = price_vec < self.scrap_price
+        below_scrap_mask = price_vec_gross < self.scrap_price
         if below_scrap_mask.any():
             for idx in np.flatnonzero(below_scrap_mask):
                 vehicle = self.cars_on_sale[idx]

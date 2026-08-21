@@ -28,6 +28,12 @@ SAVED_KEYS = (
     "history_mean_car_age",
     "history_past_new_bought_vehicles_prop_ev",
     "cars_on_sale",
+    # Feed plot_calibration_targets: the four target variables in one figure.
+    "history_mean_car_age_fleet",
+    "history_new_car_price_quantiles",
+    "history_used_car_price_quantiles",
+    "history_used_stock_quality_spread",
+    "history_purchase_counts",
 )
 
 

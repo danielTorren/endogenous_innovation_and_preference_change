@@ -19,7 +19,9 @@ cd "$REPO_ROOT"
 
 JOBS=(
     submit_fig05_calibration_cars_gen.slurm
-    submit_fig06_local_sensitivity_gen.slurm
+    submit_fig06_panels.slurm                 # resumable form of
+                                              # submit_fig06_local_sensitivity_gen.slurm:
+                                              # skips parameters that already have a run
     submit_fig07_08_sobol_gen.slurm
     submit_fig09_10_bau_gen.slurm
     submit_fig11_beta_carbon_gen.slurm

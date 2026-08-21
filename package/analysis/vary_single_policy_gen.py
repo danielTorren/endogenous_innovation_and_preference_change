@@ -5,6 +5,7 @@ from joblib import Parallel, delayed, dump, load
 import multiprocessing
 from package.resources.run import load_in_controller, generate_data
 from package.resources.utility import createFolder, save_object, produce_name_datetime, params_list_with_seed, get_num_workers
+import os
 import shutil  # Add this import at the top of your script
 from pathlib import Path  # For easier path handling
 
@@ -96,7 +97,8 @@ def main(
     BASE_PARAMS_LOAD="package/constants/base_params_run_scenario_seeds.json",
     policy_list=None,
     repetitions=100,
-    bounds_LOAD="package/analysis/policy_bounds.json"
+    bounds_LOAD="package/analysis/policy_bounds.json",
+    plot=True
 ):
     
     with open(BASE_PARAMS_LOAD) as f:
@@ -155,10 +157,36 @@ def main(
     else:
         print(f"Calibration data folder not found: {calibration_folder}")
 
+    if plot:
+        plot_results(file_name)
+
+    return file_name
+
+
+def plot_results(file_name):
+    """
+    Plot straight after the run so the results folder never has to be pasted into
+    vary_single_policy_plot by hand. The plot module is imported here rather than
+    at the top of the file so a headless run that cannot import matplotlib still
+    completes, and a plotting bug never hides the saved data.
+    """
+    # Inside a batch job there is no display, and an interactive backend would make
+    # plt.show() block until the job hits its wall time.
+    if os.environ.get("SLURM_JOB_ID") and "MPLBACKEND" not in os.environ:
+        os.environ["MPLBACKEND"] = "Agg"
+
+    try:
+        from package.analysis.vary_single_policy_plot import main as plot_main
+        plot_main(file_name)
+    except Exception as e:
+        print(f"[!] Plotting failed ({type(e).__name__}: {e}). Data is saved, plot it with:")
+        print(f"    python -m package.analysis.vary_single_policy_plot {file_name}")
+
+
 if __name__ == "__main__":
     main(
         BASE_PARAMS_LOAD="package/constants/base_params_vary_single_policy_gen.json",
-        repetitions=100,#100,
+        repetitions=100,#100,#100,
         policy_list = [
             "Carbon_price",
             "Electricity_subsidy",

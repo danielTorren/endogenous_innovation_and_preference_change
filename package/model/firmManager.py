@@ -31,6 +31,13 @@ class Firm_Manager:
         self.policy_distortion = 0
         self.profit_cumulative = 0
         self.random_state_input = parameters_firm_manager["random_state_input"]
+        # Substream off `seed` (not seed_inputs) for initial conditions, so the
+        # starting fleet and firm placement vary across replicates while the NK
+        # landscape stays pinned. Falls back to random_state_input so that older
+        # parameter dicts still load.
+        self.random_state_init = parameters_firm_manager.get(
+            "random_state_init", self.random_state_input
+        )
 
         self.zero_profit_options_prod_sum = 0
 
@@ -69,8 +76,21 @@ class Firm_Manager:
         self.num_beta_segments = parameters_firm_manager["num_beta_segments"]
         self.num_gamma_segments = parameters_firm_manager["num_gamma_segments"]
 
+        # Initial fleet age, drawn Gamma(mean, std). A mean of 0 gives the original
+        # behaviour -- every car born at L_a_t = 0 on month 0 -- which caps the
+        # oldest possible car at t months and leaves the fleet-age transient still
+        # running through the whole calibration window.
         self.init_car_age_mean = parameters_firm_manager["init_car_age_mean"]
         self.init_car_age_std = parameters_firm_manager["init_car_age_std"]
+        self.init_car_age_max = parameters_firm_manager.get("init_car_age_max", 600)
+        # Whether the starting fleet may ever be resold. Historically False,
+        # because 3000 simultaneous age-0 trade-ins would swamp the used lot; with
+        # a spread of starting ages the trade-ins arrive gradually instead.
+        self.init_car_sellable = bool(parameters_firm_manager.get("init_car_sellable", False))
+
+        # Where firms start on the NK landscape. See draw_initial_designs().
+        self.init_firm_placement = parameters_firm_manager.get("init_firm_placement", "hamming1")
+        self.init_firm_pool_prop = parameters_firm_manager.get("init_firm_pool_prop", 0.05)
 
         self.ev_production_bool = 0
         self.production_subsidy = 0
@@ -100,15 +120,68 @@ class Firm_Manager:
         """
         model_choices = self.random_state_input.choice(self.cars_on_sale_all_firms, self.num_individuals)
 
+        ages = self.gen_initial_car_ages(self.num_individuals)
+        init_car_flag = 0 if self.init_car_sellable else 1
+
         car_list = []
         for i, car in enumerate(model_choices):
             personalCar_id = self.id_generator.get_new_id()
-            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=1)
-            car_real.L_a_t = 0
+            car_real = PersonalCar(personalCar_id, car.firm, None, car.component_string, car.parameters, car.attributes_fitness, car.price, init_car=init_car_flag)
+            car_real.L_a_t = ages[i]
+            # An age-a car was bought a months ago and has depreciated since, so
+            # its resale value must reflect that -- otherwise a 20-year-old
+            # starting car would trade in at the new-car price.
+            car_real.price = car_real.original_price*(1 - car_real.delta_P)**ages[i]
             car_list.append(car_real)
 
-        self.old_cars = car_list   
+        self.old_cars = car_list
         return self.old_cars
+
+    def gen_initial_car_ages(self, n):
+        """
+        Draw starting ages (in months) for the initial fleet, L ~ Gamma(mean, std),
+        truncated at init_car_age_max.
+
+        Gamma because it is a two-parameter family, so mean and spread are set
+        independently and both moments of the observed fleet can be matched at
+        once. Single-parameter alternatives cannot: uniform fixes sd = mean/sqrt(3)
+        and truncates the support at 2*mean, exponential fixes sd = mean. Against
+        the equilibrium measured from a 360-month burn-in (mean 16.2 yr, sd 10.8,
+        median 14.0, tail to 49 yr) gamma matches every moment, while uniform is
+        symmetric so its median sits at the mean, and its support stops at 32 yr.
+
+        A mean of 0 gives the original behaviour, every car born new. That leaves
+        the oldest car in the fleet at month t exactly t months old, so the age
+        distribution has no right tail until the model has run for decades -- which
+        is why the fleet-age transient used to run through the whole calibration
+        window. Kept as the off switch, and as the baseline rung of the burn-in
+        ablation.
+
+        Drawn off random_state_init so the starting fleet varies across seeds while
+        the NK landscape stays pinned to seed_inputs.
+
+        Set init_car_age_max high enough not to clip the tail being reproduced;
+        capping at 360 would remove exactly the 30-49 yr range the gamma is for.
+
+        Args:
+            n (int): Number of cars to draw ages for.
+
+        Returns:
+            np.ndarray: Integer ages in months, length n.
+        """
+        if self.init_car_age_mean <= 0:
+            return np.zeros(n, dtype=int)
+        if self.init_car_age_std <= 0:
+            raise ValueError(
+                f"init_car_age_std must be > 0 when init_car_age_mean is "
+                f"({self.init_car_age_mean}); got {self.init_car_age_std}"
+            )
+        # Moment-matched: shape k and scale theta chosen so the draw has exactly
+        # the requested mean and sd.
+        shape = (self.init_car_age_mean/self.init_car_age_std)**2
+        scale = self.init_car_age_std**2/self.init_car_age_mean
+        ages = self.random_state_init.gamma(shape, scale, size=n)
+        return np.clip(ages, 0, self.init_car_age_max).astype(int)
     
 
     def init_firms(self):
@@ -125,8 +198,12 @@ class Firm_Manager:
         init_tech_component_string_list_N_ICE = self.invert_bits_one_at_a_time(decimal_value_ICE, len(self.init_tech_component_string_ICE))
         init_tech_component_string_list_N_EV = self.invert_bits_one_at_a_time(decimal_value_EV, len(self.init_tech_component_string_EV))
 
-        init_tech_component_string_list_ICE = self.random_state_input.choice(init_tech_component_string_list_N_ICE, self.J)
-        init_tech_component_string_list_EV = self.random_state_input.choice(init_tech_component_string_list_N_EV, self.J)
+        init_tech_component_string_list_ICE = self.draw_initial_designs(
+            init_tech_component_string_list_N_ICE, self.landscape_ICE
+        )
+        init_tech_component_string_list_EV = self.draw_initial_designs(
+            init_tech_component_string_list_N_EV, self.landscape_EV
+        )
 
         self.init_tech_list_ICE = [CarModel(init_tech_component_string_list_ICE[j], self.landscape_ICE, parameters = self.parameters_car_ICE, choosen_tech_bool=1) for j in range(self.J)]
         self.init_tech_list_EV = [CarModel(init_tech_component_string_list_EV[j], self.landscape_EV, parameters = self.parameters_car_EV, choosen_tech_bool=1) for j in range(self.J)]
@@ -141,6 +218,41 @@ class Firm_Manager:
 
         #Create the firms, these store the data but dont do anything otherwise
         self.firms_list = [Firm(j, self.init_tech_list_ICE[j], self.init_tech_list_EV[j],  self.parameters_firm, self.parameters_car_ICE, self.parameters_car_EV) for j in range(self.J)]
+
+    def draw_initial_designs(self, hamming_neighbours, landscape):
+        """
+        Choose the J starting designs for the firms on one landscape.
+
+        Two placements are available:
+
+          hamming1    the original. Draw from the 15 one-bit-flip neighbours of the
+                      single worst design, with replacement and off seed_inputs.
+                      Because seed_inputs is pinned, every replicate starts the
+                      firms at the same designs, and drawing 10 from 15 with
+                      replacement leaves ~2.5 firms as exact duplicates.
+          worst_pool  draw without replacement from the worst init_firm_pool_prop
+                      of the sampled landscape, off the `seed` substream. Firms
+                      are still bad, but spread over several basins and varying
+                      across replicates.
+
+        Args:
+            hamming_neighbours (list): One-bit-flip neighbours of the worst design.
+            landscape: The NK landscape to place firms on.
+
+        Returns:
+            np.ndarray: J binary strings, one per firm.
+        """
+        if self.init_firm_placement == "hamming1":
+            return self.random_state_input.choice(hamming_neighbours, self.J)
+        elif self.init_firm_placement == "worst_pool":
+            ranked = landscape.sampled_strings_ranked
+            pool_size = max(self.J, int(self.init_firm_pool_prop*len(ranked)))
+            pool = ranked[:pool_size]
+            return self.random_state_init.choice(pool, self.J, replace=False)
+        else:
+            raise ValueError(
+                f"Unknown init_firm_placement {self.init_firm_placement!r}, expected 'hamming1' or 'worst_pool'"
+            )
 
     def invert_bits_one_at_a_time(self, decimal_value, length):
         """

@@ -838,7 +838,7 @@ def analyse(fileNames, ev_min=0.94, ev_max=0.96, n_boot=1000, boot_seed=0,
 if __name__ == "__main__":
     # One or more endog_pair folders. Output goes to the first one, in
     # <folder>/Plots/dominance.
-    FOLDERS = ["results/endog_pair_21_27_48__11_08_2026"]
+    FOLDERS = ["results/endog_pair_14_08_10__19_08_2026"]
 
     # Headline result: textbook dominance, robustness from the bootstrap.
     analyse(

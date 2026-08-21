@@ -88,6 +88,38 @@ def plot_results(fileName, posterior_samples, param_bounds, param_names):
     save_and_show(fig, fileName, "pairplot", dpi=300)
     plt.show()
 
+def plot_subset(fileName, posterior_samples, param_bounds, param_names,
+                wanted=("a_chi", "b_chi"), plot_name="pairplot_chi"):
+    """
+    Pairplot of a named subset of the parameters only.
+
+    Use it when the run sampled extra parameters (e.g. delta) that are not
+    wanted in the figure. Parameters missing from param_names are skipped.
+
+    Args:
+        fileName (str): Base directory for outputs.
+        posterior_samples (torch.Tensor): Posterior samples, shape (n, n_params).
+        param_bounds (list): Bounds, one per parameter, in param_names order.
+        param_names (list): Names of all sampled parameters.
+        wanted (tuple): Names to keep, in the order they must be plotted.
+        plot_name (str): File name for the saved figure.
+    """
+    idx = [param_names.index(n) for n in wanted if n in param_names]
+    if len(idx) < 2:
+        print(f"skipping {plot_name}: found {len(idx)} of {list(wanted)} in {param_names}")
+        return
+
+    fig, ax = pairplot(
+        posterior_samples[:, idx],
+        limits=[param_bounds[i] for i in idx],
+        figsize=(6, 6),
+        points_colors='r',
+        labels=[param_names[i] for i in idx]
+    )
+
+    save_and_show(fig, fileName, plot_name, dpi=300)
+    plt.show()
+
 def main(fileName):
     """
     Main function to load data and plot results.
@@ -148,11 +180,29 @@ def main(fileName):
     
     # Plot results
     plot_results(fileName, samples, param_bounds, param_names)
+    plot_subset(fileName, samples, param_bounds, param_names)
 
 if __name__ == "__main__":
     main(
-        fileName="results/sbi_single_seed_16_43_32__12_08_2026",
+        fileName="results/sbi_seed_av_15_31_53__18_08_2026",
     )
+    #sbi_seed_av_15_31_53__18_08_2026
+    #sbi_seed_av_12_53_38__18_08_2026
+    #sbi_seed_av_10_40_28__18_08_2026
+    #sbi_seed_av_11_27_43__17_08_2026
+    #sbi_seed_av_08_58_38__17_08_2026
+    #sbi_seed_av_10_13_07__17_08_2026 - this one has the right range and b beta fixed
+    #sbi_seed_av_09_15_32__17_08_2026
+    #sbi_seed_av_22_27_30__16_08_2026
+    #sbi_seed_av_22_25_54__16_08_2026
+    #sbi_seed_av_17_44_11__16_08_2026
+    #sbi_single_seed_14_34_13__14_08_2026
+    #NN_calibration_multi_14_33_36__14_08_2026
+    #NN_calibration_multi_13_02_48__14_08_2026
+    #sbi_single_seed_13_04_51__14_08_2026
+    #sbi_single_seed_12_42_40__14_08_2026
+    #NN_calibration_multi_12_34_29__14_08_2026
+
     #sbi_single_seed_16_43_32__12_08_2026
     #NN_calibration_multi_16_42_17__12_08_2026
     #sbi_single_seed_14_23_24__11_08_2026

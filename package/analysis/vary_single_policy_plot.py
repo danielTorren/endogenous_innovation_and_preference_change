@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 from package.resources.utility import load_object
@@ -12,7 +14,7 @@ policy_titles = {
 }
 
 
-def plot_policy_intensity_effects_means_95(height, title_dict, data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300):
+def plot_policy_intensity_effects_means_95(height, title_dict, data_array, policy_list, file_name, policy_info_dict, measures_dict, selected_measures, dpi=300, utility_scale=12.0):
     """
     Plots the effects of different policy intensities on specified measures with 95% confidence intervals.
     """
@@ -57,11 +59,12 @@ def plot_policy_intensity_effects_means_95(height, title_dict, data_array, polic
             n = policy_data.shape[1]
             ci_values = 1.96 * std_values / np.sqrt(n)
 
-            # Optional scaling for Utility
+            # Utility only accrues to the prob_switch_car share of agents
+            # activated each month, so scale up to the population level.
             if measure == "Cumulative Utility":
-                mean_values *= 12
-                median_values *= 12
-                ci_values *= 12
+                mean_values *= utility_scale
+                median_values *= utility_scale
+                ci_values *= utility_scale
 
             if measure == "EV Uptake":
                 ax.axhline(0.95, linestyle='--', label=r"$95\%$ EV Adoption", c="black")
@@ -100,6 +103,7 @@ def main(file_name):
     policy_info_dict = load_object(file_name + "/Data", "policy_info_dict")
     base_params = load_object(file_name + "/Data", "base_params")
     print(base_params)
+    utility_scale = 1.0 / base_params["parameters_social_network"]["prob_switch_car"]
 
     measures_dict = {
         "EV Uptake": 0,
@@ -115,9 +119,9 @@ def main(file_name):
     title_dict = {
         "EV Uptake": "EV Adoption Proportion",
         "Net Policy Cost":  "Cum. Net Cost, bn $",
-        "Cumulative Emissions": "Cum. Emissions, MTC02",
-        "Driving Emissions": "Cum. Emissions (Driving), MTC02",
-        "Production Emissions": "Cum. Emissions (Production), MTC02",
+        "Cumulative Emissions": "Cum. Emissions, MtCO$_2$",
+        "Driving Emissions": "Cum. Emissions (Driving), MtCO$_2$",
+        "Production Emissions": "Cum. Emissions (Production), MtCO$_2$",
         "Cumulative Utility": "Cum. Utility, bn $",
         "Cumulative Profit": "Cum. Profit, bn $"
     }
@@ -132,7 +136,7 @@ def main(file_name):
         "Cumulative Profit"
     ]
 
-    plot_policy_intensity_effects_means_95(15, title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    plot_policy_intensity_effects_means_95(15, title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300, utility_scale=utility_scale)
     
     selected_measures = [
         "EV Uptake",
@@ -143,7 +147,7 @@ def main(file_name):
         "Cumulative Utility",
         "Cumulative Profit"
     ]
-    plot_policy_intensity_effects_means_95(8.5, title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    plot_policy_intensity_effects_means_95(8.5, title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300, utility_scale=utility_scale)
     
     selected_measures = [
         #"EV Uptake",
@@ -154,10 +158,14 @@ def main(file_name):
         #"Cumulative Utility",
         #"Cumulative Profit"
     ]
-    plot_policy_intensity_effects_means_95(6.4,title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300)
+    plot_policy_intensity_effects_means_95(6.4,title_dict,data_array, policy_list, file_name, policy_info_dict, measures_dict,selected_measures=selected_measures, dpi=300, utility_scale=utility_scale)
     
 
 
     plt.show()
 if __name__ == "__main__":
-    main(file_name="results/vary_single_policy_gen_19_53_15__11_08_2026")#vary_single_policy_gen_16_43_02__06_03_2025
+    # The gen script calls main() itself, so the default below is only the folder
+    # last used interactively; pass a folder to plot any other run.
+    file_name = sys.argv[1] if len(sys.argv) > 1 else "results/vary_single_policy_gen_13_59_16__19_08_2026"
+    print("Plotting:", file_name)
+    main(file_name=file_name)#vary_single_policy_gen_16_43_02__06_03_2025
