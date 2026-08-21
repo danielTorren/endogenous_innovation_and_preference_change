@@ -14,7 +14,7 @@ existing function it calls. Nothing here duplicates simulation logic.
 |---|---|---|---|
 | 1 | Posterior density for `a_chi`, `b_chi` | `fig01_posterior_plot.py` | `submit_fig01_posterior_plot.slurm` |
 | 5 | Simulated vs. real-world ICE/EV price & range | `fig05_calibration_cars_gen.py` | `submit_fig05_calibration_cars_gen.slurm` |
-| 6 | 10-panel local sensitivity (EV uptake) | `fig06_local_sensitivity_gen.py` + `fig06_local_sensitivity_plot.py` | `submit_fig06_local_sensitivity_gen.slurm` |
+| 6 | 10-panel local sensitivity (EV uptake) | `fig06_panels.py` (resumable) or `fig06_local_sensitivity_gen.py`, both + `fig06_local_sensitivity_plot.py` | `submit_fig06_panels.slurm` |
 | 7 | Sobol first-order sensitivity, 6 outputs x 10 params | `fig07_08_sobol_gen.py` | `submit_fig07_08_sobol_gen.slurm` |
 | 8 | Sobol total-order sensitivity, 6 outputs x 10 params | `fig07_08_sobol_gen.py` | (same job as Figure 7) |
 | 9 | BAU EV uptake/emissions, decarb x elec-price, time series | `fig09_10_bau_gen.py` + `fig09_bau_timeseries_plot.py` | `submit_fig09_10_bau_gen.slurm` |
@@ -33,6 +33,33 @@ job only if you need a fresh posterior; otherwise just point
 `fig01_posterior_plot.py` at whichever `results/sbi_single_seed_*` folder you
 want to plot.
 
+## Figure 6: resuming a partial run
+
+`fig06_local_sensitivity_gen.run_fig6()` does all ten parameter sweeps in one
+unbroken sequence, and the folders it makes are all called
+`results/single_param_vary_<timestamp>` with nothing in the name to say which
+parameter each holds. If the job dies (or hits its `--time` limit) part-way, the
+panels that did finish are unusable in practice and the whole thing gets re-run.
+
+`fig06_panels.py` is the resumable form of the same work. It matches each
+existing folder to its parameter by reading `Data/vary_single.pkl`, so it only
+runs what is missing, and a sweep that fails no longer takes the other nine with
+it:
+
+```bash
+python -m package.supplementary_runs.fig06_panels list      # which panels exist
+python -m package.supplementary_runs.fig06_panels run-all   # run the missing ones, then combine
+python -m package.supplementary_runs.fig06_panels run e     # just panel e (b_chi)
+python -m package.supplementary_runs.fig06_panels combine   # re-combine, no simulation
+```
+
+`run-all` ends by printing the ten folders in panel order, ready to paste into
+`RUNS["local_sensitivity"]` in `package/paper_figures/build_figures.py`. On the
+cluster, `submit_fig06_panels.slurm` runs exactly that, and re-submitting it
+after a failure picks up where it stopped. A folder whose value grid no longer
+matches its `vary_single_*.json` is reported and not reused, so editing a config
+forces that panel to be re-run rather than quietly plotting the old grid.
+
 ## Submitting
 
 Run everything at once with:
@@ -50,7 +77,7 @@ posterior, so submit it separately (it finishes in seconds):
 ```bash
 sbatch package/supplementary_runs/submit_fig01_posterior_plot.slurm   # separate, not part of submit_all.sh
 sbatch package/supplementary_runs/submit_fig05_calibration_cars_gen.slurm
-sbatch package/supplementary_runs/submit_fig06_local_sensitivity_gen.slurm
+sbatch package/supplementary_runs/submit_fig06_panels.slurm
 sbatch package/supplementary_runs/submit_fig07_08_sobol_gen.slurm
 sbatch package/supplementary_runs/submit_fig09_10_bau_gen.slurm
 sbatch package/supplementary_runs/submit_fig11_beta_carbon_gen.slurm

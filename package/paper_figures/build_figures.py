@@ -59,58 +59,62 @@ RUNS = {
     # ---- main manuscript -------------------------------------------------
     # Figure 2 (validation dashboard) and supplementary Figure 5 (car qualities)
     # both come out of the same calibration run.
-    "calibration": "results/calibration_gen_15_46_01__19_08_2026",
+    "calibration": "results/calibration_gen_14_11_51__19_08_2026",
     # Figure 3 -- package/analysis/vary_single_policy_gen.py
-    "single_policies": "results/vary_single_policy_gen_20_01_30__18_08_2026",
-    # Figure 4 -- package/analysis/endogenous_policy_intensity_pair_gen.py
-    "policy_pairs": "results/endog_pair_20_22_47__18_08_2026",
+    "single_policies": "results/vary_single_policy_gen_13_59_16__19_08_2026",
+    # Figure 4 -- package/analysis/endogenous_policy_intensity_pair_gen.py.
+    # This is the gen folder, so it holds base_params, outcomes_BAU,
+    # single_policy_outcomes and all 20 pairwise_outcomes.
+    # results/all_policies_21_12_03__19_08_2026 is a plotting copy of the same
+    # 20 pairs and already carries emissions_tradeoff.png, if you want
+    # --skip-plot instead.
+    "policy_pairs": "results/endog_pair_14_08_10__19_08_2026",
     # Table 3 -- package/analysis/endogenous_policy_intensity_single_gen.py.
     # The endogenous single-policy solve: one optimised intensity per policy, of
     # which only those landing in the target uptake band get a column.
     "single_policy_endog": "results/endog_single_13_47_10__19_08_2026",
     # Figure 5 and Table 4 -- package/analysis/low_policy_intensity_gen.py
-    "low_intensity": "pair_low_intensity_policies_11_46_52__19_08_2026",
-    # Figure 6 -- package/generating_data/single_experiment_gen.py
-    # No single_experiment_* run in results/ yet.
-    "single_experiment": "single_experiment_13_58_56__19_08_2026",
-    # Figure 7 -- vary_single_param_gen over max_num_cars_prop
+    "low_intensity": "results/pair_low_intensity_policies_06_52_21__20_08_2026",
+    # Figure 6 -- package/generating_data/single_experiment_gen.py.
+    # No single_experiment_* run in results/ yet; it needs the saved controller.
+    "single_experiment": "results/single_experiment_10_14_55__21_08_2026",
+    # Figure 7 -- vary_single_param_gen over max_num_cars_prop.
+    # No sen_vary_max_num_cars_prop_* run in results/ yet.
     "used_car_capacity": "results/sen_vary_max_num_cars_prop_20_27_28__18_08_2026",
 
     # ---- supplementary material -----------------------------------------
-    # Figure 1 -- package/calibration/sbi_single_seed_gen.py
-    "posterior": "results/sbi_seed_av_15_31_53__18_08_2026",
-    # Figure 6 -- ten vary_single runs, in panel order a-j. Order matters:
+    # Figure 1 -- package/calibration/sbi_single_seed_gen.py.
+    # No sbi_* inference folder in results/ yet.
+    "posterior": "sbi_seed_av_15_31_53__18_08_2026",
+    # Figure 6 -- ten vary_single runs, in panel order a-j:
     # a alpha, b r, c mu, d kappa, e b_chi, f a_chi, g lambda, h delta,
     # i K_EV, j K_ICE (see supplementary_runs/fig06_local_sensitivity_gen.PANELS).
-    "local_sensitivity": [
-        "results/single_param_vary_20_27_49__18_08_2026",  # a  alpha
-        "results/single_param_vary_20_30_11__18_08_2026",  # b  r
-        "results/single_param_vary_20_32_19__18_08_2026",  # c  mu
-        "results/single_param_vary_20_34_32__18_08_2026",  # d  kappa
-        "results/single_param_vary_20_36_44__18_08_2026",  # e  b_chi
-        "results/single_param_vary_20_40_39__18_08_2026",  # f  a_chi
-        "results/single_param_vary_20_42_55__18_08_2026",  # g  lambda
-        "results/single_param_vary_20_45_13__18_08_2026",  # h  delta
-        "results/single_param_vary_20_47_26__18_08_2026",  # i  K_EV
-        "results/single_param_vary_20_49_48__18_08_2026",  # j  K_ICE
-    ],
-    # Figures 7 and 8 -- package/supplementary_runs/fig07_08_sobol_gen.py
-    "sobol": "results/sensitivity_analysis_20_28_14__18_08_2026",
-    # Figures 9 and 10 -- package/supplementary_runs/fig09_10_bau_gen.py
+    # Only panel a exists in results/, and a partial list would quietly plot a
+    # figure with the other nine panels missing, so the list stays empty until
+    # the rest are run. Panel a is
+    # results/single_param_vary_14_11_40__19_08_2026 (alpha, [0.2, 0.4, 0.6, 0.8]).
+    "local_sensitivity": [],
+    # Figures 7 and 8 -- package/supplementary_runs/fig07_08_sobol_gen.py.
+    # Its artifacts are named 10_256_*, matching SOBOL_N_SAMPLES below.
+    "sobol": "results/sensitivity_analysis_14_11_58__19_08_2026",
+    # Figures 9 and 10 -- package/supplementary_runs/fig09_10_bau_gen.py.
+    # No BAU grid/electricity-price run in results/ yet.
     "bau_grid": "",
     # Figures 11-14 -- package/supplementary_runs/fig11_14_policy_grid_gen.py
-    "grid_beta_carbon": "results/cross_beta_multiplier_vs_Carbon_price_20_27_49__18_08_2026",
-    # No cross_beta_multiplier_vs_Adoption_subsidy_* run in results/ yet.
-    "grid_beta_rebate": "",
-    "grid_achi_carbon": "results/cross_a_chi_vs_Carbon_price_20_32_04__18_08_2026",
-    "grid_achi_rebate": "results/cross_a_chi_vs_Adoption_subsidy_20_52_15__18_08_2026",
+    "grid_beta_carbon": "results/cross_beta_multiplier_vs_Carbon_price_14_11_40__19_08_2026",
+    "grid_beta_rebate": "results/cross_beta_multiplier_vs_Adoption_subsidy_14_13_36__19_08_2026",
+    "grid_achi_carbon": "results/cross_a_chi_vs_Carbon_price_14_14_24__19_08_2026",
+    "grid_achi_rebate": "results/cross_a_chi_vs_Adoption_subsidy_14_48_58__19_08_2026",
     # The BAU baseline for Figures 11-14 has no policy in it, so it depends only
     # on the physical parameter: one BAU run serves both policies on that axis.
     # A cross_* run writes data_cross_bau.pkl of its own; point these at whichever
     # run actually has that file (leave empty to use each figure's own folder).
-    # None of the current cross_* runs has data_cross_bau.pkl, so both are empty
-    # and the heatmaps come out without the BAU contour.
-    "grid_bau_beta": "",
+    # Of the four current cross_* runs, only the beta/adoption-subsidy one has
+    # data_cross_bau.pkl, so S11 and S12 get the BAU contour and S13/S14 will
+    # report data_cross_bau missing until an a_chi BAU sweep finishes. That
+    # sweep is the cheap half of a cross run (8 a_chi values x 64 seeds):
+    # policy_sensitivity_gen.run_bau_only against vary_policy_a_chi.json.
+    "grid_bau_beta": "results/cross_beta_multiplier_vs_Adoption_subsidy_14_13_36__19_08_2026",
     "grid_bau_achi": "",
 }
 
@@ -404,7 +408,7 @@ FIGURES = [
            "Plots/policy_intensity_effects_means_0234567.png", _replot_single_policies,
            "Key model outputs for single policies"),
     Figure(4, False, "policy_pair", "policy_pairs",
-           "Plots/emissions_tradeoffs/emissions_tradeoff.png", _replot_policy_pairs,
+           "Plots/emissions_tradeoffs/emissions_tradeoff_pct_bau.png", _replot_policy_pairs,
            "Policy pair emissions/utility/cost trade-offs"),
     Figure(5, False, "policy_low_intensity", "low_intensity",
            "Plots/combined_policy_dashboard_with_utility_flow_cost_both.png",

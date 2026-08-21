@@ -663,6 +663,7 @@ def plot_emissions_tradeoffs_reference_lines(
         dpi=300,
         utility_as_pct_of_bau=False,
         emissions_as_pct_of_bau=False,
+        show_zero_net_cost_line=True,
         pad_frac=0.10,
         plot_name="emissions_tradeoff_reference_lines"
         ):
@@ -682,6 +683,8 @@ def plot_emissions_tradeoffs_reference_lines(
     emissions_as_pct_of_bau does the same to the shared x axis. No 100% line is
     drawn there: the axis stays zoomed on the policy points, and BAU emissions
     are read off the axis scale instead.
+    show_zero_net_cost_line=False drops the zero net cost line from the top
+    panel; the top axis is then scaled to the policy points alone.
     """
     okabe_ito_colors = ['#E69F00', '#009E73', '#56B4E9', '#F0E442',
                         '#0072B2', '#D55E00', '#CC79A7', '#000000']
@@ -736,7 +739,9 @@ def plot_emissions_tradeoffs_reference_lines(
     # --- Reference lines, labelled in-panel: the two lines mean different things
     # per panel, so one shared legend entry could not name both.
     ref_kwargs = dict(color="0.35", linestyle=(0, (5, 3)), linewidth=1.4, zorder=0)
-    for ax, ref, label in ((ax_top, 0.0, "Zero net cost"),
+    top_ref = 0.0 if show_zero_net_cost_line else None
+    any_ref = top_ref is not None or bottom_ref is not None
+    for ax, ref, label in ((ax_top, top_ref, "Zero net cost"),
                            (ax_bottom, bottom_ref, bottom_ref_label)):
         if ref is None:
             continue
@@ -761,7 +766,7 @@ def plot_emissions_tradeoffs_reference_lines(
     e_lo, e_hi = min(e_vals), max(e_vals)
     e_span = e_hi - e_lo or abs(e_hi) or 1.0
     ax_top.set_xlim(e_lo - pad_frac * e_span, e_hi + pad_frac * e_span)
-    ax_top.set_ylim(*_limits([r["c"] for r in records], 0.0))
+    ax_top.set_ylim(*_limits([r["c"] for r in records], top_ref))
     ax_bottom.set_ylim(*_limits([r[y_bottom] for r in records], bottom_ref))
 
     # --- Labels
@@ -773,9 +778,12 @@ def plot_emissions_tradeoffs_reference_lines(
     legend_elements = [Patch(facecolor=policy_colors[policy], edgecolor='black',
                              label=f"{POLICY_TITLES[policy]} ({policy_ranges[policy]['min']:.2f} - {policy_ranges[policy]['max']:.2f})")
                        for policy in all_policies]
+    if any_ref:
+        legend_elements += [
+            plt.Line2D([0], [0], color="0.35", linestyle=(0, (5, 3)), linewidth=1.4,
+                       label="Benchmark"),
+        ]
     legend_elements += [
-        plt.Line2D([0], [0], color="0.35", linestyle=(0, (5, 3)), linewidth=1.4,
-                   label="Benchmark"),
         plt.Line2D([0], [0], color="grey", alpha=0.5, linestyle='-', label='95% Confidence Interval'),
         plt.Line2D([0], [0], marker=half_circle_marker(0, 180), color='gray',
                    markerfacecolor='gray', markeredgecolor='black', linestyle='None',
@@ -870,6 +878,7 @@ def main(fileNames):
                                              file_name,
                                              min_ev_uptake=min_ev_uptake, max_ev_uptake=max_ev_uptake, dpi=300,
                                              utility_as_pct_of_bau=True, emissions_as_pct_of_bau=True,
+                                             show_zero_net_cost_line=False,
                                              plot_name="emissions_tradeoff_pct_bau")
 
     # Saved under its own name so the folder's own pairwise_outcomes (and the
