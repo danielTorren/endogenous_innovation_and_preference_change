@@ -1,0 +1,838 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{url}
+
+\geometry{margin=1in}
+
+\DeclareUrlCommand\code{\urlstyle{tt}}
+\setlength{\emergencystretch}{2em}
+\newcommand{\status}[1]{\textcolor{gray}{\textsc{status:} #1}}
+
+\title{Future research directions\\
+\large Options after ``Driving in the wrong direction? Modelling policy
+mixes for EV adoption''}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Fourteen candidate directions for extending the agent-based model of the
+ICEV--EV transition, grouped into five themes, each assessed against three
+questions: which limitation of the published paper does it address, what
+already exists in the repository, and what does it cost --- in particular,
+whether it forces a re-run of the simulation-based calibration. The
+concluding sections give a summary table and a recommended sequence. The
+central practical finding is that the directions differ in cost by more than
+an order of magnitude, and that the two cheapest are also the two that lift
+limitations the published paper states explicitly.
+\end{abstract}
+
+\tableofcontents
+
+\section{Purpose and how to read this}
+
+The published model is calibrated on California 2001--2023 and used to
+evaluate five market-based instruments, individually and in pairs, over
+2024--2035 with a projection to 2050. It is a working, calibrated,
+documented artefact. Every direction below is therefore an
+\emph{extension}, not a rebuild, and the relevant question for each is not
+``is this interesting'' --- they all are --- but ``what does it cost, what
+does it buy, and does it break the calibration''.
+
+Three cross-cutting facts govern everything that follows.
+
+\begin{description}[leftmargin=1.5em]
+\item[The calibration is the bottleneck.] Only four parameters are
+  estimated by simulation-based inference: $a_\chi$, $b_\chi$
+  (the innovativeness-threshold Beta distribution), $\kappa$ (consumer
+  intensity of choice) and $\delta$ (fuel-efficiency depreciation). See
+  \code{package/calibration/NN_multi_round_calibration_multi_gen.py}.
+  Any extension that changes agent behaviour \emph{during} 2001--2023
+  invalidates that posterior and forces a re-run. Extensions confined to the
+  2024--2035 policy period do not. This single distinction separates the
+  cheap directions from the expensive ones and is the axis the summary table
+  in Section~\ref{sec:table} is sorted on.
+
+\item[No firm behavioural parameter is estimated.] $\lambda$ (research
+  intensity of choice, $10^{-3}$), $M^+$ (memory, 30), $Y^+$ (variant cap,
+  10), $\theta$ and $\iota$ (activation probabilities) are all set by
+  assumption, as Table~4 of the manuscript records. The firm side is
+  disciplined only indirectly, through the price, HHI and car-age target
+  ranges of Table~1. This matters because it means the supply-side
+  extensions (Themes A, C, D) are not competing with estimated parameters
+  --- they are replacing one asserted specification with another, and the
+  case for each has to be made on economic grounds rather than fit.
+
+\item[Several directions are already partly built.] Forward-looking
+  expectations and three command-and-control bans are implemented in the
+  current model code behind default-off flags. A Gaussian-process surrogate
+  over the full five-instrument policy space, and a ZIP-level spatial
+  calibration pipeline with a 28-dimensional summary statistic, both exist
+  in git history and were removed from the publication snapshot. Each
+  section below records this under \status{}.
+\end{description}
+
+\section{What the paper commits us to}
+\label{sec:commitments}
+
+The conclusions section of the manuscript names five future directions of
+its own. Mapping them onto the numbered ideas is the cheapest available
+source of referee-proof motivation, because a limitation the paper itself
+raises does not need to be argued for.
+
+\begin{longtable}{@{}p{0.46\textwidth}p{0.46\textwidth}@{}}
+\toprule
+\textbf{Stated in the paper} & \textbf{Corresponding direction} \\
+\midrule
+\endhead
+``A key shortcoming \dots is the lack of financial and physical
+constraints \dots Future research should incorporate capital costs of
+switching production and a supply model with an explicit representation of
+production planning and inventory management.''
+& Items 5 (financial constraints), 6 (switching and R\&D costs),
+12 (batch/vintage production). Theme C. \\
+\addlinespace
+``Incorporating more sophisticated forecasting techniques and factoring in
+expected regulation can crucially modify investment and purchase decisions.
+By doing so, policies such as standards and regulations could be assessed.
+Additionally, this would enable the study of more realistic time-varying
+carbon price implementations such as the EU-ETS.''
+& Items 1 (forward-looking agents), 2 (command and control), 4 (long-horizon
+firm profit), 7 (MARL firms). Theme A. Also the time-varying half of
+item 8. \\
+\addlinespace
+``The role of pro-environmental attitudes or conspicuous consumption \dots
+could be better represented by expanding \dots beyond a threshold model to
+enrich car users with social norms and behavioural control such as in the
+Theory of Planned Behaviour \dots This would facilitate the inclusion of
+policies such as information provision, media or marketing.''
+& \textbf{Not on the current list.} See Section~\ref{sec:missing}. \\
+\addlinespace
+``[T]ranslating these results into concrete recommendations would benefit
+from moving beyond calibration to validation. Achieving this requires a
+larger car user population to reduce noise \dots enabling time-series data
+on EV fleet size or sales to be split into training, validation, and test
+sets.''
+& Items 9 (spatial), 10 (population synthesis). Theme E. \\
+\addlinespace
+``[W]e restrict our analysis to policy pairs rather than exhaustive
+combinations to maintain tractability'' (Section~2) and policies ``are
+applied from January 2024 at their full intensity and are then constant
+over the policy period'' (Section~4.1).
+& Item 8 (multi-policy optimisation). Theme B. \\
+\bottomrule
+\end{longtable}
+
+\section{The five themes}
+
+\begin{description}[leftmargin=1.5em]
+\item[Theme A --- Expectations, anticipation and strategic firms.]
+  Items 1, 2, 4, 7. All four attack the same sentence in Section~4.1 of the
+  manuscript: ``we disregard the role of expectations regarding policy
+  stringency \dots with agents assuming that policies will be permanent.''
+  They form a ladder of increasing cost and decreasing certainty, and the
+  rungs are not independent: item 2 is only meaningful given item 1, and
+  item 7 delivers little that items 1 and 4 do not deliver more cheaply.
+
+\item[Theme B --- Policy-space search and the planner's problem.]
+  Item 8. Does not change the model at all; changes how the policy space is
+  searched. The only theme with no recalibration exposure.
+
+\item[Theme C --- Supply-side economics: constraints, costs, capacity.]
+  Items 5, 6, 12. The firm side is where the model is most stylised, and
+  this is the paper's own first-named limitation.
+
+\item[Theme D --- Technology representation.]
+  Items 3, 13, 14. How the NK landscape, battery technology and production
+  carbon intensity are specified. Infrastructure work with one exception
+  (item 14) that touches a headline result cheaply.
+
+\item[Theme E --- Spatial grounding and empirical identification.]
+  Items 9, 10, 11. The most expensive theme and the one with the strongest
+  claim on the model's scientific credibility, because it is the only theme
+  that can defend the paper's \emph{core mechanism} against its most
+  obvious critique.
+\end{description}
+
+\section{Theme A: expectations, anticipation and strategic firms}
+
+\subsection{Item 1 --- Forward-looking agents}
+\label{sec:item1}
+
+\status{implemented, documented, default off.}
+See \code{docs/forward_looking/forward_looking_expectations.tex} for the
+full derivation. The flag \code{forward_looking_expectations} replaces the
+naive closed-form geometric series
+\begin{equation}
+  \mathrm{LCC}_{\mathrm{extra}} = D_i\,
+  \frac{(1+r)(1-\delta)(c + \gamma_i e)}{\omega\,(r - \delta - r\delta)}
+  \label{eq:naive}
+\end{equation}
+--- which assumes today's fuel cost and emissions intensity persist forever
+--- with a backward recursion $\mathrm{Index}(t) = z_t + q\,\mathrm{Index}(t+1)$
+over the model's actual known future path. It is applied consistently to
+consumers (\code{socialNetworkUsers.py}) and firms
+(\code{firm.py:_lifecycle_cost_term_firm}), and the carbon-price
+component is extended past the simulated horizon using
+\code{calculate_price_at_time()} so that a forward-looking agent
+correctly believes a temporary carbon tax is temporary rather than
+permanent at its peak.
+
+\paragraph{Why it matters.} The manuscript's own Section~2.2 flags the
+assumption --- ``car users assume the future prices and emissions of
+gasoline and electricity to be the same as in the present period'' --- and
+justifies it by citing Anderson et al.\ (2013). That justification is
+reasonable for \emph{gasoline price} expectations, which is what Anderson
+et al.\ study. It is much weaker for a pre-announced policy ramp, which is
+public information rather than a forecasting problem.
+
+\paragraph{Effect size is already known to be large.} The
+\code{car_ban} smoke test recorded in the forward-looking note found that
+because $q = 1/((1+r)(1-\delta)) \approx 0.9977$, the effective planning
+horizon is $1/(1-q) \approx 433$ months. A driving ban six to eleven years
+out is therefore already 70--85\% priced in from the start of the future
+period. Forward-looking EV fleet share reached 0.97 six months
+\emph{before} a 2030 ban took effect, against 0.39 for naive agents facing
+the identical ban. Anticipation is not a marginal correction here; it is
+the dominant channel.
+
+\paragraph{Cost.} One SBI re-run. The flag changes calibration-period
+behaviour too, because gasoline prices, electricity prices and grid
+decarbonisation all vary over 2001--2023 even though the carbon price is
+forced to zero there. It also changes how the calibrated $\delta$ enters
+utility, so $\delta$ in particular should be expected to move.
+
+\subsection{Item 2 --- Command-and-control policies}
+
+\status{three bans implemented in \code{controller.py}; experiment packages
+removed from the snapshot.}
+\code{ICE_driving_ban_time} / \code{ICE_driving_ban_penalty} (a cost
+shock fed through the same discounting machinery as item 1, so anticipation
+emerges from the existing utility function with no separate
+``anticipation lead'' parameter), \code{ICE_sales_ban_time} (a hard
+constraint on firms' choice sets, which also flushes pre-ban ICE stock from
+\code{cars_on_sale}) and \code{ICE_research_ban_time} (no ICE
+neighbouring technologies generated at all) all exist and all default to
+\code{None}. The driving-ban experiment lived in \code{package/car_ban} at
+commit \code{366d91a} and is recoverable from git.
+
+\paragraph{Why it matters most for this paper specifically.} California is
+the case study \emph{and} the paradigmatic command-and-control jurisdiction
+--- the manuscript says so in Section~3, cites the ZEV mandate, and then
+explicitly declines to model it, on the grounds that ``regulatory measures
+are out of the scope of the present research''. That is a defensible
+scoping decision for one paper and an obvious opening for the next. A paper
+that puts the ZEV mandate back in, and compares it against the
+market-based instruments already characterised, has a ready-made
+motivation, a ready-made baseline, and an audience that is already asking
+the question.
+
+\paragraph{Cost.} Essentially free \emph{given item 1}. Bans are configured
+as absolute timesteps after the burn-in and can be confined to the future
+period, so they do not touch the calibration. But a ban that agents cannot
+anticipate is just a cost shock arriving on a known date, which is not what
+a ZEV mandate is. Item 2 without item 1 answers the wrong question.
+
+\subsection{Item 4 --- Firms chasing long-horizon profit}
+
+\status{not implemented. The cheapest unbuilt item on the list.}
+
+The manuscript's Section~2.3 says manufacturers ``select the car designs to
+put on sale based on their profit expectations throughout the lifecycle of
+the technology''. The implementation is narrower than that: Equation~8's
+expected profit, as computed in
+\code{firm.py:calc_predicted_profit_segments_research}, is a
+\emph{single-period} quantity --- marginal profit $\times$ segment
+population $\times$ expected in-segment share, all evaluated at this
+month's prices, this month's subsidy scalar and this month's segment sizes.
+A firm choosing a research direction today receives a technology that will
+sell for years, and scores it on one month of profit.
+
+\paragraph{The fix needs no learning.} Replace the one-period profit in
+Equation~12's softmax with a discounted profit stream over the product's
+expected commercial lifetime, using the discount rate $r$ the model already
+has. Two sub-channels are worth separating because they can be implemented
+and reported independently:
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{Policy instruments on the firm's own P\&L.} The production
+  subsidy and the new-EV rebate enter \code{firm.next_step()} as scalars.
+  A firm weighing an R\&D direction should weight them over the payoff
+  window, not this month. This is the same backward recursion item 1
+  already implements, applied to the subsidy vectors.
+\item \textbf{Segment growth.} $|I_{s,t}|$ and $W_{s,t}$ are today's
+  segment sizes and competitive state. But EV consideration spreads
+  endogenously as $\chi$ thresholds are crossed --- which is precisely the
+  mechanism policy is trying to trigger --- and firms are blind to it. This
+  sub-channel needs a model of segment evolution, however crude, and is
+  where the honest ceiling on a non-learning implementation sits.
+\end{enumerate}
+
+\paragraph{A predicted tension worth stating in advance.} Two opposing
+forces act here. Forward-looking firms that see the carbon ramp coming
+should pivot to EVs \emph{earlier}, lowering the policy intensity needed to
+hit 95\%. But Figure~S6 panel~G reports that EV uptake \emph{increases}
+when research choices are more random, because policy incentives favouring
+EVs outweigh the ICE research advantage accumulated during burn-in --- so
+making firms sharper should push the other way. Against that, the Sobol
+indices (Figures~S7, S8) attribute almost no global variance in EV adoption
+to $\lambda$. The reasonable reading is that the \emph{level} of firm
+rationality is not first-order in the current specification, but whether
+firms anticipate \emph{policy} may well be. That asymmetry is an argument
+for prioritising items 1 and 4 over item 7.
+
+\subsection{Item 7 --- Strategic, pre-emptive firms via MARL}
+
+\status{not implemented. Highest risk on the list.}
+
+Replace the myopic softmax over NK neighbours with a learned policy
+$\pi(a \mid s)$ trained to maximise discounted profit. Four objections, in
+descending order of seriousness:
+
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{It breaks the calibration chain.} SBI draws $\theta$ and
+  re-simulates thousands of times. If each draw needs trained firms, the
+  nested loop is infeasible. There are two ways out: freeze one policy
+  trained at the posterior mode and hold it across draws (defensible, since
+  $\lambda$ is held fixed across draws today), or \emph{amortise} --- put
+  $\theta$ in the firm's observation vector and sample it from the SBI prior
+  during training, so one trained policy is valid at any $\theta$. The
+  latter is the technically right answer and has a pleasing symmetry with
+  what NPE already does: train once over the prior, valid everywhere.
+\item \textbf{It trades one interpretable knob for several
+  uninterpretable ones.} $\lambda$ has an economic reading (exploration
+  versus exploitation). Learning rate, network width, training length and
+  exploration schedule do not, and they move outcomes. Any result has to
+  be shown invariant to them, or reported as a range. Budget for this; it
+  is the part referees will find.
+\item \textbf{Multi-agent learning is non-stationary.} Ten co-learning
+  firms have no convergence guarantee, and outcomes become sensitive to
+  algorithmic detail --- a poor property for a model whose output is a
+  policy recommendation. Best-response iteration (fix firms, train planner;
+  fix planner, train firms; repeat and check for a fixed point) is far more
+  stable and more reportable than simultaneous learning.
+\item \textbf{Most of its value arrives more cheaply via items 1 and 4.}
+  Against a \emph{pre-announced deterministic} policy path --- which is what
+  \code{calculate_price_at_time()} produces --- anticipation requires no
+  learning at all. A firm can read the schedule. MARL becomes genuinely
+  necessary only once the planner itself is adaptive (the RL half of
+  item 8), because then the policy path depends on the state, which depends
+  on what firms do, and no closed form exists.
+\end{enumerate}
+
+\paragraph{If pursued, keep it minimal.} Do not learn pricing --- 
+\code{calc_optimal_price_cars} is a closed-form optimum (Equation~10,
+via the Lambert $W$ function) and learning can only degrade it. Replace
+only \code{select_car_lambda_research}, or even just let the agent set a
+scalar EV/ICE direction bias that shifts the profit scores. Share one
+policy network across all ten firms, which avoids ten-way non-stationarity
+and is defensible as an industry-standard heuristic.
+
+\paragraph{The result that would justify it.} An adaptive regulator that
+visibly raises subsidies when uptake stalls gives firms an incentive to
+slow-roll EV investment. If the flexibility gain from an adaptive planner
+partly evaporates once firms learn to exploit it, that is a
+commitment-versus-discretion finding, and it is a real contribution rather
+than a methods demonstration. But it presupposes item 8.
+
+\section{Theme B: policy-space search and the planner's problem}
+
+\subsection{Item 8 --- Multi-policy optimisation}
+\label{sec:item8}
+
+\status{Gaussian-process surrogate fully prototyped at commit
+\code{c92bff8}; removed from the publication snapshot.}
+
+The recoverable \code{package/surrogate/} contained:
+\begin{itemize}[leftmargin=1.5em]
+\item \code{sampling.py} --- Latin hypercube design over the full
+  five-dimensional policy space, evaluating four outputs
+  (\code{ev_uptake}, \code{utility}, \code{emissions}, \code{net_cost}).
+\item \code{surrogate.py} --- a Gaussian process with a Mat\'ern 5/2 kernel
+  plus a \code{WhiteKernel} nugget to absorb seed-to-seed variance, with
+  leave-one-out cross-validation and prediction-interval coverage
+  diagnostics. (The term in the original idea list, ``Gaussian mixture
+  model'', is worth correcting: a GMN/mixture density network is what
+  \code{sbi} uses for the \emph{posterior}; what is wanted here is a
+  Gaussian \emph{process} emulator of the policy response surface. Both
+  already exist in this project, doing different jobs.)
+\item \code{optimisation.py} --- active Bayesian optimisation with a
+  constrained acquisition function,
+  $\mathrm{EI}(x) \times \Pr(\text{EV uptake} \in [\underline{u},
+  \overline{u}] \mid x)$, which reduces to pure feasibility-seeking before
+  the first feasible point is found; then Pareto-front extraction over
+  $\sim$170 evaluated policies via randomly weighted scalarisations.
+\end{itemize}
+
+\paragraph{Why this is the strongest near-term option.} It lifts two
+limitations that the paper states are computational rather than scientific.
+First, pairs: ``we restrict our analysis to policy pairs rather than
+exhaustive combinations to maintain tractability''. The paper's own finding
+of perfect substitutability between adoption and production subsidies
+(Section~4.2.2, the horizontal line in Figure~4) is a two-dimensional slice
+of a surface a surrogate can map properly. Second, constant intensities:
+policies are ``applied from January 2024 at their full intensity and are
+then constant''. A surrogate over instrument \emph{and ramp shape} answers
+the EU-ETS question the conclusions raise.
+
+\paragraph{And it is cheap.} No model change, therefore no recalibration,
+therefore no new behavioural assumption to defend. It is the only direction
+on this list with essentially zero scientific risk: if the GP fits badly
+the diagnostics say so, and the fallback is more design points.
+
+\paragraph{The RL-planner variant.} An alternative to a surrogate over
+fixed schedules is a reinforcement-learning planner emitting
+$\pi(a_t \mid s_t)$ monthly. This is a different and larger claim --- it
+answers ``how much cheaper is 95\% uptake if the regulator can
+\emph{adapt}?'' rather than ``what is the best fixed mix?''. It is
+attractive because the model is already shaped like an RL environment:
+\code{single_policy_simulation} loads a pickled post-calibration
+controller and runs only the 144-step future period, so the 64 saved
+controllers are ready-made episode resets with built-in seed diversity, and
+\code{calc_net_policy_distortion()} is ready-made reward. The main
+engineering cost is that \code{manage_policies()} precomputes policy
+vectors read by index, so per-step action injection means turning those
+reads into a setter. Two design cautions: use common random numbers (fix
+the controller batch per update) or gradient variance across 64 stochastic
+seeds will dominate; and restrict the observation vector to what a
+regulator actually observes (EV share, sales, prices, HHI, fuel prices), not
+firm internals, or the learned rule is not implementable and reviewers will
+say so.
+
+\paragraph{Recommendation within item 8.} Do the surrogate first --- it is
+built, it is the direct answer to a stated limitation, and it produces the
+baseline the RL planner would have to beat.
+
+\section{Theme C: supply-side economics}
+
+\subsection{Item 5 --- Financial constraints on firms, budgets for consumers}
+
+\status{not implemented.} The paper's first-named limitation, and it is two
+separable ideas.
+
+\paragraph{Firm side.} Section~2.3 states the assumption plainly: firms
+``face constant marginal production costs and are not subject to binding
+capacity or financial constraints'', defended on the grounds that the
+relevant manufacturers are multinationals with capital-market access. The
+defence is reasonable and the paper cites Mazzucato and Unruh in
+acknowledging what it gives up. Note what the current specification implies:
+cumulative firm profit is a \emph{reported output} with no feedback into
+innovation capacity. Adding a financing channel closes that loop, which is
+attractive because the co-evolutionary feedback \emph{is} the paper's
+headline methodological contribution.
+
+\paragraph{Consumer side, which I think is the more interesting half.}
+$\beta_i$ scales with the Californian income distribution, but there is no
+budget constraint --- a low-income agent can select an arbitrarily expensive
+car if the utility arithmetic works out. Figure~6 shows the $\beta_i$
+distribution has an extremely long right tail (to $\sim 7\times 10^6$). A
+hard budget or a financing constraint (monthly payment as a share of
+income, which is how car purchases are actually constrained) would bite
+hardest exactly where the paper's used-car-market contribution lives, and
+would sharpen the distributional reading of the rebate results. Given that
+Figure~7 shows removing the used-car market roughly \emph{triples} EV
+uptake by forcing price-sensitive users out of cheap ICEVs, the interaction
+between budgets and the used market is likely to be first-order.
+
+\paragraph{Cost.} High. Both halves change calibration-period behaviour, so
+recalibration is required, and the consumer-budget version probably requires
+re-deriving the analytic $\beta$ median (Supplementary Equation~5), which is
+currently pinned by matching the mean observed new-car price.
+
+\subsection{Item 6 --- Switching costs and R\&D costs}
+
+\status{not implemented. The most surgical item in this theme.}
+
+R\&D is currently free: firms are gated only by the activation probability
+$\iota$ and by NK locality. Production switching is likewise free, gated
+only by $\theta$. So the sole source of inertia in the supply side is
+technological path dependence through the landscape --- which is exactly the
+``carbon lock-in'' that Section~2.3 cites Unruh (2000, 2002) for and then
+argues is not binding.
+
+\paragraph{Why it earns its place.} A per-attempt R\&D cost and a
+capital cost of switching a production line give the production subsidy and
+the profit channel real teeth, and they give accumulated profit a
+\emph{use}. It is also the cheapest way to test whether the paper's
+transition speeds are an artefact of costless pivoting. My prior is that
+they partly are, and that adding these costs raises the required policy
+intensities --- pushing in the same direction as item 4's rationality
+channel and the opposite direction to item 1's anticipation channel. The
+three together would make a coherent robustness paper on whether the
+Table~3 intensities are conservative or optimistic.
+
+\paragraph{Cost.} Moderate. Recalibration required, and one or two new
+parameters that will have to be set by assumption plus sensitivity analysis,
+in the manner Section~3 already establishes for $\lambda$, $K$ and $\mu$.
+
+\subsection{Item 12 --- Stock, vintage or batch production}
+
+\status{not implemented.}
+
+Production is on demand: Appendix~A.1.1 is explicit that a new design
+$y \in Y_t$ ``is represented by a vector of attributes and a sale price, but
+does not represent an actual car'', and a car is produced only when bought.
+So there is no inventory, no capacity constraint and no lead time.
+
+\paragraph{It is exposed to a headline result.} The paper's second key
+takeaway is that ``before 2030, all transition policies entail drawbacks.
+The required large-scale deployment of EVs causes an increase in
+manufacturing emissions that exceeds the savings in gasoline use.''
+Production emissions therefore track sales exactly, month by month, with no
+smoothing. Batch or vintage production with inventory would change the
+timing and possibly the magnitude of that manufacturing-emissions spike ---
+which is the mechanism behind one of the paper's two main policy warnings.
+That makes this less of an ``add realism'' item and more of a robustness
+check on an existing claim, which is a better framing for it.
+
+\paragraph{Cost.} High, and structural. This is the largest single change to
+the model's architecture on the list.
+
+\section{Theme D: technology representation}
+
+\subsection{Item 3 --- Rethinking the NK landscape}
+
+\status{not implemented. Important, but poorly shaped as a paper.}
+
+Two concrete, already-documented problems:
+
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{Range compression.} Because an attribute's performance is the
+  mean of $N=15$ i.i.d.\ draws, normalised performance concentrates in
+  $(0.2, 0.8)$ with mean and median $0.5$ (Supplementary Section~3.2). The
+  landscape bounds $(F^-, F^+)$ therefore have to be back-solved
+  analytically from the target attribute range $(Q^-, Q^+)$ via
+  Supplementary Equations~22--28 --- machinery that exists purely to
+  compensate for the concentration. The reachable attribute space is
+  narrower than the nominal bounds suggest, and gets narrower as $N$ grows,
+  which is in tension with wanting $N$ large enough for normality.
+\item \textbf{$K$ is confounded with the landscape seed.} The supplementary
+  says so itself, at the end of Section~2.1: ``by varying the complexity of
+  the landscape, we change the inputs. This means that differences between
+  complexity runs may also be due to different seeds in the landscape
+  generation.'' So the reported $K$ sensitivity is not clean, and $K_{ICE}$
+  is described as having a ``mixed but significant effect'' on EV uptake.
+\end{enumerate}
+
+A third, smaller symptom: simulated ICEV driving range is $\sim$20\% too
+high (Supplementary Section~1.4), attributed to pinning the fuel tank at
+the top tier of observed data.
+
+\paragraph{My view.} Fix the range compression and the $K$-seed confounding
+as \emph{infrastructure}, folded into whichever substantive paper comes
+next, and report it in that paper's supplementary. Do not try to make it the
+paper. There is a publishable version --- ``does the innovation
+representation drive the policy conclusion?'', comparing NK against an
+alternative such as a continuous cumulative-innovation or learning-curve
+formulation --- but it is a methods-venue paper with no policy question
+attached, and it would consume a calibration cycle to produce a null result
+if the answer is ``no''.
+
+\subsection{Item 13 --- EV battery technology evolution}
+
+\status{partly present as an NK dimension.} Battery capacity is already the
+extra fourth EV attribute, bounded $(0, 150)$~kWh from Schmuch et al.\
+(2018), with $\rho(C,B)=0$ so that cheap high-capacity EVs are hard to
+reach. So this item is largely a \emph{special case of item 3}: making
+battery evolution richer means either changing the landscape specification
+or bolting an exogenous technology trend onto it. Worth doing as part of
+item 3 rather than as a separate direction; the one genuinely distinct
+sub-idea is an endogenous learning curve (cost falling in cumulative EV
+production), which is a different mechanism from NK search and would
+interact with items 6 and 12.
+
+\subsection{Item 14 --- Time-varying carbon intensity of car production}
+
+\status{not implemented. Best cost-to-payoff ratio on the list.}
+
+Manufacturing emissions are \emph{fixed constants} for the whole
+2001--2050 horizon: ICEV 10~tonnes, EV 14~tonnes (Table~4, from IPCC 2022).
+Battery manufacturing has decarbonised substantially over exactly the period
+the model spans, and the model already assumes 90\% grid decarbonisation by
+2035 for \emph{driving} emissions while holding \emph{production} emissions
+flat --- an internal inconsistency that is easy to state and easy to fix.
+
+\paragraph{Why it matters more than it looks.} It bears directly on two
+results. The pre-2030 manufacturing-emissions penalty (Section~4.2.1, and
+the third row of Figure~3) is computed with a constant 14~t per EV. And
+Supplementary Section~2.4 finds grid decarbonisation matters little for
+\emph{uptake} but does matter for emissions \emph{flow}. A declining
+production intensity would mechanically improve the EV case and could soften
+or shift the ``all policies entail drawbacks before 2030'' conclusion.
+
+\paragraph{Cost.} Low. It is an exogenous time series, structurally
+identical to the grid-decarbonisation and fuel-price paths
+\code{manage_scenario()} already handles. It does change $\mathrm{LCE}$
+during 2001--2023, so it does touch the calibration --- which is an argument
+for batching it with item 1 rather than doing it alone.
+
+\section{Theme E: spatial grounding and empirical identification}
+
+\subsection{Items 9 and 10 --- Spatial data and population synthesis}
+\label{sec:spatial}
+
+\status{far more built than the idea list suggests.} Commit \code{e7881a9}
+(``setting up the code for the zip level synthetic population data set'')
+contains a complete, tested-against-placeholder-data pipeline:
+
+\begin{itemize}[leftmargin=1.5em, itemsep=0pt]
+\item \code{package/model/} --- \code{synthetic_population.py}
+\item \code{package/calibration/} --- \code{summary_stats.py},
+  \code{calibration_data_outputs_zip.py},
+  \code{NN_multi_round_calibration_zip_gen.py}
+\item \code{package/constants/} --- \code{base_params_NN_zip.json}
+\item \code{package/generating_data/} --- \code{fake_zip_data_gen.py},
+  plus a documented column contract (\code{FAKE_DATA_README.md})
+  specifying exactly what real files must supply
+\end{itemize}
+
+\noindent
+The placeholder population cache (61{,}979 rows) is still in the current
+tree under \code{package/calibration_data/FAKE_zip_data/}, carrying
+\code{zip}, \code{weight}, \code{income}, \code{vmt}, \code{age},
+\code{political_leaning}, \code{ruralness}, \code{latitude} and
+\code{longitude}.
+
+The designed summary-statistic vector is 28-dimensional:
+\begin{itemize}[leftmargin=1.5em]
+\item 8 state EV stock shares (2016--2023) --- the existing aggregate
+  anchor;
+\item 8 state EV sales shares --- already loaded by the current calibration
+  and then never used;
+\item 9 cross-sectional gradients: weighted OLS of ZIP EV share on
+  z-scored log income, ruralness and political leaning, at three years;
+\item 3 between-stratum dispersions of EV share;
+\item 3 Moran's~$I$ values of ZIP EV share, on a $k$-nearest-neighbour
+  weight matrix built from ZIP centroids.
+\end{itemize}
+
+\paragraph{The identification argument, which is the real reason to do this.}
+$a_\chi$ is by far the dominant parameter for EV adoption --- first-order
+Sobol index $\approx 0.78$ (Figure~S7) --- and it governs the paper's
+headline mechanism, the social-imitation threshold. But it is currently
+identified from an \emph{aggregate time series} of EV uptake. Aggregate
+uptake cannot distinguish social contagion from preference sorting: both
+produce S-curves. That is the most obvious available attack on the published
+paper, and this pipeline is the answer to it. The design note in
+\code{summary_stats.py} states the logic precisely: pure sorting produces a
+spatial pattern whose shape is fixed from $t=0$ and merely scales up, while
+contagion produces spatial autocorrelation that \emph{grows} as adoption
+propagates outward --- so it is the \emph{trajectory} of Moran's~$I$ across
+three separated years, not its level, that carries the identifying
+information.
+
+It also delivers the paper's own stated route to validation, because
+ZIP-level panel data supports genuine training/validation/test splits in a
+way one aggregate series does not.
+
+\paragraph{The real blocker is data acquisition, not method.} What is needed
+is ZIP-level EV registration stock and sales for California (CEC / DMV
+publish at this granularity), ACS income and age by ZCTA, a Census ZCTA
+gazetteer for centroids, and a ruralness and political-leaning index. This
+is legwork rather than research risk --- which makes it a very different kind
+of cost from items 5, 7 or 12.
+
+\paragraph{The one genuine technical blocker.} At $I=3000$ across
+$\sim$250 ZIPs, there are roughly 12 agents per ZIP, which is far too noisy
+for per-ZIP moments. The gradient design partly works around this by pooling
+across ZIPs in a weighted regression rather than binning, but the
+population still has to grow substantially --- which is precisely the
+``larger car user population to reduce noise \dots through model
+parallelisation'' that the conclusions call for. Expect this to be the
+dominant engineering cost, and note it compounds with everything else: a
+larger population makes every recalibration in every other theme more
+expensive.
+
+\subsection{Item 11 --- Charging infrastructure}
+
+\status{not implemented; deliberately scoped out.}
+
+Section~2.2 states that ``the charging infrastructure \dots is a given in
+this model'', and Section~3 frames the whole contribution as ``a
+transferable framework for evaluating market-based instruments in contexts
+where a sufficient charging infrastructure threshold has been reached'',
+citing Springel (2021) for the claim that infrastructure has limited
+additional effect past a threshold.
+
+\paragraph{This is a stronger scoping argument than the others.} Unlike the
+expectations assumption or the constant-production-emissions assumption,
+this one comes with a cited empirical justification and an explicit
+statement of the domain of validity. Adding infrastructure therefore does
+not fix an acknowledged weakness so much as \emph{extend the model to a new
+domain} --- jurisdictions below the infrastructure threshold, which is most
+of the world and arguably the more policy-relevant case. That is a
+legitimate and attractive project, but it should be framed as a domain
+extension rather than a correction, and it is only tractable after item 9
+because charging supply is intrinsically spatial. Treat it as strictly
+downstream of Theme E.
+
+\section{The recalibration bottleneck}
+\label{sec:bottleneck}
+
+The single most useful piece of project planning here is to notice which
+items share a calibration cycle. An SBI re-run is the expensive, serialising
+step, so items that require one should be \emph{batched into a single
+recalibration} rather than done sequentially.
+
+\begin{description}[leftmargin=1.5em]
+\item[No recalibration:] item 2 (bans are future-period only), item 8
+  (operates on saved post-calibration controllers).
+\item[Recalibration required:] items 1, 3, 4, 5, 6, 7, 12, 13, 14 (all
+  change 2001--2023 behaviour), and items 9, 10, 11 (which redefine the
+  calibration target itself).
+\end{description}
+
+Note that the two directions requiring no recalibration are exactly the two
+that address explicitly stated limitations. That is not a coincidence: the
+paper scoped out what was expensive.
+
+A corollary for Theme E: because items 9 and 10 \emph{change the calibration
+target} rather than merely invalidating the posterior, they should come
+either first --- before behavioural changes accumulate --- or last, after
+they have all settled. Interleaving a spatial recalibration with behavioural
+extensions means paying for both at once and being unable to attribute a
+change in fit to either.
+
+\section{Summary}
+\label{sec:table}
+
+\begin{longtable}{@{}p{0.20\textwidth}cccp{0.30\textwidth}@{}}
+\toprule
+\textbf{Item} & \textbf{Built?} & \textbf{Recal.} & \textbf{Cost} &
+\textbf{What it buys} \\
+\midrule
+\endhead
+8 Multi-policy optimisation & mostly & no & low &
+Full 5-instrument Pareto front; time-varying schedules. Lifts a stated
+limitation. \\
+\addlinespace
+2 Command and control & mostly & no & low &
+ZEV mandate on the ZEV state. Needs item 1. \\
+\addlinespace
+1 Forward-looking agents & yes & yes & low &
+Removes the permanent-policy assumption. Effect known to be large. \\
+\addlinespace
+14 Production carbon intensity & no & yes & low &
+Fixes an internal inconsistency; touches the pre-2030 emissions result. \\
+\addlinespace
+4 Long-horizon firm profit & no & yes & low--mod &
+Aligns the code with what Section~2.3 already claims. Non-RL route to most
+of item 7. \\
+\addlinespace
+6 Switching / R\&D costs & no & yes & mod &
+Tests whether transition speeds are an artefact of costless pivoting. \\
+\addlinespace
+3 NK landscape & no & yes & mod &
+Fixes range compression and $K$-seed confounding. Infrastructure, not a
+paper. \\
+\addlinespace
+13 Battery evolution & partly & yes & mod &
+Largely a special case of item 3, except the learning-curve variant. \\
+\addlinespace
+9 + 10 Spatial / pop.\ synthesis & mostly & target &
+high & Identifies contagion vs.\ sorting. Defends the core mechanism.
+Blocker is data, not method. \\
+\addlinespace
+5 Financial / budget constraints & no & yes & high &
+Paper's first-named limitation. Consumer-budget half interacts with the
+used-car contribution. \\
+\addlinespace
+12 Batch / vintage production & no & yes & high &
+Robustness on the manufacturing-emissions spike. Largest architectural
+change. \\
+\addlinespace
+11 Charging infrastructure & no & yes & high &
+Extends the model below the infrastructure threshold. Downstream of item 9.
+\\
+\addlinespace
+7 MARL firms & no & yes & very high &
+Commitment vs.\ discretion. Presupposes item 8; breaks the calibration
+chain. \\
+\bottomrule
+\end{longtable}
+
+\section{Recommended sequence}
+
+\paragraph{First, and immediately: item 8 (surrogate).}
+It is built, it needs no recalibration, it introduces no behavioural
+assumption to defend, and it answers a question the paper explicitly says it
+could not afford to answer. Restore \code{package/surrogate/} from
+\code{c92bff8}, re-point it at the current
+\code{base_params_endogenous_policy_pair_gen.json}, validate the GP
+($R^2$, leave-one-out, interval coverage), and extend the design space from
+five intensities to five intensities plus ramp shape. Lowest-risk paper
+available.
+
+\paragraph{Second: items 1 + 2 + 4 as one bundle --- ``anticipation and
+regulation''.}
+One recalibration buys all three. Item 1 is already implemented; item 2's
+three bans are already implemented; item 4 is a contained change to one
+profit calculation. The motivation is quoted verbatim from the paper's own
+conclusions, the case study is the jurisdiction that actually has a ZEV
+mandate, and the driving-ban smoke test already indicates the effect is
+large rather than marginal. Fold item 14 into the same recalibration since
+it is nearly free once you are paying for one.
+
+\paragraph{Third, as the long-term bet: Theme E (items 9 + 10).}
+This is the one that protects the published paper. $a_\chi$ carries the
+headline mechanism and dominates the Sobol decomposition, and it is
+currently identified from an aggregate series that cannot separate contagion
+from sorting. The pipeline for fixing that is designed, written and tested
+against placeholder data; what is missing is real ZIP-level California data
+and a larger population. Start the data acquisition now, in parallel with
+the first two projects, because it is the long-lead item and it is
+administrative rather than intellectual work.
+
+\paragraph{Defer: items 7, 12, 5.} Each is defensible and each is
+expensive. Item 7 in particular should wait until item 8's RL-planner
+variant exists, because without an adaptive planner there is nothing for
+learning firms to learn that reading the announced schedule would not
+deliver. Items 5 and 12 are natural if a collaborator wants the industrial
+-organisation angle; they are not the best use of a solo calibration cycle.
+
+\paragraph{Fold in rather than pursue: items 3, 13.} Fix the NK range
+compression and the $K$-seed confounding inside whichever project comes
+next and report it in that supplementary.
+
+\paragraph{A caution on breadth.} Fourteen directions is a portfolio, not a
+plan, and they point in genuinely different directions: Theme B is
+computational, Theme A is behavioural, Theme C is industrial organisation,
+Theme E is econometric. Three of these done properly is a stronger position
+than eight touched. The sequence above is chosen so that each project
+leaves behind infrastructure the next one needs --- the surrogate becomes
+the RL planner's baseline, the anticipation bundle becomes the environment
+strategic firms would learn in, and the spatial calibration becomes the
+identification backbone for everything after.
+
+\section{One direction the paper promises that is not on this list}
+\label{sec:missing}
+
+The conclusions commit to expanding the social-learning representation
+``beyond a threshold model to enrich car users with social norms and
+behavioural control such as in the Theory of Planned Behaviour (Ajzen,
+1991)'', explicitly in order to ``facilitate the inclusion of policies such
+as information provision, media or marketing''.
+
+This is worth adding to the portfolio for three reasons. It is the demand
+-side counterpart to Theme A --- everything in that theme makes agents
+smarter about \emph{prices}, and nothing makes them richer about
+\emph{norms}. It unlocks a whole policy class (information, media,
+marketing) that the current model cannot represent at all, complementing
+the market-based instruments already characterised and the regulatory ones
+item 2 would add. And it bears on the same identification problem as
+Theme E: the binary consideration threshold $x_{i,t}$ is a very sharp
+behavioural assumption carrying a great deal of the model's dynamics, and a
+graded alternative is both more realistic and a natural robustness check on
+whether the social-lock-in non-linearity of Figure~S13 survives a softer
+specification.
+
+\end{document}
